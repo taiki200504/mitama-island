@@ -16,6 +16,21 @@ public final class ClaudeTranscriptDiscovery: @unchecked Sendable {
     private let maxAge: TimeInterval
     private let maxFiles: Int
 
+    /// Shared across the scan; `date(from:)` is only ever called from the
+    /// single background task that runs discovery. Claude writes fractional
+    /// seconds, older transcripts do not, so both shapes are tried.
+    private let fractionalTimestampParser: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
+    private let plainTimestampParser = ISO8601DateFormatter()
+
+    func parseTimestamp(_ text: String) -> Date? {
+        fractionalTimestampParser.date(from: text) ?? plainTimestampParser.date(from: text)
+    }
+
     public init(
         rootURL: URL = ClaudeTranscriptDiscovery.defaultRootURL,
         fileManager: FileManager = .default,
@@ -103,8 +118,11 @@ public final class ClaudeTranscriptDiscovery: @unchecked Sendable {
                 cwd = value
             }
 
+            // One formatter for the whole scan. Building an
+            // `ISO8601DateFormatter` per line meant tens of thousands of
+            // allocations per transcript, and it dominated the parse.
             if let timestampText = object["timestamp"] as? String,
-               let timestamp = ISO8601DateFormatter().date(from: timestampText) {
+               let timestamp = self.parseTimestamp(timestampText) {
                 updatedAt = timestamp
             }
 
@@ -159,21 +177,34 @@ public final class ClaudeTranscriptDiscovery: @unchecked Sendable {
             }
         }
 
-        var buffer = Data()
-        while let chunk = try? fileHandle.read(upToCount: Self.streamingChunkSize),
-              !chunk.isEmpty {
-            buffer.append(chunk)
-            for line in extractCompleteLines(from: &buffer) {
-                processLine(line)
-            }
-        }
+        let fileSize = (try? fileHandle.seekToEnd()).map(Int.init) ?? 0
+        try? fileHandle.seek(toOffset: 0)
 
-        // Honor a final line written without a trailing newline.
-        if !buffer.isEmpty {
-            let trailing = String(decoding: buffer, as: UTF8.self)
-            if !trailing.isEmpty {
-                processLine(trailing)
+        if fileSize <= Self.fullParseSizeLimit {
+            streamLines(from: fileHandle, upTo: fileSize, into: processLine)
+        } else {
+            // A day's worth of transcripts on a heavy user is >100MB, and JSON
+            // parsing every line of it took tens of seconds during which the
+            // island showed no sessions at all. Everything this parser needs
+            // lives at the two ends of the file: the opening prompt at the
+            // head, the current state at the tail. Read those and skip the
+            // middle. A tool call spanning the gap loses its pairing, which
+            // only affects which tool a stale row claims to be running.
+            streamLines(from: fileHandle, upTo: Self.headParseSize, into: processLine)
+
+            let tailOffset = UInt64(max(Self.headParseSize, fileSize - Self.tailParseSize))
+            try? fileHandle.seek(toOffset: tailOffset)
+            // The seek lands mid-line; drop the partial remainder.
+            _ = try? fileHandle.read(upToCount: Self.streamingChunkSize).map { chunk -> Void in
+                if let newlineIndex = chunk.firstIndex(of: UInt8(ascii: "\n")) {
+                    let remainder = chunk[chunk.index(after: newlineIndex)...]
+                    var buffer = Data(remainder)
+                    for line in extractCompleteLines(from: &buffer) {
+                        processLine(line)
+                    }
+                }
             }
+            streamLines(from: fileHandle, upTo: Int.max, into: processLine)
         }
 
         guard let cwd else {
@@ -214,6 +245,42 @@ public final class ClaudeTranscriptDiscovery: @unchecked Sendable {
     }
 
     private static let streamingChunkSize = 64 * 1_024
+    /// Transcripts at or below this size are parsed end to end.
+    private static let fullParseSizeLimit = 2 * 1_024 * 1_024
+    private static let headParseSize = 256 * 1_024
+    private static let tailParseSize = 1_024 * 1_024
+
+    /// Feeds complete lines to `handler`, stopping once `byteBudget` bytes have
+    /// been read. Returns the number of bytes consumed.
+    @discardableResult
+    private func streamLines(
+        from fileHandle: FileHandle,
+        upTo byteBudget: Int,
+        into handler: (String) -> Void
+    ) -> Int {
+        var buffer = Data()
+        var consumed = 0
+
+        while consumed < byteBudget,
+              let chunk = try? fileHandle.read(upToCount: min(Self.streamingChunkSize, byteBudget - consumed)),
+              !chunk.isEmpty {
+            consumed += chunk.count
+            buffer.append(chunk)
+            for line in extractCompleteLines(from: &buffer) {
+                handler(line)
+            }
+        }
+
+        // Honor a final line written without a trailing newline.
+        if !buffer.isEmpty {
+            let trailing = String(decoding: buffer, as: UTF8.self)
+            if !trailing.isEmpty {
+                handler(trailing)
+            }
+        }
+
+        return consumed
+    }
 
     private func extractCompleteLines(from buffer: inout Data) -> [String] {
         let newline = UInt8(ascii: "\n")

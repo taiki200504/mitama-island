@@ -51,7 +51,7 @@ final class AppModel {
             bridgeServer.updateStateSnapshot(state)
         }
     }
-    @ObservationIgnored private var _cachedSessionBuckets: (primary: [AgentSession], overflow: [AgentSession])?
+    @ObservationIgnored private var _cachedSessionBuckets: (primary: [AgentSession], restored: [AgentSession], overflow: [AgentSession])?
 
     /// Monotonic ticket assigned the first time a session ID shows up in the
     /// closed-island's right-slot surfaced set. Drives the grid's display
@@ -214,7 +214,16 @@ final class AppModel {
     }
     var isResolvingInitialLiveSessions: Bool {
         get { monitoring.isResolvingInitialLiveSessions }
-        set { monitoring.isResolvingInitialLiveSessions = newValue }
+        set {
+            guard monitoring.isResolvingInitialLiveSessions != newValue else {
+                return
+            }
+            monitoring.isResolvingInitialLiveSessions = newValue
+            // Session visibility depends on this flag while the first process
+            // reconcile is still running, so the bucket cache computed under
+            // the old value is stale the moment it flips.
+            _cachedSessionBuckets = nil
+        }
     }
     var overlayDisplayOptions: [OverlayDisplayOption] {
         get { overlay.overlayDisplayOptions }
@@ -739,7 +748,9 @@ final class AppModel {
     }
 
     var islandSessionSections: [IslandSessionSection] {
-        let sessions = sortIslandSessions(surfacedSessions)
+        // Live rows plus anything the registry restored but discovery has not
+        // confirmed yet, so a relaunch does not blank the list.
+        let sessions = sortIslandSessions(surfacedSessions + sessionBuckets.restored)
         switch islandSessionGroup {
         case .none:
             return [
@@ -1077,9 +1088,17 @@ final class AppModel {
 
             Task.detached(priority: .userInitiated) { [weak self] in
                 guard let self else { return }
-                let payload = self.discovery.loadStartupDiscoveryPayload()
+                // Two passes so the island fills in immediately: the
+                // registries first, then the filesystem scan that can take
+                // tens of seconds on a large ~/.claude/projects.
+                let persisted = self.discovery.loadPersistedSessionPayload()
                 await MainActor.run {
-                    self.applyStartupDiscoveryPayload(payload)
+                    self.applyStartupDiscoveryPayload(persisted)
+                }
+
+                let full = self.discovery.loadStartupDiscoveryPayload()
+                await MainActor.run {
+                    self.applyStartupDiscoveryPayload(full)
                 }
             }
 
@@ -1663,7 +1682,7 @@ final class AppModel {
     }
 
 
-    private var sessionBuckets: (primary: [AgentSession], overflow: [AgentSession]) {
+    private var sessionBuckets: (primary: [AgentSession], restored: [AgentSession], overflow: [AgentSession]) {
         if let cached = _cachedSessionBuckets {
             return cached
         }
@@ -1672,7 +1691,7 @@ final class AppModel {
         return result
     }
 
-    private func computeSessionBuckets() -> (primary: [AgentSession], overflow: [AgentSession]) {
+    private func computeSessionBuckets() -> (primary: [AgentSession], restored: [AgentSession], overflow: [AgentSession]) {
         let now = Date.now
         let rankedSessions = state.sessions.sorted { lhs, rhs in
             let lhsScore = displayPriority(for: lhs, now: now)
@@ -1690,10 +1709,22 @@ final class AppModel {
         }
 
         var primary: [AgentSession] = []
+        var restored: [AgentSession] = []
         var claimedLiveAttachmentKeys: Set<String> = []
 
-        for session in rankedSessions where session.isVisibleInIsland {
+        // `isVisibleInIsland` requires a live process or a live hook session.
+        // After a relaunch nothing satisfies that until `ps`/`lsof` discovery
+        // finishes, so the panel sat empty for 20-30s on a machine with many
+        // agent processes. Registry rows that were active inside the stale
+        // window go to `restored`: the list shows them right away as idle,
+        // while the live counters keep counting only what is actually live.
+        let restoreGrace = completedStaleThreshold.seconds
+        for session in rankedSessions {
             guard !session.isSubagentSession else { continue }
+
+            let isLive = session.isVisibleInIsland
+            let isRecentlyActive = now.timeIntervalSince(session.islandActivityDate) < restoreGrace
+            guard isLive || isRecentlyActive else { continue }
 
             if let liveAttachmentKey = monitoring.liveAttachmentKey(for: session) {
                 guard claimedLiveAttachmentKeys.insert(liveAttachmentKey).inserted else {
@@ -1701,12 +1732,16 @@ final class AppModel {
                 }
             }
 
-            primary.append(session)
+            if isLive {
+                primary.append(session)
+            } else {
+                restored.append(session)
+            }
         }
 
-        let primaryIDs = Set(primary.map(\.id))
-        let overflow = rankedSessions.filter { !primaryIDs.contains($0.id) && !$0.isSubagentSession }
-        return (primary, overflow)
+        let shownIDs = Set((primary + restored).map(\.id))
+        let overflow = rankedSessions.filter { !shownIDs.contains($0.id) && !$0.isSubagentSession }
+        return (primary, restored, overflow)
     }
 
     private func displayPriority(for session: AgentSession, now: Date) -> Int {

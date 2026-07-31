@@ -82,8 +82,22 @@ final class SessionDiscoveryCoordinator {
 
     // MARK: - Startup discovery
 
+    /// Registry-only restore: four small JSON files, tens of milliseconds.
+    ///
+    /// Split out from the full payload because transcript and rollout scanning
+    /// walks ~5k files and parses >100MB on a heavy user. Bundling them meant
+    /// the island showed "no sessions" for as long as the scan took, even
+    /// though the sessions to show were already on disk in the registries.
+    nonisolated func loadPersistedSessionPayload() -> StartupDiscoveryPayload {
+        makeStartupPayload(includeFilesystemScan: false)
+    }
+
     /// Performs all startup file I/O off the main thread and returns the raw results.
     nonisolated func loadStartupDiscoveryPayload() -> StartupDiscoveryPayload {
+        makeStartupPayload(includeFilesystemScan: true)
+    }
+
+    private nonisolated func makeStartupPayload(includeFilesystemScan: Bool) -> StartupDiscoveryPayload {
         let cutoff = Date.now.addingTimeInterval(-86_400)
 
         let allCodex = (try? codexSessionStore.load()) ?? []
@@ -98,8 +112,8 @@ final class SessionDiscoveryCoordinator {
         let allCursor = (try? cursorSessionRegistry.load()) ?? []
         let cursorRecords = allCursor.filter { $0.updatedAt >= cutoff && $0.shouldRestoreToLiveState }
 
-        let discoveredCodex = codexRolloutDiscovery.discoverRecentSessions()
-        let discoveredClaude = claudeTranscriptDiscovery.discoverRecentSessions()
+        let discoveredCodex = includeFilesystemScan ? codexRolloutDiscovery.discoverRecentSessions() : []
+        let discoveredClaude = includeFilesystemScan ? claudeTranscriptDiscovery.discoverRecentSessions() : []
 
         return StartupDiscoveryPayload(
             codexRecords: codexRecords,
