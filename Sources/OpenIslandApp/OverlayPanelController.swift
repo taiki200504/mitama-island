@@ -5,8 +5,11 @@ import OpenIslandCore
 
 @MainActor
 final class OverlayPanelController {
-    private static let preferredNotchOpenedPanelWidth: CGFloat = 540
-    private static let preferredTopBarOpenedPanelWidth: CGFloat = 520
+    // Measured against the reference product: the opened panel reads as a
+    // wide, low-density surface (648pt on a 1512pt screen). 540pt forced
+    // session titles and tool lines to truncate several words earlier.
+    private static let preferredNotchOpenedPanelWidth: CGFloat = 648
+    private static let preferredTopBarOpenedPanelWidth: CGFloat = 620
     private static let preferredNotificationPanelWidth: CGFloat = 620
     private static let openedContentWidthPadding: CGFloat = 0
     private static let openedContentBottomPadding: CGFloat = 0
@@ -419,10 +422,16 @@ final class OverlayPanelController {
             && point.y <= rect.maxY
     }
 
-    /// Hit-area width of the v6 closed pill.
+    /// Horizontal bleed of the closed pill past each side of the physical
+    /// notch. Measured against the reference product at 33pt per side on a
+    /// 185pt notch (255pt total); the old 44pt made the pill read as a
+    /// separate slab rather than an extension of the notch.
+    nonisolated static let closedPillSideBleed: CGFloat = 33
+
+    /// Hit-area width of the closed pill.
     ///
     /// - On a MacBook (physical notch present) the pill is locked to
-    ///   `44 + notchWidth + 44`, per the v6 design spec.
+    ///   `bleed + notchWidth + bleed`.
     /// - On an external display the width is content-driven; we return a
     ///   generous fixed hit-area so hover / click detection works without
     ///   the controller having to introspect live session state.
@@ -433,7 +442,7 @@ final class OverlayPanelController {
     ) -> CGFloat {
         let popBonus: CGFloat = notchStatus == .popping ? 18 : 0
         if isNotchedDisplay {
-            return notchWidth + 88 + popBonus
+            return notchWidth + (closedPillSideBleed * 2) + popBonus
         }
         return 360 + popBonus
     }

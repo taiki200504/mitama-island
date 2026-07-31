@@ -1297,7 +1297,12 @@ private struct IslandSessionRow: View {
                     .font(.system(size: 10.5, weight: .medium, design: .monospaced))
                     .foregroundStyle(summaryAgeColor(for: presence))
                     .frame(minWidth: 30, alignment: .trailing)
-                detailToggleButton(isOpen: showsDetail)
+                // List rows are a scannable index — one click jumps to the
+                // session. A per-row disclosure chevron only competed with
+                // that gesture and made the right edge noisy.
+                if presentation != .list {
+                    detailToggleButton(isOpen: showsDetail)
+                }
                 if let onDismiss {
                     DismissButton(action: onDismiss)
                 }
@@ -1316,7 +1321,9 @@ private struct IslandSessionRow: View {
             Text(activityLine)
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(activityColor(for: presence).opacity(0.94))
-                .lineLimit(2)
+                // One line in the list so every row is the same height; the
+                // full text is one click away in the session itself.
+                .lineLimit(presentation == .list ? 1 : 2)
                 .padding(.leading, detailLeadingInset)
                 .padding(.trailing, sideInset)
                 .padding(.bottom, 10)
@@ -1585,6 +1592,14 @@ private struct IslandSessionRow: View {
         }
         if session.phase == .completed {
             return isActionable && completionHasExpandedBody
+        }
+        // List rows stay at a fixed three lines — title, the user's prompt, and
+        // the tool currently running. Letting the assistant body in made row
+        // heights jump between 70pt and 140pt, so the number of sessions
+        // visible without scrolling changed every time an agent replied.
+        // Notification and actionable cards still show the body.
+        guard presentation != .list else {
+            return false
         }
         return session.phase == .running && runningDetailText != nil
     }
