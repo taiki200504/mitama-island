@@ -690,15 +690,13 @@ struct IslandPanelView: View {
         }
     }
 
+    /// The list needs no "SESSIONS" label — the panel contains nothing else,
+    /// and the 36pt it occupied cost a visible row on a 6-row list. The state
+    /// counts stay, left-aligned where the label used to be.
     private func sessionPanelHeader(referenceDate: Date) -> some View {
         let overview = sessionOverviewItems(referenceDate: referenceDate)
 
         return HStack(spacing: 8) {
-            Text(lang.t("island.sessionList.title").uppercased())
-                .font(.system(size: 10.5, weight: .semibold, design: .monospaced))
-                .tracking(1.4)
-                .foregroundStyle(V6Palette.paper.opacity(0.55))
-
             ViewThatFits(in: .horizontal) {
                 sessionOverviewView(overview, compact: false)
                 sessionOverviewView(overview, compact: true)
@@ -708,12 +706,7 @@ struct IslandPanelView: View {
         }
         .padding(.leading, sessionListSideInset)
         .padding(.trailing, sessionListSideInset)
-        .frame(height: 36)
-        .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(.white.opacity(0.055))
-                .frame(height: 1)
-        }
+        .frame(height: 24)
     }
 
     private var sessionPanelFooter: some View {
@@ -1043,6 +1036,16 @@ struct IslandPanelView: View {
             Text("\(provider.peakUsagePercentage)%")
                 .font(.system(size: 11.5, weight: .bold, design: .monospaced))
                 .foregroundStyle(usageColor(for: provider.peakUsedPercentage))
+
+            // Time to reset, inline. A percentage on its own does not answer
+            // "can I keep going" — 90% with ten minutes left is fine, 90% with
+            // four hours left is not.
+            if let resetsAt = provider.peakWindow?.resetsAt,
+               let remaining = remainingDurationString(until: resetsAt) {
+                Text(remaining)
+                    .font(.system(size: 10.5, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.38))
+            }
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
@@ -1261,7 +1264,17 @@ private struct IslandSessionRow: View {
 
     private func rowSummary(presence: IslandSessionPresence, showsDetail: Bool) -> some View {
         HStack(alignment: .top, spacing: 10) {
-            if showsLeadingStatusIndicator {
+            if showsLeadingGlyphPair {
+                // The list identifies sessions by agent + host marks; the
+                // colour carries the state a dot used to carry on its own.
+                SessionGlyphPair(
+                    tool: session.tool,
+                    terminalApp: session.jumpTarget?.terminalApp,
+                    tint: statusTint(for: presence)
+                )
+                .frame(width: 30, alignment: .leading)
+                .padding(.top, 4)
+            } else if showsLeadingStatusIndicator {
                 statusIndicator(for: presence)
                     .frame(width: 20, alignment: .top)
             }
@@ -1317,16 +1330,30 @@ private struct IslandSessionRow: View {
     @ViewBuilder
     private func rowAuxiliaryDetails(presence: IslandSessionPresence) -> some View {
         if !shouldShowEmbeddedDetailBody,
-           let activityLine = session.spotlightActivityLineText ?? expandedActivityLineText {
-            Text(activityLine)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(activityColor(for: presence).opacity(0.94))
-                // One line in the list so every row is the same height; the
-                // full text is one click away in the session itself.
-                .lineLimit(presentation == .list ? 1 : 2)
-                .padding(.leading, detailLeadingInset)
-                .padding(.trailing, sideInset)
-                .padding(.bottom, 10)
+           let activityLine = resolvedActivityLine {
+            Group {
+                if activityLine.isToolInvocation {
+                    // Tool name in the accent, its argument muted — the eye
+                    // lands on "what is it doing" before "with what".
+                    Text(activityLine.label)
+                        .foregroundStyle(IslandDesignPalette.toolAccent)
+                        + Text(activityLine.detail.map { " \($0)" } ?? "")
+                        // Always muted, never the presence tint: a running row
+                        // would otherwise print the whole line in the same
+                        // blue and the tool name would stop standing out.
+                        .foregroundStyle(V6Palette.paper.opacity(0.5))
+                } else {
+                    Text(activityLine.plainText)
+                        .foregroundStyle(activityColor(for: presence).opacity(0.94))
+                }
+            }
+            .font(.system(size: 11, weight: .medium))
+            // One line in the list so every row is the same height; the
+            // full text is one click away in the session itself.
+            .lineLimit(presentation == .list ? 1 : 2)
+            .padding(.leading, detailLeadingInset)
+            .padding(.trailing, sideInset)
+            .padding(.bottom, 10)
         }
 
         if let subagents = session.claudeMetadata?.activeSubagents,
@@ -1509,8 +1536,12 @@ private struct IslandSessionRow: View {
         }
     }
 
-    private var showsLeadingStatusIndicator: Bool {
+    private var showsLeadingGlyphPair: Bool {
         presentation == .list && stateIndicator != .tint && stateIndicator != .bar
+    }
+
+    private var showsLeadingStatusIndicator: Bool {
+        false
     }
 
     private var showsLeadingStatusBar: Bool {
@@ -1962,14 +1993,18 @@ private struct IslandSessionRow: View {
     }
 
     /// Activity line for manually expanded inactive rows (bypasses time-based filter).
-    private var expandedActivityLineText: String? {
+    private var expandedActivityLine: IslandActivityLine? {
         guard detailOverride == true else { return nil }
         let trimmed = session.lastAssistantMessageText?
             .trimmingCharacters(in: .whitespacesAndNewlines)
         if let assistantMessage = trimmed, !assistantMessage.isEmpty {
-            return assistantMessage
+            return IslandActivityLine(label: assistantMessage)
         }
-        return session.jumpTarget != nil ? "Ready" : "Completed"
+        return IslandActivityLine(label: session.jumpTarget != nil ? "Ready" : "Completed")
+    }
+
+    private var resolvedActivityLine: IslandActivityLine? {
+        session.spotlightActivityLine ?? expandedActivityLine
     }
 
     private func handlePrimaryTap() {

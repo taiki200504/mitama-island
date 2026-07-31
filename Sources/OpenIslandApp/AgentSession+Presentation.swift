@@ -1,6 +1,23 @@
 import Foundation
 import OpenIslandCore
 
+/// A session row's activity line, kept split into the tool being invoked and
+/// the argument it was invoked with so the surface can tint them separately.
+/// `isToolInvocation` is false for prose lines (assistant replies, approval
+/// summaries), which render in a single muted colour.
+struct IslandActivityLine: Equatable {
+    var label: String
+    var detail: String?
+    var isToolInvocation: Bool = false
+
+    var plainText: String {
+        guard let detail, !detail.isEmpty else {
+            return label
+        }
+        return "\(label) \(detail)"
+    }
+}
+
 enum SpotlightActivityTone {
     case live
     case idle
@@ -233,39 +250,47 @@ extension AgentSession {
         return spotlightPromptLineText
     }
 
-    var spotlightActivityLineText: String? {
+    /// The third line of a session row, split so the surface can tint the tool
+    /// name and its argument differently — `Bash` reads as a verb, the command
+    /// after it as data. Collapsing both into one string made scanning a list
+    /// of running agents much slower.
+    var spotlightActivityLine: IslandActivityLine? {
         guard spotlightShowsDetailLines else {
             return nil
         }
 
         if let request = permissionRequest?.summary.trimmedForSurface,
            !request.isEmpty {
-            return request
+            return IslandActivityLine(label: request)
         }
 
         if let prompt = questionPrompt?.title.trimmedForSurface,
            !prompt.isEmpty {
-            return prompt
+            return IslandActivityLine(label: prompt)
         }
 
         switch phase {
         case .running:
-            if let activity = spotlightRunningActivityText {
+            if let activity = spotlightRunningActivityLine {
                 return activity
             }
-            return spotlightPromptLineText == nil ? "Running" : "Thinking"
+            return IslandActivityLine(label: spotlightPromptLineText == nil ? "Running" : "Thinking")
         case .waitingForApproval:
-            return permissionRequest?.summary.trimmedForSurface ?? "Approval needed"
+            return IslandActivityLine(label: permissionRequest?.summary.trimmedForSurface ?? "Approval needed")
         case .waitingForAnswer:
-            return questionPrompt?.title.trimmedForSurface ?? "Answer needed"
+            return IslandActivityLine(label: questionPrompt?.title.trimmedForSurface ?? "Answer needed")
         case .completed:
             if let assistantMessage = lastAssistantMessageText?.trimmedForSurface,
                !assistantMessage.isEmpty {
-                return assistantMessage
+                return IslandActivityLine(label: assistantMessage)
             }
 
-            return jumpTarget != nil ? "Ready" : "Completed"
+            return IslandActivityLine(label: jumpTarget != nil ? "Ready" : "Completed")
         }
+    }
+
+    var spotlightActivityLineText: String? {
+        spotlightActivityLine?.plainText
     }
 
     var spotlightActivityTone: SpotlightActivityTone {
@@ -346,19 +371,19 @@ extension AgentSession {
             && referenceDate.timeIntervalSince(islandActivityDate) >= threshold
     }
 
-    private var spotlightRunningActivityText: String? {
+    private var spotlightRunningActivityLine: IslandActivityLine? {
         guard let currentTool = currentToolName?.trimmedForSurface,
               !currentTool.isEmpty else {
             return nil
         }
 
         let label = Self.currentToolDisplayName(for: currentTool)
-        guard let preview = currentCommandPreviewText?.trimmedForSurface,
-              !preview.isEmpty else {
-            return label
-        }
-
-        return "\(label) \(preview)"
+        let preview = currentCommandPreviewText?.trimmedForSurface
+        return IslandActivityLine(
+            label: label,
+            detail: (preview?.isEmpty == false) ? preview : nil,
+            isToolInvocation: true
+        )
     }
 
     var displayCurrentToolName: String? {

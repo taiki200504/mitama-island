@@ -2,6 +2,11 @@ import SwiftUI
 import OpenIslandCore
 
 enum IslandDesignPalette {
+    /// Tool names in an activity line. Deliberately the same blue as the
+    /// running-status tint so "this row is doing something" reads from one
+    /// colour whether you look at the dot or the line.
+    static let toolAccent = Color(red: 110.0 / 255.0, green: 167.0 / 255.0, blue: 255.0 / 255.0)
+
     enum Status {
         static let waitingAggregate = Color(red: 231.0 / 255.0, green: 167.0 / 255.0, blue: 98.0 / 255.0)
         static let waitingForApproval = Color(red: 244.0 / 255.0, green: 164.0 / 255.0, blue: 164.0 / 255.0)
