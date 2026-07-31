@@ -529,6 +529,15 @@ struct ActiveAgentProcessDiscovery {
             return "VS Code"
         }
 
+        // Zed — check the preview channel first; both ship the same
+        // `Contents/MacOS/zed` binary name.
+        if lowered.contains("/zed preview.app/") {
+            return "Zed Preview"
+        }
+        if lowered.contains("/zed.app/") {
+            return "Zed"
+        }
+
         // JetBrains IDEs
         if lowered.contains("/intellij idea.app/") || lowered.contains("/idea.app/") {
             return "IntelliJ IDEA"
@@ -562,7 +571,54 @@ struct ActiveAgentProcessDiscovery {
     }
 
     private func lsofOutput(pid: String) -> String? {
-        commandRunner("/usr/sbin/lsof", ["-a", "-p", pid, "-Fn"])
+        commandRunner("/usr/sbin/lsof", ["-a", "-p", pid, "-Fn"]).map(Self.decodingEscapedBytes)
+    }
+
+    /// `lsof` renders bytes it considers unprintable as `\xNN`. Printability is
+    /// decided by the subprocess `LC_CTYPE`, and a GUI-launched app inherits no
+    /// locale at all — so every CJK path arrives escaped and sessions become
+    /// indistinguishable in the panel (upstream #623). `commandOutput` pins a
+    /// UTF-8 ctype so this normally does not trigger; the decode stays as a
+    /// second line of defence for injected runners and locale-deaf `lsof` builds.
+    static func decodingEscapedBytes(_ text: String) -> String {
+        guard text.contains("\\x") else {
+            return text
+        }
+
+        let characters = Array(text)
+        var result = ""
+        var pendingBytes = Data()
+        var pendingLiteral = ""
+
+        func flushPendingBytes() {
+            guard !pendingBytes.isEmpty else {
+                return
+            }
+            // Undecodable bytes are more useful shown verbatim than as U+FFFD.
+            result += String(data: pendingBytes, encoding: .utf8) ?? pendingLiteral
+            pendingBytes.removeAll()
+            pendingLiteral.removeAll()
+        }
+
+        var index = 0
+        while index < characters.count {
+            if characters[index] == "\\",
+               index + 3 < characters.count,
+               characters[index + 1] == "x",
+               let byte = UInt8(String(characters[(index + 2)...(index + 3)]), radix: 16) {
+                pendingBytes.append(byte)
+                pendingLiteral += String(characters[index...(index + 3)])
+                index += 4
+                continue
+            }
+
+            flushPendingBytes()
+            result.append(characters[index])
+            index += 1
+        }
+        flushPendingBytes()
+
+        return result
     }
 
     private func workingDirectory(from lsofOutput: String) -> String? {
@@ -790,6 +846,14 @@ struct ActiveAgentProcessDiscovery {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: executablePath)
         process.arguments = arguments
+        // `ps` and `lsof` classify bytes as printable through the C locale. A
+        // GUI-launched app inherits no `LANG`, so both fall back to POSIX and
+        // escape every multi-byte path. Pin a UTF-8 ctype instead; `LC_ALL`
+        // would override it, so it goes away for these short-lived probes only.
+        var environment = ProcessInfo.processInfo.environment
+        environment.removeValue(forKey: "LC_ALL")
+        environment["LC_CTYPE"] = "en_US.UTF-8"
+        process.environment = environment
 
         let outputPipe = Pipe()
         process.standardOutput = outputPipe

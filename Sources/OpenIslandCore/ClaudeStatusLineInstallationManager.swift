@@ -188,7 +188,10 @@ public final class ClaudeStatusLineInstallationManager: @unchecked Sendable {
         if let originalStatusLine = mutatedSettings["statusLine"] {
             mutatedSettings[openIslandOriginalStatusLineKey] = originalStatusLine
         }
-        mutatedSettings["statusLine"] = managedStatusLine(for: scriptURL)
+        mutatedSettings["statusLine"] = managedStatusLine(
+            for: scriptURL,
+            preserving: mutatedSettings["statusLine"] as? [String: Any]
+        )
 
         let settingsData = try serializeSettings(mutatedSettings)
         if fileManager.fileExists(atPath: settingsURL.path) {
@@ -264,12 +267,18 @@ public final class ClaudeStatusLineInstallationManager: @unchecked Sendable {
         try JSONSerialization.data(withJSONObject: settings, options: [.prettyPrinted, .sortedKeys])
     }
 
-    private func managedStatusLine(for scriptURL: URL) -> [String: Any] {
-        [
-            "type": "command",
-            "command": scriptURL.path,
-            "padding": 2,
-        ]
+    /// In wrapper mode the user's own `statusLine` settings still describe how
+    /// their command should be run — `refreshInterval` above all, which people
+    /// raise to keep an expensive status line from running on every message.
+    /// Carry those keys over; only `type`/`command` belong to us.
+    private func managedStatusLine(for scriptURL: URL, preserving original: [String: Any]? = nil) -> [String: Any] {
+        var statusLine: [String: Any] = original ?? [:]
+        statusLine["type"] = "command"
+        statusLine["command"] = scriptURL.path
+        if statusLine["padding"] == nil {
+            statusLine["padding"] = 2
+        }
+        return statusLine
     }
 
     private func backupFile(at url: URL) throws {

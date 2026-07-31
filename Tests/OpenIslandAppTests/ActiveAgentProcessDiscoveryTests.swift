@@ -62,6 +62,51 @@ struct ActiveAgentProcessDiscoveryTests {
     }
 
     @Test
+    func discoverDecodesLsofEscapedNonASCIIWorkingDirectory() {
+        let discovery = ActiveAgentProcessDiscovery { executablePath, _ in
+            if executablePath == "/bin/ps" {
+                return """
+                  102 301 ttys002 /Users/test/.local/bin/claude
+                  301 900 ttys002 -/opt/homebrew/bin/fish
+                  900 1 ?? /Applications/Ghostty.app/Contents/MacOS/ghostty
+                """
+            }
+
+            guard executablePath == "/usr/sbin/lsof" else {
+                return nil
+            }
+
+            // `lsof` escapes multi-byte bytes when the subprocess locale is not
+            // UTF-8 aware, which is what a GUI-launched app inherits.
+            return """
+            fcwd
+            n/Users/test/\\xe8\\xa8\\xba\\xe7\\x99\\x82\\xe5\\xa0\\xb1\\xe9\\x85\\xacAI\\xe7\\xa0\\x94\\xe7\\xa9\\xb6\\xe6\\x89\\x80
+            """
+        }
+
+        let snapshots = discovery.discover()
+
+        #expect(snapshots == [
+            .init(
+                tool: .claudeCode,
+                sessionID: nil,
+                workingDirectory: "/Users/test/診療報酬AI研究所",
+                terminalTTY: "/dev/ttys002",
+                terminalApp: "Ghostty"
+            ),
+        ])
+    }
+
+    @Test
+    func decodingEscapedBytesLeavesPlainAndUndecodableTextUnchanged() {
+        #expect(ActiveAgentProcessDiscovery.decodingEscapedBytes("/tmp/open-island") == "/tmp/open-island")
+        // A lone escape that is not valid UTF-8 must survive verbatim rather
+        // than becoming a replacement character.
+        #expect(ActiveAgentProcessDiscovery.decodingEscapedBytes("/tmp/\\xff") == "/tmp/\\xff")
+        #expect(ActiveAgentProcessDiscovery.decodingEscapedBytes("a\\xe3\\x81\\x82b") == "aあb")
+    }
+
+    @Test
     func discoverClaudeSessionIDFromResumeFlagWhenTranscriptIsNotOpen() {
         let discovery = ActiveAgentProcessDiscovery { executablePath, _ in
             if executablePath == "/bin/ps" {

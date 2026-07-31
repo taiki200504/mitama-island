@@ -357,7 +357,11 @@ final class TerminalJumpServiceTests: XCTestCase {
             openAction: { arguments in
                 openedArguments.values.append(arguments)
             },
-            appleScriptRunner: { _ in "" }
+            appleScriptRunner: { _ in "" },
+            // Without this the default runner shells out to a real `trae`, so
+            // the assertion silently depended on Trae not being installed on
+            // the test machine — and launched the editor when it was.
+            processRunner: { _, _ in false }
         )
 
         let result = try service.jump(
@@ -463,6 +467,86 @@ final class TerminalJumpServiceTests: XCTestCase {
 
         XCTAssertEqual(result, "Focused the Codex.app conversation.")
         XCTAssertEqual(openedArguments.values, [["codex://threads/\(threadID)"]])
+    }
+
+    func testZedPreviewJumpUsesBundledCLIRatherThanPATH() throws {
+        let openedArguments = OpenedArgumentsBox()
+        let processInvocations = ProcessInvocationBox()
+        let service = TerminalJumpService(
+            applicationResolver: { bundleIdentifier in
+                bundleIdentifier == "dev.zed.Zed-Preview"
+                    ? URL(fileURLWithPath: "/Applications/Zed Preview.app")
+                    : nil
+            },
+            appRunningChecker: { _ in true },
+            openAction: { arguments in
+                openedArguments.values.append(arguments)
+            },
+            appleScriptRunner: { _ in "" },
+            processRunner: { executable, arguments in
+                processInvocations.values.append((executable, arguments))
+                return true
+            }
+        )
+
+        let result = try service.jump(
+            to: JumpTarget(
+                terminalApp: "Zed Preview",
+                workspaceName: "mitama-island",
+                paneTitle: "",
+                workingDirectory: "/Users/test/mitama-island"
+            )
+        )
+
+        XCTAssertEqual(result, "Focused the matching Zed Preview workspace.")
+        XCTAssertTrue(openedArguments.values.isEmpty)
+        XCTAssertEqual(processInvocations.values.count, 1)
+        // The bundled CLI is preferred; only an unresolvable install degrades
+        // to the bare `zed` name.
+        let invokedCLI = try XCTUnwrap(processInvocations.values.first?.0)
+        XCTAssertTrue(
+            invokedCLI == "zed" || invokedCLI.hasSuffix("/Contents/MacOS/cli"),
+            "unexpected Zed CLI path: \(invokedCLI)"
+        )
+        XCTAssertEqual(processInvocations.values.first?.1, ["/Users/test/mitama-island"])
+    }
+
+    func testZedJumpActivatesAppWhenCLIInvocationFails() throws {
+        let openedArguments = OpenedArgumentsBox()
+        let service = TerminalJumpService(
+            applicationResolver: { bundleIdentifier in
+                bundleIdentifier == "dev.zed.Zed" ? URL(fileURLWithPath: "/Applications/Zed.app") : nil
+            },
+            appRunningChecker: { bundleIdentifier in bundleIdentifier == "dev.zed.Zed" },
+            openAction: { arguments in
+                openedArguments.values.append(arguments)
+            },
+            appleScriptRunner: { _ in "" },
+            processRunner: { _, _ in false }
+        )
+
+        let result = try service.jump(
+            to: JumpTarget(
+                terminalApp: "Zed",
+                workspaceName: "mitama-island",
+                paneTitle: "",
+                workingDirectory: "/Users/test/mitama-island"
+            )
+        )
+
+        XCTAssertEqual(result, "Activated Zed.")
+        XCTAssertEqual(openedArguments.values, [["-b", "dev.zed.Zed"]])
+    }
+
+    func testResolvedCLIPathPrefersInstallDirectoriesOverEmptyGUIPath() {
+        // `/bin/ls` always exists, so a bare name that lives there must come
+        // back absolute; an unknown name must survive untouched for `env`.
+        XCTAssertEqual(TerminalJumpService.resolvedCLIPath("ls"), "/bin/ls")
+        XCTAssertEqual(
+            TerminalJumpService.resolvedCLIPath("open-island-nonexistent-cli"),
+            "open-island-nonexistent-cli"
+        )
+        XCTAssertEqual(TerminalJumpService.resolvedCLIPath("/usr/bin/true"), "/usr/bin/true")
     }
 
     func testTraeCNJumpFallsBackToWorkspaceViaTraeCLI() throws {

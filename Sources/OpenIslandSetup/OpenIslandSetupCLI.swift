@@ -28,6 +28,9 @@ private struct SetupCommand {
         case installKimi
         case uninstallKimi
         case statusKimi
+        case installClaudeStatusLine
+        case uninstallClaudeStatusLine
+        case statusClaudeStatusLine
     }
 
     let action: Action
@@ -117,6 +120,12 @@ private struct SetupCommand {
             try uninstallKimi()
         case .statusKimi:
             try statusKimi()
+        case .installClaudeStatusLine:
+            try installClaudeStatusLine()
+        case .uninstallClaudeStatusLine:
+            try uninstallClaudeStatusLine()
+        case .statusClaudeStatusLine:
+            try statusClaudeStatusLine()
         }
     }
 
@@ -236,6 +245,43 @@ private struct SetupCommand {
         }
     }
 
+    /// Installs the usage-cache status line. An existing custom `statusLine`
+    /// (e.g. `ccsl`) is wrapped rather than replaced, so the terminal keeps
+    /// showing exactly what it showed before.
+    private func installClaudeStatusLine() throws {
+        let manager = ClaudeStatusLineInstallationManager(claudeDirectory: claudeDirectory)
+        let current = try manager.status()
+        let status = current.hasConflictingStatusLine
+            ? try manager.installAsWrapper()
+            : try manager.install()
+
+        print("Installed Open Island Claude status line.")
+        print("Claude dir: \(claudeDirectory.path)")
+        print("Mode: \(status.managedStatusLineIsWrapper && current.hasConflictingStatusLine ? "wrapper (original preserved)" : "standalone")")
+        print("Script: \(status.scriptURL.path)")
+        print("Usage cache: \(status.cacheURL.path)")
+    }
+
+    private func uninstallClaudeStatusLine() throws {
+        let manager = ClaudeStatusLineInstallationManager(claudeDirectory: claudeDirectory)
+        let status = try manager.uninstall()
+
+        print("Removed Open Island Claude status line.")
+        print("statusLine.command is now: \(status.statusLineCommand ?? "(unset)")")
+    }
+
+    private func statusClaudeStatusLine() throws {
+        let manager = ClaudeStatusLineInstallationManager(claudeDirectory: claudeDirectory)
+        let status = try manager.status()
+
+        print("Claude dir: \(claudeDirectory.path)")
+        print("statusLine.command: \(status.statusLineCommand ?? "(unset)")")
+        print("Managed: \(status.managedStatusLineConfigured ? "yes" : "no")")
+        print("Wrapper mode: \(status.managedStatusLineIsWrapper ? "yes" : "no")")
+        print("Needs repair: \(status.managedStatusLineNeedsRepair ? "yes" : "no")")
+        print("Usage cache: \(status.cacheURL.path)")
+    }
+
     private func statusKimi() throws {
         let manager = KimiHookInstallationManager(kimiDirectory: kimiDirectory)
         let status = try manager.status(hooksBinaryURL: hooksBinary)
@@ -273,6 +319,9 @@ private enum SetupError: Error, LocalizedError {
               swift run OpenIslandSetup installKimi [--hooks-binary /abs/path/to/OpenIslandHooks] [--kimi-dir /abs/path/to/.kimi]
               swift run OpenIslandSetup uninstallKimi [--kimi-dir /abs/path/to/.kimi]
               swift run OpenIslandSetup statusKimi [--hooks-binary /abs/path/to/OpenIslandHooks] [--kimi-dir /abs/path/to/.kimi]
+              swift run OpenIslandSetup installClaudeStatusLine [--claude-dir /abs/path/to/.claude]
+              swift run OpenIslandSetup uninstallClaudeStatusLine [--claude-dir /abs/path/to/.claude]
+              swift run OpenIslandSetup statusClaudeStatusLine [--claude-dir /abs/path/to/.claude]
             """
         case let .missingValue(flag):
             "Missing value for \(flag)"

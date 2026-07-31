@@ -121,6 +121,16 @@ struct TerminalJumpService {
             ]
         ),
         TerminalAppDescriptor(
+            displayName: "Zed",
+            bundleIdentifier: "dev.zed.Zed",
+            aliases: ["zed"]
+        ),
+        TerminalAppDescriptor(
+            displayName: "Zed Preview",
+            bundleIdentifier: "dev.zed.Zed-Preview",
+            aliases: ["zed preview", "zed-preview"]
+        ),
+        TerminalAppDescriptor(
             displayName: "IntelliJ IDEA",
             bundleIdentifier: "com.jetbrains.intellij",
             aliases: ["intellij", "idea"]
@@ -177,6 +187,10 @@ struct TerminalJumpService {
     /// Bundle identifiers of VS Code family editors. Derived from
     /// `vscodeFamilyCLI` so the two maps cannot drift.
     private static let vscodeFamilyBundleIDs: Set<String> = Set(vscodeFamilyCLI.keys)
+
+    /// Bundle identifiers of the Zed family. Derived from `zedAppNames` so the
+    /// two maps cannot drift.
+    private static let zedBundleIDs: Set<String> = Set(zedAppNames.keys)
 
     /// Bundle identifiers of terminal emulators that commonly host Zellij,
     /// derived from `knownApps` so it stays in sync automatically.
@@ -382,6 +396,17 @@ struct TerminalJumpService {
                     try openAction(["-b", id])
                     return "Activated \(descriptor.displayName)."
                 }
+            case let id where Self.zedBundleIDs.contains(id):
+                if let workingDirectory = target.workingDirectory {
+                    let opened = jumpToZedWorkspace(workingDirectory, bundleIdentifier: id)
+                    if opened {
+                        return "Focused the matching \(descriptor.displayName) workspace."
+                    }
+                }
+                if appIsRunning {
+                    try openAction(["-b", id])
+                    return "Activated \(descriptor.displayName)."
+                }
             case let id where Self.jetbrainsBundleIDs.contains(id):
                 if let workingDirectory = target.workingDirectory {
                     let opened = jumpToJetBrainsProject(workingDirectory, bundleIdentifier: id)
@@ -495,6 +520,50 @@ struct TerminalJumpService {
             return false
         }
         return processRunner(cli, [projectPath])
+    }
+
+    // MARK: - Zed family
+
+    /// Maps bundle identifiers to the `.app` name that carries the bundled CLI.
+    /// Single source of truth — `zedBundleIDs` is derived from these keys.
+    private static let zedAppNames: [String: String] = [
+        "dev.zed.Zed": "Zed",
+        "dev.zed.Zed-Preview": "Zed Preview",
+    ]
+
+    /// Zed ships its CLI inside the bundle as `Contents/MacOS/cli`, and most
+    /// installs never run the "Install CLI" palette command, so there is no
+    /// `zed` on `PATH` to call. Resolve the bundled binary directly and only
+    /// fall back to the bare name when the app lives somewhere unexpected.
+    private func zedCLIPath(for bundleIdentifier: String) -> String? {
+        guard let appName = Self.zedAppNames[bundleIdentifier] else {
+            return nil
+        }
+
+        let fileManager = FileManager.default
+        var candidates = [
+            "/Applications/\(appName).app/Contents/MacOS/cli",
+            NSHomeDirectory() + "/Applications/\(appName).app/Contents/MacOS/cli",
+        ]
+
+        if let appURL = applicationResolver(bundleIdentifier) {
+            candidates.insert(appURL.appendingPathComponent("Contents/MacOS/cli").path, at: 0)
+        }
+
+        for candidate in candidates where fileManager.isExecutableFile(atPath: candidate) {
+            return candidate
+        }
+
+        return "zed"
+    }
+
+    /// `zed <path>` focuses the window that already has the workspace open and
+    /// opens a new one otherwise — the same shape as the VS Code family jump.
+    private func jumpToZedWorkspace(_ workspacePath: String, bundleIdentifier: String) -> Bool {
+        guard let cli = zedCLIPath(for: bundleIdentifier) else {
+            return false
+        }
+        return processRunner(cli, [workspacePath])
     }
 
     private func jumpToCmuxTerminal(_ target: JumpTarget) -> Bool {
@@ -1280,10 +1349,42 @@ struct TerminalJumpService {
         return output
     }
 
+    /// Directories editor CLIs install themselves into, in the order a login
+    /// shell would find them. A GUI-launched app inherits launchd's `PATH`
+    /// (`/usr/bin:/bin:/usr/sbin:/sbin`) and never sees `/usr/local/bin`, so
+    /// `code`/`cursor`/`idea` silently fail to launch from the island even
+    /// though they work in a terminal (upstream #512).
+    private static let cliSearchPaths = [
+        "/usr/local/bin",
+        "/opt/homebrew/bin",
+        NSHomeDirectory() + "/.local/bin",
+        "/usr/bin",
+        "/bin",
+    ]
+
+    /// Resolves a bare CLI name against `cliSearchPaths`. Absolute paths and
+    /// names that cannot be found are returned unchanged so `env` still gets a
+    /// chance with whatever `PATH` the process actually has.
+    static func resolvedCLIPath(_ executable: String) -> String {
+        guard !executable.contains("/") else {
+            return executable
+        }
+
+        let fileManager = FileManager.default
+        for directory in cliSearchPaths {
+            let candidate = directory + "/" + executable
+            if fileManager.isExecutableFile(atPath: candidate) {
+                return candidate
+            }
+        }
+
+        return executable
+    }
+
     private static func defaultProcessRunner(executable: String, arguments: [String]) -> Bool {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-        process.arguments = [executable] + arguments
+        process.arguments = [resolvedCLIPath(executable)] + arguments
         process.standardOutput = FileHandle.nullDevice
         process.standardError = FileHandle.nullDevice
 
