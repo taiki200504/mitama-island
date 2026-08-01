@@ -21,7 +21,7 @@ notary_profile="${OPEN_ISLAND_NOTARY_PROFILE:-}"
 
 brand_script="$repo_root/scripts/generate_brand_icons.py"
 dmg_bg_script="$repo_root/scripts/generate_dmg_background.py"
-entitlements_path="$repo_root/config/packaging/OpenIslandApp.entitlements"
+entitlements_path="${OPEN_ISLAND_ENTITLEMENTS:-$repo_root/config/packaging/OpenIslandApp.entitlements}"
 
 cd "$repo_root"
 
@@ -111,7 +111,9 @@ cat > "$bundle_dir/Contents/Info.plist" <<EOF
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
     <key>SUFeedURL</key>
-    <string>https://raw.githubusercontent.com/Octane0411/open-vibe-island/main/appcast.xml</string>
+    <string>${OPEN_ISLAND_SU_FEED_URL:-https://raw.githubusercontent.com/Octane0411/open-vibe-island/main/appcast.xml}</string>
+    <key>SUEnableAutomaticChecks</key>
+    <${OPEN_ISLAND_SU_AUTOMATIC_CHECKS:-true}/>
     <key>SUPublicEDKey</key>
     <string>${OPEN_ISLAND_EDDSA_PUBLIC_KEY:-3IF8txq9RRNanzE2FNhyGRcwhslTucCcJHpTkpxcgBQ=}</string>
 </dict>
@@ -224,6 +226,16 @@ if [[ -n "$signing_identity" && -n "$notary_profile" ]]; then
 fi
 
 # --- Styled DMG creation ---
+# Only releases need a DMG. A local build should not fail just because
+# `create-dmg` (a Homebrew formula) is missing.
+if [[ "${OPEN_ISLAND_SKIP_DMG:-false}" == "true" ]] || ! command -v create-dmg >/dev/null 2>&1; then
+    if [[ "${OPEN_ISLAND_SKIP_DMG:-false}" != "true" ]]; then
+        echo "create-dmg not installed — skipping DMG. (brew install create-dmg)"
+    fi
+    echo "Packaged $bundle_dir"
+    exit 0
+fi
+
 dmg_bg="$repo_root/Assets/Brand/dmg-background@2x.png"
 
 create-dmg \

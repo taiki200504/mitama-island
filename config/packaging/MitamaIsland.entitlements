@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Entitlements for the locally signed personal build.
+
+  Identical to OpenIslandApp.entitlements plus library validation disabled.
+  The hardened runtime enforces that every loaded library carries the same
+  Team ID as the main binary; a self-signed local certificate has no Team ID
+  at all, so Sparkle.framework fails that check and the app aborts at launch
+  with "different Team IDs". A Developer ID build does not need this, which
+  is why the release entitlements file stays untouched.
+-->
+<plist version="1.0">
+<dict>
+    <key>com.apple.security.automation.apple-events</key>
+    <true/>
+    <key>com.apple.security.network.client</key>
+    <true/>
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+</dict>
+</plist>

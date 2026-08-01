@@ -22,6 +22,12 @@ final class AppModel {
     private static let islandCenterLabelDefaultsKey = "appearance.island.v6.centerLabel"
     private static let showCodexUsageDefaultsKey = "app.showCodexUsage"
     private static let completionReplyEnabledDefaultsKey = "feature.completionReply.enabled"
+    /// Set once, the first time an installed copy runs, so the login-item
+    /// registration below never fights a user who turned it back off.
+    private static let launchAtLoginPromptedDefaultsKey = "launchAtLogin.autoRegistered"
+    /// How long a session restored from the registry stays on the list before
+    /// process discovery has confirmed it is still alive.
+    private static let restoredSessionVisibilityWindow: TimeInterval = 30 * 60
     private static let suppressFrontmostNotificationsDefaultsKey = "app.suppressFrontmostNotifications"
     private static let legacyIslandSessionStateIndicatorDefaultsKey = "appearance.island.v8.stateIndicator"
     private static let legacyIslandSessionGroupDefaultsKey = "appearance.island.v8.sessionGroup"
@@ -619,6 +625,17 @@ final class AppModel {
         }
         completionReplyEnabled = UserDefaults.standard.bool(forKey: Self.completionReplyEnabledDefaultsKey)
         launchAtLoginEnabled = LaunchAtLoginService.shared.isEnabled
+        // An island that only appears when you remember to start it is not a
+        // status surface. Register at login on first run of an installed copy;
+        // after that the stored answer wins, so turning it off stays off.
+        if !launchAtLoginEnabled,
+           UserDefaults.standard.object(forKey: Self.launchAtLoginPromptedDefaultsKey) == nil,
+           Bundle.main.bundleURL.path.hasPrefix("/Applications/") {
+            UserDefaults.standard.set(true, forKey: Self.launchAtLoginPromptedDefaultsKey)
+            if (try? LaunchAtLoginService.shared.setEnabled(true)) != nil {
+                launchAtLoginEnabled = LaunchAtLoginService.shared.isEnabled
+            }
+        }
         appearanceSettingsProfile = IslandAppearanceDisplayProfile(
             rawValue: UserDefaults.standard.string(forKey: Self.appearanceProfileSettingsDefaultsKey) ?? ""
         ) ?? .topBar
@@ -1718,7 +1735,12 @@ final class AppModel {
         // agent processes. Registry rows that were active inside the stale
         // window go to `restored`: the list shows them right away as idle,
         // while the live counters keep counting only what is actually live.
-        let restoreGrace = completedStaleThreshold.seconds
+        // Bounded independently of `completedStaleThreshold`: that setting says
+        // how long a *completed* row keeps full presentation, and "Never" would
+        // otherwise surface every row in the 24h registry — 45 sessions on a
+        // busy day. Restored-but-unconfirmed rows are only interesting while
+        // the work is still fresh.
+        let restoreGrace = min(completedStaleThreshold.seconds, Self.restoredSessionVisibilityWindow)
         for session in rankedSessions {
             guard !session.isSubagentSession else { continue }
 
