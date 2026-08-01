@@ -4,6 +4,12 @@ import Testing
 import OpenIslandCore
 
 struct AgentSessionPresentationTests {
+    /// The prompt line is localized, so the expectation has to go through the
+    /// same lookup — otherwise the suite only passes on an English machine.
+    private func promptLine(_ prompt: String) -> String {
+        LanguageManager.shared.t("session.promptPrefix", prompt)
+    }
+
     @Test
     func attachedCompletedSessionStaysActiveWhileRecent() {
         let referenceDate = Date(timeIntervalSince1970: 10_000)
@@ -210,7 +216,7 @@ struct AgentSessionPresentationTests {
 
         // Headline uses initial prompt (session topic), prompt line uses latest
         #expect(session.spotlightHeadlineText == "worktree · Start by fixing the island hover behavior.")
-        #expect(session.spotlightPromptLineText == "You: Now make the overlay height fit the content.")
+        #expect(session.spotlightPromptLineText == promptLine("Now make the overlay height fit the content."))
     }
 
     @Test
@@ -232,7 +238,7 @@ struct AgentSessionPresentationTests {
         )
 
         #expect(session.spotlightHeadlineText == "worktree · Start by fixing the island hover behavior.")
-        #expect(session.spotlightPromptLineText == "You: Now make the overlay height fit the content.")
+        #expect(session.spotlightPromptLineText == promptLine("Now make the overlay height fit the content."))
     }
 
     @Test
@@ -262,7 +268,7 @@ struct AgentSessionPresentationTests {
         )
 
         #expect(session.spotlightHeadlineText == "worktree · Commit the README change.")
-        #expect(session.spotlightPromptLineText == "You: Also confirm the worktree status.")
+        #expect(session.spotlightPromptLineText == promptLine("Also confirm the worktree status."))
         #expect(session.notificationHeaderPromptLineText == nil)
     }
 
@@ -282,8 +288,8 @@ struct AgentSessionPresentationTests {
             )
         )
 
-        #expect(session.spotlightPromptLineText == "You: Align the Codex statuses.")
-        #expect(session.spotlightActivityLineText == "Thinking")
+        #expect(session.spotlightPromptLineText == promptLine("Align the Codex statuses."))
+        #expect(session.spotlightActivityLineText == LanguageManager.shared.t("session.thinking"))
         #expect(session.displayCurrentToolName == nil)
     }
 

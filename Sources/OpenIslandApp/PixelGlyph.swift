@@ -35,37 +35,44 @@ struct PixelGlyph: Equatable {
 // MARK: - Agent marks
 
 extension PixelGlyph {
-    /// Every agent mark is 7×5 so a column of rows stays aligned.
+    /// Every agent mark is 7×5 so a column of rows stays aligned. Each one is
+    /// a pixel reduction of that agent's own brand silhouette — at this size a
+    /// recognisable outline identifies the agent faster than any lettering.
+
+    /// Anthropic's radiating asterisk.
     static let claudeCode = PixelGlyph([
+        "#..#..#",
+        ".#.#.#.",
+        "..###..",
+        ".#.#.#.",
+        "#..#..#",
+    ])
+
+    /// OpenAI's knot, reduced to a hexagonal ring with a centre.
+    static let codex = PixelGlyph([
         ".#####.",
         "##...##",
-        "##.....",
+        "#..#..#",
         "##...##",
         ".#####.",
     ])
 
-    static let codex = PixelGlyph([
-        "##...##",
-        ".##.##.",
+    /// Gemini's four-pointed spark.
+    static let gemini = PixelGlyph([
+        "...#...",
+        "..###..",
+        "#######",
+        "..###..",
+        "...#...",
+    ])
+
+    /// Cursor's cube, seen corner-on.
+    static let cursorAgent = PixelGlyph([
         "..###..",
         ".##.##.",
         "##...##",
-    ])
-
-    static let gemini = PixelGlyph([
-        "...#...",
-        ".#.#.#.",
-        "#..#..#",
-        ".#.#.#.",
-        "...#...",
-    ])
-
-    static let cursorAgent = PixelGlyph([
-        "##.....",
-        "###....",
-        "####...",
-        "##.##..",
-        "#...##.",
+        ".##.##.",
+        "..###..",
     ])
 
     static let openCode = PixelGlyph([
@@ -109,14 +116,16 @@ extension PixelGlyph {
 extension PixelGlyph {
     /// Host marks are 5×5 — narrower than the agent mark so the pair reads as
     /// "agent, running in host" rather than two peers.
+    /// A shell prompt: chevron over an underscore.
     static let terminalHost = PixelGlyph([
         "#....",
         ".#...",
-        "#....",
-        ".....",
-        ".####",
+        "..#..",
+        ".#...",
+        "#.###",
     ])
 
+    /// An editor window with its sidebar.
     static let editorHost = PixelGlyph([
         "#####",
         "#.#..",

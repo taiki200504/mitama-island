@@ -225,3 +225,13 @@
 
 /* Window Titles */
 "window.settings" = "Open Island 设置";
+
+/* Session rows */
+"session.promptPrefix" = "你：%@";
+"session.running" = "运行中";
+"session.thinking" = "思考中";
+"session.ready" = "就绪";
+"session.completed" = "已完成";
+"session.approvalNeeded" = "需要授权";
+"session.answerNeeded" = "需要回答";
+"settings.general.languageJapanese" = "日语";

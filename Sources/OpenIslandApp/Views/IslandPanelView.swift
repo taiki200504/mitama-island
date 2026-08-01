@@ -1481,11 +1481,11 @@ private struct IslandSessionRow: View {
 
     private var notificationCompletedPromptLineText: String? {
         if let prompt = session.latestUserPromptText?.trimmedForNotificationCard, !prompt.isEmpty {
-            return "You: \(prompt)"
+            return lang.t("session.promptPrefix", prompt)
         }
 
         if let prompt = session.initialUserPromptText?.trimmedForNotificationCard, !prompt.isEmpty {
-            return "You: \(prompt)"
+            return lang.t("session.promptPrefix", prompt)
         }
 
         return nil
@@ -1989,7 +1989,7 @@ private struct IslandSessionRow: View {
     /// Prompt line for manually expanded inactive rows (bypasses time-based filter).
     private var expandedPromptLineText: String? {
         guard detailOverride == true, let prompt = session.spotlightPromptText else { return nil }
-        return "You: \(prompt)"
+        return lang.t("session.promptPrefix", prompt)
     }
 
     /// Activity line for manually expanded inactive rows (bypasses time-based filter).
@@ -2000,7 +2000,7 @@ private struct IslandSessionRow: View {
         if let assistantMessage = trimmed, !assistantMessage.isEmpty {
             return IslandActivityLine(label: assistantMessage)
         }
-        return IslandActivityLine(label: session.jumpTarget != nil ? "Ready" : "Completed")
+        return IslandActivityLine(label: lang.t(session.jumpTarget != nil ? "session.ready" : "session.completed"))
     }
 
     private var resolvedActivityLine: IslandActivityLine? {

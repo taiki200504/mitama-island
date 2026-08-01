@@ -1,0 +1,237 @@
+/* Common */
+"app.name" = "Open Island";
+"app.name.oss" = "Open Island OSS";
+"app.description" = "AI コーディングエージェントのための macOS 常駐アプリ";
+
+/* Settings - Tab Labels */
+"settings.tab.general" = "一般";
+"settings.tab.display" = "ディスプレイ";
+"settings.tab.sound" = "サウンド";
+"settings.tab.shortcuts" = "ショートカット";
+"settings.tab.lab" = "ラボ";
+"settings.tab.about" = "情報";
+
+/* Settings - Section Headers */
+"settings.section.system" = "システム";
+"settings.section.advanced" = "詳細";
+
+/* Settings - General */
+"settings.general.launchAtLogin" = "ログイン時に起動";
+"settings.general.monitor" = "表示するディスプレイ";
+"settings.general.automatic" = "自動";
+"settings.general.behavior" = "動作";
+"settings.general.hideFullscreen" = "フルスクリーン中は隠す";
+"settings.general.autoHideNoSessions" = "セッションが無いときは隠す";
+"settings.general.autoCollapse" = "カーソルが離れたら閉じる";
+"settings.general.showDockIcon" = "Dock にアイコンを表示";
+"settings.general.hapticFeedback" = "ホバー時に触覚フィードバック";
+"settings.general.suppressFrontmostNotifications" = "前面のセッションは通知しない";
+"settings.general.showCodexUsage" = "Codex の使用量を表示";
+"settings.general.completionReply" = "完了カードから返信する";
+"settings.general.cliHooks" = "CLI フック";
+"settings.general.activated" = "有効";
+"settings.general.install" = "導入";
+"settings.general.uninstall" = "削除";
+"settings.general.uninstallConfirmTitle" = "フックを削除しますか？";
+"settings.general.uninstallConfirmAction" = "削除";
+"settings.general.uninstallConfirmMessage.claude" = "Claude Code から Open Island のフックを削除します。いつでも入れ直せます。";
+"settings.general.uninstallConfirmMessage.codex" = "Codex から Open Island のフックを削除します。いつでも入れ直せます。";
+"settings.general.uninstallConfirmMessage.claudeUsage" = "Claude の使用量ブリッジを削除します。いつでも入れ直せます。";
+"settings.general.cancel" = "キャンセル";
+"settings.general.language" = "言語";
+"settings.general.languageSystem" = "システムに合わせる";
+"settings.general.languageEnglish" = "English";
+"settings.general.languageChinese" = "简体中文";
+"settings.general.languageTraditionalChinese" = "繁體中文";
+"settings.general.languageJapanese" = "日本語";
+
+/* Settings - Personalization (v6) */
+"settings.tab.appearance" = "外観";
+"settings.appearance.preview" = "プレビュー";
+"settings.appearance.preview.external" = "外部ディスプレイ";
+"settings.appearance.preview.macbook" = "MacBook";
+"settings.appearance.state.idle" = "待機";
+"settings.appearance.state.running" = "実行中";
+"settings.appearance.state.waiting" = "確認待ち";
+"settings.appearance.state.auto.on" = "自動 ✓";
+"settings.appearance.state.auto.off" = "自動";
+"settings.appearance.rightSlot.title" = "01 ・ 右側の表示";
+"settings.appearance.rightSlot.note" = "閉じた島の右側に何を出すか。";
+"settings.appearance.rightSlot.count" = "件数";
+"settings.appearance.rightSlot.agents" = "エージェント";
+"settings.appearance.rightSlot.none" = "なし";
+"settings.appearance.centerLabel.title" = "02 ・ 中央のラベル";
+"settings.appearance.centerLabel.note" = "外部ディスプレイ専用。MacBook では物理ノッチがこの位置を覆います。";
+"settings.appearance.centerLabel.agentAction" = "エージェント ・ 動作";
+"settings.appearance.centerLabel.sessionName" = "セッション名";
+"settings.appearance.centerLabel.off" = "なし";
+"settings.appearance.notchPart.title" = "ノッチ";
+"settings.appearance.sessionListPart.title" = "セッション一覧";
+"settings.appearance.sessionPreview" = "プレビュー";
+"settings.appearance.profile.title" = "ディスプレイ別の設定";
+"settings.appearance.profile.note" = "設定する画面の種類を選びます。島が移動すると、対応する設定が自動で適用されます。";
+"settings.appearance.profile.external.title" = "外部ディスプレイ";
+"settings.appearance.profile.external.note" = "ノッチの角を持たない上部バー表示。";
+"settings.appearance.profile.macbook.title" = "MacBook のノッチ";
+"settings.appearance.profile.macbook.note" = "内蔵ノッチに合わせた形状で表示します。";
+"settings.appearance.usageDisplay.title" = "02 ・ 使用量";
+"settings.appearance.usageDisplay.note" = "開いた島にエージェントの使用量を出すかどうか。";
+"settings.appearance.usageDisplay.hidden" = "非表示";
+"settings.appearance.usageDisplay.compact" = "コンパクト";
+"settings.appearance.stateIndicator.title" = "03 ・ セッションの状態";
+"settings.appearance.stateIndicator.note" = "実行中・確認待ち・完了を行でどう示すか。";
+"settings.appearance.stateIndicator.animatedDot" = "点滅ドット";
+"settings.appearance.stateIndicator.bar" = "バー";
+"settings.appearance.stateIndicator.glyph" = "ピクセル字形";
+"settings.appearance.stateIndicator.tint" = "色のみ";
+"settings.appearance.sessionGroup.title" = "04 ・ セッションの分類";
+"settings.appearance.sessionGroup.note" = "展開した一覧を区切るかどうか。";
+"settings.appearance.sessionGroup.none" = "分けない";
+"settings.appearance.sessionGroup.state" = "状態";
+"settings.appearance.sessionGroup.agent" = "エージェント";
+"settings.appearance.sessionGroup.project" = "プロジェクト";
+"settings.appearance.sessionSort.title" = "05 ・ 並び順";
+"settings.appearance.sessionSort.note" = "展開した一覧の既定の並び順。";
+"settings.appearance.sessionSort.attention" = "要対応を優先";
+"settings.appearance.sessionSort.lastUpdate" = "更新順";
+"settings.appearance.staleThreshold.title" = "06 ・ 完了を畳むまで";
+"settings.appearance.staleThreshold.note" = "完了したセッションは、この時間が過ぎると控えめな表示に変わります。";
+"settings.appearance.staleThreshold.twoMinutes" = "2分";
+"settings.appearance.staleThreshold.fiveMinutes" = "5分";
+"settings.appearance.staleThreshold.tenMinutes" = "10分";
+"settings.appearance.staleThreshold.twentyMinutes" = "20分";
+"settings.appearance.staleThreshold.never" = "畳まない";
+"settings.appearance.preview.permissionNeeded" = "承認が必要です";
+"settings.appearance.preview.agentEditing" = "Claude ・ 編集中";
+"settings.appearance.preview.approveShellCommand" = "シェルコマンドを承認";
+"settings.appearance.preview.promptImplementPlan" = "あなた： 計画を実装して";
+"settings.appearance.preview.waitingForAnswer" = "回答待ちです";
+"settings.appearance.preview.promptChooseNotificationCopy" = "あなた： 通知の文言を選んで";
+"settings.appearance.preview.editingSessionListPreview" = "セッション一覧のプレビューを編集中";
+"settings.appearance.preview.promptTightenSettingsUI" = "あなた： 設定画面を整理して";
+"settings.appearance.preview.replyAvailable" = "返信できます";
+"settings.appearance.preview.promptSummarizeDesignBundle" = "あなた： デザイン資料を要約して";
+"settings.appearance.preview.completedEarlier" = "先ほど完了";
+"settings.appearance.preview.permissionBody" = "$ npm run build";
+"settings.appearance.preview.pickOrTypeAnswer" = "選ぶか入力してください";
+
+/* Settings - Display */
+"settings.display.monitor" = "ディスプレイ";
+"settings.display.position" = "表示位置";
+"settings.display.diagnostics" = "診断";
+"settings.display.currentScreen" = "現在の画面";
+"settings.display.layoutMode" = "レイアウト";
+
+/* Settings - Sound */
+"settings.sound.notifications" = "通知サウンド";
+"settings.sound.mute" = "ミュート";
+"settings.sound.selectSound" = "サウンドを選択";
+
+/* Settings - Setup */
+"settings.tab.setup" = "セットアップ";
+"setup.section.binary" = "フック用バイナリ";
+"setup.claudeConfigDir.section" = "Claude の設定ディレクトリ";
+"setup.claudeConfigDir.title" = "設定ディレクトリ";
+"setup.claudeConfigDir.choose" = "選択…";
+"setup.claudeConfigDir.reset" = "既定に戻す";
+"setup.claudeConfigDir.footer" = "CLAUDE_CONFIG_DIR を指定して Claude Code を使っている場合のみ変更してください。";
+"setup.section.hooks" = "CLI フック";
+"setup.section.usage" = "使用量ブリッジ";
+"setup.section.permissions" = "アクセス権";
+"setup.binaryReady" = "準備完了";
+"setup.binaryMissing" = "見つかりません — 先に OpenIslandHooks をビルドしてください";
+"setup.hookReady" = "フック導入済み";
+"setup.hookMissing" = "フック未導入";
+"setup.usageBridge" = "Claude 使用量ブリッジ";
+"setup.usageBridgeReady" = "導入済み";
+"setup.usageBridgeDesc" = "Claude の使用量をローカルで記録します";
+"setup.optional" = "任意";
+"setup.permissionsTitle" = "アクセシビリティ";
+"setup.permissionsDesc" = "ターミナルのウインドウを特定するために、アクセシビリティの許可が必要になることがあります。システム設定 → プライバシーとセキュリティ → アクセシビリティ で許可してください。";
+"setup.installAll" = "すべて導入";
+"setup.banner.noHooks.title" = "Open Island を使いはじめる";
+"setup.banner.noHooks.message" = "使っているエージェントのフックを下から導入してください。導入したセッションの監視が始まります。";
+"setup.revealConfigLocation" = "設定ファイルを Finder で表示";
+"setup.section.diagnostics" = "フックの診断";
+"setup.diagnostics.notRun" = "まだ診断していません。";
+"setup.diagnostics.runCheck" = "診断する";
+"setup.diagnostics.recheck" = "再診断";
+"setup.diagnostics.repair" = "フックを修復";
+"setup.diagnostics.allHealthy" = "フックはすべて正常です。";
+
+/* Settings - Placeholder */
+"settings.shortcuts.comingSoon" = "キーボードショートカットは準備中です。";
+"settings.lab.comingSoon" = "実験的な機能は準備中です。";
+
+/* Settings - About */
+"settings.about.version" = "バージョン %@";
+"settings.about.checkForUpdates" = "アップデートを確認…";
+"settings.about.quitApp" = "Open Island を終了";
+"island.quit.confirmTitle" = "Open Island を終了しますか？";
+"island.quit.confirmAction" = "終了";
+"island.quit.confirmMessage" = "終了してよろしいですか？";
+
+/* Settings - Update */
+"settings.update.available" = "v%@ が利用できます — 更新";
+
+/* Island Panel - Bootstrap */
+"island.checkingTerminals" = "開いているターミナルを確認中";
+"island.terminalOwnership" = "ターミナルの対応づけが済むと、稼働中のエージェントが表示されます";
+"island.noTerminals" = "開いているターミナルがありません";
+"island.startAgent" = "ターミナルでコーディングエージェントを起動してください";
+"island.recentSessions" = "最近のセッションは、ターミナルを開き直すまでここに残ります";
+"island.hint.installHooks" = "フックが未導入です。このままではイベントを受け取れません。タップして設定します。";
+
+/* Island Panel - Session List */
+"island.sessionList.title" = "セッション";
+"island.sessionOverview.total" = "件";
+"island.sessionOverview.waiting" = "確認待ち";
+"island.sessionOverview.waitingCompact" = "確認";
+"island.sessionOverview.running" = "実行中";
+"island.sessionOverview.runningCompact" = "実行";
+"island.sessionOverview.done" = "完了";
+"island.sessionOverview.idle" = "待機";
+"island.section.sessions" = "セッション";
+"island.section.needsApproval" = "承認が必要";
+"island.section.needsAnswer" = "回答が必要";
+"island.section.inProgress" = "実行中";
+"island.section.justDone" = "完了したばかり";
+"island.section.idle" = "待機中";
+"island.showAll" = "%lld 件すべて表示";
+"island.collapseList" = "一覧を畳む";
+"island.usageWaiting" = "使用量を取得中";
+
+/* Island Panel - Approval */
+"approval.toolPermissionRequested" = "ツールの実行許可を求めています";
+"approval.deny" = "いいえ";
+"approval.allowOnce" = "はい";
+"approval.alwaysAllow" = "常に許可（%@）";
+
+
+/* Island Panel - Subagents & Tasks */
+"subagents.title" = "サブエージェント（%lld）";
+"subagents.completed" = "完了";
+"tasks.summary" = "タスク（完了 %lld ・ 進行中 %lld ・ 未着手 %lld）";
+
+/* Island Panel - Question */
+"question.submit" = "回答を送信";
+"question.answerNeeded" = "回答が必要です";
+"question.otherPlaceholder" = "回答を入力…";
+"question.sendReply" = "返信する";
+"question.sendAnswer" = "回答する";
+
+/* Island Panel - Completion */
+"completion.done" = "完了";
+"completion.replyPlaceholder" = "%@ に返信…";
+
+/* Session rows */
+"session.promptPrefix" = "あなた： %@";
+"session.running" = "実行中";
+"session.thinking" = "考えています";
+"session.ready" = "準備完了";
+"session.completed" = "完了";
+"session.approvalNeeded" = "承認が必要";
+"session.answerNeeded" = "回答が必要";
+
+/* Window Titles */
+"window.settings" = "Open Island 設定";

@@ -200,6 +200,7 @@ struct GeneralSettingsPane: View {
                 )) {
                     Text(lang.t("settings.general.languageSystem")).tag(LanguageManager.AppLanguage.system)
                     Text(lang.t("settings.general.languageEnglish")).tag(LanguageManager.AppLanguage.en)
+                    Text(lang.t("settings.general.languageJapanese")).tag(LanguageManager.AppLanguage.ja)
                     Text(lang.t("settings.general.languageChinese")).tag(LanguageManager.AppLanguage.zhHans)
                     Text(lang.t("settings.general.languageTraditionalChinese")).tag(LanguageManager.AppLanguage.zhHant)
                 }

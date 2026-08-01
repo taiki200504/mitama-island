@@ -214,7 +214,7 @@ extension AgentSession {
             return nil
         }
 
-        return "You: \(prompt)"
+        return LanguageManager.shared.t("session.promptPrefix", prompt)
     }
 
     var completionReplyRecipientName: String {
@@ -274,18 +274,18 @@ extension AgentSession {
             if let activity = spotlightRunningActivityLine {
                 return activity
             }
-            return IslandActivityLine(label: spotlightPromptLineText == nil ? "Running" : "Thinking")
+            return IslandActivityLine(label: LanguageManager.shared.t(spotlightPromptLineText == nil ? "session.running" : "session.thinking"))
         case .waitingForApproval:
-            return IslandActivityLine(label: permissionRequest?.summary.trimmedForSurface ?? "Approval needed")
+            return IslandActivityLine(label: permissionRequest?.summary.trimmedForSurface ?? LanguageManager.shared.t("session.approvalNeeded"))
         case .waitingForAnswer:
-            return IslandActivityLine(label: questionPrompt?.title.trimmedForSurface ?? "Answer needed")
+            return IslandActivityLine(label: questionPrompt?.title.trimmedForSurface ?? LanguageManager.shared.t("session.answerNeeded"))
         case .completed:
             if let assistantMessage = lastAssistantMessageText?.trimmedForSurface,
                !assistantMessage.isEmpty {
                 return IslandActivityLine(label: assistantMessage)
             }
 
-            return IslandActivityLine(label: jumpTarget != nil ? "Ready" : "Completed")
+            return IslandActivityLine(label: LanguageManager.shared.t(jumpTarget != nil ? "session.ready" : "session.completed"))
         }
     }
 
