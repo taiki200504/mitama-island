@@ -73,10 +73,16 @@ extension AgentSession {
 
 // MARK: - Animations
 
-private let openAnimation = Animation.spring(response: 0.42, dampingFraction: 0.8, blendDuration: 0)
-private let closeAnimation = Animation.smooth(duration: 0.3)
+// Timings measured off a 120fps capture of the reference product: the panel
+// grows for ~225ms with a decelerating curve and no overshoot, and collapses
+// in ~150ms. The previous 0.42s response felt soft and lagged the pointer;
+// 0.3s response at high damping lands on the same wall-clock duration.
+private let openAnimation = Animation.spring(response: 0.3, dampingFraction: 0.9, blendDuration: 0)
+private let closeAnimation = Animation.smooth(duration: 0.15)
 private let popAnimation = Animation.spring(response: 0.3, dampingFraction: 0.5)
-private let openedSurfaceUnmountDelay: TimeInterval = 0.36
+// Slightly longer than `closeAnimation` so the collapse is never cut off
+// mid-shrink by the surface being torn down.
+private let openedSurfaceUnmountDelay: TimeInterval = 0.22
 
 private struct ConditionalDrawingGroup: ViewModifier {
     let enabled: Bool
