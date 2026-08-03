@@ -6,12 +6,23 @@ import OpenIslandCore
 
 @MainActor
 struct AgentsGridRightSlotTests {
+    /// The runtime appearance profile is derived from live overlay placement,
+    /// which settles asynchronously and differs per machine, so assigning through
+    /// `model.islandRightSlot` only reaches whichever profile happens to be active
+    /// at that instant. Pinning every profile keeps these tests independent of the
+    /// display the suite runs on.
+    private func pinRightSlot(_ model: AppModel, _ slot: IslandRightSlot) {
+        for profile in IslandAppearanceDisplayProfile.allCases {
+            model.updateAppearancePreferences(for: profile) { $0.rightSlot = slot }
+        }
+    }
+
     /// At bulk first observation (e.g. app launch) ties are broken by
     /// session.firstSeenAt so historical order is preserved.
     @Test
     func bulkFirstObservationOrdersByHistoricalFirstSeenAt() {
         let model = AppModel()
-        model.islandRightSlot = .agents
+        pinRightSlot(model, .agents)
 
         let now = Date(timeIntervalSince1970: 100_000)
         let sessionA = makeSession(id: "A", firstSeenAt: now,                       updatedAt: now.addingTimeInterval(60))
@@ -46,7 +57,7 @@ struct AgentsGridRightSlotTests {
     @Test
     func newlyObservedSessionAlwaysLandsAtTheEndRegardlessOfHistoricalTime() {
         let model = AppModel()
-        model.islandRightSlot = .agents
+        pinRightSlot(model, .agents)
 
         let now = Date(timeIntervalSince1970: 200_000)
         let sessionA = makeSession(id: "A", firstSeenAt: now,                       updatedAt: now)
@@ -79,7 +90,7 @@ struct AgentsGridRightSlotTests {
     @Test
     func returningSessionKeepsItsOriginalSlot() {
         let model = AppModel()
-        model.islandRightSlot = .agents
+        pinRightSlot(model, .agents)
 
         let now = Date(timeIntervalSince1970: 300_000)
         let sessionA = makeSession(id: "A", firstSeenAt: now,                       updatedAt: now)
@@ -110,7 +121,7 @@ struct AgentsGridRightSlotTests {
     @Test
     func moreThanNineSessionsFoldIntoOverflow() {
         let model = AppModel()
-        model.islandRightSlot = .agents
+        pinRightSlot(model, .agents)
         let now = Date(timeIntervalSince1970: 200_000)
 
         var sessions: [AgentSession] = []
@@ -141,7 +152,7 @@ struct AgentsGridRightSlotTests {
     @Test
     func cellStateReflectsSessionPhase() {
         let model = AppModel()
-        model.islandRightSlot = .agents
+        pinRightSlot(model, .agents)
         let now = Date(timeIntervalSince1970: 300_000)
 
         let running  = makeSession(id: "r", firstSeenAt: now,                         updatedAt: now, phase: .running)

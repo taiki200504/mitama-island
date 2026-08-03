@@ -262,10 +262,32 @@ struct AppModelSessionListTests {
         #expect(!model.shouldShowSessionBootstrapPlaceholder)
     }
 
+    /// The runtime appearance profile is derived from live overlay placement,
+    /// which settles asynchronously and differs per machine. Assigning through
+    /// `model.islandSessionGroup` and friends only touches whichever profile is
+    /// active at that instant, so an expectation written that way passes on a
+    /// machine with one display and fails on another. Pinning every profile keeps
+    /// these tests independent of the hardware the suite happens to run on.
+    private func pinAppearance(
+        _ model: AppModel,
+        group: IslandSessionGroup? = nil,
+        sort: IslandSessionSort? = nil,
+        staleThreshold: IslandCompletedStaleThreshold? = nil
+    ) {
+        for profile in IslandAppearanceDisplayProfile.allCases {
+            model.updateAppearancePreferences(for: profile) { preferences in
+                if let group { preferences.sessionGroup = group }
+                if let sort { preferences.sessionSort = sort }
+                if let staleThreshold { preferences.completedStaleThreshold = staleThreshold }
+            }
+        }
+    }
+
     @Test
     func freshCompletedSessionsSortAheadOfV8StaleCompletedSessions() {
         let now = Date()
         let model = AppModel()
+        pinAppearance(model, group: .none, sort: .attention, staleThreshold: .fiveMinutes)
 
         var staleCompleted = AgentSession(
             id: "stale-completed",
@@ -314,8 +336,7 @@ struct AppModelSessionListTests {
     func islandSessionSectionsGroupStaleCompletedIntoIdle() {
         let now = Date()
         let model = AppModel()
-        model.islandSessionGroup = .state
-        model.completedStaleThreshold = .fiveMinutes
+        pinAppearance(model, group: .state, staleThreshold: .fiveMinutes)
 
         var approval = listSession(id: "approval", phase: .waitingForApproval, updatedAt: now)
         approval.permissionRequest = PermissionRequest(
@@ -340,8 +361,7 @@ struct AppModelSessionListTests {
     func islandSessionSectionsKeepCompletedInDoneWhenStaleThresholdIsNever() {
         let now = Date()
         let model = AppModel()
-        model.islandSessionGroup = .state
-        model.completedStaleThreshold = .never
+        pinAppearance(model, group: .state, staleThreshold: .never)
 
         var oldDone = listSession(id: "old-done", phase: .completed, updatedAt: now.addingTimeInterval(-86_400))
         oldDone.isProcessAlive = true
@@ -355,7 +375,7 @@ struct AppModelSessionListTests {
     func islandSessionListCanSortByLastUpdate() {
         let now = Date()
         let model = AppModel()
-        model.islandSessionSort = .lastUpdate
+        pinAppearance(model, group: .none, sort: .lastUpdate)
 
         var olderRunning = listSession(id: "older-running", phase: .running, updatedAt: now.addingTimeInterval(-120))
         var newerCompleted = listSession(id: "newer-completed", phase: .completed, updatedAt: now.addingTimeInterval(-10))
