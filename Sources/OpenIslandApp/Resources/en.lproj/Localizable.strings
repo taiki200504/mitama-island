@@ -308,3 +308,30 @@
 "settings.behaviour.idleCleanup.twentyFourHours" = "24 hours";
 "settings.general.section.mitama" = "Mitama Island only";
 "settings.seconds.format" = "%@s";
+
+/* Display pane */
+"settings.display.section.layout" = "Layout";
+"settings.display.section.panelSize" = "Panel size";
+"settings.display.section.notch" = "Notch calibration";
+"settings.display.section.sessionCard" = "Session card";
+"settings.display.contentFontSize" = "Content font size";
+"settings.display.maxPanelHeight" = "Maximum panel height";
+"settings.display.maxPanelWidth" = "Maximum panel width";
+"settings.display.completionCardHeight" = "Completion card height";
+"settings.display.notchHeight" = "Notch height";
+"settings.display.notchWidth" = "Notch width";
+"settings.display.notch.help" = "Only needed if the island does not sit flush on your machine. Zero uses the value macOS reports.";
+"settings.display.showProjectName" = "Show project name";
+"settings.display.showWorktree" = "Show worktree";
+"settings.display.showModel" = "Show the model";
+"settings.display.showReasoningEffort" = "Show reasoning effort";
+"settings.display.showTasks" = "Show the task list";
+"settings.display.showTasks.help" = "Adds the task checklist to each session card.";
+"settings.display.showSubagents" = "Show subagents";
+"settings.display.showSubagents.help" = "Approvals and questions stay visible either way.";
+"settings.display.showAgentActivity" = "Show what the agent is doing";
+"settings.pending.contentTypographyScale" = "Needs the panel's type scale to be driven from one place.";
+"settings.pending.completionCardSizing" = "The completion card sizes itself to its content today.";
+"settings.pending.notchCalibration" = "Needs the notch geometry to accept an override.";
+"settings.pending.reasoningEffortMetadata" = "The session record does not carry these facts yet.";
+"settings.points.format" = "%@pt";

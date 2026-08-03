@@ -85,39 +85,6 @@ struct SettingsView: View {
     }
 }
 
-// MARK: - Display
-
-struct DisplaySettingsPane: View {
-    var model: AppModel
-
-    private var lang: LanguageManager { model.lang }
-
-    var body: some View {
-        Form {
-            Section(lang.t("settings.display.monitor")) {
-                Picker(lang.t("settings.display.position"), selection: Binding(
-                    get: { model.overlayDisplaySelectionID },
-                    set: { model.overlayDisplaySelectionID = $0 }
-                )) {
-                    Text(lang.t("settings.general.automatic")).tag(OverlayDisplayOption.automaticID)
-                    ForEach(model.overlayDisplayOptions) { option in
-                        Text(option.title).tag(option.id)
-                    }
-                }
-            }
-
-            if let diag = model.overlayPlacementDiagnostics {
-                Section(lang.t("settings.display.diagnostics")) {
-                    LabeledContent(lang.t("settings.display.currentScreen"), value: diag.targetScreenName)
-                    LabeledContent(lang.t("settings.display.layoutMode"), value: diag.modeDescription)
-                }
-            }
-        }
-        .formStyle(.grouped)
-        .navigationTitle(lang.t("settings.tab.display"))
-    }
-}
-
 // MARK: - Sound
 
 struct SoundSettingsPane: View {

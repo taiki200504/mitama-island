@@ -131,6 +131,15 @@ extension AgentSession {
         jumpTarget?.terminalApp
     }
 
+    /// The project a session belongs to, when it can be named without guessing.
+    var spotlightProjectBadge: String? {
+        guard let workspaceName = jumpTarget?.workspaceName.trimmedForSurface,
+              !workspaceName.isEmpty else {
+            return nil
+        }
+        return workspaceName
+    }
+
     var spotlightWorkspaceName: String {
         if let workspaceName = jumpTarget?.workspaceName.trimmedForSurface,
            !workspaceName.isEmpty {

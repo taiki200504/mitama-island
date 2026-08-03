@@ -308,3 +308,30 @@
 "settings.behaviour.idleCleanup.twentyFourHours" = "24 小时";
 "settings.general.section.mitama" = "Mitama Island 专属";
 "settings.seconds.format" = "%@ 秒";
+
+/* Display pane */
+"settings.display.section.layout" = "布局";
+"settings.display.section.panelSize" = "面板尺寸";
+"settings.display.section.notch" = "刘海微调";
+"settings.display.section.sessionCard" = "会话卡片";
+"settings.display.contentFontSize" = "内容字号";
+"settings.display.maxPanelHeight" = "面板最大高度";
+"settings.display.maxPanelWidth" = "面板最大宽度";
+"settings.display.completionCardHeight" = "完成卡片高度";
+"settings.display.notchHeight" = "刘海高度";
+"settings.display.notchWidth" = "刘海宽度";
+"settings.display.notch.help" = "仅在灵动岛在您的机器上未对齐时使用。0 表示采用 macOS 报告的值。";
+"settings.display.showProjectName" = "显示项目名称";
+"settings.display.showWorktree" = "显示工作树";
+"settings.display.showModel" = "显示模型";
+"settings.display.showReasoningEffort" = "显示推理强度";
+"settings.display.showTasks" = "显示任务列表";
+"settings.display.showTasks.help" = "在每张会话卡片上加入任务清单。";
+"settings.display.showSubagents" = "显示子代理";
+"settings.display.showSubagents.help" = "无论如何设置，审批与问题都会显示。";
+"settings.display.showAgentActivity" = "显示代理正在做什么";
+"settings.pending.contentTypographyScale" = "需要将面板字号统一到一处控制。";
+"settings.pending.completionCardSizing" = "完成卡片目前会根据内容自动确定高度。";
+"settings.pending.notchCalibration" = "需要刘海尺寸支持覆盖设置。";
+"settings.pending.reasoningEffortMetadata" = "会话记录尚未包含这些信息。";
+"settings.points.format" = "%@pt";

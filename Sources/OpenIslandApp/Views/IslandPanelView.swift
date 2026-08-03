@@ -51,23 +51,71 @@ private struct AutoHeightScrollView<Content: View>: View {
 
 extension AgentSession {
     /// Estimated row height matching `IslandSessionRow` layout for viewport sizing.
-    func estimatedIslandRowHeight(at date: Date) -> CGFloat {
+    func estimatedIslandRowHeight(
+        at date: Date,
+        fields: IslandSessionCardFields = .all
+    ) -> CGFloat {
         let presence = islandPresence(at: date)
         // v8 list rows are full-width scan rows, not rounded cards.
         // Base: vertical padding (22) + headline (~17) + divider rounding.
         var height: CGFloat = 40
         guard presence != .inactive else { return height }
         if spotlightPromptLineText != nil { height += 17 }
-        if spotlightActivityLineText != nil { height += 20 }
-        if let subagents = claudeMetadata?.activeSubagents, !subagents.isEmpty {
+        if fields.showsAgentActivity, spotlightActivityLineText != nil { height += 20 }
+        if fields.showsSubagents,
+           let subagents = claudeMetadata?.activeSubagents, !subagents.isEmpty {
             height += 18
             height += CGFloat(subagents.count) * 18  // each subagent row (spacing 4 + text 14)
         }
-        if let tasks = claudeMetadata?.activeTasks, !tasks.isEmpty {
+        if fields.showsTasks,
+           let tasks = claudeMetadata?.activeTasks, !tasks.isEmpty {
             height += 17
             height += CGFloat(tasks.count) * 16  // each task row (spacing 3 + text 13)
         }
         return height
+    }
+}
+
+/// Which optional facts a session row is allowed to carry.
+///
+/// Defaults to showing everything, so a caller that does not care — a preview, a
+/// test, the notification card — keeps the behaviour the row always had.
+struct IslandSessionCardFields: Equatable, Sendable {
+    var showsTasks: Bool = true
+    var showsSubagents: Bool = true
+    var showsAgentActivity: Bool = true
+    var showsProjectName: Bool = false
+    var showsWorktree: Bool = false
+    var showsModel: Bool = false
+
+    static let all = IslandSessionCardFields()
+
+    init(
+        showsTasks: Bool = true,
+        showsSubagents: Bool = true,
+        showsAgentActivity: Bool = true,
+        showsProjectName: Bool = false,
+        showsWorktree: Bool = false,
+        showsModel: Bool = false
+    ) {
+        self.showsTasks = showsTasks
+        self.showsSubagents = showsSubagents
+        self.showsAgentActivity = showsAgentActivity
+        self.showsProjectName = showsProjectName
+        self.showsWorktree = showsWorktree
+        self.showsModel = showsModel
+    }
+
+    @MainActor
+    init(display: DisplaySettings) {
+        self.init(
+            showsTasks: display.showTasks,
+            showsSubagents: display.showSubagents,
+            showsAgentActivity: display.showAgentActivity,
+            showsProjectName: display.showProjectName,
+            showsWorktree: display.showWorktree,
+            showsModel: display.showModel
+        )
     }
 }
 
@@ -523,7 +571,13 @@ struct IslandPanelView: View {
         model.notchOpenReason == .notification && actionableSessionID != nil
     }
 
-    private static let maxSessionListHeight: CGFloat = 560
+    private var maxSessionListHeight: CGFloat {
+        model.settings.display.maxPanelHeight
+    }
+
+    private var cardFields: IslandSessionCardFields {
+        IslandSessionCardFields(display: model.settings.display)
+    }
 
     private var sessionListSideInset: CGFloat {
         usesNotchAwareOpenedHeader ? 46 : 16
@@ -592,6 +646,7 @@ struct IslandPanelView: View {
                     isInteractive: model.notchStatus == .opened,
                     presentation: .notification,
                     sideInset: sessionListSideInset,
+                    cardFields: cardFields,
                     lang: model.lang,
                     onApprove: { model.approvePermission(for: session.id, action: $0) },
                     onAnswer: { model.answerQuestion(for: session.id, answer: $0) },
@@ -633,6 +688,7 @@ struct IslandPanelView: View {
                                 useDrawingGroup: model.notchStatus == .opened,
                                 isInteractive: model.notchStatus == .opened,
                                 sideInset: sessionListSideInset,
+                                cardFields: cardFields,
                                 lang: model.lang,
                                 onApprove: { model.approvePermission(for: session.id, action: $0) },
                                 onAnswer: { model.answerQuestion(for: session.id, answer: $0) },
@@ -683,6 +739,7 @@ struct IslandPanelView: View {
                         useDrawingGroup: model.notchStatus == .opened,
                         isInteractive: model.notchStatus == .opened,
                         sideInset: sessionListSideInset,
+                        cardFields: cardFields,
                         lang: model.lang,
                         onApprove: { model.approvePermission(for: session.id, action: $0) },
                         onAnswer: { model.answerQuestion(for: session.id, answer: $0) },
@@ -1197,6 +1254,7 @@ private struct IslandSessionRow: View {
     var isInteractive: Bool = true
     var presentation: IslandSessionRowPresentation = .list
     var sideInset: CGFloat = 16
+    var cardFields: IslandSessionCardFields = .all
     var lang: LanguageManager = .shared
     var onApprove: ((ApprovalAction) -> Void)?
     var onAnswer: ((QuestionPromptResponse) -> Void)?
@@ -1305,6 +1363,17 @@ private struct IslandSessionRow: View {
             Spacer(minLength: 10)
 
             HStack(spacing: 6) {
+                if cardFields.showsProjectName, let project = session.spotlightProjectBadge {
+                    sideBadge(project)
+                }
+                if cardFields.showsWorktree, let branch = session.claudeMetadata?.worktreeBranch,
+                   !branch.isEmpty {
+                    sideBadge(branch)
+                }
+                if cardFields.showsModel, let model = session.claudeMetadata?.model,
+                   !model.isEmpty {
+                    sideBadge(model)
+                }
                 agentBadge
                 if session.isRemote {
                     sideBadge("SSH")
@@ -1335,7 +1404,8 @@ private struct IslandSessionRow: View {
 
     @ViewBuilder
     private func rowAuxiliaryDetails(presence: IslandSessionPresence) -> some View {
-        if !shouldShowEmbeddedDetailBody,
+        if cardFields.showsAgentActivity,
+           !shouldShowEmbeddedDetailBody,
            let activityLine = resolvedActivityLine {
             Group {
                 if activityLine.isToolInvocation {
@@ -1362,7 +1432,8 @@ private struct IslandSessionRow: View {
             .padding(.bottom, 10)
         }
 
-        if let subagents = session.claudeMetadata?.activeSubagents,
+        if cardFields.showsSubagents,
+           let subagents = session.claudeMetadata?.activeSubagents,
            !subagents.isEmpty {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 5) {
@@ -1410,7 +1481,8 @@ private struct IslandSessionRow: View {
             .padding(.bottom, 10)
         }
 
-        if let tasks = session.claudeMetadata?.activeTasks,
+        if cardFields.showsTasks,
+           let tasks = session.claudeMetadata?.activeTasks,
            !tasks.isEmpty {
             VStack(alignment: .leading, spacing: 3) {
                 Text(taskSummary(tasks))

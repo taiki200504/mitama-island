@@ -53,6 +53,12 @@ enum PendingCapability: String, CaseIterable, Sendable {
     case accessibilityApprovalScan
     case memoryWatchdog
 
+    // Panel presentation
+    case contentTypographyScale
+    case completionCardSizing
+    case notchCalibration
+    case reasoningEffortMetadata
+
     // Shell
     case menuBarLayoutModes
     case followFocusDisplay

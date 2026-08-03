@@ -5,7 +5,7 @@
 
 /* Settings - Tab Labels */
 "settings.tab.general" = "一般";
-"settings.tab.display" = "ディスプレイ";
+"settings.tab.display" = "表示";
 "settings.tab.sound" = "サウンド";
 "settings.tab.shortcuts" = "ショートカット";
 "settings.tab.lab" = "ラボ";
@@ -308,3 +308,30 @@
 "settings.behaviour.idleCleanup.twentyFourHours" = "24時間";
 "settings.general.section.mitama" = "Mitama Island 独自";
 "settings.seconds.format" = "%@秒";
+
+/* Display pane */
+"settings.display.section.layout" = "レイアウト";
+"settings.display.section.panelSize" = "パネルサイズ";
+"settings.display.section.notch" = "ノッチの微調整";
+"settings.display.section.sessionCard" = "セッションカード";
+"settings.display.contentFontSize" = "本文のフォントサイズ";
+"settings.display.maxPanelHeight" = "パネルの最大高さ";
+"settings.display.maxPanelWidth" = "パネルの最大幅";
+"settings.display.completionCardHeight" = "完了カードの高さ";
+"settings.display.notchHeight" = "ノッチの高さ";
+"settings.display.notchWidth" = "ノッチの幅";
+"settings.display.notch.help" = "島の位置が機種によってずれるときだけ使う。0 なら macOS が返す値をそのまま使う。";
+"settings.display.showProjectName" = "プロジェクト名を表示";
+"settings.display.showWorktree" = "ワークツリーを表示";
+"settings.display.showModel" = "モデル名を表示";
+"settings.display.showReasoningEffort" = "推論強度を表示";
+"settings.display.showTasks" = "タスクリストを表示";
+"settings.display.showTasks.help" = "各セッションカードにタスクのチェックリストを出す。";
+"settings.display.showSubagents" = "サブエージェントを表示";
+"settings.display.showSubagents.help" = "承認と質問はどちらの設定でも表示される。";
+"settings.display.showAgentActivity" = "エージェントの作業内容を表示";
+"settings.pending.contentTypographyScale" = "パネルの文字サイズを一箇所から決める作りに直す必要があります。";
+"settings.pending.completionCardSizing" = "完了カードは今は内容に合わせて高さが決まります。";
+"settings.pending.notchCalibration" = "ノッチの寸法を上書きできる作りが要ります。";
+"settings.pending.reasoningEffortMetadata" = "セッションの情報にこれらの項目がまだ入っていません。";
+"settings.points.format" = "%@pt";

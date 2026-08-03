@@ -307,3 +307,30 @@
 "settings.behaviour.idleCleanup.twentyFourHours" = "24 小時";
 "settings.general.section.mitama" = "Mitama Island 專屬";
 "settings.seconds.format" = "%@ 秒";
+
+/* Display pane */
+"settings.display.section.layout" = "版面";
+"settings.display.section.panelSize" = "面板尺寸";
+"settings.display.section.notch" = "瀏海微調";
+"settings.display.section.sessionCard" = "工作階段卡片";
+"settings.display.contentFontSize" = "內容字級";
+"settings.display.maxPanelHeight" = "面板最大高度";
+"settings.display.maxPanelWidth" = "面板最大寬度";
+"settings.display.completionCardHeight" = "完成卡片高度";
+"settings.display.notchHeight" = "瀏海高度";
+"settings.display.notchWidth" = "瀏海寬度";
+"settings.display.notch.help" = "僅在島在您的機器上未對齊時使用。0 表示採用 macOS 回報的值。";
+"settings.display.showProjectName" = "顯示專案名稱";
+"settings.display.showWorktree" = "顯示工作樹";
+"settings.display.showModel" = "顯示模型";
+"settings.display.showReasoningEffort" = "顯示推理強度";
+"settings.display.showTasks" = "顯示任務列表";
+"settings.display.showTasks.help" = "在每張工作階段卡片上加入任務清單。";
+"settings.display.showSubagents" = "顯示子代理";
+"settings.display.showSubagents.help" = "無論如何設定，審批與問題都會顯示。";
+"settings.display.showAgentActivity" = "顯示代理正在做什麼";
+"settings.pending.contentTypographyScale" = "需要將面板字級統一由一處控制。";
+"settings.pending.completionCardSizing" = "完成卡片目前會依內容自動決定高度。";
+"settings.pending.notchCalibration" = "需要瀏海尺寸支援覆寫設定。";
+"settings.pending.reasoningEffortMetadata" = "工作階段紀錄尚未包含這些資訊。";
+"settings.points.format" = "%@pt";

@@ -34,19 +34,6 @@ struct GeneralSettingsPane: View {
                     set: { model.launchAtLoginEnabled = $0 }
                 )
             )
-
-            SettingsPickerRow(
-                title: lang.t("settings.general.monitor"),
-                selection: Binding(
-                    get: { model.overlayDisplaySelectionID },
-                    set: { model.overlayDisplaySelectionID = $0 }
-                )
-            ) {
-                Text(lang.t("settings.general.automatic")).tag(OverlayDisplayOption.automaticID)
-                ForEach(model.overlayDisplayOptions) { option in
-                    Text(option.title).tag(option.id)
-                }
-            }
         }
     }
 

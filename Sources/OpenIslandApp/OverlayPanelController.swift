@@ -380,10 +380,16 @@ final class OverlayPanelController {
     }
 
     func openedPanelWidth(for screen: NSScreen?) -> CGFloat {
-        guard let screen else { return Self.preferredTopBarOpenedPanelWidth }
-        let preferredWidth = screen.safeAreaInsets.top > 0
+        // A notched display gets the wider surface; the configured width caps
+        // both, and the screen itself caps that in turn.
+        let configured = model?.settings.display.maxPanelWidth
+        guard let screen else {
+            return configured.map { CGFloat($0) } ?? Self.preferredTopBarOpenedPanelWidth
+        }
+        let fallback = screen.safeAreaInsets.top > 0
             ? Self.preferredNotchOpenedPanelWidth
             : Self.preferredTopBarOpenedPanelWidth
+        let preferredWidth = configured.map { CGFloat($0) } ?? fallback
         return max(360, min(preferredWidth, screen.visibleFrame.width - 32))
     }
 
