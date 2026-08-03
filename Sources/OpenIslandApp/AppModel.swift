@@ -446,6 +446,30 @@ final class AppModel {
         defaults.set(preferences.completedStaleThreshold.rawValue, forKey: Self.appearanceDefaultsKey(profile, "completedStaleThreshold"))
     }
 
+    // MARK: - mitama feed
+
+    private static let mitamaFeedEnabledKey = "mitama.feed.enabled"
+
+    /// Off by default: the island only starts reading mitama's queue once the
+    /// owner of that queue asks it to.
+    var mitamaFeedEnabled: Bool = false {
+        didSet {
+            guard mitamaFeedEnabled != oldValue else { return }
+            UserDefaults.standard.set(mitamaFeedEnabled, forKey: Self.mitamaFeedEnabledKey)
+            if mitamaFeedEnabled {
+                mitamaFeed.start()
+            } else {
+                mitamaFeed.stop()
+            }
+        }
+    }
+
+    let mitamaFeed = MitamaFeedCoordinator()
+
+    func openMitamaHub() {
+        NSWorkspace.shared.open(MitamaFeedCoordinator.hubURL)
+    }
+
     // MARK: - Watch Notification
 
     private static let watchNotificationEnabledKey = "watch.notification.enabled"
@@ -647,6 +671,10 @@ final class AppModel {
         ) ?? .topBar
         notchAppearancePreferences = Self.loadAppearancePreferences(for: .notch)
         topBarAppearancePreferences = Self.loadAppearancePreferences(for: .topBar)
+        mitamaFeedEnabled = UserDefaults.standard.bool(forKey: Self.mitamaFeedEnabledKey)
+        if mitamaFeedEnabled {
+            mitamaFeed.start()
+        }
         watchNotificationEnabled = UserDefaults.standard.bool(forKey: Self.watchNotificationEnabledKey)
         if watchNotificationEnabled {
             startWatchRelay()

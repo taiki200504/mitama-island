@@ -306,7 +306,7 @@
 "settings.behaviour.idleCleanup.fourHours" = "4 小时";
 "settings.behaviour.idleCleanup.eightHours" = "8 小时";
 "settings.behaviour.idleCleanup.twentyFourHours" = "24 小时";
-"settings.general.section.mitama" = "Mitama Island 专属";
+"settings.general.section.mitamaOnly" = "Mitama Island 专属";
 "settings.seconds.format" = "%@ 秒";
 
 /* Display pane */
@@ -335,3 +335,10 @@
 "settings.pending.notchCalibration" = "需要刘海尺寸支持覆盖设置。";
 "settings.pending.reasoningEffortMetadata" = "会话记录尚未包含这些信息。";
 "settings.points.format" = "%@pt";
+/* mitama feed */
+"settings.general.mitamaFeed" = "在灵动岛显示 mitama 待办";
+"settings.general.mitamaFeedMissingConfig" = "无法读取 ~/Developer/mitama/mitama-os/.env";
+"mitama.level.urgent" = "紧急";
+"mitama.level.homework" = "作业";
+"mitama.level.digest" = "摘要";
+"mitama.level.info" = "信息";

@@ -15,11 +15,12 @@ struct GeneralSettingsPane: View {
         SettingsPane(tab: .general) {
             systemSection
             languageSection
+            mitamaSection
             expansionSection
             visibilitySection
             dismissalSection
             interactionSection
-            mitamaSection
+            mitamaOnlySection
         }
     }
 
@@ -49,6 +50,22 @@ struct GeneralSettingsPane: View {
                 Text(lang.t("settings.general.languageChinese")).tag(LanguageManager.AppLanguage.zhHans)
                 Text(lang.t("settings.general.languageTraditionalChinese")).tag(LanguageManager.AppLanguage.zhHant)
             }
+        }
+    }
+
+    /// Lives here until the dedicated mitama pane exists.
+    private var mitamaSection: some View {
+        Section("mitama") {
+            SettingsToggleRow(
+                title: lang.t("settings.general.mitamaFeed"),
+                help: model.mitamaFeedEnabled && !model.mitamaFeed.isConfigured
+                    ? lang.t("settings.general.mitamaFeedMissingConfig")
+                    : nil,
+                isOn: Binding(
+                    get: { model.mitamaFeedEnabled },
+                    set: { model.mitamaFeedEnabled = $0 }
+                )
+            )
         }
     }
 
@@ -181,8 +198,8 @@ struct GeneralSettingsPane: View {
 
     // MARK: Mitama-only
 
-    private var mitamaSection: some View {
-        Section(lang.t("settings.general.section.mitama")) {
+    private var mitamaOnlySection: some View {
+        Section(lang.t("settings.general.section.mitamaOnly")) {
             SettingsToggleRow(
                 title: lang.t("settings.general.showDockIcon"),
                 isOn: Binding(get: { model.showDockIcon }, set: { model.showDockIcon = $0 })

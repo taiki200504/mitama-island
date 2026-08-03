@@ -306,7 +306,7 @@
 "settings.behaviour.idleCleanup.fourHours" = "4時間";
 "settings.behaviour.idleCleanup.eightHours" = "8時間";
 "settings.behaviour.idleCleanup.twentyFourHours" = "24時間";
-"settings.general.section.mitama" = "Mitama Island 独自";
+"settings.general.section.mitamaOnly" = "Mitama Island 独自";
 "settings.seconds.format" = "%@秒";
 
 /* Display pane */
@@ -335,3 +335,10 @@
 "settings.pending.notchCalibration" = "ノッチの寸法を上書きできる作りが要ります。";
 "settings.pending.reasoningEffortMetadata" = "セッションの情報にこれらの項目がまだ入っていません。";
 "settings.points.format" = "%@pt";
+/* mitama feed */
+"settings.general.mitamaFeed" = "mitama の要対応を島に出す";
+"settings.general.mitamaFeedMissingConfig" = "~/Developer/mitama/mitama-os/.env が読めません";
+"mitama.level.urgent" = "緊急";
+"mitama.level.homework" = "宿題";
+"mitama.level.digest" = "まとめ";
+"mitama.level.info" = "情報";
