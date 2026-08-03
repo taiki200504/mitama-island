@@ -1351,7 +1351,12 @@ private struct IslandSessionRow: View {
             ? .inactive
             : ((showsDetail && rawPresence == .inactive) ? .active : rawPresence)
         return VStack(alignment: .leading, spacing: 0) {
+            // Only the summary line jumps. The action area below it holds
+            // approve/deny/answer controls, and a press on one of those must
+            // not also count as "clicked this session".
             rowSummary(presence: presence, showsDetail: showsDetail)
+                .contentShape(Rectangle())
+                .onTapGesture(perform: handlePrimaryTap)
 
             if showsDetail {
                 rowAuxiliaryDetails(presence: presence)
@@ -1381,9 +1386,7 @@ private struct IslandSessionRow: View {
         }
         .opacity(isStaleCompleted ? 0.7 : 1)
         .modifier(ConditionalDrawingGroup(enabled: useDrawingGroup && !isActionable))
-        .contentShape(Rectangle())
         .animation(.easeInOut(duration: 0.15), value: isHighlighted)
-        .onTapGesture(perform: handlePrimaryTap)
         .onHover { hovering in
             guard isInteractive, allowsRowHoverHighlight else { return }
             isHighlighted = hovering

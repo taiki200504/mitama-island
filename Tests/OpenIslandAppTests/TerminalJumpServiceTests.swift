@@ -175,7 +175,7 @@ final class TerminalJumpServiceTests: XCTestCase {
             )
         )
 
-        XCTAssertEqual(result, "Focused the matching Cursor workspace.")
+        XCTAssertEqual(result, "Opened the Cursor workspace.")
         XCTAssertTrue(openedArguments.values.isEmpty)
     }
 
@@ -576,7 +576,7 @@ final class TerminalJumpServiceTests: XCTestCase {
             )
         )
 
-        XCTAssertEqual(result, "Focused the matching Trae workspace.")
+        XCTAssertEqual(result, "Opened the Trae workspace.")
         XCTAssertTrue(openedArguments.values.isEmpty)
         XCTAssertEqual(processInvocations.values.count, 1)
         XCTAssertEqual(processInvocations.values.first?.0, "trae")
@@ -723,7 +723,8 @@ extension TerminalJumpServiceTests {
     func testCursorCLIReceivesTheWorkspaceAndNothingElse() throws {
         let invocation = try recordedEditorInvocation(
             bundleIdentifier: "com.todesktop.230313mzl4w4u92",
-            terminalApp: "Cursor"
+            terminalApp: "Cursor",
+            appRunning: false
         )
 
         XCTAssertEqual(invocation?.executable, "cursor")
@@ -742,7 +743,8 @@ extension TerminalJumpServiceTests {
         for editor in editors {
             guard let invocation = try recordedEditorInvocation(
                 bundleIdentifier: editor.bundle,
-                terminalApp: editor.app
+                terminalApp: editor.app,
+                appRunning: false
             ) else {
                 XCTFail("\(editor.app) never invoked its CLI")
                 continue
@@ -760,23 +762,37 @@ extension TerminalJumpServiceTests {
         }
     }
 
-    /// The workspace jump has to be tried before falling back to plain
-    /// activation, otherwise a running editor is focused on whatever window it
-    /// last had rather than the session's.
-    func testAWorkspaceJumpIsAttemptedEvenWhenTheEditorIsAlreadyRunning() throws {
+    /// A running editor is only activated. Handing its CLI a path opens a second
+    /// window whenever no open window holds exactly that folder — the normal case
+    /// for a git worktree — which is what users saw as "another Cursor opened".
+    func testARunningEditorIsActivatedWithoutTouchingItsCLI() throws {
         let invocation = try recordedEditorInvocation(
             bundleIdentifier: "com.todesktop.230313mzl4w4u92",
             terminalApp: "Cursor",
             appRunning: true
         )
 
-        XCTAssertNotNil(invocation, "a running editor still needs the workspace-specific jump")
+        XCTAssertNil(invocation, "a running editor must not be handed a workspace path")
+    }
+
+    /// When the editor is not running there is nothing to focus, so opening the
+    /// workspace is the only useful thing to do.
+    func testAnEditorThatIsNotRunningIsOpenedOnTheWorkspace() throws {
+        let invocation = try recordedEditorInvocation(
+            bundleIdentifier: "com.todesktop.230313mzl4w4u92",
+            terminalApp: "Cursor",
+            appRunning: false
+        )
+
+        XCTAssertEqual(invocation?.executable, "cursor")
+        XCTAssertEqual(invocation?.arguments, ["/Users/test/project"])
     }
 
     func testJetBrainsCLIReceivesTheProjectPathAlone() throws {
         let invocation = try recordedEditorInvocation(
             bundleIdentifier: "com.jetbrains.intellij",
-            terminalApp: "IntelliJ IDEA"
+            terminalApp: "IntelliJ IDEA",
+            appRunning: false
         )
 
         XCTAssertEqual(invocation?.arguments, ["/Users/test/project"])

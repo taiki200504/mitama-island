@@ -386,15 +386,20 @@ struct TerminalJumpService {
                     return "Focused the matching \(descriptor.displayName) pane."
                 }
             case let id where Self.vscodeFamilyBundleIDs.contains(id):
-                if let workingDirectory = target.workingDirectory {
-                    let opened = jumpToVSCodeFamilyWorkspace(workingDirectory, bundleIdentifier: id)
-                    if opened {
-                        return "Focused the matching \(descriptor.displayName) workspace."
-                    }
-                }
+                // A running editor is only brought to the front. Handing its CLI
+                // a path opens a second window whenever no open window holds
+                // exactly that folder — which is the normal case for a worktree
+                // or a subdirectory. An extra window nobody asked for is worse
+                // than landing on the wrong window of the editor you already had.
                 if appIsRunning {
                     try openAction(["-b", id])
                     return "Activated \(descriptor.displayName)."
+                }
+                if let workingDirectory = target.workingDirectory {
+                    let opened = jumpToVSCodeFamilyWorkspace(workingDirectory, bundleIdentifier: id)
+                    if opened {
+                        return "Opened the \(descriptor.displayName) workspace."
+                    }
                 }
             case let id where Self.zedBundleIDs.contains(id):
                 if let workingDirectory = target.workingDirectory {
@@ -408,15 +413,16 @@ struct TerminalJumpService {
                     return "Activated \(descriptor.displayName)."
                 }
             case let id where Self.jetbrainsBundleIDs.contains(id):
-                if let workingDirectory = target.workingDirectory {
-                    let opened = jumpToJetBrainsProject(workingDirectory, bundleIdentifier: id)
-                    if opened {
-                        return "Focused the matching \(descriptor.displayName) project."
-                    }
-                }
+                // Same reasoning as the VS Code family above.
                 if appIsRunning {
                     try openAction(["-b", id])
                     return "Activated \(descriptor.displayName)."
+                }
+                if let workingDirectory = target.workingDirectory {
+                    let opened = jumpToJetBrainsProject(workingDirectory, bundleIdentifier: id)
+                    if opened {
+                        return "Opened the \(descriptor.displayName) project."
+                    }
                 }
             default:
                 break
