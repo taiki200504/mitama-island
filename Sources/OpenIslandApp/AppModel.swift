@@ -28,7 +28,6 @@ final class AppModel {
     /// How long a session restored from the registry stays on the list before
     /// process discovery has confirmed it is still alive.
     private static let restoredSessionVisibilityWindow: TimeInterval = 30 * 60
-    private static let suppressFrontmostNotificationsDefaultsKey = "app.suppressFrontmostNotifications"
     private static let legacyIslandSessionStateIndicatorDefaultsKey = "appearance.island.v8.stateIndicator"
     private static let legacyIslandSessionGroupDefaultsKey = "appearance.island.v8.sessionGroup"
     private static let legacyIslandSessionSortDefaultsKey = "appearance.island.v8.sessionSort"
@@ -277,12 +276,13 @@ final class AppModel {
             refreshOverlayPlacementIfVisible()
         }
     }
-    var suppressFrontmostNotifications: Bool = true {
-        didSet {
-            guard hasFinishedInit, suppressFrontmostNotifications != oldValue else { return }
-            UserDefaults.standard.set(suppressFrontmostNotifications, forKey: Self.suppressFrontmostNotificationsDefaultsKey)
-        }
+    /// Kept as a name the notification path already reads; the value lives in
+    /// `settings.behaviour.smartSuppression`, which the general pane edits.
+    var suppressFrontmostNotifications: Bool {
+        get { settings.behaviour.smartSuppression }
+        set { settings.behaviour.smartSuppression = newValue }
     }
+
     var launchAtLoginEnabled: Bool = false {
         didSet {
             guard !isApplyingLaunchAtLogin, hasFinishedInit, launchAtLoginEnabled != oldValue else { return }
@@ -639,12 +639,10 @@ final class AppModel {
             Self.showDockIconDefaultsKey: true,
             Self.hapticFeedbackEnabledDefaultsKey: false,
             Self.completionReplyEnabledDefaultsKey: false,
-            Self.suppressFrontmostNotificationsDefaultsKey: true,
         ])
         selectedSoundName = NotificationSoundService.selectedSoundName
         showDockIcon = UserDefaults.standard.bool(forKey: Self.showDockIconDefaultsKey)
         hapticFeedbackEnabled = UserDefaults.standard.bool(forKey: Self.hapticFeedbackEnabledDefaultsKey)
-        suppressFrontmostNotifications = UserDefaults.standard.bool(forKey: Self.suppressFrontmostNotificationsDefaultsKey)
         if UserDefaults.standard.object(forKey: Self.showCodexUsageDefaultsKey) != nil {
             showCodexUsage = UserDefaults.standard.bool(forKey: Self.showCodexUsageDefaultsKey)
         } else {
@@ -696,6 +694,10 @@ final class AppModel {
         }
         settings.notificationFilters.onRulesChanged = { [weak self] in
             self?._cachedSessionBuckets = nil
+        }
+        overlay.hasLiveSessionAccessor = { [weak self] in
+            guard let self else { return true }
+            return !self.surfacedSessions.isEmpty
         }
 
         hooks.onStatusMessage = { [weak self] message in
@@ -1307,6 +1309,8 @@ final class AppModel {
 
     var shouldAutoCollapseOnMouseLeave: Bool { overlay.shouldAutoCollapseOnMouseLeave }
     var autoCollapseOnMouseLeaveRequiresPriorSurfaceEntry: Bool { overlay.autoCollapseOnMouseLeaveRequiresPriorSurfaceEntry }
+
+    var islandMayBeVisible: Bool { overlay.islandMayBeVisible }
     var showsNotificationCard: Bool { overlay.showsNotificationCard }
     var shouldDeferTimedNotificationAutoCollapse: Bool { overlay.shouldDeferTimedNotificationAutoCollapse }
     var hasPendingNotificationAutoCollapse: Bool { overlay.hasPendingNotificationAutoCollapse }

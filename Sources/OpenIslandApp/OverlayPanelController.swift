@@ -181,6 +181,13 @@ final class OverlayPanelController {
     }
 
     private func presentPanel(_ panel: NSPanel, activates: Bool) {
+        // "Hide in fullscreen" and "hide when nothing is running" mean the pill
+        // itself should be off screen, not merely collapsed.
+        guard model?.islandMayBeVisible ?? true else {
+            panel.orderOut(nil)
+            return
+        }
+
         if activates {
             panel.makeKeyAndOrderFront(nil)
         } else {
@@ -275,7 +282,8 @@ final class OverlayPanelController {
             cancelHoverOpenImmediately()
             model.notchOpen(reason: .click)
         } else if model.notchStatus == .opened {
-            if !isPointInExpandedArea(screenLocation) {
+            if !isPointInExpandedArea(screenLocation),
+               model.settings.behaviour.dismissOnOutsideClick {
                 model.notchClose()
                 repostMouseDown(at: screenLocation)
             }

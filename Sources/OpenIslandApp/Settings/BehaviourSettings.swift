@@ -104,6 +104,9 @@ final class BehaviourSettings: PreferenceGroup {
     }
 
     /// Skip auto-expanding while the agent's own terminal tab is already in front.
+    ///
+    /// Shares the key the app has always used for this, so the setting the user
+    /// already had keeps working rather than being shadowed by a second copy.
     var smartSuppression: Bool {
         get { read(\.smartSuppression, Keys.smartSuppression, true) }
         set { write(\.smartSuppression, Keys.smartSuppression, newValue) }
@@ -222,7 +225,8 @@ extension BehaviourSettings {
         static let hoverDuration = "behaviour.hoverDuration"
         static let autoExpandOnAgentTeamComplete = "behaviour.autoExpandOnAgentTeamComplete"
         static let hideInFullscreen = "behaviour.hideInFullscreen"
-        static let smartSuppression = "behaviour.smartSuppression"
+        /// The key this behaviour has always been stored under.
+        static let smartSuppression = "app.suppressFrontmostNotifications"
         static let autoHideWhenIdle = "behaviour.autoHideWhenIdle"
         static let autoCollapseOnLeave = "behaviour.autoCollapseOnLeave"
         static let autoRevealDwell = "behaviour.autoRevealDwell"

@@ -247,9 +247,16 @@ struct FeatureAvailabilityTests {
     /// Nothing may be marked implemented before its behaviour actually ships.
     /// When a capability lands, add it to the ledger and update this expectation
     /// in the same commit.
+    /// The ledger is the only thing standing between an honest badge and a dead
+    /// toggle, so a capability may only appear here once its behaviour ships.
     @Test
-    func nothingIsMarkedImplementedYet() {
-        #expect(PendingCapability.implemented.isEmpty)
+    func theLedgerListsExactlyWhatHasShipped() {
+        #expect(PendingCapability.implemented == [
+            .foregroundTerminalDetection,
+            .outsideClickDetection,
+            .fullscreenDetection,
+            .autoHideTimer,
+        ])
     }
 
     @Test

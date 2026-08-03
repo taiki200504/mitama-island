@@ -69,9 +69,13 @@ enum PendingCapability: String, CaseIterable, Sendable {
 
     /// Capabilities whose engine support has actually landed.
     ///
-    /// Empty on purpose: nothing here is wired up yet. Add a case the moment its
-    /// behaviour ships, never in advance.
-    static let implemented: Set<PendingCapability> = []
+    /// Add a case the moment its behaviour ships, never in advance.
+    static let implemented: Set<PendingCapability> = [
+        .foregroundTerminalDetection,
+        .outsideClickDetection,
+        .fullscreenDetection,
+        .autoHideTimer,
+    ]
 
     var isImplemented: Bool { Self.implemented.contains(self) }
 

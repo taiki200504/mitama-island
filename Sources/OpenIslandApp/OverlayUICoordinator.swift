@@ -285,6 +285,35 @@ final class OverlayUICoordinator {
 
     // MARK: - Pointer tracking
 
+    /// Whether the island is allowed on screen right now.
+    ///
+    /// Separate from "is it open": these are conditions under which even the
+    /// collapsed pill should get out of the way.
+    var islandMayBeVisible: Bool {
+        if settings.behaviour.hideInFullscreen, Self.isFrontmostWindowFullscreen() {
+            return false
+        }
+        if settings.behaviour.autoHideWhenIdle, !hasAnyLiveSession {
+            return false
+        }
+        return true
+    }
+
+    /// Set by `AppModel`, which is the one that knows about sessions.
+    @ObservationIgnored var hasLiveSessionAccessor: (() -> Bool)?
+
+    private var hasAnyLiveSession: Bool {
+        hasLiveSessionAccessor?() ?? true
+    }
+
+    /// A window that covers its whole screen and hides the menu bar is a
+    /// fullscreen space; the island would otherwise float over it.
+    private static func isFrontmostWindowFullscreen() -> Bool {
+        guard let screen = NSScreen.main else { return false }
+        // In a fullscreen space the visible frame loses the menu bar inset.
+        return screen.visibleFrame.height >= screen.frame.height
+    }
+
     var shouldAutoCollapseOnMouseLeave: Bool {
         if ignoresPointerExitDuringHarness {
             return false

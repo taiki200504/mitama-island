@@ -81,7 +81,6 @@ struct GeneralSettingsPane: View {
             SettingsToggleRow(
                 title: lang.t("settings.general.smartSuppression"),
                 help: lang.t("settings.general.smartSuppression.help"),
-                availability: FeatureAvailability(.foregroundTerminalDetection),
                 isOn: Binding(
                     get: { behaviour.smartSuppression },
                     set: { behaviour.smartSuppression = $0 }
@@ -96,7 +95,6 @@ struct GeneralSettingsPane: View {
         Section(lang.t("settings.general.section.visibility")) {
             SettingsToggleRow(
                 title: lang.t("settings.general.hideInFullscreen"),
-                availability: FeatureAvailability(.fullscreenDetection),
                 isOn: Binding(
                     get: { behaviour.hideInFullscreen },
                     set: { behaviour.hideInFullscreen = $0 }
@@ -105,7 +103,6 @@ struct GeneralSettingsPane: View {
 
             SettingsToggleRow(
                 title: lang.t("settings.general.autoHideWhenIdle"),
-                availability: FeatureAvailability(.autoHideTimer),
                 isOn: Binding(
                     get: { behaviour.autoHideWhenIdle },
                     set: { behaviour.autoHideWhenIdle = $0 }
@@ -141,7 +138,6 @@ struct GeneralSettingsPane: View {
 
             SettingsToggleRow(
                 title: lang.t("settings.general.dismissOnOutsideClick"),
-                availability: FeatureAvailability(.outsideClickDetection),
                 isOn: Binding(
                     get: { behaviour.dismissOnOutsideClick },
                     set: { behaviour.dismissOnOutsideClick = $0 }
