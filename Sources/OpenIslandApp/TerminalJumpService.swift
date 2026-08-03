@@ -492,11 +492,17 @@ struct TerminalJumpService {
         "com.qoder.qoder": "qoder",
     ]
 
+    /// Passes the workspace on its own — never with `-r`.
+    ///
+    /// `code -r <path>` reuses whichever window was last active and swaps its
+    /// folder for this one, which from the user's side looks like their editor
+    /// closing and a different one opening. `code <path>` focuses the window
+    /// already holding that workspace, and only opens a new one if none exists.
     private func jumpToVSCodeFamilyWorkspace(_ workspacePath: String, bundleIdentifier: String) -> Bool {
         guard let cli = Self.vscodeFamilyCLI[bundleIdentifier] else {
             return false
         }
-        return processRunner(cli, ["-r", workspacePath])
+        return processRunner(cli, [workspacePath])
     }
 
     // MARK: - JetBrains IDE family

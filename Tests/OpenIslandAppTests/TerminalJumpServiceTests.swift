@@ -580,7 +580,9 @@ final class TerminalJumpServiceTests: XCTestCase {
         XCTAssertTrue(openedArguments.values.isEmpty)
         XCTAssertEqual(processInvocations.values.count, 1)
         XCTAssertEqual(processInvocations.values.first?.0, "trae")
-        XCTAssertEqual(processInvocations.values.first?.1, ["-r", "/Users/test/open-vibe-island"])
+        // The workspace on its own. This assertion previously expected the `-r`
+        // flag, which is what kept the window-replacing defect alive.
+        XCTAssertEqual(processInvocations.values.first?.1, ["/Users/test/open-vibe-island"])
     }
 }
 
@@ -674,4 +676,110 @@ private func runAppleScript(_ script: String) throws -> String {
     }
 
     return output
+}
+
+// MARK: - Editor CLI arguments
+//
+// These pin the exact argv handed to each editor's CLI. The Cursor defect that
+// prompted them — `cursor -r <path>` swapping the folder of whichever window was
+// last active, so the user's editor appeared to close — passed every existing
+// test, because those only mocked the runner's return value and never looked at
+// what it was called with.
+
+extension TerminalJumpServiceTests {
+    private func recordedEditorInvocation(
+        bundleIdentifier: String,
+        terminalApp: String,
+        appRunning: Bool = true,
+        workingDirectory: String = "/Users/test/project"
+    ) throws -> (executable: String, arguments: [String])? {
+        let invocations = ProcessInvocationBox()
+        let service = TerminalJumpService(
+            applicationResolver: { id in
+                id == bundleIdentifier ? URL(fileURLWithPath: "/Applications/Test.app") : nil
+            },
+            appRunningChecker: { $0 == bundleIdentifier && appRunning },
+            openAction: { _ in },
+            appleScriptRunner: { _ in "" },
+            processRunner: { executable, arguments in
+                invocations.values.append((executable, arguments))
+                return true
+            }
+        )
+
+        _ = try service.jump(
+            to: JumpTarget(
+                terminalApp: terminalApp,
+                workspaceName: "project",
+                paneTitle: "\(terminalApp) abc123",
+                workingDirectory: workingDirectory
+            )
+        )
+
+        return invocations.values.last
+    }
+
+    /// The regression itself: the workspace must be the only argument.
+    func testCursorCLIReceivesTheWorkspaceAndNothingElse() throws {
+        let invocation = try recordedEditorInvocation(
+            bundleIdentifier: "com.todesktop.230313mzl4w4u92",
+            terminalApp: "Cursor"
+        )
+
+        XCTAssertEqual(invocation?.executable, "cursor")
+        XCTAssertEqual(invocation?.arguments, ["/Users/test/project"])
+    }
+
+    /// `-r` is what caused the defect. It must not come back for any editor in
+    /// the VS Code family, not just the one that was reported.
+    func testNoVSCodeFamilyEditorReusesAWindow() throws {
+        let editors: [(bundle: String, app: String, cli: String)] = [
+            ("com.microsoft.VSCode", "Visual Studio Code", "code"),
+            ("com.todesktop.230313mzl4w4u92", "Cursor", "cursor"),
+            ("com.exafunction.windsurf", "Windsurf", "windsurf"),
+        ]
+
+        for editor in editors {
+            guard let invocation = try recordedEditorInvocation(
+                bundleIdentifier: editor.bundle,
+                terminalApp: editor.app
+            ) else {
+                XCTFail("\(editor.app) never invoked its CLI")
+                continue
+            }
+            XCTAssertEqual(invocation.executable, editor.cli, "\(editor.app) CLI name")
+            XCTAssertFalse(
+                invocation.arguments.contains("-r"),
+                "\(editor.app) would replace the current window's workspace"
+            )
+            XCTAssertFalse(
+                invocation.arguments.contains("--reuse-window"),
+                "\(editor.app) would replace the current window's workspace"
+            )
+            XCTAssertEqual(invocation.arguments, ["/Users/test/project"], "\(editor.app) arguments")
+        }
+    }
+
+    /// The workspace jump has to be tried before falling back to plain
+    /// activation, otherwise a running editor is focused on whatever window it
+    /// last had rather than the session's.
+    func testAWorkspaceJumpIsAttemptedEvenWhenTheEditorIsAlreadyRunning() throws {
+        let invocation = try recordedEditorInvocation(
+            bundleIdentifier: "com.todesktop.230313mzl4w4u92",
+            terminalApp: "Cursor",
+            appRunning: true
+        )
+
+        XCTAssertNotNil(invocation, "a running editor still needs the workspace-specific jump")
+    }
+
+    func testJetBrainsCLIReceivesTheProjectPathAlone() throws {
+        let invocation = try recordedEditorInvocation(
+            bundleIdentifier: "com.jetbrains.intellij",
+            terminalApp: "IntelliJ IDEA"
+        )
+
+        XCTAssertEqual(invocation?.arguments, ["/Users/test/project"])
+        XCTAssertFalse(invocation?.arguments.contains("-r") ?? false)
+    }
 }
