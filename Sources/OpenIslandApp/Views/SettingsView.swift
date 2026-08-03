@@ -38,6 +38,11 @@ struct SettingsView: View {
                             SettingsIconChip(systemImage: tab.icon, tint: tab.tint)
                         }
                         .tag(tab)
+                        // A stable handle for driving the sidebar from a UI
+                        // test. Deliberately no other accessibility overrides
+                        // here: the row's native selection semantics are what
+                        // VoiceOver should see.
+                        .accessibilityIdentifier("settings.tab.\(tab.rawValue)")
                     }
                 } header: {
                     if let header = section.header(lang) {
