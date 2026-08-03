@@ -235,3 +235,48 @@
 
 /* Window Titles */
 "window.settings" = "Open Island 設定";
+
+
+/* Settings surface rebuild — panes, shared controls, pending capabilities */
+"settings.tab.integrations" = "統合";
+"settings.tab.notifications" = "通知";
+"settings.tab.usage" = "使用量";
+"settings.tab.sshRemote" = "SSHリモート";
+"settings.tab.labs" = "ラボ";
+"settings.tab.watch" = "Watch";
+"settings.tab.mitama" = "mitama";
+"settings.value.defaultMarker" = "・既定";
+"settings.value.reset" = "既定値に戻す";
+"settings.pending.badge" = "準備中";
+"settings.paneNotBuilt.title" = "この画面はまだ作っていません。";
+"settings.paneNotBuilt.body" = "完成時の並びに合わせてサイドバーには先に出しています。中身は後の更新で入ります。";
+"settings.pending.fullscreenDetection" = "フルスクリーン状態の検知が要ります。";
+"settings.pending.foregroundTerminalDetection" = "どのターミナルが前面かの判定が要ります。";
+"settings.pending.autoHideTimer" = "自動非表示のタイマーが要ります。";
+"settings.pending.outsideClickDetection" = "パネル外のクリック検知が要ります。";
+"settings.pending.subagentTracking" = "サブエージェントとチームの追跡が要ります。";
+"settings.pending.reminderScheduler" = "再通知のスケジューラが要ります。";
+"settings.pending.idleSessionCleanup" = "停止セッションの掃除処理が要ります。";
+"settings.pending.focusModeDetection" = "macOS のフォーカスモード検知が要ります。";
+"settings.pending.screenStateDetection" = "画面ロック・スリープの検知が要ります。";
+"settings.pending.screenCaptureDetection" = "画面収録の検知が要ります。";
+"settings.pending.globalHotkey" = "システム全体のホットキー登録が要ります。";
+"settings.pending.switcherPanel" = "セッション切替パネルが要ります。";
+"settings.pending.panelKeyHandling" = "パネル内のキー操作処理が要ります。";
+"settings.pending.shortcutHintOverlay" = "ショートカットのヒント表示が要ります。";
+"settings.pending.soundThemeEngine" = "サウンドテーマの仕組みが要ります。";
+"settings.pending.perEventSounds" = "イベント別の音の再生が要ります。";
+"settings.pending.soundPackImport" = "サウンドパックの読み込みが要ります。";
+"settings.pending.quietHoursScheduler" = "静かにする時間帯のスケジューラが要ります。";
+"settings.pending.notificationFilterBridge" = "ブリッジ側でフィルタを適用する処理が要ります。";
+"settings.pending.launcherAppDetection" = "セッションの起動元アプリの判定が要ります。";
+"settings.pending.usageThresholdMonitor" = "使用量の閾値監視が要ります。";
+"settings.pending.codexResetCards" = "Codex のリセットクレジットの取得が要ります。";
+"settings.pending.approvalRouting" = "承認をパネルとターミナルに振り分ける処理が要ります。";
+"settings.pending.sessionAutoNaming" = "セッション自動命名の仕組みが要ります。";
+"settings.pending.accessibilityApprovalScan" = "アクセシビリティによる承認検知が要ります。";
+"settings.pending.memoryWatchdog" = "メモリ監視の仕組みが要ります。";
+"settings.pending.menuBarLayoutModes" = "メニューバーの簡潔・詳細レイアウトが要ります。";
+"settings.pending.followFocusDisplay" = "フォーカス中の画面を追う配置処理が要ります。";
+"settings.pending.diagnosticsReport" = "診断レポートの収集が要ります。";
+"settings.pending.releaseNotesFeed" = "リリースノートの取得が要ります。";

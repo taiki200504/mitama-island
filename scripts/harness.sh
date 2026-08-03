@@ -6,7 +6,7 @@ repo_root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$repo_root"
 
 if (( $# == 0 )); then
-    steps=(docs test build)
+    steps=(lint docs test build)
 else
     steps=("$@")
 fi

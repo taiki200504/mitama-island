@@ -2,90 +2,6 @@ import SwiftUI
 import AppKit
 import OpenIslandCore
 
-// MARK: - Settings tabs
-
-enum SettingsTab: String, CaseIterable, Identifiable {
-    case general
-    case setup
-    case display
-    case sound
-    case appearance
-    case watch
-    case shortcuts
-    case lab
-    case about
-
-    var id: String { rawValue }
-
-    func label(_ lang: LanguageManager) -> String {
-        switch self {
-        case .general:    lang.t("settings.tab.general")
-        case .setup:      lang.t("settings.tab.setup")
-        case .appearance: lang.t("settings.tab.appearance")
-        case .display:    lang.t("settings.tab.display")
-        case .sound:      lang.t("settings.tab.sound")
-        case .watch:      "Watch"
-        case .shortcuts:  lang.t("settings.tab.shortcuts")
-        case .lab:        lang.t("settings.tab.lab")
-        case .about:      lang.t("settings.tab.about")
-        }
-    }
-
-    var icon: String {
-        switch self {
-        case .general:    "gearshape.fill"
-        case .setup:      "arrow.down.circle.fill"
-        case .appearance: "paintbrush.fill"
-        case .display:    "textformat.size"
-        case .sound:      "speaker.wave.2.fill"
-        case .watch:      "applewatch"
-        case .shortcuts:  "keyboard.fill"
-        case .lab:        "flask.fill"
-        case .about:      "info.circle.fill"
-        }
-    }
-
-    var iconColor: Color {
-        switch self {
-        case .general:    .gray
-        case .setup:      .orange
-        case .appearance: .purple
-        case .display:    .blue
-        case .sound:      .green
-        case .watch:      .cyan
-        case .shortcuts:  .gray
-        case .lab:        .pink
-        case .about:      .blue
-        }
-    }
-
-    var section: SettingsSection {
-        switch self {
-        case .general, .setup, .display, .sound, .appearance, .watch: .system
-        case .shortcuts, .lab:                                        .advanced
-        case .about:                                                  .app
-        }
-    }
-}
-
-enum SettingsSection: String, CaseIterable {
-    case system
-    case advanced
-    case app
-
-    func header(_ lang: LanguageManager) -> String {
-        switch self {
-        case .system:   lang.t("settings.section.system")
-        case .advanced: lang.t("settings.section.advanced")
-        case .app:      "Open Island"
-        }
-    }
-
-    var tabs: [SettingsTab] {
-        SettingsTab.allCases.filter { $0.section == self }
-    }
-}
-
 // MARK: - Root settings view
 
 struct SettingsView: View {
@@ -97,14 +13,14 @@ struct SettingsView: View {
     var body: some View {
         NavigationSplitView {
             sidebar
-                .navigationSplitViewColumnWidth(min: 180, ideal: 200, max: 240)
+                .navigationSplitViewColumnWidth(min: 190, ideal: 210, max: 250)
         } detail: {
             detailView
         }
-        .frame(minWidth: 680, idealWidth: 780, minHeight: 480, idealHeight: 560)
+        .frame(minWidth: 720, idealWidth: 820, minHeight: 520, idealHeight: 620)
         .preferredColorScheme(.dark)
         .onReceive(NotificationCenter.default.publisher(for: .openIslandSelectSetupTab)) { _ in
-            selectedTab = .setup
+            selectedTab = .integrations
         }
     }
 
@@ -114,15 +30,18 @@ struct SettingsView: View {
     private var sidebar: some View {
         List(selection: $selectedTab) {
             ForEach(SettingsSection.allCases, id: \.self) { section in
-                Section(section.header(lang)) {
+                Section {
                     ForEach(section.tabs) { tab in
                         Label {
                             Text(tab.label(lang))
                         } icon: {
-                            Image(systemName: tab.icon)
-                                .foregroundStyle(tab.iconColor)
+                            SettingsIconChip(systemImage: tab.icon, tint: tab.tint)
                         }
                         .tag(tab)
+                    }
+                } header: {
+                    if let header = section.header(lang) {
+                        Text(header)
                     }
                 }
             }
@@ -138,7 +57,7 @@ struct SettingsView: View {
             switch selectedTab {
             case .general:
                 GeneralSettingsPane(model: model)
-            case .setup:
+            case .integrations:
                 SetupSettingsPane(model: model)
             case .appearance:
                 AppearanceSettingsPane(model: model)
@@ -148,12 +67,10 @@ struct SettingsView: View {
                 SoundSettingsPane(model: model)
             case .watch:
                 WatchSettingsPane(model: model)
-            case .shortcuts:
-                PlaceholderSettingsPane(model: model, titleKey: "settings.tab.shortcuts", subtitleKey: "settings.shortcuts.comingSoon")
-            case .lab:
-                PlaceholderSettingsPane(model: model, titleKey: "settings.tab.lab", subtitleKey: "settings.lab.comingSoon")
             case .about:
                 AboutSettingsPane(model: model)
+            case .notifications, .usage, .shortcuts, .sshRemote, .labs, .mitama:
+                SettingsPaneNotBuiltYet(tab: selectedTab)
             }
 
             if model.updateChecker.hasUpdate, let version = model.updateChecker.latestVersion {
@@ -687,7 +604,7 @@ struct SetupSettingsPane: View {
             }
         }
         .formStyle(.grouped)
-        .navigationTitle(lang.t("settings.tab.setup"))
+        .navigationTitle(lang.t("settings.tab.integrations"))
     }
 
     @ViewBuilder

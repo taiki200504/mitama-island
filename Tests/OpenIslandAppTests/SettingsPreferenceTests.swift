@@ -267,3 +267,57 @@ struct FeatureAvailabilityTests {
         #expect(keys.allSatisfy { $0.hasPrefix("settings.pending.") })
     }
 }
+
+@MainActor
+struct SettingsSurfaceTests {
+    /// `LanguageManager.t` echoes the key back when the lookup misses, so a key
+    /// that equals its own translation means nobody wrote the string.
+    private func isLocalized(_ key: String) -> Bool {
+        LanguageManager.shared.t(key) != key
+    }
+
+    @Test
+    func everyTabHasATitleInTheBundle() {
+        for tab in SettingsTab.allCases {
+            #expect(isLocalized(tab.titleKey), "missing string for \(tab.titleKey)")
+        }
+    }
+
+    @Test
+    func everyPendingCapabilityHasAnExplanationInTheBundle() {
+        for capability in PendingCapability.allCases {
+            #expect(
+                isLocalized(capability.explanationKey),
+                "missing string for \(capability.explanationKey)"
+            )
+        }
+    }
+
+    @Test
+    func sharedControlStringsExist() {
+        for key in [
+            "settings.pending.badge",
+            "settings.value.defaultMarker",
+            "settings.value.reset",
+            "settings.paneNotBuilt.title",
+            "settings.paneNotBuilt.body",
+        ] {
+            #expect(isLocalized(key), "missing string for \(key)")
+        }
+    }
+
+    /// Every tab must appear in exactly one sidebar section — a tab that belongs
+    /// to none would silently vanish from the sidebar.
+    @Test
+    func sidebarSectionsCoverEveryTabExactlyOnce() {
+        let listed = SettingsSection.allCases.flatMap(\.tabs)
+        #expect(listed.count == SettingsTab.allCases.count)
+        #expect(Set(listed) == Set(SettingsTab.allCases))
+    }
+
+    @Test
+    func tabsAreVisuallyDistinguishable() {
+        let icons = SettingsTab.allCases.map(\.icon)
+        #expect(Set(icons).count == icons.count)
+    }
+}
