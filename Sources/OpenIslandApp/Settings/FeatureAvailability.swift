@@ -37,6 +37,7 @@ enum PendingCapability: String, CaseIterable, Sendable {
     case soundThemeEngine
     case perEventSounds
     case soundPackImport
+    case unraisedSoundEvents
     case quietHoursScheduler
 
     // Notification filters

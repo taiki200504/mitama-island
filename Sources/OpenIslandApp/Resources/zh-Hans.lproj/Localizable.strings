@@ -369,3 +369,32 @@
 "settings.shortcuts.action.selectOption" = "选择选项";
 "settings.shortcuts.action.submitMultiSelect" = "发送多选答案";
 "settings.shortcuts.action.collapsePanel" = "关闭面板";
+
+/* Sound pane */
+"settings.sound.section.output" = "输出";
+"settings.sound.section.events" = "按事件设置音效";
+"settings.sound.section.eventsPending" = "应用尚未触发的事件";
+"settings.sound.section.quietHours" = "静音时段";
+"settings.sound.section.theme" = "音效主题";
+"settings.sound.enabled" = "播放音效";
+"settings.sound.enabled.help" = "灵动岛上的扬声器按钮也可切换。";
+"settings.sound.volume" = "音量";
+"settings.sound.theme" = "主题";
+"settings.sound.theme.system" = "Apple 系统音效";
+"settings.sound.import" = "导入音效包";
+"settings.sound.preview" = "播放";
+"settings.sound.quietHours.enabled" = "在指定时段内保持静音";
+"settings.sound.quietHours.help" = "若结束时间早于开始时间，则视为跨夜时段。";
+"settings.sound.quietHours.start" = "开始";
+"settings.sound.quietHours.end" = "结束";
+"settings.sound.eventsPending.help" = "分配会被保存，但应用目前不会到达这些时刻。";
+"settings.sound.event.approvalNeeded" = "需要审批时";
+"settings.sound.event.answerNeeded" = "需要回答时";
+"settings.sound.event.taskComplete" = "工作完成时";
+"settings.sound.event.sessionStart" = "会话开始时";
+"settings.sound.event.taskError" = "出错时";
+"settings.sound.event.contextLimit" = "达到上下文上限时";
+"settings.sound.event.idleReminder" = "被搁置时";
+"settings.sound.event.usageAlmostFull" = "用量即将耗尽时";
+"settings.sound.event.usageRefreshed" = "用量重置时";
+"settings.pending.unraisedSoundEvents" = "应用目前不会到达这一时刻。";

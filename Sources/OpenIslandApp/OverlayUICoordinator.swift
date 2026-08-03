@@ -364,8 +364,25 @@ final class OverlayUICoordinator {
         }
 
         appModel?.measuredNotificationContentHeight = 0
-        NotificationSoundService.playNotification(isMuted: isSoundMuted)
+        if let event = notificationSoundEvent(for: surface) {
+            NotificationSoundService.play(event, settings: settings.sound)
+        }
         notchOpen(reason: .notification, surface: surface)
+    }
+
+    /// Which sound a surface stands for, taken from the state of the session it
+    /// is presenting.
+    private func notificationSoundEvent(for surface: IslandSurface) -> NotificationSoundEvent? {
+        guard let sessionID = surface.sessionID,
+              let session = appModel?.state.sessions.first(where: { $0.id == sessionID }) else {
+            return nil
+        }
+        switch session.phase {
+        case .waitingForApproval: return .approvalNeeded
+        case .waitingForAnswer:   return .answerNeeded
+        case .completed:          return .taskComplete
+        default:                  return nil
+        }
     }
 
     func shouldPreserveCurrentNotificationSurface(against candidate: IslandSurface) -> Bool {

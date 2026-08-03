@@ -369,3 +369,32 @@
 "settings.shortcuts.action.selectOption" = "選択肢を選ぶ";
 "settings.shortcuts.action.submitMultiSelect" = "複数選択を送る";
 "settings.shortcuts.action.collapsePanel" = "パネルを閉じる";
+
+/* Sound pane */
+"settings.sound.section.output" = "出力";
+"settings.sound.section.events" = "イベントごとの音";
+"settings.sound.section.eventsPending" = "まだ鳴らす場面が無いイベント";
+"settings.sound.section.quietHours" = "静かにする時間帯";
+"settings.sound.section.theme" = "サウンドテーマ";
+"settings.sound.enabled" = "音を鳴らす";
+"settings.sound.enabled.help" = "島の上のスピーカーボタンでも切り替えられる。";
+"settings.sound.volume" = "音量";
+"settings.sound.theme" = "テーマ";
+"settings.sound.theme.system" = "Apple のシステム音";
+"settings.sound.import" = "サウンドパックを読み込む";
+"settings.sound.preview" = "再生";
+"settings.sound.quietHours.enabled" = "指定した時間帯は鳴らさない";
+"settings.sound.quietHours.help" = "終わりが始まりより前なら、日をまたぐ時間帯として扱う。";
+"settings.sound.quietHours.start" = "開始";
+"settings.sound.quietHours.end" = "終了";
+"settings.sound.eventsPending.help" = "割り当ては保存されるが、いまのアプリはこれらの場面に到達しない。";
+"settings.sound.event.approvalNeeded" = "承認が要るとき";
+"settings.sound.event.answerNeeded" = "返事が要るとき";
+"settings.sound.event.taskComplete" = "作業が終わったとき";
+"settings.sound.event.sessionStart" = "セッションが始まったとき";
+"settings.sound.event.taskError" = "失敗したとき";
+"settings.sound.event.contextLimit" = "文脈の上限に達したとき";
+"settings.sound.event.idleReminder" = "放置されたとき";
+"settings.sound.event.usageAlmostFull" = "使用量が残り少ないとき";
+"settings.sound.event.usageRefreshed" = "使用量が戻ったとき";
+"settings.pending.unraisedSoundEvents" = "いまのアプリはこの場面に到達しません。";

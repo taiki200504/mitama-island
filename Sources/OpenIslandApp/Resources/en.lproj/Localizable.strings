@@ -369,3 +369,32 @@
 "settings.shortcuts.action.selectOption" = "Pick an option";
 "settings.shortcuts.action.submitMultiSelect" = "Send a multi-select answer";
 "settings.shortcuts.action.collapsePanel" = "Close the panel";
+
+/* Sound pane */
+"settings.sound.section.output" = "Output";
+"settings.sound.section.events" = "Per-event sounds";
+"settings.sound.section.eventsPending" = "Events the app does not raise yet";
+"settings.sound.section.quietHours" = "Quiet hours";
+"settings.sound.section.theme" = "Sound theme";
+"settings.sound.enabled" = "Play sounds";
+"settings.sound.enabled.help" = "The speaker button on the island toggles this too.";
+"settings.sound.volume" = "Volume";
+"settings.sound.theme" = "Theme";
+"settings.sound.theme.system" = "Apple system sounds";
+"settings.sound.import" = "Import a sound pack";
+"settings.sound.preview" = "Play";
+"settings.sound.quietHours.enabled" = "Stay silent during a time range";
+"settings.sound.quietHours.help" = "A range that ends before it starts runs overnight.";
+"settings.sound.quietHours.start" = "From";
+"settings.sound.quietHours.end" = "Until";
+"settings.sound.eventsPending.help" = "Assignments are kept, but the app never reaches these moments yet.";
+"settings.sound.event.approvalNeeded" = "Approval needed";
+"settings.sound.event.answerNeeded" = "Answer needed";
+"settings.sound.event.taskComplete" = "Work finished";
+"settings.sound.event.sessionStart" = "Session started";
+"settings.sound.event.taskError" = "Something failed";
+"settings.sound.event.contextLimit" = "Context limit reached";
+"settings.sound.event.idleReminder" = "Left unattended";
+"settings.sound.event.usageAlmostFull" = "Usage nearly spent";
+"settings.sound.event.usageRefreshed" = "Usage reset";
+"settings.pending.unraisedSoundEvents" = "The app never reaches this moment yet.";

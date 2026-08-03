@@ -368,3 +368,32 @@
 "settings.shortcuts.action.selectOption" = "選擇選項";
 "settings.shortcuts.action.submitMultiSelect" = "傳送多選答案";
 "settings.shortcuts.action.collapsePanel" = "關閉面板";
+
+/* Sound pane */
+"settings.sound.section.output" = "輸出";
+"settings.sound.section.events" = "依事件設定音效";
+"settings.sound.section.eventsPending" = "應用尚未觸發的事件";
+"settings.sound.section.quietHours" = "靜音時段";
+"settings.sound.section.theme" = "音效主題";
+"settings.sound.enabled" = "播放音效";
+"settings.sound.enabled.help" = "島上的喇叭按鈕也可切換。";
+"settings.sound.volume" = "音量";
+"settings.sound.theme" = "主題";
+"settings.sound.theme.system" = "Apple 系統音效";
+"settings.sound.import" = "匯入音效包";
+"settings.sound.preview" = "播放";
+"settings.sound.quietHours.enabled" = "在指定時段內保持靜音";
+"settings.sound.quietHours.help" = "若結束時間早於開始時間，則視為跨夜時段。";
+"settings.sound.quietHours.start" = "開始";
+"settings.sound.quietHours.end" = "結束";
+"settings.sound.eventsPending.help" = "指派會被保存，但應用目前不會到達這些時刻。";
+"settings.sound.event.approvalNeeded" = "需要審批時";
+"settings.sound.event.answerNeeded" = "需要回答時";
+"settings.sound.event.taskComplete" = "工作完成時";
+"settings.sound.event.sessionStart" = "工作階段開始時";
+"settings.sound.event.taskError" = "出錯時";
+"settings.sound.event.contextLimit" = "達到上下文上限時";
+"settings.sound.event.idleReminder" = "被擱置時";
+"settings.sound.event.usageAlmostFull" = "用量即將耗盡時";
+"settings.sound.event.usageRefreshed" = "用量重置時";
+"settings.pending.unraisedSoundEvents" = "應用目前不會到達這一時刻。";

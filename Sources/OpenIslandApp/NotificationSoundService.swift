@@ -30,17 +30,25 @@ struct NotificationSoundService {
     }
 
     /// Plays a system sound by name.
-    static func play(_ name: String) {
+    static func play(_ name: String, volume: Double = 1) {
         guard let sound = NSSound(named: NSSound.Name(name)) else {
             return
         }
         sound.stop()
+        sound.volume = Float(min(max(volume, 0), 1))
         sound.play()
     }
 
-    /// Plays the user-selected notification sound, respecting the mute setting.
-    static func playNotification(isMuted: Bool) {
-        guard !isMuted else { return }
-        play(selectedSoundName)
+    /// Plays the sound assigned to an event, if anything should be heard.
+    ///
+    /// Mute, quiet hours and whether the event is one the app actually raises
+    /// are all decided by `SoundSettings`; this only carries out the result.
+    static func play(
+        _ event: NotificationSoundEvent,
+        settings: SoundSettings,
+        at date: Date = Date()
+    ) {
+        guard settings.shouldPlay(event, at: date) else { return }
+        play(settings.soundName(for: event), volume: settings.volume)
     }
 }

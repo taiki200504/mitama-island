@@ -87,53 +87,6 @@ struct SettingsView: View {
     }
 }
 
-// MARK: - Sound
-
-struct SoundSettingsPane: View {
-    var model: AppModel
-
-    private var lang: LanguageManager { model.lang }
-
-    private var availableSounds: [String] {
-        NotificationSoundService.availableSounds()
-    }
-
-    var body: some View {
-        Form {
-            Section(lang.t("settings.sound.notifications")) {
-                Toggle(lang.t("settings.sound.mute"), isOn: Binding(
-                    get: { model.isSoundMuted },
-                    set: { _ in model.toggleSoundMuted() }
-                ))
-            }
-
-            Section(lang.t("settings.sound.selectSound")) {
-                List(availableSounds, id: \.self) { name in
-                    Button {
-                        model.selectedSoundName = name
-                        NotificationSoundService.play(name)
-                    } label: {
-                        HStack {
-                            Text(name)
-                                .foregroundStyle(.primary)
-                            Spacer()
-                            if name == model.selectedSoundName {
-                                Image(systemName: "checkmark")
-                                    .foregroundStyle(.blue)
-                                    .fontWeight(.semibold)
-                            }
-                        }
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-        .formStyle(.grouped)
-        .navigationTitle(lang.t("settings.tab.sound"))
-    }
-}
-
 // MARK: - About
 
 struct AboutSettingsPane: View {

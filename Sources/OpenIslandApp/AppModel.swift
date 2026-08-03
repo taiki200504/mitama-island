@@ -305,14 +305,14 @@ final class AppModel {
     }
     @ObservationIgnored
     private var isApplyingLaunchAtLogin = false
-    var isSoundMuted = false {
-        didSet {
-            guard isSoundMuted != oldValue else {
-                return
-            }
-
-            UserDefaults.standard.set(isSoundMuted, forKey: Self.soundMutedDefaultsKey)
-            lastActionMessage = isSoundMuted
+    /// Backed by `settings.sound` so the island's speaker button and the sound
+    /// pane are the same switch rather than two that happen to agree.
+    var isSoundMuted: Bool {
+        get { settings.sound.isMuted }
+        set {
+            guard newValue != settings.sound.isMuted else { return }
+            settings.sound.isMuted = newValue
+            lastActionMessage = newValue
                 ? "Island sound notifications muted."
                 : "Island sound notifications enabled."
         }
@@ -641,7 +641,6 @@ final class AppModel {
             Self.completionReplyEnabledDefaultsKey: false,
             Self.suppressFrontmostNotificationsDefaultsKey: true,
         ])
-        isSoundMuted = UserDefaults.standard.bool(forKey: Self.soundMutedDefaultsKey)
         selectedSoundName = NotificationSoundService.selectedSoundName
         showDockIcon = UserDefaults.standard.bool(forKey: Self.showDockIconDefaultsKey)
         hapticFeedbackEnabled = UserDefaults.standard.bool(forKey: Self.hapticFeedbackEnabledDefaultsKey)
