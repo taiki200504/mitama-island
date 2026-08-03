@@ -210,8 +210,11 @@ extension BehaviourSettings {
     enum Defaults {
         static let hoverDuration: Double = 0.15
         static let hoverDurationRange: ClosedRange<Double> = 0...1.0
-        static let autoRevealDwell: Double = 6
-        static let autoRevealDwellRange: ClosedRange<Double> = 2...30
+        /// Kept at the value the app already shipped so nobody's panel starts
+        /// closing sooner than it used to just because the setting now exists.
+        /// The reference product offers this as a picker, so do the same.
+        static let autoRevealDwell: Double = 10
+        static let autoRevealDwellOptions: [Double] = [3, 5, 10, 15, 30]
     }
 
     enum Keys {

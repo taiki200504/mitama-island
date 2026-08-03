@@ -280,3 +280,31 @@
 "settings.pending.followFocusDisplay" = "Needs follow-the-focused-display placement.";
 "settings.pending.diagnosticsReport" = "Needs diagnostic report collection.";
 "settings.pending.releaseNotesFeed" = "Needs the release notes feed.";
+
+/* General pane */
+"settings.general.section.expansion" = "Expansion";
+"settings.general.section.visibility" = "Visibility";
+"settings.general.section.dismissal" = "Dismissal";
+"settings.general.section.interaction" = "Interaction";
+"settings.general.expandOnHover" = "Expand the notch on hover";
+"settings.general.hoverDuration" = "Hover duration";
+"settings.general.smartSuppression" = "Smart suppression";
+"settings.general.smartSuppression.help" = "Stay collapsed while the agent's own terminal tab is already in front.";
+"settings.general.hideInFullscreen" = "Hide in fullscreen";
+"settings.general.autoHideWhenIdle" = "Hide when no session is running";
+"settings.general.autoRevealDwell" = "Auto-reveal duration";
+"settings.general.autoRevealDwell.help" = "How long an auto-revealed panel stays open. Press Escape to close it sooner.";
+"settings.general.dismissOnOutsideClick" = "Close auto-reveal on an outside click";
+"settings.general.disableClickToJump" = "Do not jump when a session is clicked";
+"settings.general.disableClickToJump.help" = "The explicit jump buttons keep working either way.";
+"settings.general.idleCleanup" = "Drop idle sessions after";
+"settings.general.idleCleanup.help" = "Only applies to sessions that never send a clear close signal.";
+"settings.behaviour.idleCleanup.never" = "Never";
+"settings.behaviour.idleCleanup.thirtyMinutes" = "30 minutes";
+"settings.behaviour.idleCleanup.oneHour" = "1 hour";
+"settings.behaviour.idleCleanup.twoHours" = "2 hours";
+"settings.behaviour.idleCleanup.fourHours" = "4 hours";
+"settings.behaviour.idleCleanup.eightHours" = "8 hours";
+"settings.behaviour.idleCleanup.twentyFourHours" = "24 hours";
+"settings.general.section.mitama" = "Mitama Island only";
+"settings.seconds.format" = "%@s";

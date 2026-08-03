@@ -280,3 +280,31 @@
 "settings.pending.followFocusDisplay" = "フォーカス中の画面を追う配置処理が要ります。";
 "settings.pending.diagnosticsReport" = "診断レポートの収集が要ります。";
 "settings.pending.releaseNotesFeed" = "リリースノートの取得が要ります。";
+
+/* General pane */
+"settings.general.section.expansion" = "展開";
+"settings.general.section.visibility" = "表示";
+"settings.general.section.dismissal" = "収納";
+"settings.general.section.interaction" = "操作";
+"settings.general.expandOnHover" = "ホバーでノッチを展開";
+"settings.general.hoverDuration" = "ホバー時間";
+"settings.general.smartSuppression" = "スマート抑制";
+"settings.general.smartSuppression.help" = "対象エージェントのターミナルタブが前面のときは展開しない。";
+"settings.general.hideInFullscreen" = "フルスクリーン時に非表示";
+"settings.general.autoHideWhenIdle" = "動いているセッションが無いときは隠す";
+"settings.general.autoRevealDwell" = "自動表示の表示時間";
+"settings.general.autoRevealDwell.help" = "自動で開いたパネルを開いたままにする時間。Escape キーで早く閉じられる。";
+"settings.general.dismissOnOutsideClick" = "外側をクリックしたら自動表示を閉じる";
+"settings.general.disableClickToJump" = "セッションをクリックしてもジャンプしない";
+"settings.general.disableClickToJump.help" = "明示的なジャンプボタンはどちらの設定でも使える。";
+"settings.general.idleCleanup" = "停止したセッションを片付けるまで";
+"settings.general.idleCleanup.help" = "終了を明示しないセッションだけが対象。";
+"settings.behaviour.idleCleanup.never" = "片付けない";
+"settings.behaviour.idleCleanup.thirtyMinutes" = "30分";
+"settings.behaviour.idleCleanup.oneHour" = "1時間";
+"settings.behaviour.idleCleanup.twoHours" = "2時間";
+"settings.behaviour.idleCleanup.fourHours" = "4時間";
+"settings.behaviour.idleCleanup.eightHours" = "8時間";
+"settings.behaviour.idleCleanup.twentyFourHours" = "24時間";
+"settings.general.section.mitama" = "Mitama Island 独自";
+"settings.seconds.format" = "%@秒";

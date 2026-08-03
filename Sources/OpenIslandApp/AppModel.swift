@@ -39,7 +39,9 @@ final class AppModel {
     private static let liveSessionStalenessWindow: TimeInterval = 15 * 60
     private static let jumpOverlayDismissLeadTime: Duration = .milliseconds(20)
     private static let agentsGridObservedSequenceLimit = 512
-    static let hoverOpenDelay: TimeInterval = 0.15
+    /// Fallback used before any window exists; the live value comes from
+    /// `settings.behaviour.hoverDuration`.
+    static let hoverOpenDelay: TimeInterval = BehaviourSettings.Defaults.hoverDuration
 
     struct AcceptanceStep: Identifiable {
         let id: String
@@ -49,6 +51,7 @@ final class AppModel {
     }
 
     let lang = LanguageManager.shared
+    let settings: SettingsStore
 
     var state = SessionState() {
         didSet {
@@ -69,7 +72,7 @@ final class AppModel {
     @ObservationIgnored private var _agentsGridNextTicket: Int = 0
     var selectedSessionID: String?
     let hooks = HookInstallationCoordinator()
-    let overlay = OverlayUICoordinator()
+    let overlay: OverlayUICoordinator
     let discovery = SessionDiscoveryCoordinator()
     let monitoring = ProcessMonitoringCoordinator()
     let codexAppServer = CodexAppServerCoordinator()
@@ -601,10 +604,13 @@ final class AppModel {
         },
         isNotificationSessionAlreadyFrontmost: @escaping @Sendable (AgentSession) async -> Bool = { session in
             await ForegroundTerminalSessionProbe().matches(session: session)
-        }
+        },
+        settings: SettingsStore = .shared
     ) {
         self.terminalJumpAction = terminalJumpAction
         self.isNotificationSessionAlreadyFrontmost = isNotificationSessionAlreadyFrontmost
+        self.settings = settings
+        self.overlay = OverlayUICoordinator(settings: settings)
         UserDefaults.standard.register(defaults: [
             Self.showDockIconDefaultsKey: true,
             Self.hapticFeedbackEnabledDefaultsKey: false,
@@ -1348,6 +1354,10 @@ final class AppModel {
     }
 
     func jumpToSession(_ session: AgentSession) {
+        // Only the row tap goes through here. Explicit "go to terminal" buttons
+        // call `jump(to:)` directly and stay available either way.
+        guard !settings.behaviour.disableClickToJump else { return }
+
         guard let jumpTarget = session.jumpTarget,
               jumpTarget.terminalApp.lowercased() != "unknown" else {
             lastActionMessage = "Cannot jump: terminal app is unknown."

@@ -7,7 +7,11 @@ import OpenIslandCore
 @Observable
 final class OverlayUICoordinator {
 
-    private static let notificationSurfaceAutoCollapseDelay: TimeInterval = 10
+    @ObservationIgnored let settings: SettingsStore
+
+    init(settings: SettingsStore = .shared) {
+        self.settings = settings
+    }
 
     var notchStatus: NotchStatus = .closed
     var notchOpenReason: NotchOpenReason?
@@ -286,6 +290,10 @@ final class OverlayUICoordinator {
             return false
         }
 
+        guard settings.behaviour.autoCollapseOnLeave else {
+            return false
+        }
+
         guard notchStatus == .opened else {
             return false
         }
@@ -422,9 +430,10 @@ final class OverlayUICoordinator {
             return
         }
 
+        let dwell = settings.behaviour.autoRevealDwell
         notificationAutoCollapseTask = Task { @MainActor [weak self] in
             do {
-                try await Task.sleep(for: .seconds(Self.notificationSurfaceAutoCollapseDelay))
+                try await Task.sleep(for: .seconds(dwell))
             } catch {
                 // Task was cancelled (e.g. a new event reset the timer).
                 // Do NOT proceed — the replacement task owns the new timer.

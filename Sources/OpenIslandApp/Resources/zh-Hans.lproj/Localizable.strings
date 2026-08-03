@@ -280,3 +280,31 @@
 "settings.pending.followFocusDisplay" = "需要跟随焦点显示器的定位。";
 "settings.pending.diagnosticsReport" = "需要诊断报告收集。";
 "settings.pending.releaseNotesFeed" = "需要发行说明源。";
+
+/* General pane */
+"settings.general.section.expansion" = "展开";
+"settings.general.section.visibility" = "显示";
+"settings.general.section.dismissal" = "收起";
+"settings.general.section.interaction" = "交互";
+"settings.general.expandOnHover" = "悬停时展开刘海";
+"settings.general.hoverDuration" = "悬停时长";
+"settings.general.smartSuppression" = "智能抑制";
+"settings.general.smartSuppression.help" = "当该代理的终端标签已在前台时不展开。";
+"settings.general.hideInFullscreen" = "全屏时隐藏";
+"settings.general.autoHideWhenIdle" = "没有运行中的会话时隐藏";
+"settings.general.autoRevealDwell" = "自动显示时长";
+"settings.general.autoRevealDwell.help" = "自动展开的面板保持打开的时长。按 Escape 可提前关闭。";
+"settings.general.dismissOnOutsideClick" = "点击外部关闭自动显示";
+"settings.general.disableClickToJump" = "点击会话时不跳转";
+"settings.general.disableClickToJump.help" = "无论如何设置，明确的跳转按钮都可继续使用。";
+"settings.general.idleCleanup" = "清理空闲会话的时间";
+"settings.general.idleCleanup.help" = "仅适用于不发送明确关闭信号的会话。";
+"settings.behaviour.idleCleanup.never" = "从不";
+"settings.behaviour.idleCleanup.thirtyMinutes" = "30 分钟";
+"settings.behaviour.idleCleanup.oneHour" = "1 小时";
+"settings.behaviour.idleCleanup.twoHours" = "2 小时";
+"settings.behaviour.idleCleanup.fourHours" = "4 小时";
+"settings.behaviour.idleCleanup.eightHours" = "8 小时";
+"settings.behaviour.idleCleanup.twentyFourHours" = "24 小时";
+"settings.general.section.mitama" = "Mitama Island 专属";
+"settings.seconds.format" = "%@ 秒";

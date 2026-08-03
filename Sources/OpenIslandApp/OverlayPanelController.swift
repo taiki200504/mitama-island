@@ -246,7 +246,9 @@ final class OverlayPanelController {
         let inClosedSurfaceArea = isPointInClosedSurfaceArea(screenLocation)
 
         if model.notchStatus == .closed && inClosedSurfaceArea {
-            scheduleHoverOpen()
+            if model.settings.behaviour.expandOnHover {
+                scheduleHoverOpen()
+            }
         } else if model.notchStatus == .closed && !inClosedSurfaceArea {
             cancelHoverOpen()
         }
@@ -300,7 +302,8 @@ final class OverlayPanelController {
         }
 
         hoverTimer = item
-        DispatchQueue.main.asyncAfter(deadline: .now() + AppModel.hoverOpenDelay, execute: item)
+        let delay = model?.settings.behaviour.hoverDuration ?? AppModel.hoverOpenDelay
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: item)
     }
 
     private func performHoverOpen(_ model: AppModel) {
