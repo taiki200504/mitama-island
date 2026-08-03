@@ -247,7 +247,8 @@ enum HarnessArtifactRecorder {
             return window.frame.width >= 120 ? "overlay" : nil
         }
 
-        return nil
+        // The settings window, so pane captures have something to record.
+        return window.frame.width >= 400 ? "settings" : nil
     }
 
     private static func overlaySnapshot(

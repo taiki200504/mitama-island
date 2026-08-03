@@ -31,6 +31,10 @@ run_step() {
             echo "==> build"
             swift build
             ;;
+        capture-panes)
+            echo "==> capture-panes"
+            zsh "$repo_root/scripts/capture-settings-panes.sh"
+            ;;
         smoke)
             echo "==> smoke"
             zsh "$repo_root/scripts/smoke-dev-app.sh"
@@ -52,7 +56,7 @@ run_step() {
             run_step smoke-all
             ;;
         *)
-            echo "usage: scripts/harness.sh [docs|test|build|smoke|smoke-all|ci|all] ..." >&2
+            echo "usage: scripts/harness.sh [docs|test|build|smoke|smoke-all|capture-panes|ci|all] ..." >&2
             exit 64
             ;;
     esac

@@ -22,6 +22,10 @@ struct SettingsView: View {
         .onReceive(NotificationCenter.default.publisher(for: .openIslandSelectSetupTab)) { _ in
             selectedTab = .integrations
         }
+        .onReceive(NotificationCenter.default.publisher(for: .openIslandSelectSettingsTab)) { note in
+            guard let raw = note.object as? String, let tab = SettingsTab(rawValue: raw) else { return }
+            selectedTab = tab
+        }
     }
 
     // MARK: Sidebar

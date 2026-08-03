@@ -8,6 +8,8 @@ struct HarnessLaunchConfiguration {
     let captureDelay: TimeInterval?
     let autoExitAfter: TimeInterval?
     let artifactDirectoryURL: URL?
+    /// Raw value of the settings tab to display before capturing.
+    let settingsTab: String?
 
     init(environment: [String: String] = ProcessInfo.processInfo.environment) {
         scenario = Self.scenarioValue(from: environment["OPEN_ISLAND_HARNESS_SCENARIO"])
@@ -32,6 +34,9 @@ struct HarnessLaunchConfiguration {
         artifactDirectoryURL = Self.directoryURLValue(
             from: environment["OPEN_ISLAND_HARNESS_ARTIFACT_DIR"]
         )
+        settingsTab = environment["OPEN_ISLAND_HARNESS_SETTINGS_TAB"]
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .flatMap { $0.isEmpty ? nil : $0 }
     }
 
     private static func scenarioValue(from rawValue: String?) -> IslandDebugScenario? {

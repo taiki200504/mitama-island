@@ -10,6 +10,10 @@ extension Notification.Name {
     /// user to the right place without `SettingsView`'s `@State` having
     /// to leak into `AppModel`.
     static let openIslandSelectSetupTab = Notification.Name("openIslandSelectSetupTab")
+
+    /// Carries the tab's raw value in `object`. Used by the harness to walk
+    /// every pane, and by anything else that needs to land on a specific one.
+    static let openIslandSelectSettingsTab = Notification.Name("openIslandSelectSettingsTab")
 }
 
 @MainActor
@@ -1353,6 +1357,11 @@ final class AppModel {
     func showOnboarding() {
         showSettings()
         NotificationCenter.default.post(name: .openIslandSelectSetupTab, object: nil)
+    }
+
+    func showSettings(tab rawValue: String) {
+        showSettings()
+        NotificationCenter.default.post(name: .openIslandSelectSettingsTab, object: rawValue)
     }
 
     func toggleSoundMuted() {

@@ -40,6 +40,13 @@ final class OpenIslandAppDelegate: NSObject, NSApplicationDelegate {
             // Hide all windows on launch — settings opens on demand only.
             OpenIslandAppDelegate.hideAllAppWindows()
 
+            // The recorder captures every visible window, so opening settings on
+            // the requested pane is all it takes to get a shot of that pane.
+            if let tab = harnessLaunchConfiguration.settingsTab {
+                model.showSettings(tab: tab)
+                harnessRuntimeMonitor.recordMilestone("settingsOpened", message: tab)
+            }
+
             harnessRuntimeMonitor.recordMilestone("bootstrapCompleted")
 
             if let captureDelay = harnessLaunchConfiguration.captureDelay,
