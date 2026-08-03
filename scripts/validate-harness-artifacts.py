@@ -212,9 +212,14 @@ def main() -> None:
             fail(f"expected closed notch, got {notch_status!r}")
         if island_surface != "sessionList":
             fail(f"expected closed scenario to use sessionList surface, got {island_surface!r}")
+        # The overlay window keeps the opened surface's width in every state —
+        # only its height collapses — so the width bound matches the other
+        # scenarios. This previously expected an upper bound of 620, left over
+        # from when the opened panel was 520pt wide, and had been failing since
+        # the panel was widened to 648pt.
         require_frame_between(
             overlay_frame,
-            width=(200, 620),
+            width=(520, 780),
             height=(35, 500),
             context="closed overlay frame",
         )
