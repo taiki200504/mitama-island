@@ -55,3 +55,4 @@ This index is the repository map for humans and coding agents. Read these files 
 - [docs/island-position-investigation.md](./island-position-investigation.md) for notch and external-display placement work
 - [docs/notchi-integration.md](./notchi-integration.md) for integration notes related to Notchi
 - [docs/installed-app-bundle-analysis.md](./installed-app-bundle-analysis.md) for installed-app bundle observations
+- [docs/references/vibe-parity-checklist.md](./references/vibe-parity-checklist.md) for the settings-surface gap checklist against the paid reference product

@@ -1,5 +1,14 @@
 # Installed App Bundle Analysis
 
+> **Stale baseline.** This note describes version `1.0.15`. The version installed as of
+> 2026-08-03 is `1.0.43`, which added whole settings surfaces that do not appear below
+> (Behaviour, Notifications filters, Labs, Usage, quiet scenes, AI session naming, the
+> switcher panel, onboarding). The transport and helper findings here still hold; the
+> feature inventory does not.
+>
+> For the current settings-surface gap list, read
+> [docs/references/vibe-parity-checklist.md](./references/vibe-parity-checklist.md).
+
 Reviewed on 2026-04-02 against the locally installed app:
 
 - bundle: `/Applications/Vibe Island.app`
