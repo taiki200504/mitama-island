@@ -76,7 +76,7 @@ final class DisplaySettings: PreferenceGroup {
     }
 
     var showWorktree: Bool {
-        get { read(\.showWorktree, Keys.showWorktree, false) }
+        get { read(\.showWorktree, Keys.showWorktree, true) }
         set { write(\.showWorktree, Keys.showWorktree, newValue) }
     }
 
@@ -88,8 +88,10 @@ final class DisplaySettings: PreferenceGroup {
 
 extension DisplaySettings {
     enum Defaults {
-        static let contentFontSize: Double = 12.5
-        static let contentFontSizeRange: ClosedRange<Double> = 10...16
+        /// The reference product offers this as a picker, not a slider, and
+        /// labels 11pt as the default.
+        static let contentFontSize: Double = 11
+        static let contentFontSizeOptions: [Double] = [10, 11, 12, 13, 14, 15, 16]
 
         static let maxPanelHeight: Double = 560
         static let maxPanelHeightRange: ClosedRange<Double> = 280...900
@@ -98,7 +100,7 @@ extension DisplaySettings {
         static let maxPanelWidth: Double = 648
         static let maxPanelWidthRange: ClosedRange<Double> = 480...900
 
-        static let completionCardHeight: Double = 140
+        static let completionCardHeight: Double = 90
         static let completionCardHeightRange: ClosedRange<Double> = 90...260
 
         static let notchOverrideRange: ClosedRange<Double> = 0...260
