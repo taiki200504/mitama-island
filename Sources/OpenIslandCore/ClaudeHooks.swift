@@ -1220,12 +1220,7 @@ public extension ClaudeHookPayload {
             case "wezterm":
                 return "WezTerm"
             case "vscode":
-                // Cursor also sets TERM_PROGRAM=vscode; check its unique
-                // env var first.
-                if environment["CURSOR_TRACE_ID"] != nil {
-                    return "Cursor"
-                }
-                return "VS Code"
+                return VSCodeForkIdentity.displayName(from: environment) ?? "VS Code"
             case "vscode-insiders":
                 return "VS Code Insiders"
             case "windsurf":

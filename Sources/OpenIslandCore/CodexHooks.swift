@@ -711,7 +711,7 @@ public extension CodexHookPayload {
             case "kaku":
                 return "Kaku"
             case "vscode":
-                return "VS Code"
+                return VSCodeForkIdentity.displayName(from: environment) ?? "VS Code"
             case "vscode-insiders":
                 return "VS Code Insiders"
             case "windsurf":
