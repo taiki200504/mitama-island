@@ -398,3 +398,31 @@
 "settings.sound.event.usageAlmostFull" = "使用量が残り少ないとき";
 "settings.sound.event.usageRefreshed" = "使用量が戻ったとき";
 "settings.pending.unraisedSoundEvents" = "いまのアプリはこの場面に到達しません。";
+
+/* Notifications pane */
+"settings.notifications.section.completion" = "完了通知";
+"settings.notifications.section.quiet" = "静かにする場面";
+"settings.notifications.section.presets" = "組み込みのフィルタ";
+"settings.notifications.section.custom" = "自分で作ったフィルタ";
+"settings.notifications.section.custom.footer" = "隠したセッションは、一覧からも件数からも通知からも音からも消える。";
+"settings.notifications.expandOnCompletion" = "作業が終わったらパネルを開く";
+"settings.notifications.expandOnCompletion.help" = "オフなら島は畳んだまま控えめに光る。承認と質問は変わらず開く。";
+"settings.notifications.quiet.focus" = "集中モード中";
+"settings.notifications.quiet.screenLocked" = "画面ロック中・スリープ中";
+"settings.notifications.quiet.screenShared" = "画面収録中・画面共有中";
+"settings.notifications.field.workingDirectory" = "作業ディレクトリ";
+"settings.notifications.field.firstPrompt" = "最初のプロンプト";
+"settings.notifications.match.prefix" = "で始まる";
+"settings.notifications.match.contains" = "を含む";
+"settings.notifications.match.equals" = "と一致する";
+"settings.notifications.preset.claudeMem" = "Claude-Mem の裏方セッション";
+"settings.notifications.preset.codexMemories" = "Codex のメモリ書き込み";
+"settings.notifications.preset.memoryWritingAgent" = "メモリ書き込みエージェント";
+"settings.notifications.preset.titleGenerator" = "タイトル生成";
+"settings.notifications.preset.custom" = "自分で作ったもの";
+"settings.notifications.addRule" = "追加";
+"settings.notifications.removeRule" = "削除";
+"settings.notifications.pattern.placeholder" = "例: /scratch/experiments";
+"settings.notifications.matchCount" = "いま出ているセッションのうち %@ 件を隠す";
+"settings.notifications.noRules" = "自分で作ったフィルタはまだ無い。";
+"settings.notifications.blockedApps" = "特定のアプリから始まったセッションを隠す";

@@ -398,3 +398,31 @@
 "settings.sound.event.usageAlmostFull" = "Usage nearly spent";
 "settings.sound.event.usageRefreshed" = "Usage reset";
 "settings.pending.unraisedSoundEvents" = "The app never reaches this moment yet.";
+
+/* Notifications pane */
+"settings.notifications.section.completion" = "Completion";
+"settings.notifications.section.quiet" = "Stay quiet during";
+"settings.notifications.section.presets" = "Built-in filters";
+"settings.notifications.section.custom" = "Your filters";
+"settings.notifications.section.custom.footer" = "A hidden session is absent from the list, the counts, the notifications and the sound.";
+"settings.notifications.expandOnCompletion" = "Open the panel when work finishes";
+"settings.notifications.expandOnCompletion.help" = "Off keeps the island folded and lets it glow instead. Approvals and questions still open it.";
+"settings.notifications.quiet.focus" = "While a Focus mode is on";
+"settings.notifications.quiet.screenLocked" = "While the screen is locked or asleep";
+"settings.notifications.quiet.screenShared" = "While recording or sharing the screen";
+"settings.notifications.field.workingDirectory" = "Working directory";
+"settings.notifications.field.firstPrompt" = "First prompt";
+"settings.notifications.match.prefix" = "starts with";
+"settings.notifications.match.contains" = "contains";
+"settings.notifications.match.equals" = "is exactly";
+"settings.notifications.preset.claudeMem" = "Claude-Mem background sessions";
+"settings.notifications.preset.codexMemories" = "Codex memory writing";
+"settings.notifications.preset.memoryWritingAgent" = "Memory writing agent";
+"settings.notifications.preset.titleGenerator" = "Title generators";
+"settings.notifications.preset.custom" = "Custom";
+"settings.notifications.addRule" = "Add";
+"settings.notifications.removeRule" = "Remove";
+"settings.notifications.pattern.placeholder" = "e.g. /scratch/experiments";
+"settings.notifications.matchCount" = "Hides %@ of the sessions showing now";
+"settings.notifications.noRules" = "No filters of your own yet.";
+"settings.notifications.blockedApps" = "Block sessions launched by an app";

@@ -694,6 +694,9 @@ final class AppModel {
         overlay.ignoresPointerExitAccessor = { [weak self] in
             self?.ignoresPointerExitDuringHarness ?? false
         }
+        settings.notificationFilters.onRulesChanged = { [weak self] in
+            self?._cachedSessionBuckets = nil
+        }
 
         hooks.onStatusMessage = { [weak self] message in
             self?.lastActionMessage = message
@@ -1747,7 +1750,10 @@ final class AppModel {
 
     private func computeSessionBuckets() -> (primary: [AgentSession], restored: [AgentSession], overflow: [AgentSession]) {
         let now = Date.now
-        let rankedSessions = state.sessions.sorted { lhs, rhs in
+        // Silenced sessions drop out here rather than at the view, so they are
+        // also absent from the counts, the notification surfaces and the sound.
+        let visibleSessions = state.sessions.filter { !settings.notificationFilters.isSilenced($0) }
+        let rankedSessions = visibleSessions.sorted { lhs, rhs in
             let lhsScore = displayPriority(for: lhs, now: now)
             let rhsScore = displayPriority(for: rhs, now: now)
 

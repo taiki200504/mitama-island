@@ -17,11 +17,13 @@ final class SettingsStore: Sendable {
     let display: DisplaySettings
     let shortcuts: ShortcutSettings
     let sound: SoundSettings
+    let notificationFilters: NotificationFilterSettings
 
     init(store: PreferenceStore = .standard) {
         behaviour = BehaviourSettings(store: store)
         display = DisplaySettings(store: store)
         shortcuts = ShortcutSettings(store: store)
         sound = SoundSettings(store: store)
+        notificationFilters = NotificationFilterSettings(store: store)
     }
 }

@@ -398,3 +398,31 @@
 "settings.sound.event.usageAlmostFull" = "用量即将耗尽时";
 "settings.sound.event.usageRefreshed" = "用量重置时";
 "settings.pending.unraisedSoundEvents" = "应用目前不会到达这一时刻。";
+
+/* Notifications pane */
+"settings.notifications.section.completion" = "完成通知";
+"settings.notifications.section.quiet" = "保持安静的场景";
+"settings.notifications.section.presets" = "内置过滤器";
+"settings.notifications.section.custom" = "自定义过滤器";
+"settings.notifications.section.custom.footer" = "被隐藏的会话不会出现在列表、计数、通知与音效中。";
+"settings.notifications.expandOnCompletion" = "工作完成时打开面板";
+"settings.notifications.expandOnCompletion.help" = "关闭后灵动岛保持折叠并轻微发光。审批与问题仍会展开。";
+"settings.notifications.quiet.focus" = "专注模式开启时";
+"settings.notifications.quiet.screenLocked" = "屏幕锁定或睡眠时";
+"settings.notifications.quiet.screenShared" = "录屏或共享屏幕时";
+"settings.notifications.field.workingDirectory" = "工作目录";
+"settings.notifications.field.firstPrompt" = "首个提示";
+"settings.notifications.match.prefix" = "开头为";
+"settings.notifications.match.contains" = "包含";
+"settings.notifications.match.equals" = "完全等于";
+"settings.notifications.preset.claudeMem" = "Claude-Mem 后台会话";
+"settings.notifications.preset.codexMemories" = "Codex 记忆写入";
+"settings.notifications.preset.memoryWritingAgent" = "记忆写入代理";
+"settings.notifications.preset.titleGenerator" = "标题生成";
+"settings.notifications.preset.custom" = "自定义";
+"settings.notifications.addRule" = "添加";
+"settings.notifications.removeRule" = "删除";
+"settings.notifications.pattern.placeholder" = "例如：/scratch/experiments";
+"settings.notifications.matchCount" = "将隐藏当前 %@ 个会话";
+"settings.notifications.noRules" = "尚无自定义过滤器。";
+"settings.notifications.blockedApps" = "屏蔽由某个 App 启动的会话";

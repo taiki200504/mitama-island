@@ -77,7 +77,9 @@ struct SettingsView: View {
                 AboutSettingsPane(model: model)
             case .shortcuts:
                 ShortcutsSettingsPane(model: model)
-            case .notifications, .usage, .sshRemote, .labs, .mitama:
+            case .notifications:
+                NotificationSettingsPane(model: model)
+            case .usage, .sshRemote, .labs, .mitama:
                 SettingsPaneNotBuiltYet(tab: selectedTab)
             }
 

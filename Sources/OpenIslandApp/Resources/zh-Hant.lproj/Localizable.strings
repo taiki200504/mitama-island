@@ -397,3 +397,31 @@
 "settings.sound.event.usageAlmostFull" = "用量即將耗盡時";
 "settings.sound.event.usageRefreshed" = "用量重置時";
 "settings.pending.unraisedSoundEvents" = "應用目前不會到達這一時刻。";
+
+/* Notifications pane */
+"settings.notifications.section.completion" = "完成通知";
+"settings.notifications.section.quiet" = "保持安靜的場景";
+"settings.notifications.section.presets" = "內建過濾器";
+"settings.notifications.section.custom" = "自訂過濾器";
+"settings.notifications.section.custom.footer" = "被隱藏的工作階段不會出現在清單、計數、通知與音效中。";
+"settings.notifications.expandOnCompletion" = "工作完成時開啟面板";
+"settings.notifications.expandOnCompletion.help" = "關閉後島保持折疊並輕微發光。審批與問題仍會展開。";
+"settings.notifications.quiet.focus" = "專注模式開啟時";
+"settings.notifications.quiet.screenLocked" = "螢幕鎖定或睡眠時";
+"settings.notifications.quiet.screenShared" = "錄影或分享螢幕時";
+"settings.notifications.field.workingDirectory" = "工作目錄";
+"settings.notifications.field.firstPrompt" = "首個提示";
+"settings.notifications.match.prefix" = "開頭為";
+"settings.notifications.match.contains" = "包含";
+"settings.notifications.match.equals" = "完全等於";
+"settings.notifications.preset.claudeMem" = "Claude-Mem 背景工作階段";
+"settings.notifications.preset.codexMemories" = "Codex 記憶寫入";
+"settings.notifications.preset.memoryWritingAgent" = "記憶寫入代理";
+"settings.notifications.preset.titleGenerator" = "標題生成";
+"settings.notifications.preset.custom" = "自訂";
+"settings.notifications.addRule" = "新增";
+"settings.notifications.removeRule" = "刪除";
+"settings.notifications.pattern.placeholder" = "例如：/scratch/experiments";
+"settings.notifications.matchCount" = "將隱藏目前 %@ 個工作階段";
+"settings.notifications.noRules" = "尚無自訂過濾器。";
+"settings.notifications.blockedApps" = "封鎖由某個 App 啟動的工作階段";
