@@ -71,7 +71,7 @@ struct SilenceRule: Codable, Equatable, Identifiable, Sendable {
 
 extension SilenceRule {
     /// Filters the app ships with, aimed at the background sessions agents spawn
-    /// for their own bookkeeping. Each one is off until switched on.
+    /// for their own bookkeeping.
     static let presets: [SilenceRule] = [
         SilenceRule(
             id: "preset.claudeMem",
@@ -137,9 +137,10 @@ final class NotificationFilterSettings: PreferenceGroup {
         }
     }
 
-    /// Preset keys the user switched on.
+    /// Preset keys in force. All of them start on: the sessions they hide are
+    /// an agent's own bookkeeping, which nobody asked to watch.
     var enabledPresets: [String] {
-        get { read(\.enabledPresets, Keys.enabledPresets, []) }
+        get { read(\.enabledPresets, Keys.enabledPresets, SilenceRule.presets.compactMap(\.presetKey)) }
         set { write(\.enabledPresets, Keys.enabledPresets, newValue) }
     }
 

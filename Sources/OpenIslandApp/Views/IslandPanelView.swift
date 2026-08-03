@@ -1892,7 +1892,7 @@ private struct IslandSessionRow: View {
     private var completionActionBody: some View {
         VStack(alignment: .leading, spacing: 0) {
             if !completionMessageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                AutoHeightScrollView(maxHeight: 160) {
+                AutoHeightScrollView(maxHeight: 240) {
                     Markdown(completionMessageText)
                         .markdownTheme(.completionCard)
                         .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -2818,8 +2818,10 @@ private struct IslandActionButtonStyle: ButtonStyle {
 extension MarkdownUI.Theme {
     @MainActor static let completionCard = Theme()
         .text {
-            ForegroundColor(.white.opacity(0.88))
-            FontSize(13.5)
+            // Read at a glance from a metre away, on a dark panel, often while
+            // the user is mid-thought in another window.
+            ForegroundColor(.white.opacity(0.96))
+            FontSize(14)
             FontWeight(.medium)
         }
         .link {

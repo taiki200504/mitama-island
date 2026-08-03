@@ -86,13 +86,15 @@ struct NotificationFilterTests {
 
     // MARK: Presets
 
+    /// The presets hide sessions an agent starts for its own bookkeeping, which
+    /// nobody asked to watch, so they are in force from the start.
     @Test
-    func presetsAreOffUntilSwitchedOn() {
+    func presetsAreInForceFromTheStart() {
         let filters = makeSettings().notificationFilters
         for preset in SilenceRule.presets {
-            #expect(!filters.isEnabled(preset))
+            #expect(filters.isEnabled(preset))
         }
-        #expect(filters.activeRules.isEmpty)
+        #expect(filters.activeRules.count == SilenceRule.presets.count)
     }
 
     @Test

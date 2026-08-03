@@ -1618,13 +1618,35 @@ final class AppModel {
             lastActionMessage = describe(event)
         }
 
-        if let surface = IslandSurface.notificationSurface(for: event) {
+        if let surface = IslandSurface.notificationSurface(for: event),
+           shouldNotify(about: event) {
             scheduleNotificationSurfacePresentationIfNeeded(
                 surface,
                 wasAlreadyCompleted: wasAlreadyCompleted,
                 ingress: ingress
             )
         }
+    }
+
+    /// Whether this event is worth interrupting the user for.
+    ///
+    /// Approvals and questions always are — nothing proceeds until they answer.
+    /// A finished session is only worth a panel if they asked for that.
+    private func shouldNotify(about event: AgentEvent) -> Bool {
+        switch event {
+        case .sessionCompleted:
+            return settings.behaviour.expandOnCompletion
+        default:
+            return true
+        }
+    }
+
+    var islandSurfaceAwaitsUserAction: Bool {
+        guard let sessionID = islandSurface.sessionID,
+              let session = state.session(id: sessionID) else {
+            return false
+        }
+        return session.phase.requiresAttention
     }
 
     private func scheduleNotificationSurfacePresentationIfNeeded(

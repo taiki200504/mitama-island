@@ -282,8 +282,11 @@ final class OverlayPanelController {
             cancelHoverOpenImmediately()
             model.notchOpen(reason: .click)
         } else if model.notchStatus == .opened {
+            // A card asking for approval or an answer stays put: clicking back
+            // into the terminal to read the diff must not throw away the request.
             if !isPointInExpandedArea(screenLocation),
-               model.settings.behaviour.dismissOnOutsideClick {
+               model.settings.behaviour.dismissOnOutsideClick,
+               !model.islandSurfaceAwaitsUserAction {
                 model.notchClose()
                 repostMouseDown(at: screenLocation)
             }
