@@ -426,3 +426,29 @@
 "settings.notifications.matchCount" = "いま出ているセッションのうち %@ 件を隠す";
 "settings.notifications.noRules" = "自分で作ったフィルタはまだ無い。";
 "settings.notifications.blockedApps" = "特定のアプリから始まったセッションを隠す";
+
+/* Usage, SSH, Labs, mitama panes */
+"settings.usage.section.display" = "島に出すもの";
+"settings.usage.section.bridge" = "Claude の使用量の受け取り";
+"settings.usage.show" = "使用量を島に出す";
+"settings.usage.showCodex" = "Codex の分も出す";
+"settings.usage.valueMode" = "表示の仕方";
+"settings.usage.thresholdAlert" = "残りが少なくなったら知らせる";
+"settings.usage.resetCards" = "Codex のリセット枠を出す";
+"settings.usage.bridge.help" = "Claude は使用量をステータスラインで返す。橋渡しはその値を読むだけで、表示内容は変えない。";
+"settings.sshRemote.section.status" = "状態";
+"settings.sshRemote.section.setup" = "つなぎ方";
+"settings.labs.section.updates" = "更新";
+"settings.labs.section.agents" = "エージェントの扱い";
+"settings.labs.section.stability" = "安定性";
+"settings.labs.autoUpdate" = "自動更新";
+"settings.labs.autoUpdate.off" = "このビルドでは意図的に切ってある。本家の更新に置き換えられないようにするため。";
+"settings.labs.nativeApprovals" = "承認をエージェント側に任せる";
+"settings.labs.approvalTarget" = "承認をどこに出すか";
+"settings.labs.sessionNaming" = "セッションに自動で名前を付ける";
+"settings.labs.memoryRestart" = "メモリを使いすぎたら再起動する";
+"settings.mitama.section.feed" = "Hub の通知";
+"settings.mitama.section.hub" = "Hub";
+"settings.mitama.openHub" = "Hub を開く";
+"settings.mitama.feed.help" = "mitama-os の要対応をエージェントのセッションより上に出す。";
+"settings.pending.usageValueMode" = "島はいまのところ1通りの出し方しかできません。";

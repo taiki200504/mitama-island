@@ -426,3 +426,29 @@
 "settings.notifications.matchCount" = "Hides %@ of the sessions showing now";
 "settings.notifications.noRules" = "No filters of your own yet.";
 "settings.notifications.blockedApps" = "Block sessions launched by an app";
+
+/* Usage, SSH, Labs, mitama panes */
+"settings.usage.section.display" = "What the island shows";
+"settings.usage.section.bridge" = "Claude usage bridge";
+"settings.usage.show" = "Show usage on the island";
+"settings.usage.showCodex" = "Include Codex";
+"settings.usage.valueMode" = "Show as";
+"settings.usage.thresholdAlert" = "Warn when usage runs low";
+"settings.usage.resetCards" = "Show Codex reset credits";
+"settings.usage.bridge.help" = "Claude reports usage through its status line. The bridge reads it without changing what your status line displays.";
+"settings.sshRemote.section.status" = "Status";
+"settings.sshRemote.section.setup" = "Setting it up";
+"settings.labs.section.updates" = "Updates";
+"settings.labs.section.agents" = "Agent behaviour";
+"settings.labs.section.stability" = "Stability";
+"settings.labs.autoUpdate" = "Automatic updates";
+"settings.labs.autoUpdate.off" = "Off in this build on purpose, so an upstream release never replaces it.";
+"settings.labs.nativeApprovals" = "Let the agent handle approvals itself";
+"settings.labs.approvalTarget" = "Where approvals appear";
+"settings.labs.sessionNaming" = "Name sessions automatically";
+"settings.labs.memoryRestart" = "Restart when memory runs high";
+"settings.mitama.section.feed" = "Hub notifications";
+"settings.mitama.section.hub" = "Hub";
+"settings.mitama.openHub" = "Open the hub";
+"settings.mitama.feed.help" = "Shows items from mitama-os that need a decision, above the agent sessions.";
+"settings.pending.usageValueMode" = "The island shows one form of the number today.";

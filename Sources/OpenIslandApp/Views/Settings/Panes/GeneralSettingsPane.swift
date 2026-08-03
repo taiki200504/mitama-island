@@ -15,7 +15,6 @@ struct GeneralSettingsPane: View {
         SettingsPane(tab: .general) {
             systemSection
             languageSection
-            mitamaSection
             expansionSection
             visibilitySection
             dismissalSection
@@ -50,22 +49,6 @@ struct GeneralSettingsPane: View {
                 Text(lang.t("settings.general.languageChinese")).tag(LanguageManager.AppLanguage.zhHans)
                 Text(lang.t("settings.general.languageTraditionalChinese")).tag(LanguageManager.AppLanguage.zhHant)
             }
-        }
-    }
-
-    /// Lives here until the dedicated mitama pane exists.
-    private var mitamaSection: some View {
-        Section("mitama") {
-            SettingsToggleRow(
-                title: lang.t("settings.general.mitamaFeed"),
-                help: model.mitamaFeedEnabled && !model.mitamaFeed.isConfigured
-                    ? lang.t("settings.general.mitamaFeedMissingConfig")
-                    : nil,
-                isOn: Binding(
-                    get: { model.mitamaFeedEnabled },
-                    set: { model.mitamaFeedEnabled = $0 }
-                )
-            )
         }
     }
 

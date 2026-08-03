@@ -425,3 +425,29 @@
 "settings.notifications.matchCount" = "將隱藏目前 %@ 個工作階段";
 "settings.notifications.noRules" = "尚無自訂過濾器。";
 "settings.notifications.blockedApps" = "封鎖由某個 App 啟動的工作階段";
+
+/* Usage, SSH, Labs, mitama panes */
+"settings.usage.section.display" = "島顯示內容";
+"settings.usage.section.bridge" = "Claude 用量橋接";
+"settings.usage.show" = "在島顯示用量";
+"settings.usage.showCodex" = "包含 Codex";
+"settings.usage.valueMode" = "顯示方式";
+"settings.usage.thresholdAlert" = "用量不足時提醒";
+"settings.usage.resetCards" = "顯示 Codex 重置額度";
+"settings.usage.bridge.help" = "Claude 透過狀態列回報用量。橋接只讀取該值，不改變狀態列的顯示。";
+"settings.sshRemote.section.status" = "狀態";
+"settings.sshRemote.section.setup" = "設定方式";
+"settings.labs.section.updates" = "更新";
+"settings.labs.section.agents" = "代理行為";
+"settings.labs.section.stability" = "穩定性";
+"settings.labs.autoUpdate" = "自動更新";
+"settings.labs.autoUpdate.off" = "本版本中特意關閉，以免被上游發行版替換。";
+"settings.labs.nativeApprovals" = "讓代理自行處理審批";
+"settings.labs.approvalTarget" = "審批顯示位置";
+"settings.labs.sessionNaming" = "自動為工作階段命名";
+"settings.labs.memoryRestart" = "記憶體佔用過高時重新啟動";
+"settings.mitama.section.feed" = "Hub 通知";
+"settings.mitama.section.hub" = "Hub";
+"settings.mitama.openHub" = "開啟 Hub";
+"settings.mitama.feed.help" = "將 mitama-os 中需要處理的項目顯示在代理工作階段上方。";
+"settings.pending.usageValueMode" = "島目前只有一種顯示形式。";

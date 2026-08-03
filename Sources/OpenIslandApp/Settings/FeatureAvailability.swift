@@ -47,6 +47,7 @@ enum PendingCapability: String, CaseIterable, Sendable {
     // Usage
     case usageThresholdMonitor
     case codexResetCards
+    case usageValueMode
 
     // Agent integrations
     case approvalRouting

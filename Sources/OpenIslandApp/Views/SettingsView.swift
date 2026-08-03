@@ -79,8 +79,14 @@ struct SettingsView: View {
                 ShortcutsSettingsPane(model: model)
             case .notifications:
                 NotificationSettingsPane(model: model)
-            case .usage, .sshRemote, .labs, .mitama:
-                SettingsPaneNotBuiltYet(tab: selectedTab)
+            case .usage:
+                UsageSettingsPane(model: model)
+            case .sshRemote:
+                SSHRemoteSettingsPane(model: model)
+            case .labs:
+                LabsSettingsPane(model: model)
+            case .mitama:
+                MitamaSettingsPane(model: model)
             }
 
             if model.updateChecker.hasUpdate, let version = model.updateChecker.latestVersion {

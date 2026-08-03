@@ -426,3 +426,29 @@
 "settings.notifications.matchCount" = "将隐藏当前 %@ 个会话";
 "settings.notifications.noRules" = "尚无自定义过滤器。";
 "settings.notifications.blockedApps" = "屏蔽由某个 App 启动的会话";
+
+/* Usage, SSH, Labs, mitama panes */
+"settings.usage.section.display" = "灵动岛显示内容";
+"settings.usage.section.bridge" = "Claude 用量桥接";
+"settings.usage.show" = "在灵动岛显示用量";
+"settings.usage.showCodex" = "包含 Codex";
+"settings.usage.valueMode" = "显示方式";
+"settings.usage.thresholdAlert" = "用量不足时提醒";
+"settings.usage.resetCards" = "显示 Codex 重置额度";
+"settings.usage.bridge.help" = "Claude 通过状态行报告用量。桥接只读取该值，不改变状态行的显示。";
+"settings.sshRemote.section.status" = "状态";
+"settings.sshRemote.section.setup" = "设置方法";
+"settings.labs.section.updates" = "更新";
+"settings.labs.section.agents" = "代理行为";
+"settings.labs.section.stability" = "稳定性";
+"settings.labs.autoUpdate" = "自动更新";
+"settings.labs.autoUpdate.off" = "本版本中特意关闭，以免被上游发行版替换。";
+"settings.labs.nativeApprovals" = "让代理自行处理审批";
+"settings.labs.approvalTarget" = "审批显示位置";
+"settings.labs.sessionNaming" = "自动为会话命名";
+"settings.labs.memoryRestart" = "内存占用过高时重启";
+"settings.mitama.section.feed" = "Hub 通知";
+"settings.mitama.section.hub" = "Hub";
+"settings.mitama.openHub" = "打开 Hub";
+"settings.mitama.feed.help" = "将 mitama-os 中需要处理的项目显示在代理会话上方。";
+"settings.pending.usageValueMode" = "灵动岛目前只有一种显示形式。";

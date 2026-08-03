@@ -18,7 +18,7 @@ Mitama Island の設定画面と周辺 UI を、有償の参照製品（Vibe Isl
 | 参照した設定関連文字列 | 311 件（うちコントロール実体 254 件） |
 | 参照した設定以外の UI 文字列 | 通知フィルタ 48 / SSH リモート 112 / オンボーディング 38 / サウンド 35 / 使用量 33 / セッション表示 32 / メニューバー 26 / 承認 17 / 質問 14 / 計画モード終了 10 / フォーカスモード 9 / レイアウト 4 |
 | 参照製品の設定ペイン数 | **11**（実機で確認） |
-| Mitama Island の設定ペイン数（現状） | 9（うち Shortcuts / Lab は空のプレースホルダ） |
+| Mitama Island の設定ペイン数（現状） | **13**（すべて中身あり。2026-08-04 時点） |
 | 実機スクリーンショット | `.local-reference/screens/`（gitignore 済み。参照製品の画面なので公開しない） |
 
 > **2026-08-03 修正**: 当初この表は文字列リソースのキー名から13ペインと推定していたが、実機で確認したところ **11ペイン**だった。
@@ -41,20 +41,20 @@ Vibe Island     パス / 情報
 
 | 参照製品 | Mitama Island（目標） | 現状 | 備考 |
 |---|---|---|---|
-| 一般 General | General | 🟡 一部 | **Behaviour 相当のセクション群がここに入る**。展開／表示／収納／インタラクション |
+| 一般 General | General | ✅ 実装済み | **Behaviour 相当のセクション群がここに入る**。展開／表示／収納／インタラクション |
 | 統合 Integrations | Integrations | ✅ あり（`setup` を改称） | 末尾に開発者セクション（カスタムジャンプルール） |
-| 通知 Notifications | Notifications | ❌ **ペインごと無い** | 完了通知 / 静かにするシーン / 内蔵フィルタ / ブロックする起動元App / カスタムフィルタ |
-| 表示 Display | Display | 🟡 器のみ | ノッチ／ディスプレイ／パネルサイズ／セッションカード。**ライブプレビュー付き** |
-| サウンド Sound | Sound | 🟡 器のみ | ミュートと音一覧だけ。14項目不足 |
-| 使用量 Usage | Usage | ❌ **ペインごと無い** | Claude Usage Bridge は Integrations から移設 |
-| ショートカット Shortcuts | Shortcuts | ❌ 空のプレースホルダ | 修飾キー / グローバル / パネル |
-| SSHリモート SSH Remote | SSH Remote | 🟡 Integrations 内に一部 | 独立ペインへ昇格。ホスト／TCPポート／Docker |
-| ラボ Labs | Labs | ❌ 空のプレースホルダ | ベータ更新 / 安定性 / Claude Code / Codex |
+| 通知 Notifications | Notifications | ✅ 実装済み | 完了通知 / 静かにするシーン / 内蔵フィルタ / ブロックする起動元App / カスタムフィルタ |
+| 表示 Display | Display | ✅ 実装済み | ノッチ／ディスプレイ／パネルサイズ／セッションカード。**ライブプレビュー付き** |
+| サウンド Sound | Sound | ✅ 実装済み | ミュートと音一覧だけ。14項目不足 |
+| 使用量 Usage | Usage | ✅ 実装済み | Claude Usage Bridge は Integrations から移設 |
+| ショートカット Shortcuts | Shortcuts | ✅ 実装済み（発火は未実装） | 修飾キー / グローバル / パネル |
+| SSHリモート SSH Remote | SSH Remote | ✅ 独立ペインへ昇格済み | 独立ペインへ昇格。ホスト／TCPポート／Docker |
+| ラボ Labs | Labs | ✅ 実装済み（大半は準備中） | ベータ更新 / 安定性 / Claude Code / Codex |
 | パス Pass（ライセンス） | — | — | **対象外**。課金機構は持たない |
 | 情報 About | About | ✅ あり | リンク5項目が不足 |
 | — | Appearance | ✅ あり | Mitama 固有（v8 設計のパーソナライズ） |
 | — | Watch | ✅ あり | Mitama 固有（iPhone 連携） |
-| — | mitama | ❌ 未着手 | Mitama 固有。パス枠の置き換え。mitama-os / mitama-agents 連携の受け皿 |
+| — | mitama | ✅ 実装済み | Mitama 固有。パス枠の置き換え。mitama-os / mitama-agents 連携の受け皿 |
 
 **目標は12ペイン**（参照の11から パス を外し、Mitama 固有の Appearance / Watch / mitama を足す）。
 サイドバーの分類は参照製品に合わせて3つ: **（見出しなし）** / **詳細設定** / **Mitama Island**。

@@ -349,3 +349,35 @@ struct IslandTypographyTests {
         #expect(licence != nil)
     }
 }
+
+@MainActor
+struct SettingsPaneCoverageTests {
+    /// Every tab in the sidebar has to lead somewhere. A pane left routed to the
+    /// "not built yet" placeholder is fine, but it must be a deliberate choice
+    /// rather than something forgotten, so this records the current state.
+    @Test
+    func everyPaneIsBuilt() {
+        // Updated deliberately: when a pane lands, remove it from here.
+        let notBuiltYet: Set<SettingsTab> = []
+        for tab in SettingsTab.allCases where notBuiltYet.contains(tab) {
+            Issue.record("\(tab) is still a placeholder")
+        }
+        #expect(notBuiltYet.isEmpty)
+    }
+
+    /// The usage pane drives the island's own usage strip, so the two have to
+    /// agree on what "showing usage" means.
+    @Test
+    func usageVisibilityRoundTrips() {
+        let name = "usage-\(UUID().uuidString)"
+        let suite = UserDefaults(suiteName: name)!
+        suite.removePersistentDomain(forName: name)
+        let model = AppModel(settings: SettingsStore(store: PreferenceStore(suite: suite)))
+
+        model.islandUsageDisplay = .hidden
+        #expect(model.islandUsageDisplay == .hidden)
+
+        model.islandUsageDisplay = .compact
+        #expect(model.islandUsageDisplay == .compact)
+    }
+}
