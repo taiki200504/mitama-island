@@ -425,7 +425,11 @@ final class OverlayUICoordinator {
             return
         }
 
-        if overlayPanelController.isPointInExpandedArea(NSEvent.mouseLocation) {
+        // Where the physical pointer happens to be is not something a test can
+        // control, and a suite run right after a smoke run would find the cursor
+        // sitting over the island. The harness opts out of the check entirely.
+        if !ignoresPointerExitDuringHarness,
+           overlayPanelController.isPointInExpandedArea(NSEvent.mouseLocation) {
             notePointerInsideIslandSurface()
             return
         }

@@ -817,6 +817,10 @@ struct AppModelSessionListTests {
     @Test
     func completionNotificationHoverCancelsPendingTimedCollapse() {
         let model = AppModel()
+        // This test is about the hover cancelling the timer, not about where the
+        // developer's cursor happens to be. Without this the suite fails whenever
+        // the pointer sits over the island — for example right after a smoke run.
+        model.ignoresPointerExitDuringHarness = true
         model.state = SessionState(
             sessions: [
                 AgentSession(
