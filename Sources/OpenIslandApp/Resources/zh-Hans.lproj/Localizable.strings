@@ -13,7 +13,7 @@
 
 /* Settings - Section Headers */
 "settings.section.system" = "系统";
-"settings.section.advanced" = "高级";
+"settings.section.advanced" = "高级设置";
 
 /* Settings - General */
 "settings.general.launchAtLogin" = "登录时打开";

@@ -13,7 +13,7 @@
 
 /* Settings - Section Headers */
 "settings.section.system" = "System";
-"settings.section.advanced" = "Advanced";
+"settings.section.advanced" = "Advanced Settings";
 
 /* Settings - General */
 "settings.general.launchAtLogin" = "Launch at Login";

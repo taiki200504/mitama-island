@@ -47,6 +47,7 @@ struct SettingsView: View {
             }
         }
         .listStyle(.sidebar)
+        .toolbar(.hidden, for: .windowToolbar)
     }
 
     // MARK: Detail
