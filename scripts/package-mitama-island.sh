@@ -45,6 +45,7 @@ OPEN_ISLAND_SIGN_IDENTITY="$signing_identity" \
 OPEN_ISLAND_SU_FEED_URL="" \
  OPEN_ISLAND_ENTITLEMENTS="$repo_root/config/packaging/MitamaIsland.entitlements" \
 OPEN_ISLAND_SU_AUTOMATIC_CHECKS="false" \
+OPEN_ISLAND_SIGN_TIMESTAMP="false" \
     zsh "$repo_root/scripts/package-app.sh"
 
 built_bundle="$repo_root/output/package/$app_name.app"

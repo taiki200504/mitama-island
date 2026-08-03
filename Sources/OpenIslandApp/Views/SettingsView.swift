@@ -206,6 +206,18 @@ struct GeneralSettingsPane: View {
                 }
             }
 
+            Section("mitama") {
+                Toggle(lang.t("settings.general.mitamaFeed"), isOn: Binding(
+                    get: { model.mitamaFeedEnabled },
+                    set: { model.mitamaFeedEnabled = $0 }
+                ))
+                if model.mitamaFeedEnabled, !model.mitamaFeed.isConfigured {
+                    Text(lang.t("settings.general.mitamaFeedMissingConfig"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             Section(lang.t("settings.general.behavior")) {
                 Toggle(lang.t("settings.general.autoCollapse"), isOn: .constant(true))
                 Toggle(lang.t("settings.general.showDockIcon"), isOn: Binding(

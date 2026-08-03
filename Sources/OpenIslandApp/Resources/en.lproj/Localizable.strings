@@ -235,3 +235,11 @@
 "session.approvalNeeded" = "Approval needed";
 "session.answerNeeded" = "Answer needed";
 "settings.general.languageJapanese" = "Japanese";
+
+/* mitama feed */
+"settings.general.mitamaFeed" = "Show mitama items needing action";
+"settings.general.mitamaFeedMissingConfig" = "Cannot read ~/Developer/mitama/mitama-os/.env";
+"mitama.level.urgent" = "Urgent";
+"mitama.level.homework" = "Homework";
+"mitama.level.digest" = "Digest";
+"mitama.level.info" = "Info";

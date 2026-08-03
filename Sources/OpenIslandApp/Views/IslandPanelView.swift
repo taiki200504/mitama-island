@@ -574,10 +574,79 @@ struct IslandPanelView: View {
         }
     }
 
+    /// mitama's own queue, above the agent sessions. Agents answer "what is
+    /// running"; this answers "what is waiting on me", and that question
+    /// outranks the first one.
+    @ViewBuilder
+    private var mitamaFeedSection: some View {
+        let notifications = model.mitamaFeed.notifications
+        if model.mitamaFeedEnabled, !notifications.isEmpty {
+            VStack(spacing: 0) {
+                ForEach(notifications) { notification in
+                    Button {
+                        model.openMitamaHub()
+                        model.mitamaFeed.markRead(notification)
+                    } label: {
+                        HStack(alignment: .top, spacing: 10) {
+                            Circle()
+                                .fill(mitamaTint(for: notification.level))
+                                .frame(width: 7, height: 7)
+                                .padding(.top, 4)
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(notification.title)
+                                    .font(.system(size: 12.5, weight: .semibold))
+                                    .foregroundStyle(V6Palette.paper.opacity(0.92))
+                                    .lineLimit(1)
+
+                                if !notification.body.isEmpty {
+                                    Text(notification.body)
+                                        .font(.system(size: 11, weight: .medium))
+                                        .foregroundStyle(V6Palette.paper.opacity(0.5))
+                                        .lineLimit(1)
+                                }
+                            }
+
+                            Spacer(minLength: 8)
+
+                            Text(model.lang.t("mitama.level.\(notification.level.rawValue)"))
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundStyle(mitamaTint(for: notification.level))
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(mitamaTint(for: notification.level).opacity(0.14), in: Capsule())
+                        }
+                        .padding(.horizontal, sessionListSideInset)
+                        .padding(.vertical, 9)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .overlay(alignment: .bottom) {
+                Rectangle()
+                    .fill(.white.opacity(0.06))
+                    .frame(height: 1)
+            }
+        }
+    }
+
+    private func mitamaTint(for level: MitamaNotification.Level) -> Color {
+        switch level {
+        case .urgent:
+            return IslandDesignPalette.Status.waitingForApproval
+        case .homework:
+            return IslandDesignPalette.Status.waitingForAnswer
+        case .digest, .info:
+            return IslandDesignPalette.Status.idle
+        }
+    }
+
     @ViewBuilder
     private func sessionListContent(referenceDate: Date) -> some View {
         VStack(spacing: 0) {
             if !isNotificationMode {
+                mitamaFeedSection
                 sessionPanelHeader(referenceDate: referenceDate)
             }
 

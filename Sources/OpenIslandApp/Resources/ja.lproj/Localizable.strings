@@ -235,3 +235,11 @@
 
 /* Window Titles */
 "window.settings" = "Open Island 設定";
+
+/* mitama feed */
+"settings.general.mitamaFeed" = "mitama の要対応を島に出す";
+"settings.general.mitamaFeedMissingConfig" = "~/Developer/mitama/mitama-os/.env が読めません";
+"mitama.level.urgent" = "緊急";
+"mitama.level.homework" = "宿題";
+"mitama.level.digest" = "まとめ";
+"mitama.level.info" = "情報";

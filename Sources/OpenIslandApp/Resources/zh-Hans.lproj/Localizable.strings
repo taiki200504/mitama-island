@@ -235,3 +235,11 @@
 "session.approvalNeeded" = "需要授权";
 "session.answerNeeded" = "需要回答";
 "settings.general.languageJapanese" = "日语";
+
+/* mitama feed */
+"settings.general.mitamaFeed" = "在灵动岛显示 mitama 待办";
+"settings.general.mitamaFeedMissingConfig" = "无法读取 ~/Developer/mitama/mitama-os/.env";
+"mitama.level.urgent" = "紧急";
+"mitama.level.homework" = "作业";
+"mitama.level.digest" = "摘要";
+"mitama.level.info" = "信息";

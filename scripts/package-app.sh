@@ -174,29 +174,37 @@ fi
 
 sparkle_fw="$bundle_dir/Contents/Frameworks/Sparkle.framework"
 
+timestamp_flag=(--timestamp)
+if [[ "${OPEN_ISLAND_SIGN_TIMESTAMP:-true}" != "true" ]]; then
+    # Apple's timestamp service is only needed for notarised distribution, and
+    # it is a network dependency that fails offline — a local build should not
+    # break because of it.
+    timestamp_flag=(--timestamp=none)
+fi
+
 if [[ -n "$signing_identity" ]]; then
     # Sign nested code objects inside-out: Sparkle internals → helpers → app.
 
     if [[ -d "$sparkle_fw" ]]; then
         for xpc in "$sparkle_fw"/Versions/B/XPCServices/*.xpc; do
-            [[ -d "$xpc" ]] && codesign --force --options runtime --timestamp --sign "$signing_identity" "$xpc"
+            [[ -d "$xpc" ]] && codesign --force --options runtime "${timestamp_flag[@]}" --sign "$signing_identity" "$xpc"
         done
         [[ -f "$sparkle_fw/Versions/B/Autoupdate" ]] && \
-            codesign --force --options runtime --timestamp --sign "$signing_identity" "$sparkle_fw/Versions/B/Autoupdate"
+            codesign --force --options runtime "${timestamp_flag[@]}" --sign "$signing_identity" "$sparkle_fw/Versions/B/Autoupdate"
         [[ -d "$sparkle_fw/Versions/B/Updater.app" ]] && \
-            codesign --force --options runtime --timestamp --sign "$signing_identity" "$sparkle_fw/Versions/B/Updater.app"
-        codesign --force --options runtime --timestamp --sign "$signing_identity" "$sparkle_fw"
+            codesign --force --options runtime "${timestamp_flag[@]}" --sign "$signing_identity" "$sparkle_fw/Versions/B/Updater.app"
+        codesign --force --options runtime "${timestamp_flag[@]}" --sign "$signing_identity" "$sparkle_fw"
     fi
 
-    codesign --force --options runtime --timestamp --sign "$signing_identity" \
+    codesign --force --options runtime "${timestamp_flag[@]}" --sign "$signing_identity" \
         "$bundle_dir/Contents/Helpers/OpenIslandHooks"
-    codesign --force --options runtime --timestamp --sign "$signing_identity" \
+    codesign --force --options runtime "${timestamp_flag[@]}" --sign "$signing_identity" \
         "$bundle_dir/Contents/Helpers/OpenIslandSetup"
 
     codesign \
         --force \
         --options runtime \
-        --timestamp \
+        "${timestamp_flag[@]}" \
         --entitlements "$entitlements_path" \
         --sign "$signing_identity" \
         "$bundle_dir"
