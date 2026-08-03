@@ -341,3 +341,30 @@
 "mitama.level.homework" = "作業";
 "mitama.level.digest" = "摘要";
 "mitama.level.info" = "資訊";
+
+/* Shortcuts pane */
+"settings.shortcuts.section.global" = "全域";
+"settings.shortcuts.section.switcher" = "切換器";
+"settings.shortcuts.section.panel" = "面板快捷鍵";
+"settings.shortcuts.section.panel.footer" = "僅在面板展開時生效。按住修飾鍵會在每個按鈕上顯示提示。";
+"settings.shortcuts.enabled" = "啟用鍵盤快捷鍵";
+"settings.shortcuts.enabled.help" = "在不清除已指派按鍵的情況下關閉所有快捷鍵。";
+"settings.shortcuts.modifier" = "修飾鍵";
+"settings.shortcuts.modifier.help" = "與下方面板按鍵一同按下。";
+"settings.shortcuts.modifier.control" = "Control";
+"settings.shortcuts.modifier.option" = "Option";
+"settings.shortcuts.modifier.command" = "Command";
+"settings.shortcuts.modifier.shift" = "Shift";
+"settings.shortcuts.openSwitcher" = "開啟切換器";
+"settings.shortcuts.openSwitcher.help" = "輕按可用方向鍵選擇工作階段；按住可循環切換，放開即跳轉。";
+"settings.shortcuts.reverseSwitcher" = "反向切換器";
+"settings.shortcuts.reverseSwitcher.help" = "加上 Shift 可反向循環。僅在切換器開啟時生效，因此很少與其他應用衝突。";
+"settings.shortcuts.reset" = "回復預設按鍵";
+"settings.shortcuts.action.approve" = "批准";
+"settings.shortcuts.action.deny" = "拒絕";
+"settings.shortcuts.action.alwaysAllow" = "一律允許";
+"settings.shortcuts.action.skipPermissions" = "略過權限確認";
+"settings.shortcuts.action.jumpToTerminal" = "跳轉到終端機";
+"settings.shortcuts.action.selectOption" = "選擇選項";
+"settings.shortcuts.action.submitMultiSelect" = "傳送多選答案";
+"settings.shortcuts.action.collapsePanel" = "關閉面板";

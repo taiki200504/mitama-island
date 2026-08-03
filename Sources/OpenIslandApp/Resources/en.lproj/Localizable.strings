@@ -342,3 +342,30 @@
 "mitama.level.homework" = "Homework";
 "mitama.level.digest" = "Digest";
 "mitama.level.info" = "Info";
+
+/* Shortcuts pane */
+"settings.shortcuts.section.global" = "Global";
+"settings.shortcuts.section.switcher" = "Switcher";
+"settings.shortcuts.section.panel" = "Panel shortcuts";
+"settings.shortcuts.section.panel.footer" = "Active only while the panel is expanded. Holding the modifier reveals a hint on every button.";
+"settings.shortcuts.enabled" = "Enable keyboard shortcuts";
+"settings.shortcuts.enabled.help" = "Turns every shortcut off without clearing what you assigned.";
+"settings.shortcuts.modifier" = "Modifier key";
+"settings.shortcuts.modifier.help" = "Held alongside each panel key below.";
+"settings.shortcuts.modifier.control" = "Control";
+"settings.shortcuts.modifier.option" = "Option";
+"settings.shortcuts.modifier.command" = "Command";
+"settings.shortcuts.modifier.shift" = "Shift";
+"settings.shortcuts.openSwitcher" = "Open the switcher";
+"settings.shortcuts.openSwitcher.help" = "Tap to pick a session with the arrow keys, or hold to cycle and release to jump.";
+"settings.shortcuts.reverseSwitcher" = "Reverse switcher";
+"settings.shortcuts.reverseSwitcher.help" = "Adds Shift to cycle backwards. Only live while the switcher is open, so it rarely clashes with other apps.";
+"settings.shortcuts.reset" = "Restore the default keys";
+"settings.shortcuts.action.approve" = "Approve";
+"settings.shortcuts.action.deny" = "Deny";
+"settings.shortcuts.action.alwaysAllow" = "Always allow";
+"settings.shortcuts.action.skipPermissions" = "Skip permission prompts";
+"settings.shortcuts.action.jumpToTerminal" = "Jump to the terminal";
+"settings.shortcuts.action.selectOption" = "Pick an option";
+"settings.shortcuts.action.submitMultiSelect" = "Send a multi-select answer";
+"settings.shortcuts.action.collapsePanel" = "Close the panel";

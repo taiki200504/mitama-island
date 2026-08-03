@@ -342,3 +342,30 @@
 "mitama.level.homework" = "作业";
 "mitama.level.digest" = "摘要";
 "mitama.level.info" = "信息";
+
+/* Shortcuts pane */
+"settings.shortcuts.section.global" = "全局";
+"settings.shortcuts.section.switcher" = "切换器";
+"settings.shortcuts.section.panel" = "面板快捷键";
+"settings.shortcuts.section.panel.footer" = "仅在面板展开时生效。按住修饰键会在每个按钮上显示提示。";
+"settings.shortcuts.enabled" = "启用键盘快捷键";
+"settings.shortcuts.enabled.help" = "在不清除已分配按键的情况下关闭所有快捷键。";
+"settings.shortcuts.modifier" = "修饰键";
+"settings.shortcuts.modifier.help" = "与下方面板按键一同按下。";
+"settings.shortcuts.modifier.control" = "Control";
+"settings.shortcuts.modifier.option" = "Option";
+"settings.shortcuts.modifier.command" = "Command";
+"settings.shortcuts.modifier.shift" = "Shift";
+"settings.shortcuts.openSwitcher" = "打开切换器";
+"settings.shortcuts.openSwitcher.help" = "轻按可用方向键选择会话；按住可循环切换，松开即跳转。";
+"settings.shortcuts.reverseSwitcher" = "反向切换器";
+"settings.shortcuts.reverseSwitcher.help" = "加上 Shift 可反向循环。仅在切换器打开时生效，因此很少与其他应用冲突。";
+"settings.shortcuts.reset" = "恢复默认按键";
+"settings.shortcuts.action.approve" = "批准";
+"settings.shortcuts.action.deny" = "拒绝";
+"settings.shortcuts.action.alwaysAllow" = "始终允许";
+"settings.shortcuts.action.skipPermissions" = "跳过权限确认";
+"settings.shortcuts.action.jumpToTerminal" = "跳转到终端";
+"settings.shortcuts.action.selectOption" = "选择选项";
+"settings.shortcuts.action.submitMultiSelect" = "发送多选答案";
+"settings.shortcuts.action.collapsePanel" = "关闭面板";

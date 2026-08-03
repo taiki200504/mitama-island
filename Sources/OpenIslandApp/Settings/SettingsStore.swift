@@ -15,9 +15,11 @@ final class SettingsStore: Sendable {
 
     let behaviour: BehaviourSettings
     let display: DisplaySettings
+    let shortcuts: ShortcutSettings
 
     init(store: PreferenceStore = .standard) {
         behaviour = BehaviourSettings(store: store)
         display = DisplaySettings(store: store)
+        shortcuts = ShortcutSettings(store: store)
     }
 }

@@ -70,7 +70,9 @@ struct SettingsView: View {
                 WatchSettingsPane(model: model)
             case .about:
                 AboutSettingsPane(model: model)
-            case .notifications, .usage, .shortcuts, .sshRemote, .labs, .mitama:
+            case .shortcuts:
+                ShortcutsSettingsPane(model: model)
+            case .notifications, .usage, .sshRemote, .labs, .mitama:
                 SettingsPaneNotBuiltYet(tab: selectedTab)
             }
 

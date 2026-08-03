@@ -11,6 +11,9 @@ struct SettingsRow<Control: View>: View {
     var help: String?
     var icon: String?
     var availability: FeatureAvailability = .ready
+    /// Shows the pending badge but leaves the control usable — for settings that
+    /// are genuinely stored now and only take effect later.
+    var pendingNote: PendingCapability?
     @ViewBuilder var control: () -> Control
 
     var body: some View {
@@ -26,7 +29,7 @@ struct SettingsRow<Control: View>: View {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
                     Text(title)
-                    if let capability = availability.pendingCapability {
+                    if let capability = availability.pendingCapability ?? pendingNote {
                         PendingCapabilityBadge(capability: capability)
                     }
                 }
@@ -52,9 +55,16 @@ extension SettingsRow where Control == EmptyView {
         title: String,
         help: String? = nil,
         icon: String? = nil,
-        availability: FeatureAvailability = .ready
+        availability: FeatureAvailability = .ready,
+        pendingNote: PendingCapability? = nil
     ) {
-        self.init(title: title, help: help, icon: icon, availability: availability) { EmptyView() }
+        self.init(
+            title: title,
+            help: help,
+            icon: icon,
+            availability: availability,
+            pendingNote: pendingNote
+        ) { EmptyView() }
     }
 }
 
@@ -64,10 +74,17 @@ struct SettingsToggleRow: View {
     var help: String?
     var icon: String?
     var availability: FeatureAvailability = .ready
+    var pendingNote: PendingCapability?
     @Binding var isOn: Bool
 
     var body: some View {
-        SettingsRow(title: title, help: help, icon: icon, availability: availability) {
+        SettingsRow(
+            title: title,
+            help: help,
+            icon: icon,
+            availability: availability,
+            pendingNote: pendingNote
+        ) {
             Toggle("", isOn: $isOn)
                 .labelsHidden()
                 .toggleStyle(.switch)

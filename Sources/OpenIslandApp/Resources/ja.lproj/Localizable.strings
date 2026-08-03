@@ -342,3 +342,30 @@
 "mitama.level.homework" = "宿題";
 "mitama.level.digest" = "まとめ";
 "mitama.level.info" = "情報";
+
+/* Shortcuts pane */
+"settings.shortcuts.section.global" = "グローバル";
+"settings.shortcuts.section.switcher" = "スイッチャー";
+"settings.shortcuts.section.panel" = "パネルのショートカット";
+"settings.shortcuts.section.panel.footer" = "パネルが開いている間だけ効く。修飾キーを押したままにすると各ボタンにヒントが出る。";
+"settings.shortcuts.enabled" = "キーボードショートカットを使う";
+"settings.shortcuts.enabled.help" = "割り当てを消さずに、すべてのショートカットを止める。";
+"settings.shortcuts.modifier" = "修飾キー";
+"settings.shortcuts.modifier.help" = "下のパネル用のキーと一緒に押す。";
+"settings.shortcuts.modifier.control" = "Control";
+"settings.shortcuts.modifier.option" = "Option";
+"settings.shortcuts.modifier.command" = "Command";
+"settings.shortcuts.modifier.shift" = "Shift";
+"settings.shortcuts.openSwitcher" = "スイッチャーを開く";
+"settings.shortcuts.openSwitcher.help" = "軽く押すと矢印キーでセッションを選べる。押したままにすると順に切り替わり、離すとジャンプする。";
+"settings.shortcuts.reverseSwitcher" = "逆順のスイッチャー";
+"settings.shortcuts.reverseSwitcher.help" = "Shift を足すと逆向きに回る。スイッチャーが開いている間だけ効くので他のアプリとぶつかりにくい。";
+"settings.shortcuts.reset" = "既定のキーに戻す";
+"settings.shortcuts.action.approve" = "承認";
+"settings.shortcuts.action.deny" = "拒否";
+"settings.shortcuts.action.alwaysAllow" = "常に許可";
+"settings.shortcuts.action.skipPermissions" = "権限の確認を飛ばす";
+"settings.shortcuts.action.jumpToTerminal" = "ターミナルへジャンプ";
+"settings.shortcuts.action.selectOption" = "選択肢を選ぶ";
+"settings.shortcuts.action.submitMultiSelect" = "複数選択を送る";
+"settings.shortcuts.action.collapsePanel" = "パネルを閉じる";
