@@ -17,7 +17,7 @@ struct SettingsValuePill: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .font(.system(size: 11, design: .monospaced))
+        .font(.islandMono(size: 11))
         .monospacedDigit()
         .padding(.horizontal, 8)
         .padding(.vertical, 3)

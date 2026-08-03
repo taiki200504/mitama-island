@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 import Observation
 import Testing
 @testable import OpenIslandApp
@@ -319,5 +320,32 @@ struct SettingsSurfaceTests {
     func tabsAreVisuallyDistinguishable() {
         let icons = SettingsTab.allCases.map(\.icon)
         #expect(Set(icons).count == icons.count)
+    }
+}
+
+struct IslandTypographyTests {
+    /// The bundled face has to actually register, or every monospaced run in the
+    /// island silently falls back to the system font and the pixel-grid look the
+    /// reference product has is lost.
+    @Test
+    func theBundledMonospaceFontRegisters() {
+        #expect(NSFont(name: IslandTypography.departureMonoName, size: 12) != nil)
+    }
+
+    @Test
+    func monoFallsBackRatherThanReturningNothing() {
+        // Whether or not registration succeeded, a usable font comes back.
+        #expect(IslandTypography.nsMono(size: 11).pointSize == 11)
+    }
+
+    /// A licence file has to travel with a bundled font.
+    @Test
+    func theFontLicenceIsBundledAlongsideIt() {
+        let licence = Bundle.module.url(
+            forResource: "DepartureMono-LICENSE",
+            withExtension: "txt",
+            subdirectory: "Fonts"
+        ) ?? Bundle.module.url(forResource: "DepartureMono-LICENSE", withExtension: "txt")
+        #expect(licence != nil)
     }
 }

@@ -35,7 +35,7 @@ struct V6RightSlotView: View {
         switch content {
         case .count(let n):
             Text("×\(n)")
-                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .font(.islandMono(size: 11, weight: .semibold))
                 .lineLimit(1)
                 .fixedSize(horizontal: true, vertical: false)
                 .foregroundStyle(V6Palette.paper.opacity(0.72))
@@ -158,7 +158,7 @@ private struct AgentsGridTileView: View {
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
                     .fill(V6Palette.paper.opacity(0.14))
                 Text("+\(n)")
-                    .font(.system(size: max(5, size * 0.55), weight: .bold, design: .monospaced))
+                    .font(.islandMono(size: max(5, size * 0.55), weight: .bold))
                     .foregroundStyle(V6Palette.paper)
             }
             .frame(width: size, height: size)
@@ -192,7 +192,7 @@ struct V6CenterLabelView: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 11.5, weight: .medium, design: .monospaced))
+            .font(.islandMono(size: 11.5, weight: .medium))
             .lineLimit(1)
             .fixedSize(horizontal: true, vertical: false)
             .foregroundStyle(V6Palette.paper)

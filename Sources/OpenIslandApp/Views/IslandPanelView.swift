@@ -904,7 +904,7 @@ struct IslandPanelView: View {
             }
 
             Text(sessionOverviewMetricTitle(item, compact: compact))
-                .font(.system(size: 10.5, weight: .semibold, design: .monospaced))
+                .font(.islandMono(size: 10.5, weight: .semibold))
                 .foregroundStyle(item.tint == nil ? V6Palette.paper.opacity(0.34) : V6Palette.paper.opacity(0.48))
         }
     }
@@ -923,11 +923,11 @@ struct IslandPanelView: View {
                 .fill(sectionTint(for: section))
                 .frame(width: 7, height: 7)
             Text(sessionSectionTitle(for: section).uppercased())
-                .font(.system(size: 10.5, weight: .semibold, design: .monospaced))
+                .font(.islandMono(size: 10.5, weight: .semibold))
                 .tracking(0.4)
                 .foregroundStyle(sectionLabelColor(for: section))
             Text("\(section.sessions.count)")
-                .font(.system(size: 10.5, weight: .medium, design: .monospaced))
+                .font(.islandMono(size: 10.5, weight: .medium))
                 .foregroundStyle(V6Palette.paper.opacity(0.4))
             Spacer(minLength: 0)
         }
@@ -1162,11 +1162,11 @@ struct IslandPanelView: View {
                 .foregroundStyle(.white.opacity(0.74))
 
             Text(provider.peakWindowLabel)
-                .font(.system(size: 10.5, weight: .semibold, design: .monospaced))
+                .font(.islandMono(size: 10.5, weight: .semibold))
                 .foregroundStyle(.white.opacity(0.42))
 
             Text("\(provider.peakUsagePercentage)%")
-                .font(.system(size: 11.5, weight: .bold, design: .monospaced))
+                .font(.islandMono(size: 11.5, weight: .bold))
                 .foregroundStyle(usageColor(for: provider.peakUsedPercentage))
 
             // Time to reset, inline. A percentage on its own does not answer
@@ -1175,7 +1175,7 @@ struct IslandPanelView: View {
             if let resetsAt = provider.peakWindow?.resetsAt,
                let remaining = remainingDurationString(until: resetsAt) {
                 Text(remaining)
-                    .font(.system(size: 10.5, weight: .medium, design: .monospaced))
+                    .font(.islandMono(size: 10.5, weight: .medium))
                     .foregroundStyle(.white.opacity(0.38))
             }
         }
@@ -1451,7 +1451,7 @@ private struct IslandSessionRow: View {
                     sideBadge(terminalBadge)
                 }
                 Text(session.spotlightAgeBadge)
-                    .font(.system(size: 10.5, weight: .medium, design: .monospaced))
+                    .font(.islandMono(size: 10.5, weight: .medium))
                     .foregroundStyle(summaryAgeColor(for: presence))
                     .frame(minWidth: 30, alignment: .trailing)
                 // List rows are a scannable index — one click jumps to the
@@ -1579,7 +1579,7 @@ private struct IslandSessionRow: View {
     private var agentBadge: some View {
         let tint = Color(hex: session.tool.brandColorHex) ?? V6Palette.paper
         return Text(agentBadgeTitle)
-            .font(.system(size: 10.5, weight: .semibold, design: .monospaced))
+            .font(.islandMono(size: 10.5, weight: .semibold))
             .foregroundStyle(tint.opacity(notificationChromeOpacity))
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
@@ -1589,7 +1589,7 @@ private struct IslandSessionRow: View {
 
     private func sideBadge(_ title: String) -> some View {
         Text(title)
-            .font(.system(size: 10.5, weight: .medium, design: .monospaced))
+            .font(.islandMono(size: 10.5, weight: .medium))
             .foregroundStyle(V6Palette.paper.opacity(presentation == .notification ? 0.52 : 0.7))
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
@@ -1801,7 +1801,7 @@ private struct IslandSessionRow: View {
         VStack(alignment: .leading, spacing: 0) {
             if let runningDetailText {
                 Text(runningDetailText)
-                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                    .font(.islandMono(size: 12, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.82))
                     .lineLimit(3)
                     .fixedSize(horizontal: false, vertical: true)
@@ -1832,7 +1832,7 @@ private struct IslandSessionRow: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 Text(commandPreviewText)
-                    .font(.system(size: 11.5, weight: .semibold, design: .monospaced))
+                    .font(.islandMono(size: 11.5, weight: .semibold))
                     .foregroundStyle(V6Palette.paper.opacity(0.78))
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -2327,7 +2327,7 @@ private struct StructuredQuestionPromptView: View {
             } label: {
                 HStack(spacing: 10) {
                     Text("\(optionIndex + 1)")
-                        .font(.system(size: 10.5, weight: .semibold, design: .monospaced))
+                        .font(.islandMono(size: 10.5, weight: .semibold))
                         .foregroundStyle(isSelected ? .black.opacity(0.82) : V6Palette.paper.opacity(0.42))
                         .frame(width: 22, height: 20)
                         .background(

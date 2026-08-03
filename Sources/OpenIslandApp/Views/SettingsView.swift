@@ -772,7 +772,7 @@ struct WatchSettingsPane: View {
                         Text("Pairing Code")
                         Spacer()
                         Text(pairingCode)
-                            .font(.system(size: 24, weight: .bold, design: .monospaced))
+                            .font(.islandMono(size: 24, weight: .bold))
                             .foregroundStyle(.blue)
                     }
 
@@ -975,7 +975,7 @@ struct RemoteConnectionSection: View {
         GroupBox {
             HStack(alignment: multiline ? .top : .center) {
                 Text(command)
-                    .font(.system(size: 10.5, design: .monospaced))
+                    .font(.islandMono(size: 10.5))
                     .foregroundStyle(.primary)
                     .lineLimit(multiline ? nil : 1)
                     .truncationMode(.middle)

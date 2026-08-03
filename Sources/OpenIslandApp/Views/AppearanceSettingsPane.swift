@@ -264,7 +264,7 @@ struct AppearanceSettingsPane: View {
             rightSlotCard(.agents, icon: { AgentsMiniGridPreview() },
                           title: lang.t("settings.appearance.rightSlot.agents"))
             rightSlotCard(.none,   icon: { Text("—")
-                                      .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                                      .font(.islandMono(size: 14, weight: .semibold))
                                       .foregroundStyle(V6Palette.paper.opacity(0.5)) },
                           title: lang.t("settings.appearance.rightSlot.none"))
         }
@@ -339,7 +339,7 @@ struct AppearanceSettingsPane: View {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .fill(Color.white.opacity(0.04))
                     Text(sample)
-                        .font(.system(size: 11.5, weight: .medium, design: .monospaced))
+                        .font(.islandMono(size: 11.5, weight: .medium))
                         .foregroundStyle(V6Palette.paper.opacity(option == .off ? 0.4 : 0.9))
                         .lineLimit(1)
                         .truncationMode(.tail)
@@ -487,7 +487,7 @@ struct AppearanceSettingsPane: View {
                     model.updateAppearancePreferences(for: editingProfile) { $0.completedStaleThreshold = option }
                 } icon: {
                     Text(title(for: option))
-                        .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                        .font(.islandMono(size: 13, weight: .semibold))
                         .foregroundStyle(V6Palette.paper.opacity(0.9))
                 }
             }
@@ -543,7 +543,7 @@ struct AppearanceSettingsPane: View {
     private func sectionHeader(title: String, note: String?) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title.uppercased())
-                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .font(.islandMono(size: 11, weight: .semibold))
                 .tracking(1.2)
                 .foregroundStyle(Color.white.opacity(0.55))
             if let note {
@@ -557,7 +557,7 @@ struct AppearanceSettingsPane: View {
     private func monoChip(title: String, selected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 10.5, weight: .medium, design: .monospaced))
+                .font(.islandMono(size: 10.5, weight: .medium))
                 .lineLimit(1)
                 .fixedSize(horizontal: true, vertical: false)
                 .padding(.horizontal, 10)
@@ -958,7 +958,7 @@ private struct SessionListPanelPreview: View {
                 .frame(width: 24, height: 24)
 
             Text(lang.t("island.sessionList.title").uppercased())
-                .font(.system(size: 10.5, weight: .semibold, design: .monospaced))
+                .font(.islandMono(size: 10.5, weight: .semibold))
                 .tracking(1.4)
                 .foregroundStyle(V6Palette.paper.opacity(0.55))
 
@@ -1058,7 +1058,7 @@ private struct SessionListPanelPreview: View {
                 : "\(count) \(compact ? compactTitle : title)"
 
             Text(label)
-                .font(.system(size: 10.5, weight: .semibold, design: .monospaced))
+                .font(.islandMono(size: 10.5, weight: .semibold))
                 .foregroundStyle(tint == nil ? V6Palette.paper.opacity(0.34) : V6Palette.paper.opacity(0.48))
         }
     }
@@ -1086,11 +1086,11 @@ private struct SessionListPanelPreview: View {
         HStack(spacing: 8) {
             sectionDot(for: section)
             Text(section.title.uppercased())
-                .font(.system(size: 10.5, weight: .semibold, design: .monospaced))
+                .font(.islandMono(size: 10.5, weight: .semibold))
                 .tracking(0.4)
                 .foregroundStyle(V6Palette.paper.opacity(0.7))
             Text("\(section.items.count)")
-                .font(.system(size: 10.5, weight: .medium, design: .monospaced))
+                .font(.islandMono(size: 10.5, weight: .medium))
                 .foregroundStyle(V6Palette.paper.opacity(0.4))
             Spacer(minLength: 0)
         }
@@ -1153,7 +1153,7 @@ private struct SessionListLivePreviewRow: View {
                     agentChip
                     sideBadge(item.terminal)
                     Text(item.age)
-                        .font(.system(size: 10.5, weight: .medium, design: .monospaced))
+                        .font(.islandMono(size: 10.5, weight: .medium))
                         .foregroundStyle(V6Palette.paper.opacity(item.phase == .idle ? 0.32 : 0.45))
                         .frame(minWidth: 30, alignment: .trailing)
 
@@ -1212,7 +1212,7 @@ private struct SessionListLivePreviewRow: View {
 
     private var agentChip: some View {
         Text(item.agentShort)
-            .font(.system(size: 10.5, weight: .semibold, design: .monospaced))
+            .font(.islandMono(size: 10.5, weight: .semibold))
             .foregroundStyle(item.agentColor)
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
@@ -1222,7 +1222,7 @@ private struct SessionListLivePreviewRow: View {
 
     private func sideBadge(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 10.5, weight: .medium, design: .monospaced))
+            .font(.islandMono(size: 10.5, weight: .medium))
             .foregroundStyle(V6Palette.paper.opacity(0.7))
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
@@ -1237,7 +1237,7 @@ private struct SessionListLivePreviewRow: View {
                     .font(.system(size: 12.5, weight: .semibold))
                     .foregroundStyle(V6Palette.paper.opacity(0.86))
                 Text(lang.t("settings.appearance.preview.permissionBody"))
-                    .font(.system(size: 11.5, weight: .semibold, design: .monospaced))
+                    .font(.islandMono(size: 11.5, weight: .semibold))
                     .foregroundStyle(V6Palette.paper.opacity(0.78))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
@@ -1248,7 +1248,7 @@ private struct SessionListLivePreviewRow: View {
                     .foregroundStyle(V6Palette.paper.opacity(0.82))
             case .running:
                 Text(item.detail)
-                    .font(.system(size: 11.5, weight: .semibold, design: .monospaced))
+                    .font(.islandMono(size: 11.5, weight: .semibold))
                     .foregroundStyle(V6Palette.paper.opacity(0.78))
             case .done:
                 Text(lang.t("settings.appearance.preview.replyAvailable"))
@@ -1353,7 +1353,7 @@ private struct CountBadgePreview: View {
     let count: Int
     var body: some View {
         Text("×\(count)")
-            .font(.system(size: 12, weight: .semibold, design: .monospaced))
+            .font(.islandMono(size: 12, weight: .semibold))
             .foregroundStyle(V6Palette.paper.opacity(0.72))
     }
 }
@@ -1437,10 +1437,10 @@ private struct UsageDisplayPreview: View {
                 .font(.system(size: 9.5, weight: .semibold))
                 .foregroundStyle(V6Palette.paper.opacity(0.66))
             Text(window)
-                .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                .font(.islandMono(size: 9, weight: .semibold))
                 .foregroundStyle(V6Palette.paper.opacity(0.42))
             Text("\(value)%")
-                .font(.system(size: 9.5, weight: .bold, design: .monospaced))
+                .font(.islandMono(size: 9.5, weight: .bold))
                 .foregroundStyle(color)
         }
         .padding(.horizontal, 6)
@@ -1504,7 +1504,7 @@ private struct SessionSortPreview: View {
             ForEach(rows.indices, id: \.self) { index in
                 HStack(spacing: 6) {
                     Text(rows[index].rank)
-                        .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                        .font(.islandMono(size: 9, weight: .semibold))
                         .foregroundStyle(V6Palette.paper.opacity(0.55))
                         .frame(width: 12, alignment: .leading)
                     RoundedRectangle(cornerRadius: 2, style: .continuous)
