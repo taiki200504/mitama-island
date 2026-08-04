@@ -697,6 +697,9 @@ final class AppModel {
         }
 
         quietScenes.start()
+        hooks.onUsageSnapshotChanged = { [weak self] in
+            self?.checkUsageThreshold()
+        }
 
         overlay.appModel = self
         overlay.restoreDisplayPreference()
@@ -1684,6 +1687,47 @@ final class AppModel {
         default:
             return true
         }
+    }
+
+    /// Tracks which usage windows have already been warned about.
+    private var usageThresholdMonitor = UsageThresholdMonitor(threshold: 0)
+
+    /// Raises one card per window that crosses the user's threshold.
+    ///
+    /// Deliberately not a repeating warning: a quota that stays over 80% for
+    /// four hours would otherwise nag on every refresh.
+    func checkUsageThreshold() {
+        let threshold = settings.usage.alertThreshold
+        guard threshold > 0 else {
+            usageThresholdMonitor = UsageThresholdMonitor(threshold: 0)
+            return
+        }
+        usageThresholdMonitor.threshold = threshold
+
+        let crossed = usageThresholdMonitor.crossings(in: currentUsageWindows())
+        guard let worst = crossed.max(by: { $0.usedPercentage < $1.usedPercentage }) else { return }
+
+        lastActionMessage = lang.t("island.usage.thresholdReached")
+            .replacingOccurrences(of: "{window}", with: worst.label)
+            .replacingOccurrences(of: "{value}", with: "\(Int(worst.usedPercentage.rounded()))")
+    }
+
+    func currentUsageWindows() -> [UsageThresholdMonitor.Window] {
+        var windows: [UsageThresholdMonitor.Window] = []
+        if let claude = claudeUsageSnapshot {
+            if let fiveHour = claude.fiveHour {
+                windows.append(.init(id: "claude", label: "5h", usedPercentage: fiveHour.usedPercentage, resetsAt: fiveHour.resetsAt))
+            }
+            if let sevenDay = claude.sevenDay {
+                windows.append(.init(id: "claude", label: "7d", usedPercentage: sevenDay.usedPercentage, resetsAt: sevenDay.resetsAt))
+            }
+        }
+        if let codex = codexUsageSnapshot {
+            windows.append(contentsOf: codex.windows.map {
+                .init(id: "codex", label: $0.label, usedPercentage: $0.usedPercentage, resetsAt: $0.resetsAt)
+            })
+        }
+        return windows
     }
 
     var islandSurfaceAwaitsUserAction: Bool {

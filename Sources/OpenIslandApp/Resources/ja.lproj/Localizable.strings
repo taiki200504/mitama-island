@@ -260,8 +260,6 @@
 "settings.pending.panelKeyHandling" = "パネル内のキー操作処理が要ります。";
 "settings.pending.soundPackImport" = "サウンドパックの読み込みが要ります。";
 "settings.pending.launcherAppDetection" = "セッションの起動元アプリの判定が要ります。";
-"settings.pending.usageThresholdMonitor" = "使用量の閾値監視が要ります。";
-"settings.pending.codexResetCards" = "Codex のリセットクレジットの取得が要ります。";
 "settings.pending.approvalRouting" = "承認をパネルとターミナルに振り分ける処理が要ります。";
 "settings.pending.sessionAutoNaming" = "セッション自動命名の仕組みが要ります。";
 "settings.pending.memoryWatchdog" = "メモリ監視の仕組みが要ります。";
@@ -435,7 +433,6 @@
 "settings.mitama.section.hub" = "Hub";
 "settings.mitama.openHub" = "Hub を開く";
 "settings.mitama.feed.help" = "mitama-os の要対応をエージェントのセッションより上に出す。";
-"settings.pending.usageValueMode" = "島はいまのところ1通りの出し方しかできません。";
 
 /* SSH remote and About */
 "settings.sshRemote.title" = "SSHリモート";
@@ -508,3 +505,13 @@
 "settings.display.notch.auto" = "macOS に任せる";
 "settings.display.notch.measured" = "macOS が返している値";
 "settings.display.notch.measured.help" = "いま使っている画面の値。上の補正を加える前の数字です。";
+
+/* Usage display */
+"settings.usage.valueMode.used" = "使用済み";
+"settings.usage.valueMode.remaining" = "残り";
+"settings.usage.valueMode.help" = "数字を「使った分」で見るか「残り」で見るか。色はどちらでも使った量に従います。";
+"settings.usage.thresholdAlert.help" = "1つの枠につき1回だけ知らせます。更新のたびには出ません。";
+"settings.usage.thresholdAlert.level" = "知らせる水準";
+"settings.usage.resetCards.help" = "いちばん使っている枠だけでなく、すべての枠と残り時間を出します。";
+"island.usage.remainingFormat" = "残り{value}%";
+"island.usage.thresholdReached" = "{window} の使用量が {value}% に達しました。";

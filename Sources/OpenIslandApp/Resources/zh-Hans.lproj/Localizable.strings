@@ -260,8 +260,6 @@
 "settings.pending.panelKeyHandling" = "需要面板内按键处理。";
 "settings.pending.soundPackImport" = "需要音效包导入。";
 "settings.pending.launcherAppDetection" = "需要判断会话由哪个 App 启动。";
-"settings.pending.usageThresholdMonitor" = "需要用量阈值监控。";
-"settings.pending.codexResetCards" = "需要 Codex 重置额度数据。";
 "settings.pending.approvalRouting" = "需要在面板与终端之间路由审批。";
 "settings.pending.sessionAutoNaming" = "需要会话自动命名服务。";
 "settings.pending.memoryWatchdog" = "需要内存监视。";
@@ -435,7 +433,6 @@
 "settings.mitama.section.hub" = "Hub";
 "settings.mitama.openHub" = "打开 Hub";
 "settings.mitama.feed.help" = "将 mitama-os 中需要处理的项目显示在代理会话上方。";
-"settings.pending.usageValueMode" = "灵动岛目前只有一种显示形式。";
 
 /* SSH remote and About */
 "settings.sshRemote.title" = "SSH 远程";
@@ -508,3 +505,13 @@
 "settings.display.notch.auto" = "交给 macOS";
 "settings.display.notch.measured" = "macOS 报告的值";
 "settings.display.notch.measured.help" = "当前屏幕的数值，未应用上方修正。";
+
+/* Usage display */
+"settings.usage.valueMode.used" = "已使用";
+"settings.usage.valueMode.remaining" = "剩余";
+"settings.usage.valueMode.help" = "数字按已用量或剩余量显示。颜色始终跟随已用量。";
+"settings.usage.thresholdAlert.help" = "每个周期只提醒一次，不会每次刷新都提醒。";
+"settings.usage.thresholdAlert.level" = "提醒阈值";
+"settings.usage.resetCards.help" = "显示所有周期及其倒计时，而非仅最繁忙的一个。";
+"island.usage.remainingFormat" = "剩余 {value}%";
+"island.usage.thresholdReached" = "{window} 的用量已达到 {value}%。";

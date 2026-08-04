@@ -1,4 +1,5 @@
 import SwiftUI
+import OpenIslandCore
 
 // MARK: - Usage
 
@@ -9,6 +10,8 @@ struct UsageSettingsPane: View {
     @State private var confirmingUninstallBridge = false
 
     private var lang: LanguageManager { model.lang }
+
+    private var usage: UsageSettings { model.settings.usage }
 
     var body: some View {
         SettingsPane(tab: .usage) {
@@ -27,17 +30,46 @@ struct UsageSettingsPane: View {
                         set: { model.showCodexUsage = $0 }
                     )
                 )
-                SettingsRow(
+                SettingsPickerRow(
                     title: lang.t("settings.usage.valueMode"),
-                    availability: FeatureAvailability(.usageValueMode)
-                )
-                SettingsRow(
+                    help: lang.t("settings.usage.valueMode.help"),
+                    selection: Binding(
+                        get: { usage.valueMode },
+                        set: { usage.valueMode = $0 }
+                    )
+                ) {
+                    ForEach(UsageValueMode.allCases) { mode in
+                        Text(lang.t(mode.labelKey)).tag(mode)
+                    }
+                }
+                SettingsToggleRow(
                     title: lang.t("settings.usage.thresholdAlert"),
-                    availability: FeatureAvailability(.usageThresholdMonitor)
+                    help: lang.t("settings.usage.thresholdAlert.help"),
+                    isOn: Binding(
+                        get: { usage.alertsEnabled },
+                        set: { usage.alertsEnabled = $0 }
+                    )
                 )
-                SettingsRow(
+                if usage.alertsEnabled {
+                    SettingsSliderRow(
+                        title: lang.t("settings.usage.thresholdAlert.level"),
+                        value: Binding(
+                            get: { Double(usage.alertThreshold) },
+                            set: { usage.alertThreshold = Int($0) }
+                        ),
+                        range: UsageSettings.Defaults.alertThresholdRange,
+                        step: 5,
+                        defaultValue: Double(UsageSettings.suggestedThreshold),
+                        format: { "\(Int($0))%" }
+                    )
+                }
+                SettingsToggleRow(
                     title: lang.t("settings.usage.resetCards"),
-                    availability: FeatureAvailability(.codexResetCards)
+                    help: lang.t("settings.usage.resetCards.help"),
+                    isOn: Binding(
+                        get: { usage.showResetCards },
+                        set: { usage.showResetCards = $0 }
+                    )
                 )
             }
 

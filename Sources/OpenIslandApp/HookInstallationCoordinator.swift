@@ -23,8 +23,16 @@ final class HookInstallationCoordinator {
     var geminiHookStatus: GeminiHookInstallationStatus?
     var kimiHookStatus: KimiHookInstallationStatus?
     var claudeStatusLineStatus: ClaudeStatusLineInstallationStatus?
-    var claudeUsageSnapshot: ClaudeUsageSnapshot?
-    var codexUsageSnapshot: CodexUsageSnapshot?
+    var claudeUsageSnapshot: ClaudeUsageSnapshot? {
+        didSet { if claudeUsageSnapshot != oldValue { onUsageSnapshotChanged?() } }
+    }
+    var codexUsageSnapshot: CodexUsageSnapshot? {
+        didSet { if codexUsageSnapshot != oldValue { onUsageSnapshotChanged?() } }
+    }
+
+    /// Fires whenever either provider's numbers move, so the threshold check
+    /// runs off the same refresh that produced them instead of its own timer.
+    var onUsageSnapshotChanged: (() -> Void)?
     var hooksBinaryURL: URL?
     var isCodexSetupBusy = false
     var isClaudeHookSetupBusy = false

@@ -38,9 +38,6 @@ enum PendingCapability: String, CaseIterable, Sendable {
     case launcherAppDetection
 
     // Usage
-    case usageThresholdMonitor
-    case codexResetCards
-    case usageValueMode
 
     // Agent integrations
     case approvalRouting

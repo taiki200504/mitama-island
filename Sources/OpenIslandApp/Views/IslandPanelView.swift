@@ -1167,22 +1167,14 @@ struct IslandPanelView: View {
                 .font(.islandText(size: 11, weight: .semibold))
                 .foregroundStyle(.white.opacity(0.74))
 
-            Text(provider.peakWindowLabel)
-                .font(.islandMono(size: 10.5, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.42))
-
-            Text("\(provider.peakUsagePercentage)%")
-                .font(.islandMono(size: 11.5, weight: .bold))
-                .foregroundStyle(usageColor(for: provider.peakUsedPercentage))
-
-            // Time to reset, inline. A percentage on its own does not answer
-            // "can I keep going" — 90% with ten minutes left is fine, 90% with
-            // four hours left is not.
-            if let resetsAt = provider.peakWindow?.resetsAt,
-               let remaining = remainingDurationString(until: resetsAt) {
-                Text(remaining)
-                    .font(.islandMono(size: 10.5, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.38))
+            if model.settings.usage.showResetCards {
+                // Every window, each with its own countdown. Off by default: the
+                // busiest window is what usually matters and the header is narrow.
+                ForEach(provider.windows) { window in
+                    usageWindowFigures(window)
+                }
+            } else {
+                peakUsageFigures(provider)
             }
         }
         .padding(.horizontal, 8)
@@ -1195,9 +1187,61 @@ struct IslandPanelView: View {
         .help(usageHelpText(for: provider))
     }
 
+    private func usageWindowFigures(_ window: UsageWindowPresentation) -> some View {
+        HStack(spacing: 4) {
+            Text(window.label)
+                .font(.islandMono(size: 10.5, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.42))
+
+            Text(usageValueText(for: window.usedPercentage))
+                .font(.islandMono(size: 11.5, weight: .bold))
+                .foregroundStyle(usageColor(for: window.usedPercentage))
+
+            if let resetsAt = window.resetsAt,
+               let remaining = remainingDurationString(until: resetsAt) {
+                Text(remaining)
+                    .font(.islandMono(size: 10.5, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.38))
+            }
+        }
+    }
+
+    private func peakUsageFigures(_ provider: UsageProviderPresentation) -> some View {
+        HStack(spacing: 5) {
+            Text(provider.peakWindowLabel)
+                .font(.islandMono(size: 10.5, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.42))
+
+            Text(usageValueText(for: provider.peakUsedPercentage))
+                .font(.islandMono(size: 11.5, weight: .bold))
+                // Colour tracks how much is spent, never the printed figure —
+                // "10% left" has to look as urgent as "90% used".
+                .foregroundStyle(usageColor(for: provider.peakUsedPercentage))
+
+            // Time to reset, inline. A percentage on its own does not answer
+            // "can I keep going" — 90% with ten minutes left is fine, 90% with
+            // four hours left is not.
+            if let resetsAt = provider.peakWindow?.resetsAt,
+               let remaining = remainingDurationString(until: resetsAt) {
+                Text(remaining)
+                    .font(.islandMono(size: 10.5, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.38))
+            }
+        }
+    }
+
+    /// Formats one figure under the user's choice of counting up or down.
+    private func usageValueText(for used: Double) -> String {
+        let mode = model.settings.usage.valueMode
+        let value = Int(mode.displayedPercentage(used: used).rounded())
+        return mode == .remaining
+            ? LanguageManager.shared.t("island.usage.remainingFormat").replacingOccurrences(of: "{value}", with: "\(value)")
+            : "\(value)%"
+    }
+
     private func usageHelpText(for provider: UsageProviderPresentation) -> String {
         provider.windows.map { window in
-            var parts = ["\(window.label) \(window.roundedUsedPercentage)%"]
+            var parts = ["\(window.label) \(usageValueText(for: window.usedPercentage))"]
             if let resetsAt = window.resetsAt,
                let remaining = remainingDurationString(until: resetsAt) {
                 parts.append(remaining)
