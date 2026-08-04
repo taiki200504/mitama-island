@@ -93,6 +93,22 @@ struct DisplaySettingsPane: View {
                 format: points
             )
 
+            SettingsPickerRow(
+                title: lang.t("settings.display.agentIcon"),
+                help: lang.t("settings.display.agentIcon.help"),
+                availability: AgentIconLibrary.shared.hasAnyIcon
+                    ? .ready
+                    : .unsupported(reasonKey: "settings.display.agentIcon.missing"),
+                selection: Binding(
+                    get: { model.agentIconStyle },
+                    set: { model.agentIconStyle = $0 }
+                )
+            ) {
+                ForEach(AgentIconStyle.allCases) { style in
+                    Text(lang.t(style.labelKey)).tag(style)
+                }
+            }
+
             SettingsSliderRow(
                 title: lang.t("settings.display.completionCardHeight"),
                 help: lang.t("settings.display.completionCardHeight.help"),

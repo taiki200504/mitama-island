@@ -238,9 +238,21 @@ struct SessionGlyphPair: View {
     let tint: Color
     var pixelSize: CGFloat = 2
 
+    /// Falls back to the pixel mark whenever the brand image is missing, so a
+    /// half-fetched icon set never leaves a blank space where an agent was.
+    var iconStyle: AgentIconStyle = .pixel
+
     var body: some View {
         HStack(spacing: pixelSize * 2) {
-            PixelGlyphView(glyph: .agentMark(for: tool), tint: tint, pixelSize: pixelSize)
+            if iconStyle == .brand, let brand = AgentIconLibrary.shared.image(for: tool) {
+                Image(nsImage: brand)
+                    .resizable()
+                    .interpolation(.high)
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: pixelSize * 7, height: pixelSize * 7)
+            } else {
+                PixelGlyphView(glyph: .agentMark(for: tool), tint: tint, pixelSize: pixelSize)
+            }
             PixelGlyphView(
                 glyph: .hostMark(for: terminalApp),
                 tint: tint.opacity(0.75),

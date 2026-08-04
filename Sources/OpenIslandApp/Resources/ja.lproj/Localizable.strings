@@ -525,3 +525,10 @@
 "island.session.hideFolder" = "{name} のセッションを今後表示しない";
 "island.session.hideApp" = "{name} から始まったセッションを今後表示しない";
 "island.session.hidden" = "非表示にしました。通知の設定から戻せます。";
+
+/* Agent icons */
+"settings.display.agentIcon" = "エージェントのアイコン";
+"settings.appearance.agentIcon.pixel" = "ドット絵";
+"settings.appearance.agentIcon.brand" = "公式ロゴ";
+"settings.display.agentIcon.help" = "公式ロゴはアプリに同梱していません。scripts/fetch-agent-icons.sh で取得します。";
+"settings.display.agentIcon.missing" = "ロゴが取得されていないため、ドット絵を使っています。";

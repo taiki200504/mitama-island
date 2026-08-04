@@ -37,6 +37,13 @@ final class DisplaySettings: PreferenceGroup {
         set { write(\.completionCardMaxHeight, Keys.completionCardMaxHeight, newValue) }
     }
 
+    /// Which set of agent marks the island draws. Stored as a raw string so an
+    /// unknown future value falls back rather than failing to decode.
+    var agentIconStyleRawValue: String {
+        get { read(\.agentIconStyleRawValue, Keys.agentIconStyle, AgentIconStyle.pixel.rawValue) }
+        set { write(\.agentIconStyleRawValue, Keys.agentIconStyle, newValue) }
+    }
+
     // MARK: Notch calibration
 
     /// Override for the notch height in points. Zero means "trust the macOS value".
@@ -119,6 +126,7 @@ extension DisplaySettings {
         // height the app never read, so reusing it would resurrect a 90pt value
         // that clips the card.
         static let completionCardMaxHeight = "display.completionCardMaxHeight"
+        static let agentIconStyle = "display.agentIconStyle"
         static let notchHeightOverride = "display.notchHeightOverride"
         static let notchWidthOverride = "display.notchWidthOverride"
         static let showTasks = "display.sessionCard.showTasks"

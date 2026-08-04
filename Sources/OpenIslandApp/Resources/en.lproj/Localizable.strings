@@ -525,3 +525,10 @@
 "island.session.hideFolder" = "Never show sessions in {name}";
 "island.session.hideApp" = "Never show sessions from {name}";
 "island.session.hidden" = "Hidden. Undo it under Notifications.";
+
+/* Agent icons */
+"settings.display.agentIcon" = "Agent icons";
+"settings.appearance.agentIcon.pixel" = "Pixel marks";
+"settings.appearance.agentIcon.brand" = "Official logos";
+"settings.display.agentIcon.help" = "Official logos are not shipped with the app; fetch them with scripts/fetch-agent-icons.sh.";
+"settings.display.agentIcon.missing" = "No logos have been fetched, so the pixel marks are in use.";

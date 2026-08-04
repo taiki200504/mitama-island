@@ -724,7 +724,8 @@ struct IslandPanelView: View {
                     onReply: TerminalTextSender.canReply(to: session, enabled: model.completionReplyEnabled)
                         ? { model.replyToSession(session, text: $0) } : nil,
                     onJump: { model.jumpToSession(session) },
-                    onHide: { model.hideSessions(matching: $0) }
+                    onHide: { model.hideSessions(matching: $0) },
+                    agentIconStyle: model.agentIconStyle
                 )
                 .id(notificationCardIdentity(for: session))
 
@@ -770,7 +771,8 @@ struct IslandPanelView: View {
                                     ? { model.replyToSession(session, text: $0) } : nil,
                                 onJump: { model.jumpToSession(session) },
                                 onDismiss: session.isRemote ? { model.dismissSession(session.id) } : nil,
-                                onHide: { model.hideSessions(matching: $0) }
+                                onHide: { model.hideSessions(matching: $0) },
+                    agentIconStyle: model.agentIconStyle
                             )
                         }
                     }
@@ -824,7 +826,8 @@ struct IslandPanelView: View {
                             ? { model.replyToSession(session, text: $0) } : nil,
                         onJump: { model.jumpToSession(session) },
                         onDismiss: session.isRemote ? { model.dismissSession(session.id) } : nil,
-                        onHide: { model.hideSessions(matching: $0) }
+                        onHide: { model.hideSessions(matching: $0) },
+                    agentIconStyle: model.agentIconStyle
                     )
                 }
             }
@@ -1388,6 +1391,7 @@ private struct IslandSessionRow: View {
     var onDismiss: (() -> Void)?
     /// Adds a rule that keeps this kind of session off the island for good.
     var onHide: ((SilenceRule) -> Void)?
+    var agentIconStyle: AgentIconStyle = .pixel
 
     @State private var isHighlighted = false
     @State private var detailOverride: Bool?
@@ -1490,7 +1494,8 @@ private struct IslandSessionRow: View {
                 SessionGlyphPair(
                     tool: session.tool,
                     terminalApp: session.jumpTarget?.terminalApp,
-                    tint: statusTint(for: presence)
+                    tint: statusTint(for: presence),
+                    iconStyle: agentIconStyle
                 )
                 .frame(width: 30, alignment: .leading)
                 .padding(.top, 4)

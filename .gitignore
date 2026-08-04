@@ -29,3 +29,6 @@ output/
 
 # Reference-product research notes (local only, never committed)
 .local-reference/
+
+# Vendor logos fetched by scripts/fetch-agent-icons.sh — trademarks, never committed
+Assets/AgentIcons/

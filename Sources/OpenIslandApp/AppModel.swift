@@ -1744,6 +1744,11 @@ final class AppModel {
         }
     }
 
+    var agentIconStyle: AgentIconStyle {
+        get { AgentIconStyle(rawValue: settings.display.agentIconStyleRawValue) ?? .pixel }
+        set { settings.display.agentIconStyleRawValue = newValue.rawValue }
+    }
+
     /// Sessions that were already running when hooks were last installed.
     ///
     /// Only live ones count. A session that has since finished cannot be
