@@ -254,9 +254,6 @@
 "settings.pending.foregroundTerminalDetection" = "どのターミナルが前面かの判定が要ります。";
 "settings.pending.autoHideTimer" = "自動非表示のタイマーが要ります。";
 "settings.pending.outsideClickDetection" = "パネル外のクリック検知が要ります。";
-"settings.pending.approvalRouting" = "承認をパネルとターミナルに振り分ける処理が要ります。";
-"settings.pending.sessionAutoNaming" = "セッション自動命名の仕組みが要ります。";
-"settings.pending.memoryWatchdog" = "メモリ監視の仕組みが要ります。";
 
 /* General pane */
 "settings.general.section.expansion" = "展開";
@@ -301,7 +298,6 @@
 "settings.display.showProjectName" = "プロジェクト名を表示";
 "settings.display.showWorktree" = "ワークツリーを表示";
 "settings.display.showModel" = "モデル名を表示";
-"settings.display.showReasoningEffort" = "推論強度を表示";
 "settings.display.showTasks" = "タスクリストを表示";
 "settings.display.showTasks.help" = "各セッションカードにタスクのチェックリストを出す。";
 "settings.display.showSubagents" = "サブエージェントを表示";
@@ -309,7 +305,6 @@
 "settings.display.showAgentActivity" = "エージェントの作業内容を表示";
 "settings.pending.completionCardSizing" = "完了カードは今は内容に合わせて高さが決まります。";
 "settings.pending.notchCalibration" = "ノッチの寸法を上書きできる作りが要ります。";
-"settings.pending.reasoningEffortMetadata" = "セッションの情報にこれらの項目がまだ入っていません。";
 "settings.points.format" = "%@pt";
 /* mitama feed */
 "settings.general.mitamaFeed" = "mitama の要対応を島に出す";
@@ -410,13 +405,9 @@
 "settings.sshRemote.section.setup" = "つなぎ方";
 "settings.labs.section.updates" = "更新";
 "settings.labs.section.agents" = "エージェントの扱い";
-"settings.labs.section.stability" = "安定性";
 "settings.labs.autoUpdate" = "自動更新";
 "settings.labs.autoUpdate.off" = "このビルドでは意図的に切ってある。本家の更新に置き換えられないようにするため。";
-"settings.labs.nativeApprovals" = "承認をエージェント側に任せる";
-"settings.labs.approvalTarget" = "承認をどこに出すか";
 "settings.labs.sessionNaming" = "セッションに自動で名前を付ける";
-"settings.labs.memoryRestart" = "メモリを使いすぎたら再起動する";
 "settings.mitama.section.feed" = "Hub の通知";
 "settings.mitama.section.hub" = "Hub";
 "settings.mitama.openHub" = "Hub を開く";
@@ -555,3 +546,4 @@
 "settings.shortcuts.hints" = "ボタンにキーを表示";
 "settings.shortcuts.hints.help" = "修飾キーを押している間だけ、各ボタンの文字が出ます。";
 "settings.shortcuts.hints.noPermission" = "アクセシビリティの許可が要ります。ショートカット自体は許可なしで動き、影響を受けるのは表示だけです。";
+"settings.labs.sessionNaming.help" = "フォルダ名ではなく最初のプロンプトを使うので、同じリポジトリのセッションを見分けられます。その場で作るだけで、AI には尋ねません。";

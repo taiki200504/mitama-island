@@ -145,11 +145,11 @@ struct DisplaySettingsWiringTests {
 
     // MARK: Honesty of the pending markers
 
-    /// Three of the four metadata switches turned out to have data behind them
-    /// after all, so only reasoning effort stays disabled. If a value for it
-    /// ever lands, this test is the reminder to make its switch live too.
+    /// All four metadata switches have data behind them. Reasoning effort used
+    /// to be the exception; its row was deleted rather than left as a switch
+    /// nothing could ever fill.
     @Test
-    func onlyReasoningEffortLacksTheDataToRenderIt() {
+    func everyMetadataSwitchHasDataBehindIt() {
         let session = sessionWithDetails()
 
         // These three have a value to show, so their switches are live.
@@ -157,7 +157,6 @@ struct DisplaySettingsWiringTests {
         #expect(session.claudeMetadata?.worktreeBranch == "feat/settings-display")
         #expect(session.claudeMetadata?.model == "claude-opus-5")
 
-        #expect(!PendingCapability.reasoningEffortMetadata.isImplemented)
     }
 
     /// Badge defaults follow the reference product rather than the row's

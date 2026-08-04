@@ -190,17 +190,6 @@ struct DisplaySettingsPane: View {
                 title: lang.t("settings.display.showModel"),
                 isOn: Binding(get: { display.showModel }, set: { display.showModel = $0 })
             )
-            // Reasoning effort is the only one of these the session record does
-            // not carry.
-            SettingsToggleRow(
-                title: lang.t("settings.display.showReasoningEffort"),
-                availability: FeatureAvailability(.reasoningEffortMetadata),
-                isOn: Binding(
-                    get: { display.showReasoningEffort },
-                    set: { display.showReasoningEffort = $0 }
-                )
-            )
-
             SettingsToggleRow(
                 title: lang.t("settings.display.showTasks"),
                 help: lang.t("settings.display.showTasks.help"),

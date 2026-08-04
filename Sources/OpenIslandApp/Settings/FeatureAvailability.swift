@@ -36,14 +36,10 @@ enum PendingCapability: String, CaseIterable, Sendable {
     // Usage
 
     // Agent integrations
-    case approvalRouting
-    case sessionAutoNaming
-    case memoryWatchdog
 
     // Panel presentation
     case completionCardSizing
     case notchCalibration
-    case reasoningEffortMetadata
 
     // Shell
 

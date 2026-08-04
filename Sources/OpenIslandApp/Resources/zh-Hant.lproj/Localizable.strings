@@ -253,9 +253,6 @@
 "settings.pending.foregroundTerminalDetection" = "需要判斷哪個終端機在前景。";
 "settings.pending.autoHideTimer" = "需要自動隱藏計時器。";
 "settings.pending.outsideClickDetection" = "需要面板外點擊偵測。";
-"settings.pending.approvalRouting" = "需要在面板與終端機之間路由審批。";
-"settings.pending.sessionAutoNaming" = "需要工作階段自動命名服務。";
-"settings.pending.memoryWatchdog" = "需要記憶體監視。";
 
 /* General pane */
 "settings.general.section.expansion" = "展開";
@@ -300,7 +297,6 @@
 "settings.display.showProjectName" = "顯示專案名稱";
 "settings.display.showWorktree" = "顯示工作樹";
 "settings.display.showModel" = "顯示模型";
-"settings.display.showReasoningEffort" = "顯示推理強度";
 "settings.display.showTasks" = "顯示任務列表";
 "settings.display.showTasks.help" = "在每張工作階段卡片上加入任務清單。";
 "settings.display.showSubagents" = "顯示子代理";
@@ -308,7 +304,6 @@
 "settings.display.showAgentActivity" = "顯示代理正在做什麼";
 "settings.pending.completionCardSizing" = "完成卡片目前會依內容自動決定高度。";
 "settings.pending.notchCalibration" = "需要瀏海尺寸支援覆寫設定。";
-"settings.pending.reasoningEffortMetadata" = "工作階段紀錄尚未包含這些資訊。";
 "settings.points.format" = "%@pt";
 /* mitama feed */
 "settings.general.mitamaFeed" = "在動態島顯示 mitama 待辦";
@@ -409,13 +404,9 @@
 "settings.sshRemote.section.setup" = "設定方式";
 "settings.labs.section.updates" = "更新";
 "settings.labs.section.agents" = "代理行為";
-"settings.labs.section.stability" = "穩定性";
 "settings.labs.autoUpdate" = "自動更新";
 "settings.labs.autoUpdate.off" = "本版本中特意關閉，以免被上游發行版替換。";
-"settings.labs.nativeApprovals" = "讓代理自行處理審批";
-"settings.labs.approvalTarget" = "審批顯示位置";
 "settings.labs.sessionNaming" = "自動為工作階段命名";
-"settings.labs.memoryRestart" = "記憶體佔用過高時重新啟動";
 "settings.mitama.section.feed" = "Hub 通知";
 "settings.mitama.section.hub" = "Hub";
 "settings.mitama.openHub" = "開啟 Hub";
@@ -554,3 +545,4 @@
 "settings.shortcuts.hints" = "按鈕上的按鍵提示";
 "settings.shortcuts.hints.help" = "按住修飾鍵即可看到每個按鈕對應的字母。";
 "settings.shortcuts.hints.noPermission" = "需要輔助使用權限。快捷鍵本身無需權限即可使用，僅提示受影響。";
+"settings.labs.sessionNaming.help" = "使用首個提示而非資料夾名稱，便於區分同一儲存庫中的工作階段。就地生成，不呼叫模型。";

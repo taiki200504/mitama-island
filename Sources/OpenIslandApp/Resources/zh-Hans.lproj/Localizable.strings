@@ -254,9 +254,6 @@
 "settings.pending.foregroundTerminalDetection" = "需要判断哪个终端在前台。";
 "settings.pending.autoHideTimer" = "需要自动隐藏计时器。";
 "settings.pending.outsideClickDetection" = "需要面板外点击检测。";
-"settings.pending.approvalRouting" = "需要在面板与终端之间路由审批。";
-"settings.pending.sessionAutoNaming" = "需要会话自动命名服务。";
-"settings.pending.memoryWatchdog" = "需要内存监视。";
 
 /* General pane */
 "settings.general.section.expansion" = "展开";
@@ -301,7 +298,6 @@
 "settings.display.showProjectName" = "显示项目名称";
 "settings.display.showWorktree" = "显示工作树";
 "settings.display.showModel" = "显示模型";
-"settings.display.showReasoningEffort" = "显示推理强度";
 "settings.display.showTasks" = "显示任务列表";
 "settings.display.showTasks.help" = "在每张会话卡片上加入任务清单。";
 "settings.display.showSubagents" = "显示子代理";
@@ -309,7 +305,6 @@
 "settings.display.showAgentActivity" = "显示代理正在做什么";
 "settings.pending.completionCardSizing" = "完成卡片目前会根据内容自动确定高度。";
 "settings.pending.notchCalibration" = "需要刘海尺寸支持覆盖设置。";
-"settings.pending.reasoningEffortMetadata" = "会话记录尚未包含这些信息。";
 "settings.points.format" = "%@pt";
 /* mitama feed */
 "settings.general.mitamaFeed" = "在灵动岛显示 mitama 待办";
@@ -410,13 +405,9 @@
 "settings.sshRemote.section.setup" = "设置方法";
 "settings.labs.section.updates" = "更新";
 "settings.labs.section.agents" = "代理行为";
-"settings.labs.section.stability" = "稳定性";
 "settings.labs.autoUpdate" = "自动更新";
 "settings.labs.autoUpdate.off" = "本版本中特意关闭，以免被上游发行版替换。";
-"settings.labs.nativeApprovals" = "让代理自行处理审批";
-"settings.labs.approvalTarget" = "审批显示位置";
 "settings.labs.sessionNaming" = "自动为会话命名";
-"settings.labs.memoryRestart" = "内存占用过高时重启";
 "settings.mitama.section.feed" = "Hub 通知";
 "settings.mitama.section.hub" = "Hub";
 "settings.mitama.openHub" = "打开 Hub";
@@ -555,3 +546,4 @@
 "settings.shortcuts.hints" = "按钮上的按键提示";
 "settings.shortcuts.hints.help" = "按住修饰键即可看到每个按钮对应的字母。";
 "settings.shortcuts.hints.noPermission" = "需要辅助功能权限。快捷键本身无需权限即可使用，仅提示受影响。";
+"settings.labs.sessionNaming.help" = "使用首个提示而非文件夹名，便于区分同一仓库中的会话。就地生成，不调用模型。";

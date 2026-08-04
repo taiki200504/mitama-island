@@ -71,3 +71,47 @@ struct QuietSceneMonitorTests {
         #expect(monitor.shouldStayQuiet(under: behaviour))
     }
 }
+
+@Suite("Quiet scene defaults")
+@MainActor
+struct QuietSceneDefaultsTests {
+    private func makeBehaviour() -> BehaviourSettings {
+        let defaults = UserDefaults(suiteName: "quiet-defaults-\(UUID().uuidString)")!
+        return BehaviourSettings(store: PreferenceStore(suite: defaults))
+    }
+
+    /// The bug this pins: screen-share detection is inferred from a recording
+    /// or meeting app merely being open. Shipped on by default, QuickTime
+    /// sitting in the Dock silently swallowed every approval card. A signal
+    /// this coarse has to be opted into.
+    @Test("Screen-share silencing is off until asked for")
+    func screenCaptureIsOptIn() {
+        #expect(makeBehaviour().quietWhenScreenCaptured == false)
+    }
+
+    /// A locked screen is reported exactly by macOS, and nothing is visible
+    /// there anyway, so this one may default on.
+    @Test("Screen-lock silencing is on by default")
+    func screenLockIsDefaultOn() {
+        #expect(makeBehaviour().quietWhenScreenObscured)
+    }
+
+    @Test("No focus mode silences until one is chosen")
+    func focusIsOptIn() {
+        #expect(makeBehaviour().quietFocusModes.isEmpty)
+    }
+
+    /// Whatever the machine happens to be doing, an untouched install must let
+    /// notifications through.
+    @Test("A fresh install suppresses nothing")
+    func freshInstallIsSilent() throws {
+        let behaviour = makeBehaviour()
+        let monitor = QuietSceneMonitor(
+            assertionsURL: URL(filePath: "/nonexistent/\(UUID().uuidString).json"),
+            runningBundleIdentifiers: { ["us.zoom.xos", "com.apple.QuickTimePlayerX"] },
+            screenIsLocked: { false }
+        )
+        monitor.refresh()
+        #expect(monitor.shouldStayQuiet(under: behaviour) == false)
+    }
+}

@@ -727,7 +727,8 @@ struct IslandPanelView: View {
                     onHide: { model.hideSessions(matching: $0) },
                     agentIconStyle: model.agentIconStyle,
                     shortcutHint: model.shortcutHints.isModifierHeld ? model.settings.shortcuts : nil,
-                    isSwitcherHighlighted: model.switcher.highlightedID == session.id
+                    isSwitcherHighlighted: model.switcher.highlightedID == session.id,
+                    usesAutoNaming: model.settings.display.sessionAutoNaming
                 )
                 .id(notificationCardIdentity(for: session))
 
@@ -776,7 +777,8 @@ struct IslandPanelView: View {
                                 onHide: { model.hideSessions(matching: $0) },
                     agentIconStyle: model.agentIconStyle,
                     shortcutHint: model.shortcutHints.isModifierHeld ? model.settings.shortcuts : nil,
-                    isSwitcherHighlighted: model.switcher.highlightedID == session.id
+                    isSwitcherHighlighted: model.switcher.highlightedID == session.id,
+                    usesAutoNaming: model.settings.display.sessionAutoNaming
                             )
                         }
                     }
@@ -833,7 +835,8 @@ struct IslandPanelView: View {
                         onHide: { model.hideSessions(matching: $0) },
                     agentIconStyle: model.agentIconStyle,
                     shortcutHint: model.shortcutHints.isModifierHeld ? model.settings.shortcuts : nil,
-                    isSwitcherHighlighted: model.switcher.highlightedID == session.id
+                    isSwitcherHighlighted: model.switcher.highlightedID == session.id,
+                    usesAutoNaming: model.settings.display.sessionAutoNaming
                     )
                 }
             }
@@ -1402,6 +1405,8 @@ private struct IslandSessionRow: View {
     var shortcutHint: ShortcutSettings?
     /// Draws the switcher's ring when this row is the one selected.
     var isSwitcherHighlighted = false
+    /// Prefer a name derived from the first prompt over the workspace name.
+    var usesAutoNaming = false
 
     @State private var isHighlighted = false
     @State private var detailOverride: Bool?
@@ -1721,6 +1726,14 @@ private struct IslandSessionRow: View {
     private var summaryHeadlineText: String {
         if presentation == .notification, session.phase == .completed {
             return notificationWorkspaceHeadlineText
+        }
+
+        // Only when there is a prompt to derive from. Falling back to the
+        // workspace is right: a blank headline would be worse than a repeated
+        // one, which is the problem this setting exists to fix.
+        if usesAutoNaming,
+           let derived = SessionAutoName.derive(from: session.initialUserPromptText) {
+            return derived
         }
 
         return session.spotlightHeadlineText

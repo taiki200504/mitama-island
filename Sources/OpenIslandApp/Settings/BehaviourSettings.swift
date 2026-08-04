@@ -196,8 +196,14 @@ final class BehaviourSettings: PreferenceGroup {
         set { write(\.quietWhenScreenObscured, Keys.quietWhenScreenObscured, newValue) }
     }
 
+    /// Off by default, unlike the screen-lock switch next to it.
+    ///
+    /// Screen lock is a signal macOS reports exactly. "Someone is sharing my
+    /// screen" is not — it is inferred from a recording or meeting app being
+    /// *open*, which QuickTime sitting in the Dock satisfies. Defaulting that to
+    /// on silently swallowed every approval until the app was quit.
     var quietWhenScreenCaptured: Bool {
-        get { read(\.quietWhenScreenCaptured, Keys.quietWhenScreenCaptured, true) }
+        get { read(\.quietWhenScreenCaptured, Keys.quietWhenScreenCaptured, false) }
         set { write(\.quietWhenScreenCaptured, Keys.quietWhenScreenCaptured, newValue) }
     }
 

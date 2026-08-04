@@ -44,6 +44,13 @@ final class DisplaySettings: PreferenceGroup {
         set { write(\.agentIconStyleRawValue, Keys.agentIconStyle, newValue) }
     }
 
+    /// Name each session after what it was first asked to do, instead of after
+    /// the folder it runs in.
+    var sessionAutoNaming: Bool {
+        get { read(\.sessionAutoNaming, Keys.sessionAutoNaming, false) }
+        set { write(\.sessionAutoNaming, Keys.sessionAutoNaming, newValue) }
+    }
+
     // MARK: Notch calibration
 
     /// Override for the notch height in points. Zero means "trust the macOS value".
@@ -127,6 +134,7 @@ extension DisplaySettings {
         // that clips the card.
         static let completionCardMaxHeight = "display.completionCardMaxHeight"
         static let agentIconStyle = "display.agentIconStyle"
+        static let sessionAutoNaming = "display.sessionAutoNaming"
         static let notchHeightOverride = "display.notchHeightOverride"
         static let notchWidthOverride = "display.notchWidthOverride"
         static let showTasks = "display.sessionCard.showTasks"

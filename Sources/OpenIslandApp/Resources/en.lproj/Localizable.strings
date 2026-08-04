@@ -254,9 +254,6 @@
 "settings.pending.foregroundTerminalDetection" = "Needs to know which terminal is in front.";
 "settings.pending.autoHideTimer" = "Needs the auto-hide timer.";
 "settings.pending.outsideClickDetection" = "Needs click-outside detection.";
-"settings.pending.approvalRouting" = "Needs approval routing between panel and terminal.";
-"settings.pending.sessionAutoNaming" = "Needs the session auto-naming service.";
-"settings.pending.memoryWatchdog" = "Needs the memory watchdog.";
 
 /* General pane */
 "settings.general.section.expansion" = "Expansion";
@@ -301,7 +298,6 @@
 "settings.display.showProjectName" = "Show project name";
 "settings.display.showWorktree" = "Show worktree";
 "settings.display.showModel" = "Show the model";
-"settings.display.showReasoningEffort" = "Show reasoning effort";
 "settings.display.showTasks" = "Show the task list";
 "settings.display.showTasks.help" = "Adds the task checklist to each session card.";
 "settings.display.showSubagents" = "Show subagents";
@@ -309,7 +305,6 @@
 "settings.display.showAgentActivity" = "Show what the agent is doing";
 "settings.pending.completionCardSizing" = "The completion card sizes itself to its content today.";
 "settings.pending.notchCalibration" = "Needs the notch geometry to accept an override.";
-"settings.pending.reasoningEffortMetadata" = "The session record does not carry these facts yet.";
 "settings.points.format" = "%@pt";
 /* mitama feed */
 "settings.general.mitamaFeed" = "Show mitama items needing action";
@@ -410,13 +405,9 @@
 "settings.sshRemote.section.setup" = "Setting it up";
 "settings.labs.section.updates" = "Updates";
 "settings.labs.section.agents" = "Agent behaviour";
-"settings.labs.section.stability" = "Stability";
 "settings.labs.autoUpdate" = "Automatic updates";
 "settings.labs.autoUpdate.off" = "Off in this build on purpose, so an upstream release never replaces it.";
-"settings.labs.nativeApprovals" = "Let the agent handle approvals itself";
-"settings.labs.approvalTarget" = "Where approvals appear";
 "settings.labs.sessionNaming" = "Name sessions automatically";
-"settings.labs.memoryRestart" = "Restart when memory runs high";
 "settings.mitama.section.feed" = "Hub notifications";
 "settings.mitama.section.hub" = "Hub";
 "settings.mitama.openHub" = "Open the hub";
@@ -555,3 +546,4 @@
 "settings.shortcuts.hints" = "Key hints on buttons";
 "settings.shortcuts.hints.help" = "Hold the modifier to see which letter each button answers to.";
 "settings.shortcuts.hints.noPermission" = "Needs Accessibility permission. The shortcuts themselves work without it — only the hints are affected.";
+"settings.labs.sessionNaming.help" = "Uses the first prompt instead of the folder name, so sessions in one repository stay apart. Derived on the spot — no model is asked.";

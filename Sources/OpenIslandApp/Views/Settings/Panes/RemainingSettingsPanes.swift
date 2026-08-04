@@ -150,24 +150,13 @@ struct LabsSettingsPane: View {
             }
 
             Section(lang.t("settings.labs.section.agents")) {
-                SettingsRow(
-                    title: lang.t("settings.labs.nativeApprovals"),
-                    availability: FeatureAvailability(.approvalRouting)
-                )
-                SettingsRow(
-                    title: lang.t("settings.labs.approvalTarget"),
-                    availability: FeatureAvailability(.approvalRouting)
-                )
-                SettingsRow(
+                SettingsToggleRow(
                     title: lang.t("settings.labs.sessionNaming"),
-                    availability: FeatureAvailability(.sessionAutoNaming)
-                )
-            }
-
-            Section(lang.t("settings.labs.section.stability")) {
-                SettingsRow(
-                    title: lang.t("settings.labs.memoryRestart"),
-                    availability: FeatureAvailability(.memoryWatchdog)
+                    help: lang.t("settings.labs.sessionNaming.help"),
+                    isOn: Binding(
+                        get: { model.settings.display.sessionAutoNaming },
+                        set: { model.settings.display.sessionAutoNaming = $0 }
+                    )
                 )
             }
         }
