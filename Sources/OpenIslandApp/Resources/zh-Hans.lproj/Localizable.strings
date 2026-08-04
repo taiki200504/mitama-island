@@ -319,7 +319,6 @@
 "settings.display.showSubagents" = "显示子代理";
 "settings.display.showSubagents.help" = "无论如何设置，审批与问题都会显示。";
 "settings.display.showAgentActivity" = "显示代理正在做什么";
-"settings.pending.contentTypographyScale" = "需要将面板字号统一到一处控制。";
 "settings.pending.completionCardSizing" = "完成卡片目前会根据内容自动确定高度。";
 "settings.pending.notchCalibration" = "需要刘海尺寸支持覆盖设置。";
 "settings.pending.reasoningEffortMetadata" = "会话记录尚未包含这些信息。";
@@ -489,3 +488,6 @@
 "settings.watch.notifications.help" = "通过 Bonjour 广播，使同一网络中的 iPhone 可以发现。";
 "settings.section.general" = "常规";
 "setup.binaryPath" = "可执行文件：%@";
+
+/* Content size */
+"settings.display.contentFontSize.default" = "%@（默认）";

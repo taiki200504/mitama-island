@@ -319,7 +319,6 @@
 "settings.display.showSubagents" = "Show subagents";
 "settings.display.showSubagents.help" = "Approvals and questions stay visible either way.";
 "settings.display.showAgentActivity" = "Show what the agent is doing";
-"settings.pending.contentTypographyScale" = "Needs the panel's type scale to be driven from one place.";
 "settings.pending.completionCardSizing" = "The completion card sizes itself to its content today.";
 "settings.pending.notchCalibration" = "Needs the notch geometry to accept an override.";
 "settings.pending.reasoningEffortMetadata" = "The session record does not carry these facts yet.";
@@ -489,3 +488,6 @@
 "settings.watch.notifications.help" = "Broadcasts a Bonjour service your iPhone can find on the same network.";
 "settings.section.general" = "General";
 "setup.binaryPath" = "Binary: %@";
+
+/* Content size */
+"settings.display.contentFontSize.default" = "%@ (default)";

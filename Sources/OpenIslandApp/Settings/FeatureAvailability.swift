@@ -48,7 +48,6 @@ enum PendingCapability: String, CaseIterable, Sendable {
     case memoryWatchdog
 
     // Panel presentation
-    case contentTypographyScale
     case completionCardSizing
     case notchCalibration
     case reasoningEffortMetadata

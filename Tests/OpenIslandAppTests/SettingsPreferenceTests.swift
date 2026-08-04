@@ -419,3 +419,35 @@ struct ApplicationNameTests {
         #expect(LanguageManager.shared.t("app.name") == LanguageManager.applicationName)
     }
 }
+
+struct ContentScaleTests {
+    /// The setting multiplies the measured sizes rather than replacing them, so
+    /// the default must leave every size exactly as it was.
+    @Test
+    func theDefaultLeavesSizesUntouched() {
+        for size in [7.5, 10.5, 11.2, 12.5, 24.0] as [CGFloat] {
+            #expect(IslandTypography.scaled(size, by: 1) == size)
+        }
+    }
+
+    @Test
+    func largerAndSmallerBothApply() {
+        #expect(IslandTypography.scaled(10, by: 1.2) == 12)
+        #expect(IslandTypography.scaled(10, by: 0.8) == 8)
+    }
+
+    /// Fractional sizes are preserved; an earlier attempt to snap them to
+    /// half-points silently changed how the panel rendered at the default.
+    @Test
+    func fractionalSizesSurvive() {
+        #expect(IslandTypography.scaled(11.2, by: 1) == 11.2)
+        #expect(IslandTypography.scaled(12.2, by: 1) == 12.2)
+    }
+
+    /// An absurd multiplier would make the panel unusable, so it is bounded.
+    @Test
+    func theMultiplierIsClamped() {
+        #expect(IslandTypography.scaled(10, by: 100) == IslandTypography.scaled(10, by: 1.6))
+        #expect(IslandTypography.scaled(10, by: 0.01) == IslandTypography.scaled(10, by: 0.75))
+    }
+}

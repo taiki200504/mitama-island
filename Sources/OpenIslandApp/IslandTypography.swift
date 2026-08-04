@@ -54,9 +54,39 @@ enum IslandTypography {
     }
 }
 
+extension IslandTypography {
+    /// The sizes in the panel were measured against the reference product one by
+    /// one, so they are not collapsed into a scale — doing that would undo that
+    /// work for no gain. The content-size setting multiplies them instead.
+    static func scaled(_ size: CGFloat, by scale: CGFloat) -> CGFloat {
+        // No rounding: the measured sizes are already fractional (11.2, 12.2),
+        // and snapping them changed the default rendering.
+        size * min(max(scale, 0.75), 1.6)
+    }
+
+    @MainActor
+    static var contentScale: CGFloat {
+        let configured = SettingsStore.shared.display.contentFontSize
+        return configured / DisplaySettings.Defaults.contentFontSize
+    }
+
+    @MainActor
+    static func scaled(_ size: CGFloat) -> CGFloat {
+        scaled(size, by: contentScale)
+    }
+}
+
 extension Font {
-    /// Drop-in replacement for `.system(size:weight:design:.monospaced)`.
+    /// Drop-in replacement for `.system(size:weight:design:.monospaced)`, sized
+    /// by the content-size setting.
+    @MainActor
     static func islandMono(size: CGFloat, weight: Font.Weight = .regular) -> Font {
-        IslandTypography.mono(size: size, weight: weight)
+        IslandTypography.mono(size: IslandTypography.scaled(size), weight: weight)
+    }
+
+    /// Drop-in replacement for `.system(size:weight:)` inside the island.
+    @MainActor
+    static func islandText(size: CGFloat, weight: Font.Weight = .regular) -> Font {
+        .system(size: IslandTypography.scaled(size), weight: weight)
     }
 }

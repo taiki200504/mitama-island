@@ -11,17 +11,29 @@ protocol PreferenceRepresentable {
 }
 
 extension Bool: PreferenceRepresentable {
-    static func decodePreference(_ raw: Any) -> Bool? { (raw as? NSNumber)?.boolValue }
+    static func decodePreference(_ raw: Any) -> Bool? {
+        if let number = raw as? NSNumber { return number.boolValue }
+        guard let text = (raw as? String)?.lowercased() else { return nil }
+        if ["1", "true", "yes"].contains(text) { return true }
+        if ["0", "false", "no"].contains(text) { return false }
+        return nil
+    }
     var preferenceValue: Any { self }
 }
 
 extension Int: PreferenceRepresentable {
-    static func decodePreference(_ raw: Any) -> Int? { (raw as? NSNumber)?.intValue }
+    // Strings too: the argument domain and `defaults write -string` both deliver
+    // numbers that way, and silently ignoring them looks like the setting is broken.
+    static func decodePreference(_ raw: Any) -> Int? {
+        (raw as? NSNumber)?.intValue ?? (raw as? String).flatMap(Int.init)
+    }
     var preferenceValue: Any { self }
 }
 
 extension Double: PreferenceRepresentable {
-    static func decodePreference(_ raw: Any) -> Double? { (raw as? NSNumber)?.doubleValue }
+    static func decodePreference(_ raw: Any) -> Double? {
+        (raw as? NSNumber)?.doubleValue ?? (raw as? String).flatMap(Double.init)
+    }
     var preferenceValue: Any { self }
 }
 

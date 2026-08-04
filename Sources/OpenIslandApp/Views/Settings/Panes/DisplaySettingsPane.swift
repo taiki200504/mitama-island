@@ -46,14 +46,19 @@ struct DisplaySettingsPane: View {
 
     private var panelSizeSection: some View {
         Section(lang.t("settings.display.section.panelSize")) {
-            SettingsRow(
+            SettingsPickerRow(
                 title: lang.t("settings.display.contentFontSize"),
-                availability: FeatureAvailability(.contentTypographyScale)
-            ) {
-                SettingsValuePill(
-                    text: points(DisplaySettings.Defaults.contentFontSize),
-                    isDefault: true
+                selection: Binding(
+                    get: { display.contentFontSize },
+                    set: { display.contentFontSize = $0 }
                 )
+            ) {
+                ForEach(DisplaySettings.Defaults.contentFontSizeOptions, id: \.self) { size in
+                    Text(size == DisplaySettings.Defaults.contentFontSize
+                         ? lang.t("settings.display.contentFontSize.default", points(size))
+                         : points(size))
+                        .tag(size)
+                }
             }
 
             SettingsSliderRow(

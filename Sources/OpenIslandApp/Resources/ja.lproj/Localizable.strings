@@ -319,7 +319,6 @@
 "settings.display.showSubagents" = "サブエージェントを表示";
 "settings.display.showSubagents.help" = "承認と質問はどちらの設定でも表示される。";
 "settings.display.showAgentActivity" = "エージェントの作業内容を表示";
-"settings.pending.contentTypographyScale" = "パネルの文字サイズを一箇所から決める作りに直す必要があります。";
 "settings.pending.completionCardSizing" = "完了カードは今は内容に合わせて高さが決まります。";
 "settings.pending.notchCalibration" = "ノッチの寸法を上書きできる作りが要ります。";
 "settings.pending.reasoningEffortMetadata" = "セッションの情報にこれらの項目がまだ入っていません。";
@@ -489,3 +488,6 @@
 "settings.watch.notifications.help" = "同じネットワークにいる iPhone から見つけられるよう Bonjour で知らせる。";
 "settings.section.general" = "一般";
 "setup.binaryPath" = "実行ファイル: %@";
+
+/* Content size */
+"settings.display.contentFontSize.default" = "%@（既定）";

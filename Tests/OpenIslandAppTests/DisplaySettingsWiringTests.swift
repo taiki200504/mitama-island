@@ -158,7 +158,6 @@ struct DisplaySettingsWiringTests {
         #expect(session.claudeMetadata?.model == "claude-opus-5")
 
         #expect(!PendingCapability.reasoningEffortMetadata.isImplemented)
-        #expect(!PendingCapability.contentTypographyScale.isImplemented)
         #expect(!PendingCapability.completionCardSizing.isImplemented)
         #expect(!PendingCapability.notchCalibration.isImplemented)
     }

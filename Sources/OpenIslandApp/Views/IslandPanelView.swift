@@ -459,7 +459,7 @@ struct IslandPanelView: View {
     ) -> some View {
         Button(action: action) {
             Image(systemName: systemName)
-                .font(.system(size: 10, weight: .semibold))
+                .font(.islandText(size: 10, weight: .semibold))
                 .foregroundStyle(tint)
                 .frame(width: Self.headerControlButtonSize, height: Self.headerControlButtonSize)
                 .background(.white.opacity(0.08), in: Circle())
@@ -502,16 +502,16 @@ struct IslandPanelView: View {
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.islandText(size: 12, weight: .semibold))
                     .foregroundStyle(Color.accentColor)
                 Text(model.lang.t("island.hint.installHooks"))
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.islandText(size: 12, weight: .medium))
                     .foregroundStyle(.white.opacity(0.85))
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.islandText(size: 10, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.4))
             }
             .padding(.horizontal, 12)
@@ -536,10 +536,10 @@ struct IslandPanelView: View {
                 .tint(.white.opacity(0.7))
                 .scaleEffect(0.8)
             Text(model.lang.t("island.checkingTerminals"))
-                .font(.system(size: 14, weight: .medium))
+                .font(.islandText(size: 14, weight: .medium))
                 .foregroundStyle(.white.opacity(0.58))
             Text(model.lang.t("island.terminalOwnership"))
-                .font(.system(size: 12))
+                .font(.islandText(size: 12))
                 .foregroundStyle(.white.opacity(0.28))
             Spacer()
         }
@@ -550,12 +550,12 @@ struct IslandPanelView: View {
         VStack(spacing: 12) {
             Spacer()
             Text(model.lang.t("island.noTerminals"))
-                .font(.system(size: 14, weight: .medium))
+                .font(.islandText(size: 14, weight: .medium))
                 .foregroundStyle(.white.opacity(0.4))
             Text(model.recentSessions.isEmpty
                 ? model.lang.t("island.startAgent")
                 : model.lang.t("island.recentSessions"))
-                .font(.system(size: 12))
+                .font(.islandText(size: 12))
                 .foregroundStyle(.white.opacity(0.25))
             Spacer()
         }
@@ -649,13 +649,13 @@ struct IslandPanelView: View {
 
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(notification.title)
-                                    .font(.system(size: 12.5, weight: .semibold))
+                                    .font(.islandText(size: 12.5, weight: .semibold))
                                     .foregroundStyle(V6Palette.paper.opacity(0.92))
                                     .lineLimit(1)
 
                                 if !notification.body.isEmpty {
                                     Text(notification.body)
-                                        .font(.system(size: 11, weight: .medium))
+                                        .font(.islandText(size: 11, weight: .medium))
                                         .foregroundStyle(V6Palette.paper.opacity(0.5))
                                         .lineLimit(1)
                                 }
@@ -664,7 +664,7 @@ struct IslandPanelView: View {
                             Spacer(minLength: 8)
 
                             Text(model.lang.t("mitama.level.\(notification.level.rawValue)"))
-                                .font(.system(size: 10, weight: .semibold))
+                                .font(.islandText(size: 10, weight: .semibold))
                                 .foregroundStyle(mitamaTint(for: notification.level))
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
@@ -733,7 +733,7 @@ struct IslandPanelView: View {
                         model.expandNotificationToSessionList(clearExpansion: isCompletion)
                     } label: {
                         Text(model.lang.t("island.showAll", model.allSessions.count))
-                            .font(.system(size: 10.5, weight: .medium))
+                            .font(.islandText(size: 10.5, weight: .medium))
                             .foregroundStyle(.white.opacity(0.36))
                             .frame(maxWidth: .infinity, alignment: .center)
                             .padding(.horizontal, sessionListSideInset)
@@ -1164,7 +1164,7 @@ struct IslandPanelView: View {
     private func compactUsageChip(_ provider: UsageProviderPresentation, usesShortTitle: Bool) -> some View {
         HStack(spacing: 5) {
             Text(usesShortTitle ? provider.shortTitle : provider.title)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.islandText(size: 11, weight: .semibold))
                 .foregroundStyle(.white.opacity(0.74))
 
             Text(provider.peakWindowLabel)
@@ -1209,7 +1209,7 @@ struct IslandPanelView: View {
 
     private func headerPill(_ title: String, tint: Color) -> some View {
         Text(title)
-            .font(.system(size: 10, weight: .semibold))
+            .font(.islandText(size: 10, weight: .semibold))
             .foregroundStyle(tint)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
@@ -1434,7 +1434,7 @@ private struct IslandSessionRow: View {
                 if showsDetail,
                    let promptLine = summaryPromptLineText {
                     Text(promptLine)
-                        .font(.system(size: 11.2, weight: .medium))
+                        .font(.islandText(size: 11.2, weight: .medium))
                         .foregroundStyle(summaryPromptColor(for: presence))
                         .lineLimit(1)
                         .truncationMode(.tail)
@@ -1504,7 +1504,7 @@ private struct IslandSessionRow: View {
                         .foregroundStyle(activityColor(for: presence).opacity(0.94))
                 }
             }
-            .font(.system(size: 11, weight: .medium))
+            .font(.islandText(size: 11, weight: .medium))
             // One line in the list so every row is the same height; the
             // full text is one click away in the session itself.
             .lineLimit(presentation == .list ? 1 : 2)
@@ -1519,9 +1519,9 @@ private struct IslandSessionRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 5) {
                     Image(systemName: "arrow.triangle.branch")
-                        .font(.system(size: 9, weight: .medium))
+                        .font(.islandText(size: 9, weight: .medium))
                     Text(lang.t("subagents.title", subagents.count))
-                        .font(.system(size: 10.5, weight: .medium))
+                        .font(.islandText(size: 10.5, weight: .medium))
                 }
                 .foregroundStyle(.cyan.opacity(0.8))
 
@@ -1533,24 +1533,24 @@ private struct IslandSessionRow: View {
                                 : IslandDesignPalette.Status.running)
                             .frame(width: 6, height: 6)
                         Text(sub.agentType ?? sub.agentID)
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.islandText(size: 11, weight: .medium))
                             .foregroundStyle(.white.opacity(0.8))
                             .lineLimit(1)
                         if let desc = sub.taskDescription {
                             Text("(\(desc))")
-                                .font(.system(size: 10.5))
+                                .font(.islandText(size: 10.5))
                                 .foregroundStyle(.white.opacity(0.5))
                                 .lineLimit(1)
                         }
                         Spacer(minLength: 0)
                         if sub.summary != nil {
                             Text(lang.t("subagents.completed"))
-                                .font(.system(size: 10, weight: .medium))
+                                .font(.islandText(size: 10, weight: .medium))
                                 .foregroundStyle(.white.opacity(0.4))
                         } else if let started = sub.startedAt {
                             TimelineView(.periodic(from: .now, by: 1)) { timeline in
                                 Text(subagentElapsed(since: started, at: timeline.date))
-                                    .font(.system(size: 10, weight: .medium))
+                                    .font(.islandText(size: 10, weight: .medium))
                                     .foregroundStyle(.white.opacity(0.4))
                             }
                         }
@@ -1567,13 +1567,13 @@ private struct IslandSessionRow: View {
            !tasks.isEmpty {
             VStack(alignment: .leading, spacing: 3) {
                 Text(taskSummary(tasks))
-                    .font(.system(size: 10.5, weight: .medium))
+                    .font(.islandText(size: 10.5, weight: .medium))
                     .foregroundStyle(.white.opacity(0.45))
                 ForEach(tasks) { task in
                     HStack(spacing: 5) {
                         taskStatusIcon(task.status)
                         Text(task.title)
-                            .font(.system(size: 10.5, weight: .medium))
+                            .font(.islandText(size: 10.5, weight: .medium))
                             .foregroundStyle(task.status == .completed
                                 ? .white.opacity(0.4)
                                 : .white.opacity(0.7))
@@ -1592,6 +1592,8 @@ private struct IslandSessionRow: View {
         let tint = Color(hex: session.tool.brandColorHex) ?? V6Palette.paper
         return Text(agentBadgeTitle)
             .font(.islandMono(size: 10.5, weight: .semibold))
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
             .foregroundStyle(tint.opacity(notificationChromeOpacity))
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
@@ -1602,6 +1604,9 @@ private struct IslandSessionRow: View {
     private func sideBadge(_ title: String) -> some View {
         Text(title)
             .font(.islandMono(size: 10.5, weight: .medium))
+            .lineLimit(1)
+            .truncationMode(.tail)
+            .fixedSize(horizontal: true, vertical: false)
             .foregroundStyle(V6Palette.paper.opacity(presentation == .notification ? 0.52 : 0.7))
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
@@ -1840,7 +1845,7 @@ private struct IslandSessionRow: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
                 Text(lang.t(isPlanApproval ? "approval.planReady" : "approval.toolPermissionRequested"))
-                    .font(.system(size: 12.5, weight: .semibold))
+                    .font(.islandText(size: 12.5, weight: .semibold))
                     .foregroundStyle(V6Palette.paper.opacity(0.86))
 
                 if pendingApprovalCount > 1 {
@@ -1862,7 +1867,7 @@ private struct IslandSessionRow: View {
                 if let path = session.permissionRequest?.affectedPath.trimmedForNotificationCard,
                    !path.isEmpty {
                     Text(path)
-                        .font(.system(size: 10.5, weight: .medium))
+                        .font(.islandText(size: 10.5, weight: .medium))
                         .foregroundStyle(V6Palette.paper.opacity(0.42))
                         .lineLimit(1)
                 }
@@ -1988,7 +1993,7 @@ private struct IslandSessionRow: View {
     private var completionEmptyState: some View {
         HStack {
             Text(lang.t("completion.done"))
-                .font(.system(size: 11.5, weight: .bold))
+                .font(.islandText(size: 11.5, weight: .bold))
                 .foregroundStyle(IslandDesignPalette.Status.completed.opacity(completionDoneOpacity))
 
             Spacer(minLength: 0)
@@ -2011,7 +2016,7 @@ private struct IslandSessionRow: View {
                 submitReply()
             } label: {
                 Image(systemName: "arrow.up.circle.fill")
-                    .font(.system(size: 24))
+                    .font(.islandText(size: 24))
                     .foregroundColor(replyText.trimmingCharacters(in: .whitespaces).isEmpty
                         ? .white.opacity(0.2) : .white.opacity(0.9))
             }
@@ -2100,7 +2105,7 @@ private struct IslandSessionRow: View {
         switch status {
         case .completed:
             Image(systemName: "checkmark.square.fill")
-                .font(.system(size: 9))
+                .font(.islandText(size: 9))
                 .foregroundStyle(.white.opacity(0.35))
         case .inProgress:
             Circle()
@@ -2135,7 +2140,7 @@ private struct IslandSessionRow: View {
                 .padding(.top, 2)
         case .glyph:
             Image(systemName: statusGlyphName)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.islandText(size: 12, weight: .semibold))
                 .foregroundStyle(tint)
                 .frame(width: 14, height: 20)
                 .padding(.top, 1)
@@ -2224,7 +2229,7 @@ private struct IslandSessionRow: View {
             }
         } label: {
             Image(systemName: "chevron.down")
-                .font(.system(size: 10, weight: .bold))
+                .font(.islandText(size: 10, weight: .bold))
                 .foregroundStyle(isOpen || isHighlighted ? .white.opacity(0.68) : .white.opacity(0.42))
                 .frame(width: 28, height: 28)
                 .background(
@@ -2254,10 +2259,10 @@ private struct IslandSessionRow: View {
         HStack(spacing: 3) {
             if let icon {
                 Image(systemName: icon)
-                    .font(.system(size: 7.5, weight: .semibold))
+                    .font(.islandText(size: 7.5, weight: .semibold))
             }
             Text(title)
-                .font(.system(size: 9, weight: .semibold))
+                .font(.islandText(size: 9, weight: .semibold))
         }
         .foregroundStyle(badgeTextColor(for: presence))
         .padding(.horizontal, 7)
@@ -2305,7 +2310,7 @@ private struct StructuredQuestionPromptView: View {
         VStack(alignment: .leading, spacing: 10) {
             if showsPromptTitle {
                 Text(promptTitle)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.islandText(size: 13, weight: .semibold))
                     .foregroundStyle(IslandDesignPalette.Status.waitingForAnswer)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -2338,7 +2343,7 @@ private struct StructuredQuestionPromptView: View {
                 // hunt for the question they missed.
                 if !canSubmit, answeredQuestionCount < structuredQuestions.count {
                     Text(lang.t("question.answerAllFirst"))
-                        .font(.system(size: 10.5, weight: .medium))
+                        .font(.islandText(size: 10.5, weight: .medium))
                         .foregroundStyle(IslandDesignPalette.Status.waitingForAnswer.opacity(0.8))
                 }
 
@@ -2370,12 +2375,12 @@ private struct StructuredQuestionPromptView: View {
         VStack(alignment: .leading, spacing: 6) {
             if structuredQuestions.count > 1 {
                 Text(question.header)
-                    .font(.system(size: 10, weight: .bold))
+                    .font(.islandText(size: 10, weight: .bold))
                     .foregroundStyle(.white.opacity(0.5))
             }
 
             Text(question.question)
-                .font(.system(size: 12, weight: .medium))
+                .font(.islandText(size: 12, weight: .medium))
                 .foregroundStyle(.white.opacity(0.88))
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -2419,12 +2424,12 @@ private struct StructuredQuestionPromptView: View {
 
                     VStack(alignment: .leading, spacing: 1) {
                         Text(option.label)
-                            .font(.system(size: 12.2, weight: .medium))
+                            .font(.islandText(size: 12.2, weight: .medium))
                             .foregroundStyle(.white.opacity(isSelected ? 1 : 0.78))
 
                         if !option.description.isEmpty {
                             Text(option.description)
-                                .font(.system(size: 10.5))
+                                .font(.islandText(size: 10.5))
                                 .foregroundStyle(.white.opacity(isHovered || isSelected ? 0.48 : 0.38))
                                 .lineLimit(1)
                         }
@@ -2434,7 +2439,7 @@ private struct StructuredQuestionPromptView: View {
 
                     if isSelected {
                         Image(systemName: "checkmark")
-                            .font(.system(size: 11, weight: .bold))
+                            .font(.islandText(size: 11, weight: .bold))
                             .foregroundStyle(IslandDesignPalette.Status.completed)
                     }
                 }
@@ -2815,7 +2820,7 @@ private struct IslandCompactButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 10, weight: .semibold))
+            .font(.islandText(size: 10, weight: .semibold))
             .foregroundStyle(tint == .secondary ? .white.opacity(0.7) : tint)
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
@@ -2841,7 +2846,7 @@ private struct IslandActionButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 11.8, weight: .semibold))
+            .font(.islandText(size: 11.8, weight: .semibold))
             .foregroundStyle(foregroundColor)
             .lineLimit(1)
             .frame(maxWidth: expands ? .infinity : nil)
@@ -3012,7 +3017,7 @@ private struct DismissButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: "xmark.circle.fill")
-                .font(.system(size: 12))
+                .font(.islandText(size: 12))
                 .foregroundStyle(.white.opacity(isHovered ? 0.8 : 0.4))
         }
         .buttonStyle(.plain)
