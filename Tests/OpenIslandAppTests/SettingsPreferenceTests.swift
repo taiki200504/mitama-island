@@ -249,6 +249,8 @@ struct FeatureAvailabilityTests {
     /// in the same commit.
     /// The ledger is the only thing standing between an honest badge and a dead
     /// toggle, so a capability may only appear here once its behaviour ships.
+    /// The ledger must not become a wish list. scripts/check-capability-ledger.sh
+    /// fails the harness if a case is added without a control using it.
     @Test
     func theLedgerListsExactlyWhatHasShipped() {
         #expect(PendingCapability.implemented == [

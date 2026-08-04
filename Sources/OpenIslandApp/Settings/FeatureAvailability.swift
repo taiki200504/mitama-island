@@ -18,8 +18,6 @@ enum PendingCapability: String, CaseIterable, Sendable {
     case outsideClickDetection
 
     // Notification routing
-    case subagentTracking
-    case reminderScheduler
     case idleSessionCleanup
 
     // Quiet scenes
@@ -31,17 +29,12 @@ enum PendingCapability: String, CaseIterable, Sendable {
     case globalHotkey
     case switcherPanel
     case panelKeyHandling
-    case shortcutHintOverlay
 
     // Sound
-    case soundThemeEngine
-    case perEventSounds
     case soundPackImport
     case unraisedSoundEvents
-    case quietHoursScheduler
 
     // Notification filters
-    case notificationFilterBridge
     case launcherAppDetection
 
     // Usage
@@ -52,7 +45,6 @@ enum PendingCapability: String, CaseIterable, Sendable {
     // Agent integrations
     case approvalRouting
     case sessionAutoNaming
-    case accessibilityApprovalScan
     case memoryWatchdog
 
     // Panel presentation
@@ -63,9 +55,6 @@ enum PendingCapability: String, CaseIterable, Sendable {
 
     // Shell
     case menuBarLayoutModes
-    case followFocusDisplay
-    case diagnosticsReport
-    case releaseNotesFeed
 
     /// Capabilities whose engine support has actually landed.
     ///

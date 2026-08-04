@@ -253,8 +253,6 @@
 "settings.pending.foregroundTerminalDetection" = "需要判斷哪個終端機在前景。";
 "settings.pending.autoHideTimer" = "需要自動隱藏計時器。";
 "settings.pending.outsideClickDetection" = "需要面板外點擊偵測。";
-"settings.pending.subagentTracking" = "需要子代理與團隊追蹤。";
-"settings.pending.reminderScheduler" = "需要追蹤提醒排程器。";
 "settings.pending.idleSessionCleanup" = "需要閒置工作階段清理。";
 "settings.pending.focusModeDetection" = "需要 macOS 專注模式偵測。";
 "settings.pending.screenStateDetection" = "需要螢幕鎖定與睡眠偵測。";
@@ -262,23 +260,14 @@
 "settings.pending.globalHotkey" = "需要註冊全域快捷鍵。";
 "settings.pending.switcherPanel" = "需要工作階段切換面板。";
 "settings.pending.panelKeyHandling" = "需要面板內按鍵處理。";
-"settings.pending.shortcutHintOverlay" = "需要快捷鍵提示浮層。";
-"settings.pending.soundThemeEngine" = "需要音效主題引擎。";
-"settings.pending.perEventSounds" = "需要依事件播放音效。";
 "settings.pending.soundPackImport" = "需要音效包匯入。";
-"settings.pending.quietHoursScheduler" = "需要靜音時段排程器。";
-"settings.pending.notificationFilterBridge" = "需要橋接層套用過濾器。";
 "settings.pending.launcherAppDetection" = "需要判斷工作階段由哪個 App 啟動。";
 "settings.pending.usageThresholdMonitor" = "需要用量閾值監控。";
 "settings.pending.codexResetCards" = "需要 Codex 重置額度資料。";
 "settings.pending.approvalRouting" = "需要在面板與終端機之間路由審批。";
 "settings.pending.sessionAutoNaming" = "需要工作階段自動命名服務。";
-"settings.pending.accessibilityApprovalScan" = "需要輔助使用審批掃描。";
 "settings.pending.memoryWatchdog" = "需要記憶體監視。";
 "settings.pending.menuBarLayoutModes" = "需要選單列的簡潔與詳細版面。";
-"settings.pending.followFocusDisplay" = "需要跟隨焦點顯示器的定位。";
-"settings.pending.diagnosticsReport" = "需要診斷報告收集。";
-"settings.pending.releaseNotesFeed" = "需要發行說明來源。";
 
 /* General pane */
 "settings.general.section.expansion" = "展開";
