@@ -64,17 +64,20 @@ struct ShortcutsSettingsPane: View {
         Section(lang.t("settings.shortcuts.section.switcher")) {
             SettingsRow(
                 title: lang.t("settings.shortcuts.openSwitcher"),
-                help: lang.t("settings.shortcuts.openSwitcher.help"),
-                availability: FeatureAvailability(.switcherPanel)
-            )
+                help: lang.t("settings.shortcuts.openSwitcher.help")
+            ) {
+                ShortcutKeyChip(label: "\(shortcuts.modifier.symbol)`")
+            }
 
             SettingsToggleRow(
                 title: lang.t("settings.shortcuts.reverseSwitcher"),
                 help: lang.t("settings.shortcuts.reverseSwitcher.help"),
-                pendingNote: .switcherPanel,
                 isOn: Binding(
                     get: { shortcuts.reverseSwitcherEnabled },
-                    set: { shortcuts.reverseSwitcherEnabled = $0 }
+                    set: {
+                        shortcuts.reverseSwitcherEnabled = $0
+                        model.panelHotkeys?.startPersistentBindings()
+                    }
                 )
             )
         }

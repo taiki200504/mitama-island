@@ -17,6 +17,11 @@ final class PanelHotkeyCoordinator {
 
     /// Called when a panel action fires. The receiver decides what it applies to.
     var onAction: ((PanelShortcutAction) -> Void)?
+    /// The switcher key, with `true` when Shift was held to go backwards.
+    var onSwitcherKey: ((Bool) -> Void)?
+    var onSwitcherNavigate: ((Bool) -> Void)?
+    var onSwitcherConfirm: (() -> Void)?
+    var onSwitcherCancel: (() -> Void)?
 
     init(
         registrar: any HotkeyRegistering,
@@ -28,10 +33,85 @@ final class PanelHotkeyCoordinator {
         self.resolver = resolver
 
         registrar.onFire = { [weak self] id in
-            guard let action = PanelShortcutAction(rawValue: id) else { return }
-            self?.onAction?(action)
+            self?.handleFire(id)
         }
         observeLayoutChanges()
+    }
+
+    private func handleFire(_ id: String) {
+        switch id {
+        case Self.switcherBindingID:        onSwitcherKey?(false)
+        case Self.switcherReverseBindingID: onSwitcherKey?(true)
+        case Self.switcherNextBindingID:    onSwitcherNavigate?(false)
+        case Self.switcherPreviousBindingID: onSwitcherNavigate?(true)
+        case Self.switcherConfirmBindingID: onSwitcherConfirm?()
+        case Self.switcherCancelBindingID:  onSwitcherCancel?()
+        default:
+            guard let action = PanelShortcutAction(rawValue: id) else { return }
+            onAction?(action)
+        }
+    }
+
+    // MARK: Switcher
+
+    static let switcherBindingID = "switcher.open"
+    static let switcherReverseBindingID = "switcher.openReverse"
+    static let switcherNextBindingID = "switcher.next"
+    static let switcherPreviousBindingID = "switcher.previous"
+    static let switcherConfirmBindingID = "switcher.confirm"
+    static let switcherCancelBindingID = "switcher.cancel"
+
+    /// Backtick, next to the shift key on every layout this app runs on. Not
+    /// user-assignable: it is the one shortcut that has to be live all the time,
+    /// so it has to be one that nothing else is likely to want.
+    private static let backtickKeyCode: UInt16 = 50
+    private static let returnKeyCode: UInt16 = 36
+    private static let escapeKeyCode: UInt16 = 53
+    private static let upArrowKeyCode: UInt16 = 126
+    private static let downArrowKeyCode: UInt16 = 125
+
+    /// The one always-live shortcut. Registered at startup and never released.
+    func startPersistentBindings() {
+        guard settings.keyboardShortcutsEnabled else { return }
+        var bindings = [
+            HotkeyBinding(
+                id: Self.switcherBindingID,
+                keyCode: Self.backtickKeyCode,
+                modifiers: settings.modifier.flags,
+                scope: .persistent
+            )
+        ]
+        if settings.reverseSwitcherEnabled {
+            bindings.append(
+                HotkeyBinding(
+                    id: Self.switcherReverseBindingID,
+                    keyCode: Self.backtickKeyCode,
+                    modifiers: [settings.modifier.flags, .shift],
+                    scope: .persistent
+                )
+            )
+        }
+        registrar.setBindings(bindings, for: .persistent)
+    }
+
+    /// Arrow keys, return and escape, live only while the switcher is up.
+    ///
+    /// Escape and the arrows are far too common to hold permanently — this is
+    /// the same discipline the single-letter panel keys follow.
+    func switcherDidActivate() {
+        registrar.setBindings(
+            [
+                HotkeyBinding(id: Self.switcherNextBindingID, keyCode: Self.downArrowKeyCode, modifiers: [], scope: .switcherActive),
+                HotkeyBinding(id: Self.switcherPreviousBindingID, keyCode: Self.upArrowKeyCode, modifiers: [], scope: .switcherActive),
+                HotkeyBinding(id: Self.switcherConfirmBindingID, keyCode: Self.returnKeyCode, modifiers: [], scope: .switcherActive),
+                HotkeyBinding(id: Self.switcherCancelBindingID, keyCode: Self.escapeKeyCode, modifiers: [], scope: .switcherActive)
+            ],
+            for: .switcherActive
+        )
+    }
+
+    func switcherDidDeactivate() {
+        registrar.removeBindings(for: .switcherActive)
     }
 
     /// Registers the panel shortcuts. Called when the panel expands.

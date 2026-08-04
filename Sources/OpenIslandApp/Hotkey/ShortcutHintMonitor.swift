@@ -13,6 +13,8 @@ import Observation
 @Observable
 final class ShortcutHintMonitor {
     private(set) var isModifierHeld = false
+    /// Fires when the modifier comes up, which is what ends a hold-to-cycle.
+    var onModifierReleased: (() -> Void)?
     private(set) var hasAccessibilityPermission = AXIsProcessTrusted()
 
     private var monitor: Any?
@@ -45,6 +47,9 @@ final class ShortcutHintMonitor {
     }
 
     private func update(with event: NSEvent) {
-        isModifierHeld = event.modifierFlags.contains(modifier.flags)
+        let held = event.modifierFlags.contains(modifier.flags)
+        let wasHeld = isModifierHeld
+        isModifierHeld = held
+        if wasHeld, !held { onModifierReleased?() }
     }
 }

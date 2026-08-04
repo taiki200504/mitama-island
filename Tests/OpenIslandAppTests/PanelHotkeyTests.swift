@@ -152,3 +152,80 @@ struct PanelHotkeyCoordinatorTests {
         #expect(fired == nil)
     }
 }
+
+@Suite("Switcher hotkey registration", .serialized)
+@MainActor
+struct SwitcherHotkeyTests {
+    private func makeCoordinator(
+        _ configure: (ShortcutSettings) -> Void = { _ in }
+    ) -> (PanelHotkeyCoordinator, RecordingHotkeyRegistrar) {
+        let defaults = UserDefaults(suiteName: "switcher-\(UUID().uuidString)")!
+        let settings = ShortcutSettings(store: PreferenceStore(suite: defaults))
+        configure(settings)
+        let registrar = RecordingHotkeyRegistrar()
+        return (
+            PanelHotkeyCoordinator(
+                registrar: registrar,
+                settings: settings,
+                resolver: KeycodeResolver(table: KeycodeResolver.usFallbackTable)
+            ),
+            registrar
+        )
+    }
+
+    @Test("The switcher key is the one always-live shortcut")
+    func switcherIsPersistent() {
+        let (coordinator, registrar) = makeCoordinator()
+        coordinator.startPersistentBindings()
+        let ids = (registrar.bindingsByScope[.persistent] ?? []).map(\.id)
+        #expect(ids.contains(PanelHotkeyCoordinator.switcherBindingID))
+    }
+
+    @Test("Turning reverse off drops its binding")
+    func reverseIsOptional() {
+        let (coordinator, registrar) = makeCoordinator { $0.reverseSwitcherEnabled = false }
+        coordinator.startPersistentBindings()
+        let ids = (registrar.bindingsByScope[.persistent] ?? []).map(\.id)
+        #expect(!ids.contains(PanelHotkeyCoordinator.switcherReverseBindingID))
+    }
+
+    /// Escape and the arrows are far too common to hold system-wide. They may
+    /// only exist while the switcher is actually on screen.
+    @Test("Arrows and escape live only while the switcher is up")
+    func navigationKeysAreScoped() {
+        let (coordinator, registrar) = makeCoordinator()
+        coordinator.startPersistentBindings()
+        #expect((registrar.bindingsByScope[.switcherActive] ?? []).isEmpty)
+
+        coordinator.switcherDidActivate()
+        #expect((registrar.bindingsByScope[.switcherActive] ?? []).count == 4)
+
+        coordinator.switcherDidDeactivate()
+        #expect(registrar.removals.contains(.switcherActive))
+    }
+
+    @Test("Shift routes to the reverse direction")
+    func reverseRoutes() {
+        let (coordinator, registrar) = makeCoordinator()
+        var reversed: Bool?
+        coordinator.onSwitcherKey = { reversed = $0 }
+
+        registrar.onFire?(PanelHotkeyCoordinator.switcherBindingID)
+        #expect(reversed == false)
+        registrar.onFire?(PanelHotkeyCoordinator.switcherReverseBindingID)
+        #expect(reversed == true)
+    }
+
+    @Test("Escape cancels rather than confirming")
+    func escapeCancels() {
+        let (coordinator, registrar) = makeCoordinator()
+        var confirmed = false
+        var cancelled = false
+        coordinator.onSwitcherConfirm = { confirmed = true }
+        coordinator.onSwitcherCancel = { cancelled = true }
+
+        registrar.onFire?(PanelHotkeyCoordinator.switcherCancelBindingID)
+        #expect(cancelled)
+        #expect(confirmed == false)
+    }
+}

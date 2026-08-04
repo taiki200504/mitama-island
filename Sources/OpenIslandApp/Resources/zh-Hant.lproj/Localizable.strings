@@ -253,8 +253,6 @@
 "settings.pending.foregroundTerminalDetection" = "需要判斷哪個終端機在前景。";
 "settings.pending.autoHideTimer" = "需要自動隱藏計時器。";
 "settings.pending.outsideClickDetection" = "需要面板外點擊偵測。";
-"settings.pending.globalHotkey" = "需要註冊全域快捷鍵。";
-"settings.pending.switcherPanel" = "需要工作階段切換面板。";
 "settings.pending.approvalRouting" = "需要在面板與終端機之間路由審批。";
 "settings.pending.sessionAutoNaming" = "需要工作階段自動命名服務。";
 "settings.pending.memoryWatchdog" = "需要記憶體監視。";

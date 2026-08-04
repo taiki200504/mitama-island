@@ -25,8 +25,6 @@ enum PendingCapability: String, CaseIterable, Sendable {
     case screenCaptureDetection
 
     // Keyboard
-    case globalHotkey
-    case switcherPanel
     /// Keys typed into the panel itself (1–9, return, escape), which need it
     /// to take focus — it deliberately does not.
     case inPanelTypedKeys

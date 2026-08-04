@@ -254,8 +254,6 @@
 "settings.pending.foregroundTerminalDetection" = "需要判断哪个终端在前台。";
 "settings.pending.autoHideTimer" = "需要自动隐藏计时器。";
 "settings.pending.outsideClickDetection" = "需要面板外点击检测。";
-"settings.pending.globalHotkey" = "需要注册全局快捷键。";
-"settings.pending.switcherPanel" = "需要会话切换面板。";
 "settings.pending.approvalRouting" = "需要在面板与终端之间路由审批。";
 "settings.pending.sessionAutoNaming" = "需要会话自动命名服务。";
 "settings.pending.memoryWatchdog" = "需要内存监视。";

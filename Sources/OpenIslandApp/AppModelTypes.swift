@@ -14,6 +14,9 @@ enum NotchOpenReason: Equatable {
     case hover
     case notification
     case boot
+    /// The session switcher, which reuses the expanded panel rather than
+    /// standing up a second window that would have to stay in step with it.
+    case switcher
 }
 
 enum TrackedEventIngress {

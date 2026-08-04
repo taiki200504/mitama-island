@@ -1779,8 +1779,68 @@ final class AppModel {
     /// Reveals each button's letter while the modifier is held.
     let shortcutHints = ShortcutHintMonitor()
 
+    // MARK: Switcher
+
+    private(set) var switcher = SwitcherState()
+
+    /// The sessions the switcher cycles through, in the order they are shown.
+    private var switcherSessionIDs: [String] {
+        state.sessions.filter(\.isVisibleInIsland).map(\.id)
+    }
+
+    /// One press of the switcher key: opens it, or moves along if already open.
+    func toggleSwitcher(reversed: Bool) {
+        let ids = switcherSessionIDs
+        guard ids.count > 1 else { return }
+
+        if switcher.isActive {
+            switcher.advance(sessions: ids, reversed: reversed)
+        } else {
+            switcher.open(
+                sessions: ids,
+                current: activeIslandCardSession?.id ?? ids.first,
+                at: .now,
+                reversed: reversed
+            )
+            overlay.notchOpen(reason: .switcher)
+        }
+        panelHotkeys?.switcherDidActivate()
+    }
+
+    /// The modifier came up. A hold ends in a jump; a tap leaves the list open
+    /// so the arrow keys can be used instead.
+    func switcherModifierReleased() {
+        guard let targetID = switcher.modifierReleased(at: .now) else { return }
+        finishSwitcher(jumpingTo: targetID)
+    }
+
+    func switcherMoveSelection(reversed: Bool) {
+        switcher.moveSelection(sessions: switcherSessionIDs, reversed: reversed)
+    }
+
+    func switcherConfirm() {
+        guard let targetID = switcher.confirm() else { return }
+        finishSwitcher(jumpingTo: targetID)
+    }
+
+    func switcherCancel() {
+        switcher.cancel()
+        panelHotkeys?.switcherDidDeactivate()
+        overlay.notchClose()
+    }
+
+    private func finishSwitcher(jumpingTo sessionID: String) {
+        panelHotkeys?.switcherDidDeactivate()
+        overlay.notchClose()
+        guard let session = state.session(id: sessionID) else { return }
+        jump(to: session.jumpTarget)
+    }
+
     private func startPanelHotkeys() {
         shortcutHints.start(modifier: settings.shortcuts.modifier)
+        shortcutHints.onModifierReleased = { [weak self] in
+            self?.switcherModifierReleased()
+        }
         let coordinator = PanelHotkeyCoordinator(
             registrar: CarbonHotkeyController(),
             settings: settings.shortcuts
@@ -1788,6 +1848,19 @@ final class AppModel {
         coordinator.onAction = { [weak self] action in
             self?.performShortcut(action)
         }
+        coordinator.onSwitcherKey = { [weak self] reversed in
+            self?.toggleSwitcher(reversed: reversed)
+        }
+        coordinator.onSwitcherNavigate = { [weak self] reversed in
+            self?.switcherMoveSelection(reversed: reversed)
+        }
+        coordinator.onSwitcherConfirm = { [weak self] in
+            self?.switcherConfirm()
+        }
+        coordinator.onSwitcherCancel = { [weak self] in
+            self?.switcherCancel()
+        }
+        coordinator.startPersistentBindings()
         panelHotkeys = coordinator
     }
 

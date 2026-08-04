@@ -254,8 +254,6 @@
 "settings.pending.foregroundTerminalDetection" = "どのターミナルが前面かの判定が要ります。";
 "settings.pending.autoHideTimer" = "自動非表示のタイマーが要ります。";
 "settings.pending.outsideClickDetection" = "パネル外のクリック検知が要ります。";
-"settings.pending.globalHotkey" = "システム全体のホットキー登録が要ります。";
-"settings.pending.switcherPanel" = "セッション切替パネルが要ります。";
 "settings.pending.approvalRouting" = "承認をパネルとターミナルに振り分ける処理が要ります。";
 "settings.pending.sessionAutoNaming" = "セッション自動命名の仕組みが要ります。";
 "settings.pending.memoryWatchdog" = "メモリ監視の仕組みが要ります。";

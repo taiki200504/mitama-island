@@ -137,7 +137,5 @@ struct ShortcutSettingsTests {
     @Test
     func whatStillDoesNotFire() {
         #expect(!PendingCapability.inPanelTypedKeys.isImplemented)
-        #expect(!PendingCapability.switcherPanel.isImplemented)
-        #expect(!PendingCapability.globalHotkey.isImplemented)
     }
 }

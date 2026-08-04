@@ -254,8 +254,6 @@
 "settings.pending.foregroundTerminalDetection" = "Needs to know which terminal is in front.";
 "settings.pending.autoHideTimer" = "Needs the auto-hide timer.";
 "settings.pending.outsideClickDetection" = "Needs click-outside detection.";
-"settings.pending.globalHotkey" = "Needs system-wide hotkey registration.";
-"settings.pending.switcherPanel" = "Needs the session switcher panel.";
 "settings.pending.approvalRouting" = "Needs approval routing between panel and terminal.";
 "settings.pending.sessionAutoNaming" = "Needs the session auto-naming service.";
 "settings.pending.memoryWatchdog" = "Needs the memory watchdog.";

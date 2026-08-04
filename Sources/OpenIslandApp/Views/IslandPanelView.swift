@@ -726,7 +726,8 @@ struct IslandPanelView: View {
                     onJump: { model.jumpToSession(session) },
                     onHide: { model.hideSessions(matching: $0) },
                     agentIconStyle: model.agentIconStyle,
-                    shortcutHint: model.shortcutHints.isModifierHeld ? model.settings.shortcuts : nil
+                    shortcutHint: model.shortcutHints.isModifierHeld ? model.settings.shortcuts : nil,
+                    isSwitcherHighlighted: model.switcher.highlightedID == session.id
                 )
                 .id(notificationCardIdentity(for: session))
 
@@ -774,7 +775,8 @@ struct IslandPanelView: View {
                                 onDismiss: session.isRemote ? { model.dismissSession(session.id) } : nil,
                                 onHide: { model.hideSessions(matching: $0) },
                     agentIconStyle: model.agentIconStyle,
-                    shortcutHint: model.shortcutHints.isModifierHeld ? model.settings.shortcuts : nil
+                    shortcutHint: model.shortcutHints.isModifierHeld ? model.settings.shortcuts : nil,
+                    isSwitcherHighlighted: model.switcher.highlightedID == session.id
                             )
                         }
                     }
@@ -830,7 +832,8 @@ struct IslandPanelView: View {
                         onDismiss: session.isRemote ? { model.dismissSession(session.id) } : nil,
                         onHide: { model.hideSessions(matching: $0) },
                     agentIconStyle: model.agentIconStyle,
-                    shortcutHint: model.shortcutHints.isModifierHeld ? model.settings.shortcuts : nil
+                    shortcutHint: model.shortcutHints.isModifierHeld ? model.settings.shortcuts : nil,
+                    isSwitcherHighlighted: model.switcher.highlightedID == session.id
                     )
                 }
             }
@@ -1397,6 +1400,8 @@ private struct IslandSessionRow: View {
     var agentIconStyle: AgentIconStyle = .pixel
     /// Non-nil only while the shortcut modifier is held.
     var shortcutHint: ShortcutSettings?
+    /// Draws the switcher's ring when this row is the one selected.
+    var isSwitcherHighlighted = false
 
     @State private var isHighlighted = false
     @State private var detailOverride: Bool?
@@ -1438,6 +1443,10 @@ private struct IslandSessionRow: View {
             }
         }
         .background(rowFillColor(for: presence))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .strokeBorder(.white.opacity(isSwitcherHighlighted ? 0.55 : 0), lineWidth: 1.5)
+        )
         .overlay(alignment: .top) {
             Rectangle()
                 .fill(.white.opacity(0.045))
