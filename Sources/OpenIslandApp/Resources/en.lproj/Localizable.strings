@@ -472,3 +472,11 @@
 "settings.about.credits.value" = "Open Island (GPL v3)";
 "settings.about.font" = "Monospace font";
 "settings.about.font.value" = "Departure Mono (SIL OFL 1.1)";
+
+/* mitama credentials */
+"settings.mitama.section.credentials" = "Credentials";
+"settings.mitama.source" = "Read from";
+"settings.mitama.source.keychain" = "Keychain";
+"settings.mitama.source.envFile" = "A plaintext file";
+"settings.mitama.source.none" = "Not configured";
+"settings.mitama.moveToKeychain" = "The key is in a plaintext file. Move it with: addkey -k MITAMA_SUPABASE_URL and addkey -k MITAMA_SUPABASE_KEY";

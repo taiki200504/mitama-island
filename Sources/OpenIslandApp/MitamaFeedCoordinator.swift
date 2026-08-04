@@ -24,6 +24,7 @@ final class MitamaFeedCoordinator {
 
     private(set) var notifications: [MitamaNotification] = []
     private(set) var isConfigured = false
+    private(set) var credentialSource: MitamaEnvironment.Source?
 
     @ObservationIgnored private var client: MitamaNotificationClient?
     @ObservationIgnored private var pollTask: Task<Void, Never>?
@@ -33,13 +34,15 @@ final class MitamaFeedCoordinator {
 
     func start(environmentFileURL: URL = MitamaEnvironment.defaultEnvFileURL) {
         guard pollTask == nil else { return }
-        guard let environment = MitamaEnvironment.load(from: environmentFileURL) else {
+        guard let loaded = MitamaEnvironment.loadWithSource(from: environmentFileURL) else {
             isConfigured = false
+            credentialSource = nil
             return
         }
 
         isConfigured = true
-        client = MitamaNotificationClient(environment: environment)
+        credentialSource = loaded.source
+        client = MitamaNotificationClient(environment: loaded.environment)
         currentInterval = Self.pollInterval
         pollTask = Task { [weak self] in
             while !Task.isCancelled {

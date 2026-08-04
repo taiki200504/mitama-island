@@ -37,10 +37,12 @@ public struct MitamaNotification: Codable, Equatable, Sendable, Identifiable {
     }
 }
 
-/// Supabase credentials, read from the mitama-os `.env` the rest of the system
-/// already uses. Deliberately not stored in this app's own preferences: there
-/// is exactly one source of truth for the key, and duplicating it would mean
-/// two places to rotate.
+/// Supabase credentials.
+///
+/// Preferred source is the login keychain; the mitama-os `.env` stays as a
+/// fallback so an existing setup keeps working while the key is moved across.
+/// Never stored in this app's own preferences — one place to rotate, and not a
+/// plaintext one.
 public struct MitamaEnvironment: Equatable, Sendable {
     public let url: URL
     public let apiKey: String
@@ -85,11 +87,28 @@ public struct MitamaEnvironment: Equatable, Sendable {
         return MitamaEnvironment(url: url, apiKey: key)
     }
 
+    /// Where a loaded credential came from, so the UI can say whether the key is
+    /// still sitting in a plaintext file.
+    public enum Source: Equatable, Sendable {
+        case keychain
+        case envFile
+    }
+
     public static func load(from fileURL: URL = defaultEnvFileURL) -> MitamaEnvironment? {
-        guard let contents = try? String(contentsOf: fileURL, encoding: .utf8) else {
+        loadWithSource(from: fileURL)?.environment
+    }
+
+    public static func loadWithSource(
+        from fileURL: URL = defaultEnvFileURL
+    ) -> (environment: MitamaEnvironment, source: Source)? {
+        if let fromKeychain = MitamaKeychain.environment() {
+            return (fromKeychain, .keychain)
+        }
+        guard let contents = try? String(contentsOf: fileURL, encoding: .utf8),
+              let parsed = parse(envFileContents: contents) else {
             return nil
         }
-        return parse(envFileContents: contents)
+        return (parsed, .envFile)
     }
 }
 

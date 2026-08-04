@@ -471,3 +471,11 @@
 "settings.about.credits.value" = "Open Island（GPL v3）";
 "settings.about.font" = "等寬字型";
 "settings.about.font.value" = "Departure Mono（SIL OFL 1.1）";
+
+/* mitama credentials */
+"settings.mitama.section.credentials" = "憑證";
+"settings.mitama.source" = "讀取來源";
+"settings.mitama.source.keychain" = "鑰匙圈";
+"settings.mitama.source.envFile" = "明文檔案";
+"settings.mitama.source.none" = "未設定";
+"settings.mitama.moveToKeychain" = "金鑰位於明文檔案中。可用 addkey -k MITAMA_SUPABASE_URL 與 addkey -k MITAMA_SUPABASE_KEY 遷移。";

@@ -164,6 +164,15 @@ struct MitamaSettingsPane: View {
                 )
             }
 
+            Section(lang.t("settings.mitama.section.credentials")) {
+                SettingsRow(
+                    title: lang.t("settings.mitama.source"),
+                    help: credentialWarning
+                ) {
+                    Text(credentialSourceName).foregroundStyle(.secondary)
+                }
+            }
+
             Section(lang.t("settings.mitama.section.hub")) {
                 SettingsRow(title: lang.t("settings.mitama.openHub")) {
                     Button(lang.t("settings.mitama.openHub")) {
@@ -172,6 +181,21 @@ struct MitamaSettingsPane: View {
                 }
             }
         }
+    }
+
+    private var credentialSourceName: String {
+        switch model.mitamaFeed.credentialSource {
+        case .keychain: lang.t("settings.mitama.source.keychain")
+        case .envFile:  lang.t("settings.mitama.source.envFile")
+        case nil:       lang.t("settings.mitama.source.none")
+        }
+    }
+
+    /// Only shown while the key is still in a file anyone can read.
+    private var credentialWarning: String? {
+        model.mitamaFeed.credentialSource == .envFile
+            ? lang.t("settings.mitama.moveToKeychain")
+            : nil
     }
 
     private var mitamaFeedHelp: String {
