@@ -483,3 +483,9 @@
 
 /* Plan approval */
 "approval.planReady" = "准备退出计划模式";
+
+/* Batch approval */
+"approval.pendingCount" = "待处理 %@ 项";
+"approval.allowAll" = "全部允许";
+"approval.denyAll" = "全部拒绝";
+"approval.goToTerminal" = "前往终端";

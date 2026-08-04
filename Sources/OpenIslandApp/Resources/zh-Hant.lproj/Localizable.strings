@@ -482,3 +482,9 @@
 
 /* Plan approval */
 "approval.planReady" = "準備退出計畫模式";
+
+/* Batch approval */
+"approval.pendingCount" = "待處理 %@ 項";
+"approval.allowAll" = "全部允許";
+"approval.denyAll" = "全部拒絕";
+"approval.goToTerminal" = "前往終端機";

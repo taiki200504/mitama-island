@@ -718,6 +718,8 @@ struct IslandPanelView: View {
                     cardFields: cardFields,
                     lang: model.lang,
                     onApprove: { model.approvePermission(for: session.id, action: $0) },
+                    onResolveAll: { model.resolveAllPendingApprovals($0) },
+                    pendingApprovalCount: model.pendingApprovalSessions.count,
                     onAnswer: { model.answerQuestion(for: session.id, answer: $0) },
                     onReply: TerminalTextSender.canReply(to: session, enabled: model.completionReplyEnabled)
                         ? { model.replyToSession(session, text: $0) } : nil,
@@ -760,6 +762,8 @@ struct IslandPanelView: View {
                                 cardFields: cardFields,
                                 lang: model.lang,
                                 onApprove: { model.approvePermission(for: session.id, action: $0) },
+                                onResolveAll: { model.resolveAllPendingApprovals($0) },
+                                pendingApprovalCount: model.pendingApprovalSessions.count,
                                 onAnswer: { model.answerQuestion(for: session.id, answer: $0) },
                                 onReply: TerminalTextSender.canReply(to: session, enabled: model.completionReplyEnabled)
                                     ? { model.replyToSession(session, text: $0) } : nil,
@@ -811,6 +815,8 @@ struct IslandPanelView: View {
                         cardFields: cardFields,
                         lang: model.lang,
                         onApprove: { model.approvePermission(for: session.id, action: $0) },
+                        onResolveAll: { model.resolveAllPendingApprovals($0) },
+                        pendingApprovalCount: model.pendingApprovalSessions.count,
                         onAnswer: { model.answerQuestion(for: session.id, answer: $0) },
                         onReply: TerminalTextSender.canReply(to: session, enabled: model.completionReplyEnabled)
                             ? { model.replyToSession(session, text: $0) } : nil,
@@ -1326,6 +1332,9 @@ private struct IslandSessionRow: View {
     var cardFields: IslandSessionCardFields = .all
     var lang: LanguageManager = .shared
     var onApprove: ((ApprovalAction) -> Void)?
+    /// Answers every queued request at once. Nil when batching makes no sense.
+    var onResolveAll: ((ApprovalAction) -> Void)?
+    var pendingApprovalCount: Int = 1
     var onAnswer: ((QuestionPromptResponse) -> Void)?
     var onReply: ((String) -> Void)?
     let onJump: () -> Void
@@ -1829,9 +1838,20 @@ private struct IslandSessionRow: View {
 
     private var approvalActionBody: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(lang.t(isPlanApproval ? "approval.planReady" : "approval.toolPermissionRequested"))
-                .font(.system(size: 12.5, weight: .semibold))
-                .foregroundStyle(V6Palette.paper.opacity(0.86))
+            HStack(spacing: 6) {
+                Text(lang.t(isPlanApproval ? "approval.planReady" : "approval.toolPermissionRequested"))
+                    .font(.system(size: 12.5, weight: .semibold))
+                    .foregroundStyle(V6Palette.paper.opacity(0.86))
+
+                if pendingApprovalCount > 1 {
+                    Text(lang.t("approval.pendingCount", String(pendingApprovalCount)))
+                        .font(.islandMono(size: 10, weight: .medium))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 1.5)
+                        .background(Color.white.opacity(0.1), in: Capsule())
+                        .foregroundStyle(V6Palette.paper.opacity(0.6))
+                }
+            }
 
             VStack(alignment: .leading, spacing: 8) {
                 Text(commandPreviewText)
@@ -1873,6 +1893,19 @@ private struct IslandSessionRow: View {
                 }
                 .buttonStyle(IslandActionButtonStyle(kind: .primary, expands: true))
             }
+
+            // Only worth offering when there is more than one thing queued.
+            if pendingApprovalCount > 1 {
+                HStack(spacing: 8) {
+                    Button(lang.t("approval.denyAll")) { onResolveAll?(.deny) }
+                        .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true))
+                    Button(lang.t("approval.allowAll")) { onResolveAll?(.allowOnce) }
+                        .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true))
+                }
+            }
+
+            Button(lang.t("approval.goToTerminal")) { onJump() }
+                .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true))
         }
     }
 

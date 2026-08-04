@@ -74,3 +74,98 @@ struct ApprovalSuggestedUpdatesTests {
         #expect(request?.suggestedUpdates == [bypass, acceptEdits])
     }
 }
+
+/// Answering several queued requests at once.
+@MainActor
+struct BatchApprovalTests {
+    private func makeModel() -> AppModel {
+        let name = "batch-\(UUID().uuidString)"
+        let suite = UserDefaults(suiteName: name)!
+        suite.removePersistentDomain(forName: name)
+        return AppModel(settings: SettingsStore(store: PreferenceStore(suite: suite)))
+    }
+
+    private func waiting(_ id: String) -> AgentSession {
+        var session = AgentSession(
+            id: id,
+            title: "Claude · \(id)",
+            tool: .claudeCode,
+            origin: .live,
+            attachmentState: .attached,
+            phase: .waitingForApproval,
+            summary: "waiting",
+            updatedAt: Date(),
+            jumpTarget: JumpTarget(
+                terminalApp: "Cursor",
+                workspaceName: "demo",
+                paneTitle: "claude",
+                workingDirectory: "/tmp/\(id)",
+                terminalSessionID: id
+            )
+        )
+        session.permissionRequest = PermissionRequest(
+            title: "Approve",
+            summary: "Run a tool",
+            affectedPath: "/tmp/\(id)",
+            primaryActionTitle: "Allow",
+            secondaryActionTitle: "Deny",
+            toolName: "Bash"
+        )
+        session.isProcessAlive = true
+        return session
+    }
+
+    private func running(_ id: String) -> AgentSession {
+        var session = waiting(id)
+        session.phase = .running
+        session.permissionRequest = nil
+        return session
+    }
+
+    @Test
+    func onlyBlockedSessionsCount() {
+        let model = makeModel()
+        model.state = SessionState(sessions: [waiting("a"), waiting("b"), running("c")])
+
+        #expect(model.pendingApprovalSessions.map(\.id).sorted() == ["a", "b"])
+    }
+
+    /// Every queued request has to be answered, not just the one on screen.
+    @Test
+    func resolvingAllClearsEveryPendingRequest() {
+        let model = makeModel()
+        model.state = SessionState(sessions: [waiting("a"), waiting("b"), running("c")])
+
+        model.resolveAllPendingApprovals(.allowOnce)
+
+        #expect(model.pendingApprovalSessions.isEmpty)
+        #expect(model.state.session(id: "c")?.phase == .running)
+    }
+
+    @Test
+    func denyingAllAlsoClearsThem() {
+        let model = makeModel()
+        model.state = SessionState(sessions: [waiting("a"), waiting("b")])
+
+        model.resolveAllPendingApprovals(.deny)
+
+        #expect(model.pendingApprovalSessions.isEmpty)
+    }
+
+    /// A session hidden by a notification filter is not the user's to answer.
+    @Test
+    func filteredOutSessionsAreNotBatchAnswered() {
+        let name = "batch-filter-\(UUID().uuidString)"
+        let suite = UserDefaults(suiteName: name)!
+        suite.removePersistentDomain(forName: name)
+        let settings = SettingsStore(store: PreferenceStore(suite: suite))
+        let model = AppModel(settings: settings)
+
+        settings.notificationFilters.addRule(
+            SilenceRule(field: .workingDirectory, match: .contains, pattern: "/tmp/hidden")
+        )
+        model.state = SessionState(sessions: [waiting("a"), waiting("hidden")])
+
+        #expect(model.pendingApprovalSessions.map(\.id) == ["a"])
+    }
+}

@@ -483,3 +483,9 @@
 
 /* Plan approval */
 "approval.planReady" = "計画ができました";
+
+/* Batch approval */
+"approval.pendingCount" = "保留 %@ 件";
+"approval.allowAll" = "すべて許可";
+"approval.denyAll" = "すべて拒否";
+"approval.goToTerminal" = "ターミナルへ移動";

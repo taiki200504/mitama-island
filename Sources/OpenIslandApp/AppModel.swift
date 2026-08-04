@@ -1466,6 +1466,21 @@ final class AppModel {
         )
     }
 
+    /// Sessions blocked on a permission decision right now.
+    var pendingApprovalSessions: [AgentSession] {
+        surfacedSessions.filter { $0.permissionRequest != nil && $0.phase == .waitingForApproval }
+    }
+
+    /// Answers every blocked session the same way.
+    ///
+    /// Each one still goes through `approvePermission`, so the resolution and
+    /// the message the agent receives are identical to answering them one by one.
+    func resolveAllPendingApprovals(_ action: ApprovalAction) {
+        for session in pendingApprovalSessions {
+            approvePermission(for: session.id, action: action)
+        }
+    }
+
     func approvePermission(for sessionID: String, action: ApprovalAction) {
         guard let session = state.session(id: sessionID) else {
             return

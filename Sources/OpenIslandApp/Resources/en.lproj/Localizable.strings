@@ -483,3 +483,9 @@
 
 /* Plan approval */
 "approval.planReady" = "Ready to leave plan mode";
+
+/* Batch approval */
+"approval.pendingCount" = "%@ pending";
+"approval.allowAll" = "Allow all";
+"approval.denyAll" = "Deny all";
+"approval.goToTerminal" = "Go to the terminal";
