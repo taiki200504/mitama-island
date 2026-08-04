@@ -68,8 +68,22 @@ final class LanguageManager: @unchecked Sendable {
 
     /// Look up a localized string by key.
     func t(_ key: String) -> String {
-        bundle.localizedString(forKey: key, value: key, table: nil)
+        if key == "app.name" { return Self.applicationName }
+        return bundle.localizedString(forKey: key, value: key, table: nil)
     }
+
+    /// The name the app is actually installed under.
+    ///
+    /// Read from the bundle rather than translated: it is a proper noun, and a
+    /// hard-coded copy drifts silently when the bundle is renamed — the UI said
+    /// "Open Island" long after the app shipped as "Mitama Island".
+    static let applicationName: String = {
+        let info = Bundle.main.infoDictionary
+        let name = (info?["CFBundleDisplayName"] as? String)
+            ?? (info?["CFBundleName"] as? String)
+        let trimmed = name?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return (trimmed?.isEmpty == false ? trimmed! : "Open Island")
+    }()
 
     /// Look up a localized format string and apply arguments.
     func t(_ key: String, _ args: any CVarArg...) -> String {

@@ -481,3 +481,10 @@
 /* Question progress */
 "question.progress" = "已回答 %@ / %@";
 "question.answerAllFirst" = "請回答所有問題後再傳送。";
+
+/* App name and Watch */
+"setup.uninstallHooksMessage" = "將從 %@ 移除本應用的掛鉤。";
+"settings.watch.notifications" = "Watch 通知";
+"settings.watch.notifications.help" = "透過 Bonjour 廣播，使同一網路中的 iPhone 可以發現。";
+"settings.section.general" = "一般";
+"setup.binaryPath" = "執行檔：%@";

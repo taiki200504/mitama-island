@@ -482,3 +482,10 @@
 /* Question progress */
 "question.progress" = "已回答 %@ / %@";
 "question.answerAllFirst" = "请回答所有问题后再发送。";
+
+/* App name and Watch */
+"setup.uninstallHooksMessage" = "将从 %@ 移除本应用的钩子。";
+"settings.watch.notifications" = "Watch 通知";
+"settings.watch.notifications.help" = "通过 Bonjour 广播，使同一网络中的 iPhone 可以发现。";
+"settings.section.general" = "常规";
+"setup.binaryPath" = "可执行文件：%@";

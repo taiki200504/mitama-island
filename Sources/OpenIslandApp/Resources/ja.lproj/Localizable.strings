@@ -482,3 +482,10 @@
 /* Question progress */
 "question.progress" = "%@問中%@問に回答";
 "question.answerAllFirst" = "送るには全部の質問に答える。";
+
+/* App name and Watch */
+"setup.uninstallHooksMessage" = "このアプリのフックを %@ から取り除く。";
+"settings.watch.notifications" = "Watch への通知";
+"settings.watch.notifications.help" = "同じネットワークにいる iPhone から見つけられるよう Bonjour で知らせる。";
+"settings.section.general" = "一般";
+"setup.binaryPath" = "実行ファイル: %@";

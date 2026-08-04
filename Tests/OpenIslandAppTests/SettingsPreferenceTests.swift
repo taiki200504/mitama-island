@@ -338,7 +338,13 @@ struct IslandTypographyTests {
     /// reference product has is lost.
     @Test
     func theBundledMonospaceFontRegisters() {
-        #expect(NSFont(name: IslandTypography.departureMonoName, size: 12) != nil)
+        // Registration happens lazily on first use, so ask through the type
+        // rather than the font system. Reading NSFont directly made this pass or
+        // fail depending on whether another test had touched IslandTypography.
+        let font = IslandTypography.nsMono(size: 12)
+        // familyName, not fontName: the PostScript name is DepartureMono-Regular
+        // while the family the lookup uses is "Departure Mono".
+        #expect(font.familyName == IslandTypography.departureMonoName)
     }
 
     @Test
@@ -388,5 +394,28 @@ struct SettingsPaneCoverageTests {
 
         model.islandUsageDisplay = .compact
         #expect(model.islandUsageDisplay == .compact)
+    }
+}
+
+@MainActor
+struct ApplicationNameTests {
+    /// The name is a proper noun taken from the bundle. A translated copy drifts
+    /// the moment the bundle is renamed — the UI said "Open Island" for several
+    /// releases after the app shipped as "Mitama Island".
+    @Test
+    func theNameComesFromTheBundle() {
+        let expected = (Bundle.main.infoDictionary?["CFBundleDisplayName"] as? String)
+            ?? (Bundle.main.infoDictionary?["CFBundleName"] as? String)
+
+        if let expected, !expected.trimmingCharacters(in: .whitespaces).isEmpty {
+            #expect(LanguageManager.applicationName == expected)
+        }
+        #expect(!LanguageManager.applicationName.isEmpty)
+    }
+
+    /// Looking the key up must not fall through to the strings file.
+    @Test
+    func theLocalizedLookupReturnsTheBundleName() {
+        #expect(LanguageManager.shared.t("app.name") == LanguageManager.applicationName)
     }
 }

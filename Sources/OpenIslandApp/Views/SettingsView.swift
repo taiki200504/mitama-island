@@ -305,7 +305,7 @@ struct SetupSettingsPane: View {
                     }
                     Button(lang.t("settings.general.cancel"), role: .cancel) {}
                 } message: {
-                    Text("This will remove the Open Island plugin from ~/.config/opencode/plugins/.")
+                    Text(lang.t("setup.uninstallHooksMessage", "~/.config/opencode/plugins/"))
                 }
 
                 hookRow(
@@ -322,7 +322,7 @@ struct SetupSettingsPane: View {
                     }
                     Button(lang.t("settings.general.cancel"), role: .cancel) {}
                 } message: {
-                    Text("This will remove Open Island hooks from ~/.qoder/settings.json.")
+                    Text(lang.t("setup.uninstallHooksMessage", "~/.qoder/settings.json"))
                 }
 
                 hookRow(
@@ -339,7 +339,7 @@ struct SetupSettingsPane: View {
                     }
                     Button(lang.t("settings.general.cancel"), role: .cancel) {}
                 } message: {
-                    Text("This will remove Open Island hooks from ~/.qwen/settings.json.")
+                    Text(lang.t("setup.uninstallHooksMessage", "~/.qwen/settings.json"))
                 }
 
                 hookRow(
@@ -356,7 +356,7 @@ struct SetupSettingsPane: View {
                     }
                     Button(lang.t("settings.general.cancel"), role: .cancel) {}
                 } message: {
-                    Text("This will remove Open Island hooks from ~/.factory/settings.json.")
+                    Text(lang.t("setup.uninstallHooksMessage", "~/.factory/settings.json"))
                 }
 
                 hookRow(
@@ -373,7 +373,7 @@ struct SetupSettingsPane: View {
                     }
                     Button(lang.t("settings.general.cancel"), role: .cancel) {}
                 } message: {
-                    Text("This will remove Open Island hooks from ~/.codebuddy/settings.json.")
+                    Text(lang.t("setup.uninstallHooksMessage", "~/.codebuddy/settings.json"))
                 }
 
                 hookRow(
@@ -391,7 +391,7 @@ struct SetupSettingsPane: View {
                     }
                     Button(lang.t("settings.general.cancel"), role: .cancel) {}
                 } message: {
-                    Text("This will remove the Open Island hooks from ~/.cursor/hooks.json.")
+                    Text(lang.t("setup.uninstallHooksMessage", "~/.cursor/hooks.json"))
                 }
 
                 hookRow(
@@ -408,7 +408,7 @@ struct SetupSettingsPane: View {
                     }
                     Button(lang.t("settings.general.cancel"), role: .cancel) {}
                 } message: {
-                    Text("This will remove Open Island hooks from ~/.gemini/settings.json.")
+                    Text(lang.t("setup.uninstallHooksMessage", "~/.gemini/settings.json"))
                 }
 
                 hookRow(
@@ -425,7 +425,7 @@ struct SetupSettingsPane: View {
                     }
                     Button(lang.t("settings.general.cancel"), role: .cancel) {}
                 } message: {
-                    Text("This will remove Open Island hooks from ~/.kimi/config.toml.")
+                    Text(lang.t("setup.uninstallHooksMessage", "~/.kimi/config.toml"))
                 }
             }
 
@@ -701,7 +701,7 @@ struct SetupSettingsPane: View {
             }
 
             if let binaryPath = report.binaryPath {
-                Text("Binary: \(binaryPath)")
+                Text(lang.t("setup.binaryPath", binaryPath))
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
             }
@@ -791,23 +791,25 @@ struct SetupSettingsPane: View {
 struct WatchSettingsPane: View {
     var model: AppModel
 
+    private var lang: LanguageManager { model.lang }
+
     @State private var pairingCode: String = "----"
 
     var body: some View {
         Form {
             Section {
-                Toggle("Watch Notifications", isOn: Binding(
+                Toggle(lang.t("settings.watch.notifications"), isOn: Binding(
                     get: { model.watchNotificationEnabled },
                     set: { model.watchNotificationEnabled = $0 }
                 ))
 
                 if model.watchNotificationEnabled {
-                    Text("When enabled, the macOS app broadcasts a Bonjour service that your iPhone can discover on the same WiFi network.")
+                    Text(lang.t("settings.watch.notifications.help"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             } header: {
-                Text("General")
+                Text(lang.t("settings.section.general"))
             }
 
             if model.watchNotificationEnabled {

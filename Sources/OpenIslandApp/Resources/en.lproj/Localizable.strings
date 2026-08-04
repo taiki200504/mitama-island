@@ -482,3 +482,10 @@
 /* Question progress */
 "question.progress" = "%@ of %@ answered";
 "question.answerAllFirst" = "Answer every question to send.";
+
+/* App name and Watch */
+"setup.uninstallHooksMessage" = "Removes this app's hooks from %@.";
+"settings.watch.notifications" = "Watch notifications";
+"settings.watch.notifications.help" = "Broadcasts a Bonjour service your iPhone can find on the same network.";
+"settings.section.general" = "General";
+"setup.binaryPath" = "Binary: %@";
