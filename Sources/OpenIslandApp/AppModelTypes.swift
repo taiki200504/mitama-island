@@ -44,6 +44,28 @@ enum IslandCenterLabel: String, CaseIterable, Identifiable, Sendable {
     var id: String { rawValue }
 }
 
+/// How much the closed island says about what is running.
+///
+/// Not stored: it is a preset over `IslandRightSlot` and `IslandCenterLabel`,
+/// which already express this more finely. Keeping a third copy of the same
+/// state would let the two disagree.
+enum MenuBarLayout: String, CaseIterable, Identifiable, Sendable {
+    case clean
+    case detailed
+
+    var id: String { rawValue }
+
+    var labelKey: String { "settings.display.layout.\(rawValue)" }
+    var detailKey: String { "settings.display.layout.\(rawValue).help" }
+
+    var rightSlot: IslandRightSlot { self == .clean ? .count : .agents }
+    var centerLabel: IslandCenterLabel { self == .clean ? .off : .agentAction }
+
+    static func resolved(rightSlot: IslandRightSlot, centerLabel: IslandCenterLabel) -> MenuBarLayout {
+        centerLabel == .off ? .clean : .detailed
+    }
+}
+
 // MARK: - v8 island preferences
 
 enum IslandAppearanceDisplayProfile: String, CaseIterable, Identifiable, Sendable {

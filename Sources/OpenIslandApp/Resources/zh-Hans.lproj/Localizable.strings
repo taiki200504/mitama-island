@@ -268,7 +268,6 @@
 "settings.pending.approvalRouting" = "需要在面板与终端之间路由审批。";
 "settings.pending.sessionAutoNaming" = "需要会话自动命名服务。";
 "settings.pending.memoryWatchdog" = "需要内存监视。";
-"settings.pending.menuBarLayoutModes" = "需要菜单栏的简洁与详细布局。";
 
 /* General pane */
 "settings.general.section.expansion" = "展开";
@@ -491,3 +490,9 @@
 
 /* Content size */
 "settings.display.contentFontSize.default" = "%@（默认）";
+
+/* Menu bar layout */
+"settings.display.layout.clean" = "简洁";
+"settings.display.layout.clean.help" = "为菜单栏留出更多空间。";
+"settings.display.layout.detailed" = "详细";
+"settings.display.layout.detailed.help" = "一眼看清每个代理在做什么。";

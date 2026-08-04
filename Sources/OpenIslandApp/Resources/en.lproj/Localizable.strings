@@ -268,7 +268,6 @@
 "settings.pending.approvalRouting" = "Needs approval routing between panel and terminal.";
 "settings.pending.sessionAutoNaming" = "Needs the session auto-naming service.";
 "settings.pending.memoryWatchdog" = "Needs the memory watchdog.";
-"settings.pending.menuBarLayoutModes" = "Needs the clean and detailed menu bar layouts.";
 
 /* General pane */
 "settings.general.section.expansion" = "Expansion";
@@ -491,3 +490,9 @@
 
 /* Content size */
 "settings.display.contentFontSize.default" = "%@ (default)";
+
+/* Menu bar layout */
+"settings.display.layout.clean" = "Clean";
+"settings.display.layout.clean.help" = "Leaves more of the menu bar free.";
+"settings.display.layout.detailed" = "Detailed";
+"settings.display.layout.detailed.help" = "Shows what each agent is doing at a glance.";

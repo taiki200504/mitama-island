@@ -384,6 +384,15 @@ final class AppModel {
         set { updateAppearancePreferences(for: activeAppearanceProfile) { $0.sessionStateIndicator = newValue } }
     }
 
+    /// A two-way shorthand over the finer appearance choices.
+    var menuBarLayout: MenuBarLayout {
+        get { MenuBarLayout.resolved(rightSlot: islandRightSlot, centerLabel: islandCenterLabel) }
+        set {
+            islandRightSlot = newValue.rightSlot
+            islandCenterLabel = newValue.centerLabel
+        }
+    }
+
     var islandSessionGroup: IslandSessionGroup {
         get { appearancePreferences(for: activeAppearanceProfile).sessionGroup }
         set { updateAppearancePreferences(for: activeAppearanceProfile) { $0.sessionGroup = newValue } }

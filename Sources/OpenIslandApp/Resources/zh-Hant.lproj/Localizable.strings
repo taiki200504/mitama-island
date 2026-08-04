@@ -267,7 +267,6 @@
 "settings.pending.approvalRouting" = "需要在面板與終端機之間路由審批。";
 "settings.pending.sessionAutoNaming" = "需要工作階段自動命名服務。";
 "settings.pending.memoryWatchdog" = "需要記憶體監視。";
-"settings.pending.menuBarLayoutModes" = "需要選單列的簡潔與詳細版面。";
 
 /* General pane */
 "settings.general.section.expansion" = "展開";
@@ -490,3 +489,9 @@
 
 /* Content size */
 "settings.display.contentFontSize.default" = "%@（預設）";
+
+/* Menu bar layout */
+"settings.display.layout.clean" = "簡潔";
+"settings.display.layout.clean.help" = "為選單列留出更多空間。";
+"settings.display.layout.detailed" = "詳細";
+"settings.display.layout.detailed.help" = "一眼看清每個代理在做什麼。";

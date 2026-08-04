@@ -268,7 +268,6 @@
 "settings.pending.approvalRouting" = "承認をパネルとターミナルに振り分ける処理が要ります。";
 "settings.pending.sessionAutoNaming" = "セッション自動命名の仕組みが要ります。";
 "settings.pending.memoryWatchdog" = "メモリ監視の仕組みが要ります。";
-"settings.pending.menuBarLayoutModes" = "メニューバーの簡潔・詳細レイアウトが要ります。";
 
 /* General pane */
 "settings.general.section.expansion" = "展開";
@@ -491,3 +490,9 @@
 
 /* Content size */
 "settings.display.contentFontSize.default" = "%@（既定）";
+
+/* Menu bar layout */
+"settings.display.layout.clean" = "簡潔";
+"settings.display.layout.clean.help" = "メニューバーを広く空ける。";
+"settings.display.layout.detailed" = "詳細";
+"settings.display.layout.detailed.help" = "各エージェントが何をしているか一目で分かる。";

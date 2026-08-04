@@ -53,7 +53,6 @@ enum PendingCapability: String, CaseIterable, Sendable {
     case reasoningEffortMetadata
 
     // Shell
-    case menuBarLayoutModes
 
     /// Capabilities whose engine support has actually landed.
     ///

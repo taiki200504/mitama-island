@@ -35,10 +35,18 @@ struct DisplaySettingsPane: View {
                 }
             }
 
-            SettingsRow(
+            SettingsPickerRow(
                 title: lang.t("settings.display.layoutMode"),
-                availability: FeatureAvailability(.menuBarLayoutModes)
-            )
+                help: lang.t(model.menuBarLayout.detailKey),
+                selection: Binding(
+                    get: { model.menuBarLayout },
+                    set: { model.menuBarLayout = $0 }
+                )
+            ) {
+                ForEach(MenuBarLayout.allCases) { layout in
+                    Text(lang.t(layout.labelKey)).tag(layout)
+                }
+            }
         }
     }
 
