@@ -489,3 +489,7 @@
 "approval.allowAll" = "全部允许";
 "approval.denyAll" = "全部拒绝";
 "approval.goToTerminal" = "前往终端";
+
+/* Question progress */
+"question.progress" = "已回答 %@ / %@";
+"question.answerAllFirst" = "请回答所有问题后再发送。";

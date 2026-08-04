@@ -488,3 +488,7 @@
 "approval.allowAll" = "全部允許";
 "approval.denyAll" = "全部拒絕";
 "approval.goToTerminal" = "前往終端機";
+
+/* Question progress */
+"question.progress" = "已回答 %@ / %@";
+"question.answerAllFirst" = "請回答所有問題後再傳送。";

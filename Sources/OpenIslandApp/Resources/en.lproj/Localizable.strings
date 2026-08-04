@@ -489,3 +489,7 @@
 "approval.allowAll" = "Allow all";
 "approval.denyAll" = "Deny all";
 "approval.goToTerminal" = "Go to the terminal";
+
+/* Question progress */
+"question.progress" = "%@ of %@ answered";
+"question.answerAllFirst" = "Answer every question to send.";

@@ -489,3 +489,7 @@
 "approval.allowAll" = "すべて許可";
 "approval.denyAll" = "すべて拒否";
 "approval.goToTerminal" = "ターミナルへ移動";
+
+/* Question progress */
+"question.progress" = "%@問中%@問に回答";
+"question.answerAllFirst" = "送るには全部の質問に答える。";

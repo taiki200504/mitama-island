@@ -2313,6 +2313,19 @@ private struct StructuredQuestionPromptView: View {
             if structuredQuestions.isEmpty {
                 freeformAnswerBody
             } else {
+                // Deliberately every question at once rather than one per page.
+                // The panel already scrolls, and paging hides how much is left
+                // to answer — which is the thing the user wants to know.
+                if structuredQuestions.count > 1 {
+                    Text(lang.t(
+                        "question.progress",
+                        String(answeredQuestionCount),
+                        String(structuredQuestions.count)
+                    ))
+                    .font(.islandMono(size: 10, weight: .medium))
+                    .foregroundStyle(V6Palette.paper.opacity(0.5))
+                }
+
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(structuredQuestions, id: \.question) { question in
                         questionRow(question)
@@ -2320,6 +2333,14 @@ private struct StructuredQuestionPromptView: View {
                 }
 
                 quickReplyField
+
+                // Says why the button is inert instead of leaving the user to
+                // hunt for the question they missed.
+                if !canSubmit, answeredQuestionCount < structuredQuestions.count {
+                    Text(lang.t("question.answerAllFirst"))
+                        .font(.system(size: 10.5, weight: .medium))
+                        .foregroundStyle(IslandDesignPalette.Status.waitingForAnswer.opacity(0.8))
+                }
 
                 Button(submitButtonTitle) {
                     submitAnswer()
@@ -2603,6 +2624,22 @@ private struct StructuredQuestionPromptView: View {
                 answers: answerMap
             )
         )
+    }
+
+    /// How many questions have a usable answer, for the progress line.
+    var answeredQuestionCount: Int {
+        structuredQuestions.filter(isAnswered).count
+    }
+
+    private func isAnswered(_ question: QuestionPromptItem) -> Bool {
+        let selected = selectedLabels(for: question)
+        guard !selected.isEmpty else { return false }
+        for option in question.options where option.allowsFreeform && selected.contains(option.label) {
+            if trimmedFreeform(for: question, option: option).isEmpty {
+                return false
+            }
+        }
+        return true
     }
 
     private var hasCompleteSelection: Bool {
