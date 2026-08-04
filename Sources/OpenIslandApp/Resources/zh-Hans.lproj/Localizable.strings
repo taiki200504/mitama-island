@@ -254,12 +254,10 @@
 "settings.pending.foregroundTerminalDetection" = "需要判断哪个终端在前台。";
 "settings.pending.autoHideTimer" = "需要自动隐藏计时器。";
 "settings.pending.outsideClickDetection" = "需要面板外点击检测。";
-"settings.pending.idleSessionCleanup" = "需要空闲会话清理。";
 "settings.pending.globalHotkey" = "需要注册全局快捷键。";
 "settings.pending.switcherPanel" = "需要会话切换面板。";
 "settings.pending.panelKeyHandling" = "需要面板内按键处理。";
 "settings.pending.soundPackImport" = "需要音效包导入。";
-"settings.pending.launcherAppDetection" = "需要判断会话由哪个 App 启动。";
 "settings.pending.approvalRouting" = "需要在面板与终端之间路由审批。";
 "settings.pending.sessionAutoNaming" = "需要会话自动命名服务。";
 "settings.pending.memoryWatchdog" = "需要内存监视。";
@@ -515,3 +513,8 @@
 "settings.usage.resetCards.help" = "显示所有周期及其倒计时，而非仅最繁忙的一个。";
 "island.usage.remainingFormat" = "剩余 {value}%";
 "island.usage.thresholdReached" = "{window} 的用量已达到 {value}%。";
+
+/* Blocked launcher apps */
+"settings.notifications.field.terminalApp" = "启动来源";
+"settings.notifications.blockedApps.empty" = "尚无会话";
+"settings.notifications.blockedApps.empty.help" = "从某个应用启动过会话后，它才会出现在此处。";

@@ -178,12 +178,36 @@ struct NotificationSettingsPane: View {
     }
 
     private var blockedAppsSection: some View {
-        Section {
-            SettingsRow(
-                title: lang.t("settings.notifications.blockedApps"),
-                availability: FeatureAvailability(.launcherAppDetection)
-            )
+        Section(lang.t("settings.notifications.blockedApps")) {
+            if launcherApps.isEmpty {
+                SettingsRow(
+                    title: lang.t("settings.notifications.blockedApps.empty"),
+                    help: lang.t("settings.notifications.blockedApps.empty.help")
+                )
+            } else {
+                // Only apps actually seen are listed. A free-text field would let
+                // the user block a name that never matches anything.
+                ForEach(launcherApps, id: \.self) { app in
+                    SettingsToggleRow(
+                        title: app,
+                        isOn: Binding(
+                            get: { filters.isBlocked(launcherApp: app) },
+                            set: { filters.setBlocked($0, launcherApp: app) }
+                        )
+                    )
+                }
+            }
         }
+    }
+
+    /// The terminals and editors sessions have actually come from, plus anything
+    /// already blocked so a rule never becomes uneditable once its app goes away.
+    private var launcherApps: [String] {
+        let seen = model.state.sessions.compactMap { $0.jumpTarget?.terminalApp }
+        let blocked = filters.customRules
+            .filter { $0.field == .terminalApp && $0.match == .equals }
+            .map(\.pattern)
+        return Set(seen + blocked).sorted { $0.localizedStandardCompare($1) == .orderedAscending }
     }
 
     private func ruleDescription(_ rule: SilenceRule) -> String {

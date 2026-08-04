@@ -254,12 +254,10 @@
 "settings.pending.foregroundTerminalDetection" = "どのターミナルが前面かの判定が要ります。";
 "settings.pending.autoHideTimer" = "自動非表示のタイマーが要ります。";
 "settings.pending.outsideClickDetection" = "パネル外のクリック検知が要ります。";
-"settings.pending.idleSessionCleanup" = "停止セッションの掃除処理が要ります。";
 "settings.pending.globalHotkey" = "システム全体のホットキー登録が要ります。";
 "settings.pending.switcherPanel" = "セッション切替パネルが要ります。";
 "settings.pending.panelKeyHandling" = "パネル内のキー操作処理が要ります。";
 "settings.pending.soundPackImport" = "サウンドパックの読み込みが要ります。";
-"settings.pending.launcherAppDetection" = "セッションの起動元アプリの判定が要ります。";
 "settings.pending.approvalRouting" = "承認をパネルとターミナルに振り分ける処理が要ります。";
 "settings.pending.sessionAutoNaming" = "セッション自動命名の仕組みが要ります。";
 "settings.pending.memoryWatchdog" = "メモリ監視の仕組みが要ります。";
@@ -515,3 +513,8 @@
 "settings.usage.resetCards.help" = "いちばん使っている枠だけでなく、すべての枠と残り時間を出します。";
 "island.usage.remainingFormat" = "残り{value}%";
 "island.usage.thresholdReached" = "{window} の使用量が {value}% に達しました。";
+
+/* Blocked launcher apps */
+"settings.notifications.field.terminalApp" = "起動元アプリ";
+"settings.notifications.blockedApps.empty" = "まだセッションがありません";
+"settings.notifications.blockedApps.empty.help" = "セッションを一度始めたアプリがここに並びます。";

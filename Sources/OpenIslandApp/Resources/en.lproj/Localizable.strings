@@ -254,12 +254,10 @@
 "settings.pending.foregroundTerminalDetection" = "Needs to know which terminal is in front.";
 "settings.pending.autoHideTimer" = "Needs the auto-hide timer.";
 "settings.pending.outsideClickDetection" = "Needs click-outside detection.";
-"settings.pending.idleSessionCleanup" = "Needs idle-session cleanup.";
 "settings.pending.globalHotkey" = "Needs system-wide hotkey registration.";
 "settings.pending.switcherPanel" = "Needs the session switcher panel.";
 "settings.pending.panelKeyHandling" = "Needs in-panel key handling.";
 "settings.pending.soundPackImport" = "Needs sound pack import.";
-"settings.pending.launcherAppDetection" = "Needs to know which app launched a session.";
 "settings.pending.approvalRouting" = "Needs approval routing between panel and terminal.";
 "settings.pending.sessionAutoNaming" = "Needs the session auto-naming service.";
 "settings.pending.memoryWatchdog" = "Needs the memory watchdog.";
@@ -515,3 +513,8 @@
 "settings.usage.resetCards.help" = "Shows every window with its own countdown instead of just the busiest one.";
 "island.usage.remainingFormat" = "{value}% left";
 "island.usage.thresholdReached" = "Usage for {window} has reached {value}%.";
+
+/* Blocked launcher apps */
+"settings.notifications.field.terminalApp" = "Launched from";
+"settings.notifications.blockedApps.empty" = "No sessions yet";
+"settings.notifications.blockedApps.empty.help" = "Apps appear here once a session has been started from them.";

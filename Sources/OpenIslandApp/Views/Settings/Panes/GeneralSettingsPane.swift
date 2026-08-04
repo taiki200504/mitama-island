@@ -162,7 +162,6 @@ struct GeneralSettingsPane: View {
             SettingsPickerRow(
                 title: lang.t("settings.general.idleCleanup"),
                 help: lang.t("settings.general.idleCleanup.help"),
-                availability: FeatureAvailability(.idleSessionCleanup),
                 selection: Binding(
                     get: { behaviour.idleSessionCleanup },
                     set: { behaviour.idleSessionCleanup = $0 }

@@ -6,6 +6,8 @@ import OpenIslandCore
 enum SilenceRuleField: String, Codable, CaseIterable, Sendable {
     case workingDirectory
     case firstPrompt
+    /// The terminal or editor the session was started from.
+    case terminalApp
 
     var labelKey: String { "settings.notifications.field.\(rawValue)" }
 }
@@ -65,6 +67,8 @@ struct SilenceRule: Codable, Equatable, Identifiable, Sendable {
             session.jumpTarget?.workingDirectory
         case .firstPrompt:
             session.claudeMetadata?.initialUserPrompt
+        case .terminalApp:
+            session.jumpTarget?.terminalApp
         }
     }
 }
@@ -191,6 +195,31 @@ final class NotificationFilterSettings: PreferenceGroup {
     }
 
     /// Every rule currently in force.
+    /// Adds or removes the rule that hides everything launched from `app`.
+    ///
+    /// Stored as an ordinary rule rather than a separate list so one filtering
+    /// path decides what reaches the island — two would eventually disagree.
+    func setBlocked(_ blocked: Bool, launcherApp app: String) {
+        let existing = customRules.filter {
+            $0.field == .terminalApp && $0.match == .equals
+                && $0.pattern.caseInsensitiveCompare(app) == .orderedSame
+        }
+        if blocked {
+            guard existing.isEmpty else { return }
+            customRules.append(SilenceRule(field: .terminalApp, match: .equals, pattern: app))
+        } else {
+            let ids = Set(existing.map(\.id))
+            customRules.removeAll { ids.contains($0.id) }
+        }
+    }
+
+    func isBlocked(launcherApp app: String) -> Bool {
+        customRules.contains {
+            $0.field == .terminalApp && $0.match == .equals
+                && $0.pattern.caseInsensitiveCompare(app) == .orderedSame
+        }
+    }
+
     var activeRules: [SilenceRule] {
         SilenceRule.presets.filter(isEnabled) + customRules
     }

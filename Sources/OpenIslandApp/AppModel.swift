@@ -697,6 +697,7 @@ final class AppModel {
         }
 
         quietScenes.start()
+        startIdleSessionCleanup()
         hooks.onUsageSnapshotChanged = { [weak self] in
             self?.checkUsageThreshold()
         }
@@ -1328,7 +1329,7 @@ final class AppModel {
     func handlePointerExitedIslandSurface() { overlay.handlePointerExitedIslandSurface() }
     private func presentNotificationSurface(_ surface: IslandSurface) { overlay.presentNotificationSurface(surface) }
     private func reconcileIslandSurfaceAfterStateChange() { overlay.reconcileIslandSurfaceAfterStateChange() }
-    private func dismissNotificationSurfaceIfPresent(for sessionID: String) { overlay.dismissNotificationSurfaceIfPresent(for: sessionID) }
+    func dismissNotificationSurfaceIfPresent(for sessionID: String) { overlay.dismissNotificationSurfaceIfPresent(for: sessionID) }
     private func dismissOverlayForJump() { overlay.dismissOverlayForJump() }
 
     var shouldAutoCollapseOnMouseLeave: Bool { overlay.shouldAutoCollapseOnMouseLeave }
@@ -1687,6 +1688,32 @@ final class AppModel {
         default:
             return true
         }
+    }
+
+    private let idleCleanupTimerBox = RepeatingTimerBox()
+
+    /// Sweeps out sessions nobody is waiting on.
+    ///
+    /// Runs on a slow timer rather than on every event: the point is to clear
+    /// rows that stopped changing, and nothing arrives to trigger that.
+    private func startIdleSessionCleanup() {
+        let timer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.pruneIdleSessions() }
+        }
+        timer.tolerance = 60
+        idleCleanupTimerBox.timer = timer
+    }
+
+    @discardableResult
+    func pruneIdleSessions(now: Date = .now) -> [String] {
+        guard let interval = settings.behaviour.idleSessionCleanup.interval else { return [] }
+        let removed = state.pruneIdleSessions(olderThan: interval, now: now)
+        for id in removed {
+            // A card left on screen for a session that no longer exists would
+            // have no working buttons.
+            dismissNotificationSurfaceIfPresent(for: id)
+        }
+        return removed
     }
 
     /// Tracks which usage windows have already been warned about.

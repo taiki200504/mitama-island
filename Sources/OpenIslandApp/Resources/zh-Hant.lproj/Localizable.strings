@@ -253,12 +253,10 @@
 "settings.pending.foregroundTerminalDetection" = "需要判斷哪個終端機在前景。";
 "settings.pending.autoHideTimer" = "需要自動隱藏計時器。";
 "settings.pending.outsideClickDetection" = "需要面板外點擊偵測。";
-"settings.pending.idleSessionCleanup" = "需要閒置工作階段清理。";
 "settings.pending.globalHotkey" = "需要註冊全域快捷鍵。";
 "settings.pending.switcherPanel" = "需要工作階段切換面板。";
 "settings.pending.panelKeyHandling" = "需要面板內按鍵處理。";
 "settings.pending.soundPackImport" = "需要音效包匯入。";
-"settings.pending.launcherAppDetection" = "需要判斷工作階段由哪個 App 啟動。";
 "settings.pending.approvalRouting" = "需要在面板與終端機之間路由審批。";
 "settings.pending.sessionAutoNaming" = "需要工作階段自動命名服務。";
 "settings.pending.memoryWatchdog" = "需要記憶體監視。";
@@ -514,3 +512,8 @@
 "settings.usage.resetCards.help" = "顯示所有週期及其倒數，而非僅最繁忙的一個。";
 "island.usage.remainingFormat" = "剩餘 {value}%";
 "island.usage.thresholdReached" = "{window} 的用量已達到 {value}%。";
+
+/* Blocked launcher apps */
+"settings.notifications.field.terminalApp" = "啟動來源";
+"settings.notifications.blockedApps.empty" = "尚無工作階段";
+"settings.notifications.blockedApps.empty.help" = "從某個應用啟動過工作階段後，它才會出現在此處。";

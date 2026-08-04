@@ -18,7 +18,6 @@ enum PendingCapability: String, CaseIterable, Sendable {
     case outsideClickDetection
 
     // Notification routing
-    case idleSessionCleanup
 
     // Quiet scenes
     case focusModeDetection
@@ -35,7 +34,6 @@ enum PendingCapability: String, CaseIterable, Sendable {
     case unraisedSoundEvents
 
     // Notification filters
-    case launcherAppDetection
 
     // Usage
 

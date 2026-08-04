@@ -25,7 +25,7 @@ final class QuietSceneMonitor {
     private let assertionsURL: URL
     private let runningBundleIdentifiers: @MainActor () -> Set<String>
     private let screenIsLocked: () -> Bool
-    private let timerBox = TimerBox()
+    private let timerBox = RepeatingTimerBox()
     private var observers: [NSObjectProtocol] = []
     private var screensAreAsleep = false
 
@@ -108,21 +108,5 @@ final class QuietSceneMonitor {
             return false
         }
         return (session["CGSSessionScreenIsLocked"] as? Bool) ?? false
-    }
-}
-
-
-/// Holds the poll timer outside the actor so `deinit` can stop it.
-///
-/// A repeating timer that outlives its owner keeps waking the app forever, and
-/// `deinit` is not allowed to touch main-actor state to cancel one.
-private final class TimerBox: @unchecked Sendable {
-    var timer: Timer?
-
-    deinit { timer?.invalidate() }
-
-    func invalidate() {
-        timer?.invalidate()
-        timer = nil
     }
 }

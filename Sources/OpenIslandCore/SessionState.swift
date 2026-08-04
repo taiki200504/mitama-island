@@ -45,6 +45,24 @@ public struct SessionState: Equatable, Sendable {
         sessionsByID.values.filter { $0.phase == .completed }.count
     }
 
+    /// Drops sessions that have sat untouched past `interval`.
+    ///
+    /// Only sessions in a settled state go: one waiting for an approval or a
+    /// question is idle *because* it is blocked on the user, and removing it
+    /// would hide the very thing they need to answer. Idle here means finished
+    /// and forgotten, not stuck. A genuinely long-running agent keeps posting
+    /// activity, so its `updatedAt` moves and it survives; one that has not said
+    /// anything for hours has almost certainly died with its hook still open.
+    public mutating func pruneIdleSessions(olderThan interval: TimeInterval, now: Date = .now) -> [String] {
+        guard interval > 0 else { return [] }
+        let cutoff = now.addingTimeInterval(-interval)
+        let expired = sessionsByID.values
+            .filter { !$0.phase.requiresAttention && $0.updatedAt < cutoff }
+            .map(\.id)
+        for id in expired { sessionsByID.removeValue(forKey: id) }
+        return expired
+    }
+
     public func session(id: String?) -> AgentSession? {
         guard let id else {
             return nil
