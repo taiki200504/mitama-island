@@ -256,7 +256,6 @@
 "settings.pending.globalHotkey" = "需要註冊全域快捷鍵。";
 "settings.pending.switcherPanel" = "需要工作階段切換面板。";
 "settings.pending.panelKeyHandling" = "需要面板內按鍵處理。";
-"settings.pending.soundPackImport" = "需要音效包匯入。";
 "settings.pending.approvalRouting" = "需要在面板與終端機之間路由審批。";
 "settings.pending.sessionAutoNaming" = "需要工作階段自動命名服務。";
 "settings.pending.memoryWatchdog" = "需要記憶體監視。";
@@ -352,7 +351,6 @@
 /* Sound pane */
 "settings.sound.section.output" = "輸出";
 "settings.sound.section.events" = "依事件設定音效";
-"settings.sound.section.eventsPending" = "應用尚未觸發的事件";
 "settings.sound.section.quietHours" = "靜音時段";
 "settings.sound.section.theme" = "音效主題";
 "settings.sound.enabled" = "播放音效";
@@ -366,17 +364,12 @@
 "settings.sound.quietHours.help" = "若結束時間早於開始時間，則視為跨夜時段。";
 "settings.sound.quietHours.start" = "開始";
 "settings.sound.quietHours.end" = "結束";
-"settings.sound.eventsPending.help" = "指派會被保存，但應用目前不會到達這些時刻。";
 "settings.sound.event.approvalNeeded" = "需要審批時";
 "settings.sound.event.answerNeeded" = "需要回答時";
 "settings.sound.event.taskComplete" = "工作完成時";
 "settings.sound.event.sessionStart" = "工作階段開始時";
-"settings.sound.event.taskError" = "出錯時";
 "settings.sound.event.contextLimit" = "達到上下文上限時";
-"settings.sound.event.idleReminder" = "被擱置時";
 "settings.sound.event.usageAlmostFull" = "用量即將耗盡時";
-"settings.sound.event.usageRefreshed" = "用量重置時";
-"settings.pending.unraisedSoundEvents" = "應用目前不會到達這一時刻。";
 
 /* Notifications pane */
 "settings.notifications.section.completion" = "完成通知";
@@ -517,3 +510,10 @@
 "settings.notifications.field.terminalApp" = "啟動來源";
 "settings.notifications.blockedApps.empty" = "尚無工作階段";
 "settings.notifications.blockedApps.empty.help" = "從某個應用啟動過工作階段後，它才會出現在此處。";
+
+/* Custom sounds */
+"settings.sound.import.help" = "檔案會被複製，之後移動原檔案也不會失效。";
+"settings.sound.import.action" = "選擇…";
+"settings.sound.import.done" = "已新增 {count} 個音效。";
+"settings.sound.import.none" = "未找到可播放的檔案。";
+"settings.sound.remove" = "移除";

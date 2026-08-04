@@ -1,4 +1,5 @@
 import AppKit
+import OpenIslandCore
 
 /// Manages notification sound playback using macOS system sounds.
 @MainActor
@@ -7,8 +8,16 @@ struct NotificationSoundService {
     private static let defaultsKey = "notification.sound.name"
     static let defaultSoundName = "Bottle"
 
-    /// Returns the list of available system sound names (without file extension).
+    private static let customLibrary = CustomSoundLibrary(directory: CustomSoundLibrary.defaultDirectory())
+
+    /// System sounds plus anything the user imported.
     static func availableSounds() -> [String] {
+        (systemSounds() + customLibrary.soundNames())
+            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+    }
+
+    /// Returns the list of available system sound names (without file extension).
+    static func systemSounds() -> [String] {
         let fm = FileManager.default
         guard let contents = try? fm.contentsOfDirectory(atPath: soundsDirectory) else {
             return []
@@ -31,9 +40,11 @@ struct NotificationSoundService {
 
     /// Plays a system sound by name.
     static func play(_ name: String, volume: Double = 1) {
-        guard let sound = NSSound(named: NSSound.Name(name)) else {
-            return
-        }
+        // An imported sound wins over a system one of the same name: the user
+        // chose it more recently and more deliberately.
+        let sound = customLibrary.url(forSoundNamed: name).flatMap { NSSound(contentsOf: $0, byReference: true) }
+            ?? NSSound(named: NSSound.Name(name))
+        guard let sound else { return }
         sound.stop()
         sound.volume = Float(min(max(volume, 0), 1))
         sound.play()

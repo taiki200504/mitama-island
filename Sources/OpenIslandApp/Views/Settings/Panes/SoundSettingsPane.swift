@@ -15,7 +15,6 @@ struct SoundSettingsPane: View {
             outputSection
             themeSection
             raisedEventsSection
-            unraisedEventsSection
             quietHoursSection
         }
     }
@@ -54,8 +53,25 @@ struct SoundSettingsPane: View {
             }
             SettingsRow(
                 title: lang.t("settings.sound.import"),
-                availability: FeatureAvailability(.soundPackImport)
-            )
+                help: lang.t("settings.sound.import.help")
+            ) {
+                Button(lang.t("settings.sound.import.action")) {
+                    model.importCustomSounds()
+                }
+            }
+
+            ForEach(model.customSoundNames, id: \.self) { name in
+                SettingsRow(title: name) {
+                    HStack(spacing: 8) {
+                        Button(lang.t("settings.sound.preview")) {
+                            model.previewSound(named: name)
+                        }
+                        Button(lang.t("settings.sound.remove"), role: .destructive) {
+                            model.removeCustomSound(named: name)
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -69,19 +85,6 @@ struct SoundSettingsPane: View {
         }
     }
 
-    private var unraisedEventsSection: some View {
-        Section {
-            ForEach(NotificationSoundEvent.unraisedEvents, id: \.self) { event in
-                eventRow(event, pendingNote: .unraisedSoundEvents)
-            }
-        } header: {
-            Text(lang.t("settings.sound.section.eventsPending"))
-        } footer: {
-            Text(lang.t("settings.sound.eventsPending.help"))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-    }
 
     private func eventRow(
         _ event: NotificationSoundEvent,

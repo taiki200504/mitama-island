@@ -54,17 +54,35 @@ public struct SessionActivityUpdated: Equatable, Codable, Sendable {
     public var summary: String
     public var phase: SessionPhase
     public var timestamp: Date
+    /// The agent is compacting its conversation.
+    ///
+    /// A flag rather than a phase: compacting is something a *running* session
+    /// does, and it is over in seconds. It carries its own bit so the app never
+    /// has to recognise it by matching on the summary text.
+    public var isCompacting: Bool
 
     public init(
         sessionID: String,
         summary: String,
         phase: SessionPhase,
-        timestamp: Date
+        timestamp: Date,
+        isCompacting: Bool = false
     ) {
         self.sessionID = sessionID
         self.summary = summary
         self.phase = phase
         self.timestamp = timestamp
+        self.isCompacting = isCompacting
+    }
+
+    // Older bridges predate the flag; a missing value means "not compacting".
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        sessionID = try container.decode(String.self, forKey: .sessionID)
+        summary = try container.decode(String.self, forKey: .summary)
+        phase = try container.decode(SessionPhase.self, forKey: .phase)
+        timestamp = try container.decode(Date.self, forKey: .timestamp)
+        isCompacting = try container.decodeIfPresent(Bool.self, forKey: .isCompacting) ?? false
     }
 }
 

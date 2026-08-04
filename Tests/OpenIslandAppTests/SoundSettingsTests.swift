@@ -74,9 +74,6 @@ struct SoundSettingsTests {
         for event in NotificationSoundEvent.raisedEvents {
             #expect(sound.shouldPlay(event, at: date(hour: 12)), "\(event) should play")
         }
-        for event in NotificationSoundEvent.unraisedEvents {
-            #expect(!sound.shouldPlay(event, at: date(hour: 12)), "\(event) should not play")
-        }
     }
 
     // MARK: Quiet hours

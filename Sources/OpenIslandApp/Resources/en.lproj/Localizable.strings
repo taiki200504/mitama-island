@@ -257,7 +257,6 @@
 "settings.pending.globalHotkey" = "Needs system-wide hotkey registration.";
 "settings.pending.switcherPanel" = "Needs the session switcher panel.";
 "settings.pending.panelKeyHandling" = "Needs in-panel key handling.";
-"settings.pending.soundPackImport" = "Needs sound pack import.";
 "settings.pending.approvalRouting" = "Needs approval routing between panel and terminal.";
 "settings.pending.sessionAutoNaming" = "Needs the session auto-naming service.";
 "settings.pending.memoryWatchdog" = "Needs the memory watchdog.";
@@ -353,7 +352,6 @@
 /* Sound pane */
 "settings.sound.section.output" = "Output";
 "settings.sound.section.events" = "Per-event sounds";
-"settings.sound.section.eventsPending" = "Events the app does not raise yet";
 "settings.sound.section.quietHours" = "Quiet hours";
 "settings.sound.section.theme" = "Sound theme";
 "settings.sound.enabled" = "Play sounds";
@@ -367,17 +365,12 @@
 "settings.sound.quietHours.help" = "A range that ends before it starts runs overnight.";
 "settings.sound.quietHours.start" = "From";
 "settings.sound.quietHours.end" = "Until";
-"settings.sound.eventsPending.help" = "Assignments are kept, but the app never reaches these moments yet.";
 "settings.sound.event.approvalNeeded" = "Approval needed";
 "settings.sound.event.answerNeeded" = "Answer needed";
 "settings.sound.event.taskComplete" = "Work finished";
 "settings.sound.event.sessionStart" = "Session started";
-"settings.sound.event.taskError" = "Something failed";
 "settings.sound.event.contextLimit" = "Context limit reached";
-"settings.sound.event.idleReminder" = "Left unattended";
 "settings.sound.event.usageAlmostFull" = "Usage nearly spent";
-"settings.sound.event.usageRefreshed" = "Usage reset";
-"settings.pending.unraisedSoundEvents" = "The app never reaches this moment yet.";
 
 /* Notifications pane */
 "settings.notifications.section.completion" = "Completion";
@@ -518,3 +511,10 @@
 "settings.notifications.field.terminalApp" = "Launched from";
 "settings.notifications.blockedApps.empty" = "No sessions yet";
 "settings.notifications.blockedApps.empty.help" = "Apps appear here once a session has been started from them.";
+
+/* Custom sounds */
+"settings.sound.import.help" = "Files are copied in, so moving the originals later will not break them.";
+"settings.sound.import.action" = "Choose…";
+"settings.sound.import.done" = "Added {count} sounds.";
+"settings.sound.import.none" = "Nothing playable was found.";
+"settings.sound.remove" = "Remove";

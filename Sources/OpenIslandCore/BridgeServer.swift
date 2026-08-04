@@ -987,7 +987,8 @@ public final class BridgeServer: @unchecked Sendable {
                         sessionID: payload.sessionID,
                         summary: "\(payload.resolvedAgentTool.displayName) is compacting the conversation.",
                         phase: .running,
-                        timestamp: .now
+                        timestamp: .now,
+                        isCompacting: true
                     )
                 )
             )

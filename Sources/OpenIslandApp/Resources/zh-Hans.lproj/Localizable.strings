@@ -257,7 +257,6 @@
 "settings.pending.globalHotkey" = "需要注册全局快捷键。";
 "settings.pending.switcherPanel" = "需要会话切换面板。";
 "settings.pending.panelKeyHandling" = "需要面板内按键处理。";
-"settings.pending.soundPackImport" = "需要音效包导入。";
 "settings.pending.approvalRouting" = "需要在面板与终端之间路由审批。";
 "settings.pending.sessionAutoNaming" = "需要会话自动命名服务。";
 "settings.pending.memoryWatchdog" = "需要内存监视。";
@@ -353,7 +352,6 @@
 /* Sound pane */
 "settings.sound.section.output" = "输出";
 "settings.sound.section.events" = "按事件设置音效";
-"settings.sound.section.eventsPending" = "应用尚未触发的事件";
 "settings.sound.section.quietHours" = "静音时段";
 "settings.sound.section.theme" = "音效主题";
 "settings.sound.enabled" = "播放音效";
@@ -367,17 +365,12 @@
 "settings.sound.quietHours.help" = "若结束时间早于开始时间，则视为跨夜时段。";
 "settings.sound.quietHours.start" = "开始";
 "settings.sound.quietHours.end" = "结束";
-"settings.sound.eventsPending.help" = "分配会被保存，但应用目前不会到达这些时刻。";
 "settings.sound.event.approvalNeeded" = "需要审批时";
 "settings.sound.event.answerNeeded" = "需要回答时";
 "settings.sound.event.taskComplete" = "工作完成时";
 "settings.sound.event.sessionStart" = "会话开始时";
-"settings.sound.event.taskError" = "出错时";
 "settings.sound.event.contextLimit" = "达到上下文上限时";
-"settings.sound.event.idleReminder" = "被搁置时";
 "settings.sound.event.usageAlmostFull" = "用量即将耗尽时";
-"settings.sound.event.usageRefreshed" = "用量重置时";
-"settings.pending.unraisedSoundEvents" = "应用目前不会到达这一时刻。";
 
 /* Notifications pane */
 "settings.notifications.section.completion" = "完成通知";
@@ -518,3 +511,10 @@
 "settings.notifications.field.terminalApp" = "启动来源";
 "settings.notifications.blockedApps.empty" = "尚无会话";
 "settings.notifications.blockedApps.empty.help" = "从某个应用启动过会话后，它才会出现在此处。";
+
+/* Custom sounds */
+"settings.sound.import.help" = "文件会被复制，之后移动原文件也不会失效。";
+"settings.sound.import.action" = "选择…";
+"settings.sound.import.done" = "已添加 {count} 个音效。";
+"settings.sound.import.none" = "未找到可播放的文件。";
+"settings.sound.remove" = "移除";

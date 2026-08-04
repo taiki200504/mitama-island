@@ -3,35 +3,29 @@ import Observation
 
 /// A moment the island can make a sound at.
 ///
-/// Only the first three are raised by the app today. The rest exist because the
-/// settings surface lists them; their rows say so rather than pretending an
-/// assignment would ever be heard.
+/// Every case here is raised somewhere in the app. Three that the settings
+/// surface used to list — an error chime, an idle reminder and a "quota
+/// refreshed" chime — were removed rather than left as rows that could never be
+/// heard: the app has no error state, no idle nag, and nobody asked to be
+/// congratulated on a reset quota.
 enum NotificationSoundEvent: String, CaseIterable, Sendable {
     case approvalNeeded
     case answerNeeded
     case taskComplete
-
     case sessionStart
-    case taskError
+    /// The agent is compacting its conversation — the moment work slows down.
     case contextLimit
-    case idleReminder
     case usageAlmostFull
-    case usageRefreshed
 
     var labelKey: String { "settings.sound.event.\(rawValue)" }
 
     var preferenceKey: String { "sound.event.\(rawValue)" }
 
-    /// Whether the app currently reaches a point where it would play this.
-    var isRaised: Bool {
-        switch self {
-        case .approvalNeeded, .answerNeeded, .taskComplete: true
-        default: false
-        }
-    }
+    /// Kept so the settings pane and its tests keep one shared answer to
+    /// "would this ever be heard". Everything left is raised.
+    var isRaised: Bool { true }
 
-    static var raisedEvents: [NotificationSoundEvent] { allCases.filter(\.isRaised) }
-    static var unraisedEvents: [NotificationSoundEvent] { allCases.filter { !$0.isRaised } }
+    static var raisedEvents: [NotificationSoundEvent] { allCases }
 }
 
 /// Whether sound plays, how loud, which sound per event, and when to stay quiet.

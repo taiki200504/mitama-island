@@ -1663,6 +1663,8 @@ final class AppModel {
             lastActionMessage = describe(event)
         }
 
+        playSoundIfRaisedOutsideACard(for: event)
+
         if let surface = IslandSurface.notificationSurface(for: event),
            shouldNotify(about: event) {
             scheduleNotificationSurfacePresentationIfNeeded(
@@ -1670,6 +1672,24 @@ final class AppModel {
                 wasAlreadyCompleted: wasAlreadyCompleted,
                 ingress: ingress
             )
+        }
+    }
+
+    /// Sounds for the moments that never open a card.
+    ///
+    /// Approvals, questions and completions chime from the card that presents
+    /// them. These two have no card, so they are raised here — and only when a
+    /// scene the user marked quiet is not in effect, so one route cannot end up
+    /// louder than the other.
+    private func playSoundIfRaisedOutsideACard(for event: AgentEvent) {
+        guard !quietScenes.shouldStayQuiet(under: settings.behaviour) else { return }
+        switch event {
+        case .sessionStarted:
+            NotificationSoundService.play(.sessionStart, settings: settings.sound)
+        case let .activityUpdated(payload) where payload.isCompacting:
+            NotificationSoundService.play(.contextLimit, settings: settings.sound)
+        default:
+            break
         }
     }
 
@@ -1691,6 +1711,51 @@ final class AppModel {
     }
 
     private let idleCleanupTimerBox = RepeatingTimerBox()
+
+    // MARK: Custom sounds
+
+    private let customSounds = CustomSoundLibrary(directory: CustomSoundLibrary.defaultDirectory())
+
+    /// Bumped after an import or a removal so the settings list redraws.
+    private var customSoundsRevision = 0
+
+    var customSoundNames: [String] {
+        _ = customSoundsRevision
+        return customSounds.soundNames()
+    }
+
+    func importCustomSounds() {
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = true
+        panel.allowedContentTypes = [.audio]
+        guard panel.runModal() == .OK else { return }
+
+        do {
+            let imported = try customSounds.importSounds(from: panel.urls)
+            customSoundsRevision += 1
+            lastActionMessage = imported.isEmpty
+                ? lang.t("settings.sound.import.none")
+                : lang.t("settings.sound.import.done")
+                    .replacingOccurrences(of: "{count}", with: "\(imported.count)")
+        } catch {
+            lastActionMessage = error.localizedDescription
+        }
+    }
+
+    func removeCustomSound(named name: String) {
+        do {
+            try customSounds.removeSound(named: name)
+            customSoundsRevision += 1
+        } catch {
+            lastActionMessage = error.localizedDescription
+        }
+    }
+
+    func previewSound(named name: String) {
+        NotificationSoundService.play(name, volume: settings.sound.volume)
+    }
 
     /// Sweeps out sessions nobody is waiting on.
     ///
@@ -1734,6 +1799,7 @@ final class AppModel {
         let crossed = usageThresholdMonitor.crossings(in: currentUsageWindows())
         guard let worst = crossed.max(by: { $0.usedPercentage < $1.usedPercentage }) else { return }
 
+        NotificationSoundService.play(.usageAlmostFull, settings: settings.sound)
         lastActionMessage = lang.t("island.usage.thresholdReached")
             .replacingOccurrences(of: "{window}", with: worst.label)
             .replacingOccurrences(of: "{value}", with: "\(Int(worst.usedPercentage.rounded()))")

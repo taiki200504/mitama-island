@@ -30,8 +30,6 @@ enum PendingCapability: String, CaseIterable, Sendable {
     case panelKeyHandling
 
     // Sound
-    case soundPackImport
-    case unraisedSoundEvents
 
     // Notification filters
 

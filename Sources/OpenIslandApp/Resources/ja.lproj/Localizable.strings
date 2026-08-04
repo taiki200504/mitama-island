@@ -257,7 +257,6 @@
 "settings.pending.globalHotkey" = "システム全体のホットキー登録が要ります。";
 "settings.pending.switcherPanel" = "セッション切替パネルが要ります。";
 "settings.pending.panelKeyHandling" = "パネル内のキー操作処理が要ります。";
-"settings.pending.soundPackImport" = "サウンドパックの読み込みが要ります。";
 "settings.pending.approvalRouting" = "承認をパネルとターミナルに振り分ける処理が要ります。";
 "settings.pending.sessionAutoNaming" = "セッション自動命名の仕組みが要ります。";
 "settings.pending.memoryWatchdog" = "メモリ監視の仕組みが要ります。";
@@ -353,7 +352,6 @@
 /* Sound pane */
 "settings.sound.section.output" = "出力";
 "settings.sound.section.events" = "イベントごとの音";
-"settings.sound.section.eventsPending" = "まだ鳴らす場面が無いイベント";
 "settings.sound.section.quietHours" = "静かにする時間帯";
 "settings.sound.section.theme" = "サウンドテーマ";
 "settings.sound.enabled" = "音を鳴らす";
@@ -367,17 +365,12 @@
 "settings.sound.quietHours.help" = "終わりが始まりより前なら、日をまたぐ時間帯として扱う。";
 "settings.sound.quietHours.start" = "開始";
 "settings.sound.quietHours.end" = "終了";
-"settings.sound.eventsPending.help" = "割り当ては保存されるが、いまのアプリはこれらの場面に到達しない。";
 "settings.sound.event.approvalNeeded" = "承認が要るとき";
 "settings.sound.event.answerNeeded" = "返事が要るとき";
 "settings.sound.event.taskComplete" = "作業が終わったとき";
 "settings.sound.event.sessionStart" = "セッションが始まったとき";
-"settings.sound.event.taskError" = "失敗したとき";
 "settings.sound.event.contextLimit" = "文脈の上限に達したとき";
-"settings.sound.event.idleReminder" = "放置されたとき";
 "settings.sound.event.usageAlmostFull" = "使用量が残り少ないとき";
-"settings.sound.event.usageRefreshed" = "使用量が戻ったとき";
-"settings.pending.unraisedSoundEvents" = "いまのアプリはこの場面に到達しません。";
 
 /* Notifications pane */
 "settings.notifications.section.completion" = "完了通知";
@@ -518,3 +511,10 @@
 "settings.notifications.field.terminalApp" = "起動元アプリ";
 "settings.notifications.blockedApps.empty" = "まだセッションがありません";
 "settings.notifications.blockedApps.empty.help" = "セッションを一度始めたアプリがここに並びます。";
+
+/* Custom sounds */
+"settings.sound.import.help" = "取り込んだファイルはコピーされます。元のファイルを後で移動しても鳴らなくなりません。";
+"settings.sound.import.action" = "選ぶ…";
+"settings.sound.import.done" = "{count}件の音を追加しました。";
+"settings.sound.import.none" = "再生できるファイルがありませんでした。";
+"settings.sound.remove" = "削除";
