@@ -215,6 +215,10 @@ final class OverlayPanelController {
     /// `CGDirectDisplayID` can't silently re-target the wrong monitor) →
     /// first notched screen → `NSScreen.main` → first available screen.
     /// Returns `nil` only when no displays are connected.
+    /// The screen the island is currently on, so anything else the app shows
+    /// lands where the user is already looking.
+    var currentOverlayScreen: NSScreen? { resolveTargetScreen() }
+
     private func resolveTargetScreen(preferredScreenID: String? = nil) -> NSScreen? {
         let screens = NSScreen.screens
         guard !screens.isEmpty else { return nil }

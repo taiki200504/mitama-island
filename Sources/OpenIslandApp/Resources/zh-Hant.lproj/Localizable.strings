@@ -552,3 +552,13 @@
 "settings.general.diagnostics.action" = "匯出";
 "settings.general.diagnostics.help" = "將應用可見的內容寫入文字檔。不會傳送到任何地方，也不包含資料夾、提示或工作階段名稱。";
 "settings.general.diagnostics.written" = "報告已匯出並在 Finder 中顯示。";
+
+/* Completion banner */
+"banner.completed" = "完成";
+"settings.display.completionBanner" = "在螢幕中央顯示完成";
+"settings.display.completionBanner.help" = "工作階段結束時在螢幕中央顯示橫幅。不會搶佔點擊，並在通知中設定的安靜場景下不顯示。";
+"settings.appearance.theme.hud" = "HUD";
+"settings.appearance.theme.classic" = "標準";
+"settings.appearance.theme.title" = "主題";
+"settings.appearance.theme.note" = "HUD 為冷色調的稜角發光風格；標準為此前的暖色外觀。";
+"banner.dismiss" = "關閉";

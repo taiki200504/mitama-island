@@ -1357,6 +1357,10 @@ final class AppModel {
         harnessRuntimeMonitor?.recordMilestone("scenarioLoaded", message: snapshot.title)
 
         overlay.applyOverlayState(from: snapshot, presentOverlay: presentOverlay, autoCollapseNotificationCards: autoCollapseNotificationCards)
+
+        if let banner = snapshot.completionBanner {
+            completionBanner.present(banner, on: overlay.overlayPanelController.currentOverlayScreen)
+        }
     }
 
     func showSettings() {
@@ -1670,6 +1674,7 @@ final class AppModel {
         }
 
         playSoundIfRaisedOutsideACard(for: event)
+        presentCompletionBannerIfWanted(for: event)
 
         if let surface = IslandSurface.notificationSurface(for: event),
            shouldNotify(about: event) {
@@ -1679,6 +1684,36 @@ final class AppModel {
                 ingress: ingress
             )
         }
+    }
+
+    // MARK: Completion banner
+
+    let completionBanner = CompletionBannerController()
+
+    /// Announces a finished session in the middle of the screen.
+    ///
+    /// Deliberately silent: `taskComplete` already plays from the notification
+    /// card path, and two sounds for one event reads as a bug.
+    private func presentCompletionBannerIfWanted(for event: AgentEvent) {
+        guard case let .sessionCompleted(payload) = event,
+              settings.display.completionBanner,
+              payload.isInterrupt != true,
+              !quietScenes.shouldStayQuiet(under: settings.behaviour),
+              let session = state.session(id: payload.sessionID) else {
+            return
+        }
+
+        completionBanner.present(
+            CompletionBannerContent(
+                sessionID: session.id,
+                title: session.spotlightWorkspaceName,
+                agentName: session.tool.displayName,
+                duration: CompletionDurationFormatter.string(
+                    for: payload.timestamp.timeIntervalSince(session.firstSeenAt)
+                )
+            ),
+            on: overlay.overlayPanelController.currentOverlayScreen
+        )
     }
 
     /// Sounds for the moments that never open a card.
@@ -1898,6 +1933,11 @@ final class AppModel {
         let updates = session.permissionRequest?.suggestedUpdates ?? []
         guard let bypass = updates.first(where: { $0.isModeChange }) else { return .allowOnce }
         return .allowWithUpdates([bypass])
+    }
+
+    var islandTheme: IslandThemeID {
+        get { IslandThemeID(rawValue: settings.display.themeRawValue) ?? .hud }
+        set { settings.display.themeRawValue = newValue.rawValue }
     }
 
     var agentIconStyle: AgentIconStyle {

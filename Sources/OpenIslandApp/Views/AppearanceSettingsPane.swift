@@ -135,6 +135,7 @@ struct AppearanceSettingsPane: View {
         VStack(alignment: .leading, spacing: 18) {
             partHeader(title: lang.t("settings.appearance.sessionListPart.title"))
             sessionListPreviewSection
+            themeSection
             usageDisplaySection
             stateIndicatorSection
             sessionGroupSection
@@ -369,6 +370,32 @@ struct AppearanceSettingsPane: View {
     }
 
     // MARK: - 02 · Usage
+
+    /// Which visual language the island speaks.
+    ///
+    /// Sits at the top of the pane because every preview below it is drawn in
+    /// the selected theme — choosing here changes what the rest of the pane
+    /// shows you.
+    @ViewBuilder
+    private var themeSection: some View {
+        sectionHeader(
+            title: lang.t("settings.appearance.theme.title"),
+            note: lang.t("settings.appearance.theme.note")
+        )
+
+        HStack(spacing: 12) {
+            ForEach(IslandThemeID.allCases) { option in
+                optionCard(
+                    selected: model.islandTheme == option,
+                    title: lang.t(option.labelKey)
+                ) {
+                    model.islandTheme = option
+                } icon: {
+                    ThemeSwatch(themeID: option)
+                }
+            }
+        }
+    }
 
     @ViewBuilder
     private var usageDisplaySection: some View {
@@ -1532,5 +1559,35 @@ private struct SessionSortPreview: View {
                 ("3", 42, V6Palette.paper.opacity(0.22)),
             ]
         }
+    }
+}
+
+
+/// A miniature of what each theme looks like: its panel, its accent and the
+/// corner treatment that tells the two apart at a glance.
+private struct ThemeSwatch: View {
+    let themeID: IslandThemeID
+
+    var body: some View {
+        let theme = themeID.theme
+        theme.shape(cornerRadius: 6)
+            .fill(theme.ink)
+            .overlay(theme.shape(cornerRadius: 6).strokeBorder(theme.accent.opacity(0.6), lineWidth: 1))
+            .overlay(alignment: .leading) {
+                HStack(spacing: 3) {
+                    ForEach(
+                        [
+                            theme.statusTints.running,
+                            theme.statusTints.waitingForApproval,
+                            theme.statusTints.completed
+                        ],
+                        id: \.self
+                    ) { tint in
+                        Circle().fill(tint).frame(width: 5, height: 5)
+                    }
+                }
+                .padding(.leading, 8)
+            }
+            .frame(width: 56, height: 30)
     }
 }

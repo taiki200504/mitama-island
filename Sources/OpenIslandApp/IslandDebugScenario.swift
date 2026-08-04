@@ -11,6 +11,9 @@ struct IslandDebugSnapshot {
     let islandSurface: IslandSurface
     let sessions: [AgentSession]
     let selectedSessionID: String?
+    /// The banner is a window of its own, so a scenario has to ask for it —
+    /// loading sessions alone would never bring it up.
+    var completionBanner: CompletionBannerContent?
 }
 
 enum IslandDebugScenario: String, CaseIterable, Identifiable {
@@ -21,6 +24,7 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
     case completionCard
     case longCompletionCard
     case planApproval
+    case completionBanner
 
     var id: String { rawValue }
 
@@ -36,10 +40,14 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Question Card"
         case .completionCard:
             "Completion Card"
+        case .completionBanner:
+            "The middle-of-screen announcement shown when a session finishes."
         case .longCompletionCard:
             "Long Completion Card"
         case .planApproval:
             "Plan Approval"
+        case .completionBanner:
+            "Completion Banner"
         }
     }
 
@@ -59,6 +67,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Auto-expanded finished-task reminder surface after a turn completes."
         case .longCompletionCard:
             "Long finished-task reply stays inside the card and scrolls internally."
+        case .completionBanner:
+            "The middle-of-screen announcement shown when a session finishes."
         }
     }
 
@@ -127,6 +137,25 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                 islandSurface: .sessionList(actionableSessionID: session.id),
                 sessions: DebugSessionFactory.notificationSessions(lead: session, now: now),
                 selectedSessionID: session.id
+            )
+
+        case .completionBanner:
+            let session = DebugSessionFactory.completionSession(now: now)
+            return IslandDebugSnapshot(
+                title: title,
+                summary: summary,
+                previewHeight: 250,
+                notchStatus: .closed,
+                notchOpenReason: nil,
+                islandSurface: .sessionList(),
+                sessions: [session],
+                selectedSessionID: session.id,
+                completionBanner: CompletionBannerContent(
+                    sessionID: session.id,
+                    title: "mitama-island",
+                    agentName: "Claude Code",
+                    duration: "4分12秒"
+                )
             )
 
         case .completionCard:

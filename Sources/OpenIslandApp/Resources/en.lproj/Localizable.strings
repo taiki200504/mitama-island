@@ -553,3 +553,13 @@
 "settings.general.diagnostics.action" = "Write a report";
 "settings.general.diagnostics.help" = "Writes a text file describing what the app can see. Nothing is sent anywhere — no folders, prompts or session titles are included.";
 "settings.general.diagnostics.written" = "Report written and revealed in Finder.";
+
+/* Completion banner */
+"banner.completed" = "Done";
+"settings.display.completionBanner" = "Announce completion on screen";
+"settings.display.completionBanner.help" = "A banner in the middle of the screen when a session finishes. It never takes a click, and it stays away during the quiet scenes set under Notifications.";
+"settings.appearance.theme.hud" = "HUD";
+"settings.appearance.theme.classic" = "Classic";
+"settings.appearance.theme.title" = "Theme";
+"settings.appearance.theme.note" = "HUD is cool and angular, lit from within. Classic is the warmer look the app had before.";
+"banner.dismiss" = "Dismiss";

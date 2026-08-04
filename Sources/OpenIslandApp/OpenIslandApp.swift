@@ -30,15 +30,18 @@ final class OpenIslandAppDelegate: NSObject, NSApplicationDelegate {
             )
             harnessRuntimeMonitor.recordMilestone("modelStarted")
 
+            // Hide all windows on launch — settings opens on demand only.
+            // Before the scenario loads, not after: a scenario that puts up a
+            // panel of its own would otherwise have it swept away again, which
+            // is exactly what happened to the completion banner.
+            OpenIslandAppDelegate.hideAllAppWindows()
+
             if let scenario = harnessLaunchConfiguration.scenario {
                 model.loadDebugSnapshot(
                     scenario.snapshot(),
                     presentOverlay: harnessLaunchConfiguration.presentOverlay
                 )
             }
-
-            // Hide all windows on launch — settings opens on demand only.
-            OpenIslandAppDelegate.hideAllAppWindows()
 
             // Never during a harness run: an introduction window would sit on
             // top of every screenshot the capture scripts take.

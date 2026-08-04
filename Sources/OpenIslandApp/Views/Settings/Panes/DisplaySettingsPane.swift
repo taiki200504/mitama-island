@@ -109,6 +109,15 @@ struct DisplaySettingsPane: View {
                 }
             }
 
+            SettingsToggleRow(
+                title: lang.t("settings.display.completionBanner"),
+                help: lang.t("settings.display.completionBanner.help"),
+                isOn: Binding(
+                    get: { display.completionBanner },
+                    set: { display.completionBanner = $0 }
+                )
+            )
+
             SettingsSliderRow(
                 title: lang.t("settings.display.completionCardHeight"),
                 help: lang.t("settings.display.completionCardHeight.help"),

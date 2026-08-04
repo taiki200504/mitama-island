@@ -553,3 +553,13 @@
 "settings.general.diagnostics.action" = "导出";
 "settings.general.diagnostics.help" = "将应用可见的内容写入文本文件。不会发送到任何地方，也不包含文件夹、提示或会话名称。";
 "settings.general.diagnostics.written" = "报告已导出并在访达中显示。";
+
+/* Completion banner */
+"banner.completed" = "完成";
+"settings.display.completionBanner" = "在屏幕中央显示完成";
+"settings.display.completionBanner.help" = "会话结束时在屏幕中央显示横幅。不会抢占点击，并在通知中设置的安静场景下不显示。";
+"settings.appearance.theme.hud" = "HUD";
+"settings.appearance.theme.classic" = "标准";
+"settings.appearance.theme.title" = "主题";
+"settings.appearance.theme.note" = "HUD 为冷色调的棱角发光风格；标准为此前的暖色外观。";
+"banner.dismiss" = "关闭";

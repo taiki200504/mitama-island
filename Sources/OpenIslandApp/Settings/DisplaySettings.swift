@@ -58,6 +58,12 @@ final class DisplaySettings: PreferenceGroup {
         set { write(\.themeRawValue, Keys.theme, newValue) }
     }
 
+    /// Announce a finished session in the middle of the screen.
+    var completionBanner: Bool {
+        get { read(\.completionBanner, Keys.completionBanner, true) }
+        set { write(\.completionBanner, Keys.completionBanner, newValue) }
+    }
+
     // MARK: Notch calibration
 
     /// Override for the notch height in points. Zero means "trust the macOS value".
@@ -142,6 +148,7 @@ extension DisplaySettings {
         static let completionCardMaxHeight = "display.completionCardMaxHeight"
         static let agentIconStyle = "display.agentIconStyle"
         static let theme = "display.theme"
+        static let completionBanner = "display.completionBanner"
         static let sessionAutoNaming = "display.sessionAutoNaming"
         static let notchHeightOverride = "display.notchHeightOverride"
         static let notchWidthOverride = "display.notchWidthOverride"

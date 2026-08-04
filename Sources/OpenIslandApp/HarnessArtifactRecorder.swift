@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import ApplicationServices
 import Foundation
 
@@ -277,6 +278,12 @@ enum HarnessArtifactRecorder {
 
     private static func recognizedWindowKind(for window: NSWindow) -> String? {
         if window is NSPanel {
+            // Both the island and the completion banner are borderless panels.
+            // Told apart by their content view, so each lands in its own file
+            // instead of one overwriting the other.
+            if window.contentView is NSHostingView<CompletionBannerView> {
+                return "completion-banner"
+            }
             return window.frame.width >= 120 ? "overlay" : nil
         }
 
@@ -444,6 +451,12 @@ enum HarnessArtifactRecorder {
 
     private static func snapshotAXTree(for window: NSWindow) -> HarnessArtifactReport.AccessibilityNode? {
         let applicationElement = AXUIElementCreateApplication(ProcessInfo.processInfo.processIdentifier)
+        // The app is asking itself, from the main thread, about views that need
+        // the main thread to answer. Anything that cannot reply immediately
+        // waits out the default six-second timeout instead — once per element,
+        // which turned a one-second capture into a hundred-second one. A second
+        // is already generous for a same-process query.
+        AXUIElementSetMessagingTimeout(applicationElement, 1)
         guard let axWindows = copyAXElementArrayValue(
             of: applicationElement,
             attribute: kAXWindowsAttribute as CFString

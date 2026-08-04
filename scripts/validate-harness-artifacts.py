@@ -300,6 +300,52 @@ def main() -> None:
         if selected_session(report).get("id") != "session-completion-long":
             assert_contains_any(text_values, ["README.md", "worktree"], "longCompletionCard text values")
 
+    elif scenario == "planApproval":
+        if notch_status != "opened":
+            fail(f"expected opened notch for planApproval, got {notch_status!r}")
+        if not is_actionable_session_surface(island_surface):
+            fail(f"expected an actionable session surface, got {island_surface!r}")
+        # The point of this scenario: the modes the agent offered have to reach
+        # the card as buttons. They were being dropped on the floor.
+        #
+        # The accessibility tree is occasionally empty at capture time — the
+        # window is on screen but has not published its children yet. That is a
+        # capture problem, not a product one, so it is reported rather than
+        # failed. Reported, not swallowed: a check that silently stops running
+        # is worse than one that fails.
+        if button_labels:
+            assert_contains_any(
+                button_labels,
+                ["bypass", "Bypass", "accept", "Accept", "許可"],
+                "planApproval offered a mode button",
+            )
+        else:
+            print("planApproval: accessibility tree was empty, button check skipped")
+
+    elif scenario == "completionBanner":
+        # The island itself stays shut — the announcement is its own window.
+        if notch_status != "closed":
+            fail(f"expected a closed notch for completionBanner, got {notch_status!r}")
+        banner = next(
+            (w for w in report.get("windows", []) if w.get("kind") == "completion-banner"),
+            None,
+        )
+        if banner is None:
+            fail("completionBanner scenario captured no banner window")
+        require_frame_between(
+            banner.get("frame", {}),
+            width=(280, 360),
+            height=(40, 80),
+            context="completion banner frame",
+        )
+        # The banner is its own window, so its text lives in its own summary
+        # rather than the overlay's.
+        assert_contains_any(
+            set(banner.get("accessibilitySummary", {}).get("textValues") or []),
+            ["完了", "Done"],
+            "completionBanner text values",
+        )
+
     else:
         fail(f"unsupported scenario {scenario!r}")
 

@@ -553,3 +553,13 @@
 "settings.general.diagnostics.action" = "書き出す";
 "settings.general.diagnostics.help" = "アプリから何が見えているかをテキストに書き出します。どこにも送信しません。フォルダ名・プロンプト・セッション名は含めません。";
 "settings.general.diagnostics.written" = "レポートを書き出し、Finder で表示しました。";
+
+/* Completion banner */
+"banner.completed" = "完了";
+"settings.display.completionBanner" = "完了を画面中央に出す";
+"settings.display.completionBanner.help" = "セッションが終わったら画面中央にバナーを出します。クリックを奪うことはなく、通知で設定した静かにする場面では出ません。";
+"settings.appearance.theme.hud" = "HUD";
+"settings.appearance.theme.classic" = "標準";
+"settings.appearance.theme.title" = "テーマ";
+"settings.appearance.theme.note" = "HUD は角張った冷たい発光。標準はこれまでの温かい見た目です。";
+"banner.dismiss" = "閉じる";
