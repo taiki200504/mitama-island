@@ -273,6 +273,15 @@ struct IslandPanelView: View {
                 v6ClosedSurface()
                     .opacity(usesOpenedVisualState ? 0 : 1)
                     .allowsHitTesting(!usesOpenedVisualState)
+                    // The pill sits against the physical notch, so it cannot
+                    // grow a border to answer the cursor — a glow is the only
+                    // edge it has room for.
+                    .shadow(
+                        color: isHovering && !usesOpenedVisualState
+                            ? IslandThemes.current.accent.opacity(0.55)
+                            : .clear,
+                        radius: IslandThemes.current.glowRadius * 3
+                    )
             }
             .frame(maxWidth: .infinity, alignment: .top)
         }
@@ -1461,14 +1470,27 @@ private struct IslandSessionRow: View {
             if showsLeadingStatusBar {
                 RoundedRectangle(cornerRadius: 999, style: .continuous)
                     .fill(statusTint(for: presence))
-                    .frame(width: 3)
+                    // Thickens and lights up under the cursor, so the row you
+                    // are about to click says which one it is.
+                    .frame(width: isHighlighted ? 4 : 3)
+                    .shadow(
+                        color: isHighlighted
+                            ? statusTint(for: presence).opacity(0.7)
+                            : .clear,
+                        radius: IslandThemes.current.glowRadius * 2
+                    )
                     .padding(.vertical, showsDetail ? 10 : 8)
                     .padding(.leading, 14)
             }
         }
         .opacity(isStaleCompleted ? 0.7 : 1)
-        .modifier(ConditionalDrawingGroup(enabled: useDrawingGroup && !isActionable))
+        // The drawing group flattens the row into a bitmap, which is why it is
+        // off while hovering: a cached row cannot show a glow that changes.
+        .modifier(ConditionalDrawingGroup(enabled: useDrawingGroup && !isActionable && !isHighlighted))
         .animation(.easeInOut(duration: 0.15), value: isHighlighted)
+        // A session that changes state should be seen changing, not found
+        // already changed the next time you look at the panel.
+        .animation(.easeInOut(duration: 0.28), value: session.phase)
         .onHover { hovering in
             guard isInteractive, allowsRowHoverHighlight else { return }
             isHighlighted = hovering
@@ -2285,7 +2307,13 @@ private struct IslandSessionRow: View {
             return Color.clear
         }
 
-        let base = isHighlighted ? Color.white.opacity(isActionable ? 0.06 : 0.04) : Color.clear
+        // Tinted with the accent rather than plain white: at the 4% a white
+        // veil needs to stay unobtrusive, the row barely changed at all and the
+        // list read as a static picture. A coloured wash at the same weight is
+        // visible without being loud.
+        let base = isHighlighted
+            ? IslandThemes.current.accent.opacity(isActionable ? 0.13 : 0.09)
+            : Color.clear
         guard stateIndicator == .tint else { return base }
 
         let tintOpacity: Double
@@ -2951,6 +2979,12 @@ private struct IslandCompactButtonStyle: ButtonStyle {
     }
 }
 
+/// The buttons on an approval or question card.
+///
+/// A `ButtonStyle` cannot hold `@State`, so the hover treatment lives in a
+/// nested view. Before this, the only feedback a button gave was a dip in
+/// opacity *after* it had been clicked — nothing told you it was pressable
+/// while your cursor was on it, which is what made the panel feel dead.
 private struct IslandActionButtonStyle: ButtonStyle {
     enum Kind {
         case primary
@@ -2961,9 +2995,26 @@ private struct IslandActionButtonStyle: ButtonStyle {
     let kind: Kind
     var expands = false
 
-    @Environment(\.isEnabled) private var isEnabled
-
     func makeBody(configuration: Configuration) -> some View {
+        IslandActionButtonBody(kind: kind, expands: expands, configuration: configuration)
+    }
+}
+
+private struct IslandActionButtonBody: View {
+    let kind: IslandActionButtonStyle.Kind
+    let expands: Bool
+    let configuration: ButtonStyle.Configuration
+
+    @Environment(\.isEnabled) private var isEnabled
+    @State private var isHovering = false
+
+    private var theme: any IslandTheme { IslandThemes.current }
+    private var isPressed: Bool { configuration.isPressed }
+    /// A disabled button must not light up under the cursor — that would
+    /// promise something it cannot do.
+    private var isLit: Bool { isHovering && isEnabled }
+
+    var body: some View {
         configuration.label
             .font(.islandText(size: 11.8, weight: .semibold))
             .foregroundStyle(foregroundColor)
@@ -2971,57 +3022,79 @@ private struct IslandActionButtonStyle: ButtonStyle {
             .frame(maxWidth: expands ? .infinity : nil)
             .padding(.horizontal, 13)
             .padding(.vertical, 8)
-            .background(backgroundColor(configuration.isPressed), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .strokeBorder(strokeColor, lineWidth: 1)
-            )
-            .opacity(configuration.isPressed ? 0.82 : 1)
+            .background(theme.shape(cornerRadius: 10).fill(backgroundColor))
+            .overlay(theme.shape(cornerRadius: 10).stroke(strokeColor, lineWidth: 1))
+            .overlay(alignment: .bottomLeading) { hoverUnderline }
+            .clipShape(theme.shape(cornerRadius: 10))
+            // A press has to feel like the button moved, not merely faded.
+            .scaleEffect(isPressed ? 0.97 : 1)
+            .shadow(color: glowColor, radius: isLit ? theme.glowRadius * 2 : 0)
+            .animation(.easeOut(duration: 0.12), value: isHovering)
+            .animation(.easeOut(duration: 0.08), value: isPressed)
+            .onHover { isHovering = $0 }
+    }
+
+    /// A one-pixel line that grows in from the left edge. Cheap to draw, and it
+    /// reads as the control waking up rather than merely changing colour.
+    @ViewBuilder
+    private var hoverUnderline: some View {
+        Rectangle()
+            .fill(accentLine)
+            .frame(height: 1.5)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .scaleEffect(x: isLit ? 1 : 0, anchor: .leading)
+            .opacity(isLit ? 1 : 0)
+    }
+
+    private var accentLine: Color {
+        switch kind {
+        case .primary: theme.ink.opacity(0.55)
+        case .warning: .white.opacity(0.7)
+        case .secondary: theme.accent
+        }
+    }
+
+    private var glowColor: Color {
+        guard isLit else { return .clear }
+        return kind == .secondary ? theme.accent.opacity(0.4) : .clear
     }
 
     private var foregroundColor: Color {
-        guard isEnabled else {
-            return V6Palette.paper.opacity(0.42)
-        }
+        guard isEnabled else { return theme.paper.opacity(0.42) }
 
         switch kind {
-        case .primary:
-            return .black.opacity(0.88)
-        case .warning:
-            return .white
-        case .secondary:
-            return V6Palette.paper.opacity(0.78)
+        case .primary: return theme.ink.opacity(0.9)
+        case .warning: return .white
+        case .secondary: return theme.paper.opacity(isLit ? 1 : 0.78)
         }
     }
 
     private var strokeColor: Color {
-        guard isEnabled else {
-            return .white.opacity(0.07)
-        }
+        guard isEnabled else { return .white.opacity(0.07) }
 
         switch kind {
         case .primary:
-            return V6Palette.paper.opacity(0.86)
+            return theme.paper.opacity(0.86)
         case .warning:
-            return Color(red: 0.85, green: 0.55, blue: 0.15).opacity(0.42)
+            return theme.statusTints.waitingForApproval.opacity(isLit ? 0.85 : 0.42)
         case .secondary:
-            return .white.opacity(0.07)
+            return isLit ? theme.accent.opacity(0.55) : .white.opacity(0.07)
         }
     }
 
-    private func backgroundColor(_ isPressed: Bool) -> Color {
-        guard isEnabled else {
-            return Color.white.opacity(0.055)
-        }
+    private var backgroundColor: Color {
+        guard isEnabled else { return .white.opacity(0.055) }
 
         let pressedFactor: Double = isPressed ? 0.78 : 1
         switch kind {
         case .primary:
-            return V6Palette.paper.opacity(pressedFactor)
+            return theme.paper.opacity(pressedFactor)
         case .warning:
-            return Color(red: 0.85, green: 0.55, blue: 0.15).opacity(pressedFactor)
+            return theme.statusTints.waitingForApproval
+                .opacity(pressedFactor * (isLit ? 1 : 0.88))
         case .secondary:
-            return Color.white.opacity(isPressed ? 0.11 : 0.065)
+            if isPressed { return .white.opacity(0.14) }
+            return isLit ? theme.accent.opacity(0.14) : .white.opacity(0.065)
         }
     }
 }
