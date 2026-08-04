@@ -2,6 +2,19 @@ import SwiftUI
 import AppKit
 import OpenIslandCore
 
+/// Removes the sidebar toggle where the API exists, and leaves the toolbar
+/// alone where it does not. Hiding the whole toolbar takes the window's close,
+/// minimise and zoom buttons with it.
+private struct HidesSidebarToggle: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(macOS 15.0, *) {
+            content.toolbar(removing: .sidebarToggle)
+        } else {
+            content
+        }
+    }
+}
+
 // MARK: - Root settings view
 
 struct SettingsView: View {
@@ -56,7 +69,10 @@ struct SettingsView: View {
             }
         }
         .listStyle(.sidebar)
-        .toolbar(.hidden, for: .windowToolbar)
+        // Only the sidebar toggle goes. Hiding the whole window toolbar — which
+        // is what this used to do — took the close, minimise and zoom buttons
+        // with it and left the window unclosable by mouse.
+        .modifier(HidesSidebarToggle())
     }
 
     // MARK: Detail
