@@ -518,3 +518,10 @@
 "settings.sound.import.done" = "Added {count} sounds.";
 "settings.sound.import.none" = "Nothing playable was found.";
 "settings.sound.remove" = "Remove";
+
+/* Guidance banners */
+"setup.banner.restartSessions.title" = "Restart these sessions";
+"setup.banner.restartSessions.message" = "{names} started before the hooks were installed, so the island cannot see what they are doing. Restarting them fixes it.";
+"island.session.hideFolder" = "Never show sessions in {name}";
+"island.session.hideApp" = "Never show sessions from {name}";
+"island.session.hidden" = "Hidden. Undo it under Notifications.";

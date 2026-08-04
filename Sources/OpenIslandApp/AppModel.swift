@@ -1744,6 +1744,33 @@ final class AppModel {
         }
     }
 
+    /// Sessions that were already running when hooks were last installed.
+    ///
+    /// Only live ones count. A session that has since finished cannot be
+    /// restarted and telling the user to restart it would be noise.
+    var sessionsPredatingHookInstall: [AgentSession] {
+        guard let installedAt = hooks.intentStore.lastHookInstallDate else { return [] }
+        return state.sessions.filter {
+            $0.firstSeenAt < installedAt && $0.phase != .completed && $0.isVisibleInIsland
+        }
+    }
+
+    /// Adds a filter rule from the island's right-click menu.
+    ///
+    /// Deduplicated, because right-clicking the same folder twice should not
+    /// leave two identical rules for the user to delete one by one.
+    func hideSessions(matching rule: SilenceRule) {
+        let filters = settings.notificationFilters
+        let alreadyPresent = filters.customRules.contains {
+            $0.field == rule.field && $0.match == rule.match
+                && $0.pattern.caseInsensitiveCompare(rule.pattern) == .orderedSame
+        }
+        guard !alreadyPresent else { return }
+        filters.customRules.append(rule)
+        lastActionMessage = lang.t("island.session.hidden")
+            .replacingOccurrences(of: "{pattern}", with: rule.pattern)
+    }
+
     func removeCustomSound(named name: String) {
         do {
             try customSounds.removeSound(named: name)

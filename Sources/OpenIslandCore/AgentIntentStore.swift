@@ -26,7 +26,22 @@ public final class AgentIntentStore: @unchecked Sendable {
 
     public func setIntent(_ intent: AgentHookIntent, for agent: AgentIdentifier) {
         defaults.set(intent.rawValue, forKey: Self.intentKey(for: agent))
+        if intent == .installed {
+            defaults.set(Date.now.timeIntervalSince1970, forKey: Self.lastInstallKey)
+        }
     }
+
+    /// When hooks were last installed.
+    ///
+    /// Sessions already running at that moment did not load them, so the app
+    /// can point out which ones need restarting instead of leaving the user to
+    /// wonder why they never appear.
+    public var lastHookInstallDate: Date? {
+        let stored = defaults.double(forKey: Self.lastInstallKey)
+        return stored > 0 ? Date(timeIntervalSince1970: stored) : nil
+    }
+
+    private static let lastInstallKey = "agent.hooks.lastInstalledAt"
 
     /// Returns every agent whose recorded intent is `.installed`.
     public func installedAgents() -> [AgentIdentifier] {

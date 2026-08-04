@@ -723,7 +723,8 @@ struct IslandPanelView: View {
                     onAnswer: { model.answerQuestion(for: session.id, answer: $0) },
                     onReply: TerminalTextSender.canReply(to: session, enabled: model.completionReplyEnabled)
                         ? { model.replyToSession(session, text: $0) } : nil,
-                    onJump: { model.jumpToSession(session) }
+                    onJump: { model.jumpToSession(session) },
+                    onHide: { model.hideSessions(matching: $0) }
                 )
                 .id(notificationCardIdentity(for: session))
 
@@ -768,7 +769,8 @@ struct IslandPanelView: View {
                                 onReply: TerminalTextSender.canReply(to: session, enabled: model.completionReplyEnabled)
                                     ? { model.replyToSession(session, text: $0) } : nil,
                                 onJump: { model.jumpToSession(session) },
-                                onDismiss: session.isRemote ? { model.dismissSession(session.id) } : nil
+                                onDismiss: session.isRemote ? { model.dismissSession(session.id) } : nil,
+                                onHide: { model.hideSessions(matching: $0) }
                             )
                         }
                     }
@@ -821,7 +823,8 @@ struct IslandPanelView: View {
                         onReply: TerminalTextSender.canReply(to: session, enabled: model.completionReplyEnabled)
                             ? { model.replyToSession(session, text: $0) } : nil,
                         onJump: { model.jumpToSession(session) },
-                        onDismiss: session.isRemote ? { model.dismissSession(session.id) } : nil
+                        onDismiss: session.isRemote ? { model.dismissSession(session.id) } : nil,
+                        onHide: { model.hideSessions(matching: $0) }
                     )
                 }
             }
@@ -1383,6 +1386,8 @@ private struct IslandSessionRow: View {
     var onReply: ((String) -> Void)?
     let onJump: () -> Void
     var onDismiss: (() -> Void)?
+    /// Adds a rule that keeps this kind of session off the island for good.
+    var onHide: ((SilenceRule) -> Void)?
 
     @State private var isHighlighted = false
     @State private var detailOverride: Bool?
@@ -1410,6 +1415,7 @@ private struct IslandSessionRow: View {
             rowSummary(presence: presence, showsDetail: showsDetail)
                 .contentShape(Rectangle())
                 .onTapGesture(perform: handlePrimaryTap)
+                .contextMenu { hideSessionMenuItems }
 
             if showsDetail {
                 rowAuxiliaryDetails(presence: presence)
@@ -1447,6 +1453,31 @@ private struct IslandSessionRow: View {
         .onChange(of: isInteractive) { _, interactive in
             if !interactive {
                 detailOverride = nil
+            }
+        }
+    }
+
+    /// Right-click actions for keeping a session off the island for good.
+    ///
+    /// Writes an ordinary notification filter rather than a per-session flag:
+    /// the same folder will produce a new session ID tomorrow, and a rule that
+    /// only silenced today's would look broken.
+    @ViewBuilder
+    private var hideSessionMenuItems: some View {
+        if onHide != nil, let directory = session.jumpTarget?.workingDirectory, !directory.isEmpty {
+            Button(
+                LanguageManager.shared.t("island.session.hideFolder")
+                    .replacingOccurrences(of: "{name}", with: (directory as NSString).lastPathComponent)
+            ) {
+                onHide?(SilenceRule(field: .workingDirectory, match: .equals, pattern: directory))
+            }
+        }
+        if onHide != nil, let app = session.jumpTarget?.terminalApp, !app.isEmpty {
+            Button(
+                LanguageManager.shared.t("island.session.hideApp")
+                    .replacingOccurrences(of: "{name}", with: app)
+            ) {
+                onHide?(SilenceRule(field: .terminalApp, match: .equals, pattern: app))
             }
         }
     }

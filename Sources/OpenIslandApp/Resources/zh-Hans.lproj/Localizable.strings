@@ -518,3 +518,10 @@
 "settings.sound.import.done" = "已添加 {count} 个音效。";
 "settings.sound.import.none" = "未找到可播放的文件。";
 "settings.sound.remove" = "移除";
+
+/* Guidance banners */
+"setup.banner.restartSessions.title" = "请重新启动这些会话";
+"setup.banner.restartSessions.message" = "{names} 在安装钩子之前启动，因此岛无法看到其活动。重新启动即可解决。";
+"island.session.hideFolder" = "不再显示 {name} 中的会话";
+"island.session.hideApp" = "不再显示来自 {name} 的会话";
+"island.session.hidden" = "已隐藏。可在通知设置中撤销。";

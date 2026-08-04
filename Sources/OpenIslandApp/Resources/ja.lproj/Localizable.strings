@@ -518,3 +518,10 @@
 "settings.sound.import.done" = "{count}件の音を追加しました。";
 "settings.sound.import.none" = "再生できるファイルがありませんでした。";
 "settings.sound.remove" = "削除";
+
+/* Guidance banners */
+"setup.banner.restartSessions.title" = "このセッションを開き直してください";
+"setup.banner.restartSessions.message" = "{names} はフック導入より前に始まったので、島からは動きが見えません。開き直せば直ります。";
+"island.session.hideFolder" = "{name} のセッションを今後表示しない";
+"island.session.hideApp" = "{name} から始まったセッションを今後表示しない";
+"island.session.hidden" = "非表示にしました。通知の設定から戻せます。";

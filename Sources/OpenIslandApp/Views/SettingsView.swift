@@ -253,6 +253,10 @@ struct SetupSettingsPane: View {
                 emptyStateBanner
             }
 
+            if !model.sessionsPredatingHookInstall.isEmpty {
+                restartSessionsBanner
+            }
+
             claudeConfigDirectorySection
 
             Section(lang.t("setup.section.hooks")) {
@@ -566,6 +570,44 @@ struct SetupSettingsPane: View {
         model.claudeHooksInstalled && model.codexHooksInstalled && model.openCodePluginInstalled
             && model.qoderHooksInstalled && model.qwenCodeHooksInstalled && model.factoryHooksInstalled && model.codebuddyHooksInstalled
             && model.cursorHooksInstalled && model.geminiHooksInstalled && model.kimiHooksInstalled && model.claudeUsageInstalled
+    }
+
+    /// Points out sessions that were already running when hooks were installed.
+    ///
+    /// Not dismissible on purpose, and it needs no dismiss button: it is derived
+    /// from the sessions themselves, so restarting the last one makes it go away
+    /// and no stale "you have unread advice" state can linger.
+    @ViewBuilder
+    private var restartSessionsBanner: some View {
+        Section {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "arrow.clockwise.circle.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.orange)
+                    .frame(width: 28)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(lang.t("setup.banner.restartSessions.title"))
+                        .font(.system(size: 13, weight: .semibold))
+                    Text(
+                        lang.t("setup.banner.restartSessions.message")
+                            .replacingOccurrences(
+                                of: "{names}",
+                                with: model.sessionsPredatingHookInstall
+                                    .prefix(3)
+                                    .map(\.title)
+                                    .joined(separator: ", ")
+                            )
+                    )
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer()
+            }
+            .padding(.vertical, 4)
+        }
     }
 
     @ViewBuilder
