@@ -501,3 +501,9 @@
 "settings.pending.focusModeDetection" = "需要專注模式偵測。";
 "settings.pending.screenStateDetection" = "需要螢幕鎖定與睡眠偵測。";
 "settings.pending.screenCaptureDetection" = "需要螢幕錄製偵測。";
+
+/* Notch calibration */
+"settings.display.completionCardHeight.help" = "這是上限，不是固定高度——訊息短時卡片也會變短。";
+"settings.display.notch.auto" = "交給 macOS";
+"settings.display.notch.measured" = "macOS 回報的值";
+"settings.display.notch.measured.help" = "目前螢幕的數值，未套用上方修正。";

@@ -93,35 +93,67 @@ struct DisplaySettingsPane: View {
                 format: points
             )
 
-            SettingsRow(
+            SettingsSliderRow(
                 title: lang.t("settings.display.completionCardHeight"),
-                availability: FeatureAvailability(.completionCardSizing)
-            ) {
-                SettingsValuePill(
-                    text: points(DisplaySettings.Defaults.completionCardHeight),
-                    isDefault: true
-                )
-            }
+                help: lang.t("settings.display.completionCardHeight.help"),
+                value: Binding(
+                    get: { display.completionCardMaxHeight },
+                    set: { display.completionCardMaxHeight = $0 }
+                ),
+                range: DisplaySettings.Defaults.completionCardMaxHeightRange,
+                step: 10,
+                defaultValue: DisplaySettings.Defaults.completionCardMaxHeight,
+                format: points
+            )
         }
+    }
+
+    /// Zero reads as "leave it to macOS" rather than a 0pt notch.
+    private func notchOverride(_ value: Double) -> String {
+        value <= 0 ? lang.t("settings.display.notch.auto") : points(value)
+    }
+
+    /// What macOS reports for this screen, so a nudge has something to start from.
+    private var measuredNotchDescription: String {
+        guard let screen = NSScreen.main else { return "—" }
+        let size = screen.measuredNotchSize
+        return "\(Int(size.width)) × \(Int(size.height)) pt"
     }
 
     // MARK: Notch calibration
 
     private var notchSection: some View {
         Section(lang.t("settings.display.section.notch")) {
-            SettingsRow(
+            SettingsSliderRow(
                 title: lang.t("settings.display.notchHeight"),
                 help: lang.t("settings.display.notch.help"),
-                availability: FeatureAvailability(.notchCalibration)
-            ) {
-                SettingsValuePill(text: points(display.notchHeightOverride), isDefault: true)
-            }
+                value: Binding(
+                    get: { display.notchHeightOverride },
+                    set: { display.notchHeightOverride = $0 }
+                ),
+                range: DisplaySettings.Defaults.notchOverrideRange,
+                step: 1,
+                defaultValue: 0,
+                format: notchOverride
+            )
+
+            SettingsSliderRow(
+                title: lang.t("settings.display.notchWidth"),
+                value: Binding(
+                    get: { display.notchWidthOverride },
+                    set: { display.notchWidthOverride = $0 }
+                ),
+                range: DisplaySettings.Defaults.notchOverrideRange,
+                step: 1,
+                defaultValue: 0,
+                format: notchOverride
+            )
 
             SettingsRow(
-                title: lang.t("settings.display.notchWidth"),
-                availability: FeatureAvailability(.notchCalibration)
+                title: lang.t("settings.display.notch.measured"),
+                help: lang.t("settings.display.notch.measured.help")
             ) {
-                SettingsValuePill(text: points(display.notchWidthOverride), isDefault: true)
+                SettingsValuePill(text: measuredNotchDescription, isDefault: true)
             }
         }
     }

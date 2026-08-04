@@ -502,3 +502,9 @@
 "settings.pending.focusModeDetection" = "Needs Focus mode detection.";
 "settings.pending.screenStateDetection" = "Needs screen lock and sleep detection.";
 "settings.pending.screenCaptureDetection" = "Needs screen recording detection.";
+
+/* Notch calibration */
+"settings.display.completionCardHeight.help" = "A ceiling, not a fixed height — short messages still use a short card.";
+"settings.display.notch.auto" = "Leave it to macOS";
+"settings.display.notch.measured" = "What macOS reports";
+"settings.display.notch.measured.help" = "The current screen, before any correction above.";

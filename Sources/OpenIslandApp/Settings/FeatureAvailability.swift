@@ -65,6 +65,8 @@ enum PendingCapability: String, CaseIterable, Sendable {
         .focusModeDetection,
         .screenStateDetection,
         .screenCaptureDetection,
+        .notchCalibration,
+        .completionCardSizing,
     ]
 
     var isImplemented: Bool { Self.implemented.contains(self) }

@@ -29,9 +29,12 @@ final class DisplaySettings: PreferenceGroup {
         set { write(\.maxPanelWidth, Keys.maxPanelWidth, newValue) }
     }
 
-    var completionCardHeight: Double {
-        get { read(\.completionCardHeight, Keys.completionCardHeight, Defaults.completionCardHeight) }
-        set { write(\.completionCardHeight, Keys.completionCardHeight, newValue) }
+    /// The tallest a completion card may grow to. It still shrinks to fit a
+    /// short message — this is a ceiling, not a fixed height, because pinning
+    /// the height would either clip a long reply or pad a one-line one.
+    var completionCardMaxHeight: Double {
+        get { read(\.completionCardMaxHeight, Keys.completionCardMaxHeight, Defaults.completionCardMaxHeight) }
+        set { write(\.completionCardMaxHeight, Keys.completionCardMaxHeight, newValue) }
     }
 
     // MARK: Notch calibration
@@ -100,8 +103,10 @@ extension DisplaySettings {
         static let maxPanelWidth: Double = 648
         static let maxPanelWidthRange: ClosedRange<Double> = 480...900
 
-        static let completionCardHeight: Double = 90
-        static let completionCardHeightRange: ClosedRange<Double> = 90...260
+        /// Floor matches the card's own chrome; anything less would clip the
+        /// buttons. Ceiling is roughly half a laptop screen.
+        static let completionCardMaxHeight: Double = 400
+        static let completionCardMaxHeightRange: ClosedRange<Double> = 210...520
 
         static let notchOverrideRange: ClosedRange<Double> = 0...260
     }
@@ -110,7 +115,10 @@ extension DisplaySettings {
         static let contentFontSize = "display.contentFontSize"
         static let maxPanelHeight = "display.maxPanelHeight"
         static let maxPanelWidth = "display.maxPanelWidth"
-        static let completionCardHeight = "display.completionCardHeight"
+        // Renamed from `display.completionCardHeight`: that key stored a fixed
+        // height the app never read, so reusing it would resurrect a 90pt value
+        // that clips the card.
+        static let completionCardMaxHeight = "display.completionCardMaxHeight"
         static let notchHeightOverride = "display.notchHeightOverride"
         static let notchWidthOverride = "display.notchWidthOverride"
         static let showTasks = "display.sessionCard.showTasks"

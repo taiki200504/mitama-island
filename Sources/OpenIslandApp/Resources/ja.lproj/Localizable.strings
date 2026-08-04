@@ -502,3 +502,9 @@
 "settings.pending.focusModeDetection" = "集中モードの検知が要ります。";
 "settings.pending.screenStateDetection" = "画面ロック・スリープの検知が要ります。";
 "settings.pending.screenCaptureDetection" = "画面収録の検知が要ります。";
+
+/* Notch calibration */
+"settings.display.completionCardHeight.help" = "上限です。短いメッセージのときはカードも短いままになります。";
+"settings.display.notch.auto" = "macOS に任せる";
+"settings.display.notch.measured" = "macOS が返している値";
+"settings.display.notch.measured.help" = "いま使っている画面の値。上の補正を加える前の数字です。";

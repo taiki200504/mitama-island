@@ -202,7 +202,7 @@ struct PreferenceGroupTests {
             DisplaySettings.Keys.contentFontSize,
             DisplaySettings.Keys.maxPanelHeight,
             DisplaySettings.Keys.maxPanelWidth,
-            DisplaySettings.Keys.completionCardHeight,
+            DisplaySettings.Keys.completionCardMaxHeight,
             DisplaySettings.Keys.notchHeightOverride,
             DisplaySettings.Keys.notchWidthOverride,
             DisplaySettings.Keys.showTasks,
@@ -261,6 +261,8 @@ struct FeatureAvailabilityTests {
             .focusModeDetection,
             .screenStateDetection,
             .screenCaptureDetection,
+            .notchCalibration,
+            .completionCardSizing,
         ])
     }
 

@@ -683,7 +683,10 @@ final class OverlayPanelController {
         let estimatedHeight = Self.completionCardChromeHeight + ceil(textSize.height)
         // Use a smaller minimum to avoid blank space when content is short
         let minHeight: CGFloat = Self.completionCardChromeHeight + 20
-        return min(Self.completionCardMaxHeight, max(minHeight, estimatedHeight))
+        let ceiling = CGFloat(model.settings.display.completionCardMaxHeight)
+        // The floor wins over a ceiling set below it: a card too short to show
+        // its own buttons is worse than one taller than asked for.
+        return min(max(ceiling, minHeight), max(minHeight, estimatedHeight))
     }
 
     private func openedVisibleSessions(sessions: [AgentSession]) -> [AgentSession] {
@@ -880,7 +883,13 @@ extension NSScreen {
     static let externalDisplayNotchWidth: CGFloat = 190
     static let externalDisplayNotchHeight: CGFloat = 38
 
+    /// The user's calibration applied on top of what macOS reports.
     var notchSize: CGSize {
+        NotchCalibration.current.apply(to: measuredNotchSize)
+    }
+
+    /// What macOS says, before any correction.
+    var measuredNotchSize: CGSize {
         guard safeAreaInsets.top > 0 else {
             return CGSize(
                 width: Self.externalDisplayNotchWidth,
