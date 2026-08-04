@@ -526,10 +526,10 @@ struct IslandPanelView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                IslandThemes.current.shape(cornerRadius: 10)
                     .fill(Color.accentColor.opacity(0.14))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        IslandThemes.current.shape(cornerRadius: 10)
                             .stroke(Color.accentColor.opacity(0.35), lineWidth: 0.5)
                     )
             )
@@ -1458,7 +1458,7 @@ private struct IslandSessionRow: View {
         }
         .background(rowFillColor(for: presence))
         .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
+            IslandThemes.current.shape(cornerRadius: 8)
                 .strokeBorder(.white.opacity(isSwitcherHighlighted ? 0.55 : 0), lineWidth: 1.5)
         )
         .overlay(alignment: .top) {
@@ -1468,7 +1468,7 @@ private struct IslandSessionRow: View {
         }
         .overlay(alignment: .leading) {
             if showsLeadingStatusBar {
-                RoundedRectangle(cornerRadius: 999, style: .continuous)
+                IslandThemes.current.shape(cornerRadius: 999)
                     .fill(statusTint(for: presence))
                     // Thickens and lights up under the cursor, so the row you
                     // are about to click says which one it is.
@@ -1536,7 +1536,8 @@ private struct IslandSessionRow: View {
                     tool: session.tool,
                     terminalApp: session.jumpTarget?.terminalApp,
                     tint: statusTint(for: presence),
-                    iconStyle: agentIconStyle
+                    iconStyle: agentIconStyle,
+                    usesScanlines: IslandThemes.current.cornerStyle == .chamfered
                 )
                 .frame(width: 30, alignment: .leading)
                 .padding(.top, 4)
@@ -1955,11 +1956,11 @@ private struct IslandSessionRow: View {
                     .padding(.vertical, 7)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        IslandThemes.current.shape(cornerRadius: 7)
                             .fill(Color.white.opacity(0.045))
                     )
                     .overlay(
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                        IslandThemes.current.shape(cornerRadius: 7)
                             .strokeBorder(.white.opacity(0.06))
                     )
             }
@@ -2006,7 +2007,7 @@ private struct IslandSessionRow: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .fixedSize(horizontal: false, vertical: true)
             .background(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                IslandThemes.current.shape(cornerRadius: 7)
                     .fill(Color.white.opacity(0.045))
             )
 
@@ -2106,11 +2107,11 @@ private struct IslandSessionRow: View {
             }
         }
         .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            IslandThemes.current.shape(cornerRadius: 10)
                 .fill(Color.white.opacity(completionCardFillOpacity))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            IslandThemes.current.shape(cornerRadius: 10)
                 .strokeBorder(.white.opacity(completionCardStrokeOpacity))
         )
     }
@@ -2275,7 +2276,7 @@ private struct IslandSessionRow: View {
                     .frame(width: 10, height: 24, alignment: .top)
             }
         case .bar:
-            RoundedRectangle(cornerRadius: 2.5, style: .continuous)
+            IslandThemes.current.shape(cornerRadius: 2.5)
                 .fill(tint)
                 .frame(width: 4, height: isActionable ? 34 : 28)
                 .padding(.top, 2)
@@ -2505,11 +2506,11 @@ private struct StructuredQuestionPromptView: View {
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            IslandThemes.current.shape(cornerRadius: 10)
                 .fill(Color.white.opacity(0.03))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            IslandThemes.current.shape(cornerRadius: 10)
                 .strokeBorder(.white.opacity(0.05))
         )
     }
@@ -2561,11 +2562,11 @@ private struct StructuredQuestionPromptView: View {
                         .foregroundStyle(isSelected ? .black.opacity(0.82) : V6Palette.paper.opacity(0.42))
                         .frame(width: 22, height: 20)
                         .background(
-                            RoundedRectangle(cornerRadius: 5, style: .continuous)
+                            IslandThemes.current.shape(cornerRadius: 5)
                                 .fill(isSelected ? V6Palette.paper.opacity(0.88) : Color.white.opacity(0.045))
                         )
                         .overlay(
-                            RoundedRectangle(cornerRadius: 5, style: .continuous)
+                            IslandThemes.current.shape(cornerRadius: 5)
                                 .strokeBorder(.white.opacity(isSelected ? 0 : 0.08))
                         )
 
@@ -2603,11 +2604,11 @@ private struct StructuredQuestionPromptView: View {
             }
         }
         .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
+            IslandThemes.current.shape(cornerRadius: 8)
                 .fill(optionFillColor(isSelected: isSelected, isHovered: isHovered))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
+            IslandThemes.current.shape(cornerRadius: 8)
                 .strokeBorder(optionStrokeColor(isSelected: isSelected, isHovered: isHovered))
         )
         .onHover { hovering in
@@ -2667,11 +2668,11 @@ private struct StructuredQuestionPromptView: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
             .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                IslandThemes.current.shape(cornerRadius: 10)
                     .fill(Color.white.opacity(0.035))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                IslandThemes.current.shape(cornerRadius: 10)
                     .strokeBorder(.white.opacity(0.055))
             )
         }

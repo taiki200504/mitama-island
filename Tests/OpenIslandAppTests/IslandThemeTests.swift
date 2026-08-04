@@ -76,3 +76,36 @@ struct ChamferedRectangleTests {
         #expect(path.contains(CGPoint(x: 99, y: 39)))
     }
 }
+
+@Suite("Island panel shape")
+struct IslandPanelShapeTests {
+    private let rect = CGRect(x: 0, y: 0, width: 100, height: 40)
+
+    @Test("The corner style decides the shape")
+    func styleDecidesTheShape() {
+        let chamfered = IslandPanelShape(cornerRadius: 8, style: .chamfered).path(in: rect)
+        let rounded = IslandPanelShape(cornerRadius: 8, style: .rounded).path(in: rect)
+        // The chamfer cuts the top-left corner off the diagonal a rounded
+        // corner would curve through.
+        #expect(!chamfered.contains(CGPoint(x: 2, y: 2)))
+        #expect(chamfered.boundingRect == rounded.boundingRect)
+    }
+
+    /// `strokeBorder` insets the shape before stroking. If insetting were
+    /// ignored, every border would bleed half a line width outside its fill.
+    @Test("Insetting shrinks the shape")
+    func insettingShrinks() {
+        let full = IslandPanelShape(cornerRadius: 8, style: .chamfered).path(in: rect)
+        let inset = IslandPanelShape(cornerRadius: 8, style: .chamfered).inset(by: 4).path(in: rect)
+        #expect(inset.boundingRect.width < full.boundingRect.width)
+        #expect(inset.boundingRect.height < full.boundingRect.height)
+    }
+
+    /// Insetting past the corner size must not produce a negative radius.
+    @Test("A deep inset stays a valid shape")
+    func deepInsetIsValid() {
+        let path = IslandPanelShape(cornerRadius: 4, style: .chamfered).inset(by: 10).path(in: rect)
+        #expect(!path.isEmpty)
+        #expect(path.boundingRect.width > 0)
+    }
+}

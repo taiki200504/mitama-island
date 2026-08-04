@@ -60,13 +60,8 @@ enum IslandThemeID: String, CaseIterable, Identifiable, Sendable {
 
 extension IslandTheme {
     /// The shape a card, button or badge should use at this corner size.
-    func shape(cornerRadius: CGFloat) -> AnyShape {
-        switch cornerStyle {
-        case .rounded:
-            AnyShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-        case .chamfered:
-            AnyShape(ChamferedRectangle(cut: cornerRadius))
-        }
+    func shape(cornerRadius: CGFloat) -> IslandPanelShape {
+        IslandPanelShape(cornerRadius: cornerRadius, style: cornerStyle)
     }
 }
 

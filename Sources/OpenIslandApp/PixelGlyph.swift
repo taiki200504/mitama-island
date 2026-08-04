@@ -213,6 +213,13 @@ struct PixelGlyphView: View {
         )
     }
 
+    /// Dims every other pixel row, the way a lit display does up close.
+    ///
+    /// Drawn into the same `Canvas` rather than layered on top: an overlay would
+    /// need its own compositing pass per glyph, and there are two of these on
+    /// every session row.
+    var usesScanlines = false
+
     var body: some View {
         Canvas { context, _ in
             for point in glyph.points {
@@ -222,7 +229,10 @@ struct PixelGlyphView: View {
                     width: pixelSize,
                     height: pixelSize
                 )
-                context.fill(Path(rect), with: .color(tint))
+                // Barely there on purpose. At 2pt per pixel a stronger scanline
+                // eats whole rows of a 7×5 mark and it stops being legible.
+                let isDimmedRow = usesScanlines && point.y.isMultiple(of: 2)
+                context.fill(Path(rect), with: .color(isDimmedRow ? tint.opacity(0.82) : tint))
             }
         }
         .frame(width: size.width, height: size.height)
@@ -241,6 +251,7 @@ struct SessionGlyphPair: View {
     /// Falls back to the pixel mark whenever the brand image is missing, so a
     /// half-fetched icon set never leaves a blank space where an agent was.
     var iconStyle: AgentIconStyle = .pixel
+    var usesScanlines = false
 
     var body: some View {
         HStack(spacing: pixelSize * 2) {
@@ -251,13 +262,19 @@ struct SessionGlyphPair: View {
                     .aspectRatio(contentMode: .fit)
                     .frame(width: pixelSize * 7, height: pixelSize * 7)
             } else {
-                PixelGlyphView(glyph: .agentMark(for: tool), tint: tint, pixelSize: pixelSize)
+                PixelGlyphView(
+                    glyph: .agentMark(for: tool),
+                    tint: tint,
+                    pixelSize: pixelSize,
+                    usesScanlines: usesScanlines
+                )
             }
             PixelGlyphView(
                 glyph: .hostMark(for: terminalApp),
                 tint: tint.opacity(0.75),
                 pixelSize: pixelSize,
-                glowRadius: 1.8
+                glowRadius: 1.8,
+                usesScanlines: usesScanlines
             )
         }
     }
