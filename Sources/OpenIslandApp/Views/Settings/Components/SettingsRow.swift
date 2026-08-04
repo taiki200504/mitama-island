@@ -39,6 +39,12 @@ struct SettingsRow<Control: View>: View {
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+                if let reasonKey = availability.unsupportedReasonKey {
+                    Text(LanguageManager.shared.t(reasonKey))
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
 
             Spacer(minLength: 12)

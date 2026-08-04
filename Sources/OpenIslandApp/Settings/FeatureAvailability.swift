@@ -62,6 +62,9 @@ enum PendingCapability: String, CaseIterable, Sendable {
         .outsideClickDetection,
         .fullscreenDetection,
         .autoHideTimer,
+        .focusModeDetection,
+        .screenStateDetection,
+        .screenCaptureDetection,
     ]
 
     var isImplemented: Bool { Self.implemented.contains(self) }
@@ -74,6 +77,10 @@ enum PendingCapability: String, CaseIterable, Sendable {
 enum FeatureAvailability: Equatable, Sendable {
     case ready
     case pending(PendingCapability)
+    /// Built, but this Mac cannot supply the signal it needs — a Focus database
+    /// macOS will not hand over, for instance. Distinct from `pending`: waiting
+    /// for a future version would be a lie, so the note says why instead.
+    case unsupported(reasonKey: String)
 
     init(_ capability: PendingCapability) {
         self = capability.isImplemented ? .ready : .pending(capability)
@@ -82,6 +89,12 @@ enum FeatureAvailability: Equatable, Sendable {
     var isReady: Bool {
         if case .ready = self { return true }
         return false
+    }
+
+    /// Localization key for the note shown when the control is unusable here.
+    var unsupportedReasonKey: String? {
+        if case let .unsupported(key) = self { return key }
+        return nil
     }
 
     var pendingCapability: PendingCapability? {

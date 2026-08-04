@@ -255,9 +255,6 @@
 "settings.pending.autoHideTimer" = "自動非表示のタイマーが要ります。";
 "settings.pending.outsideClickDetection" = "パネル外のクリック検知が要ります。";
 "settings.pending.idleSessionCleanup" = "停止セッションの掃除処理が要ります。";
-"settings.pending.focusModeDetection" = "macOS のフォーカスモード検知が要ります。";
-"settings.pending.screenStateDetection" = "画面ロック・スリープの検知が要ります。";
-"settings.pending.screenCaptureDetection" = "画面収録の検知が要ります。";
 "settings.pending.globalHotkey" = "システム全体のホットキー登録が要ります。";
 "settings.pending.switcherPanel" = "セッション切替パネルが要ります。";
 "settings.pending.panelKeyHandling" = "パネル内のキー操作処理が要ります。";
@@ -496,3 +493,12 @@
 "settings.display.layout.clean.help" = "メニューバーを広く空ける。";
 "settings.display.layout.detailed" = "詳細";
 "settings.display.layout.detailed.help" = "各エージェントが何をしているか一目で分かる。";
+
+/* Quiet scenes */
+"settings.notifications.quiet.focus.help" = "macOS が保存している集中モードを読みます。おやすみ・パーソナル・仕事・睡眠が対象。";
+"settings.notifications.quiet.focus.unavailable" = "この Mac は集中モードの状態を渡してくれないため、この項目は働きません。";
+"settings.notifications.quiet.screenLocked.help" = "画面ロック中とディスプレイのスリープ中。Apple Watch には引き続き届きます。";
+"settings.notifications.quiet.screenShared.help" = "画面収録・会議アプリが起動しているかで判断します。ブラウザのタブからの共有は検知できません。";
+"settings.pending.focusModeDetection" = "集中モードの検知が要ります。";
+"settings.pending.screenStateDetection" = "画面ロック・スリープの検知が要ります。";
+"settings.pending.screenCaptureDetection" = "画面収録の検知が要ります。";

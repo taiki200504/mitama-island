@@ -254,9 +254,6 @@
 "settings.pending.autoHideTimer" = "需要自動隱藏計時器。";
 "settings.pending.outsideClickDetection" = "需要面板外點擊偵測。";
 "settings.pending.idleSessionCleanup" = "需要閒置工作階段清理。";
-"settings.pending.focusModeDetection" = "需要 macOS 專注模式偵測。";
-"settings.pending.screenStateDetection" = "需要螢幕鎖定與睡眠偵測。";
-"settings.pending.screenCaptureDetection" = "需要螢幕錄製偵測。";
 "settings.pending.globalHotkey" = "需要註冊全域快捷鍵。";
 "settings.pending.switcherPanel" = "需要工作階段切換面板。";
 "settings.pending.panelKeyHandling" = "需要面板內按鍵處理。";
@@ -495,3 +492,12 @@
 "settings.display.layout.clean.help" = "為選單列留出更多空間。";
 "settings.display.layout.detailed" = "詳細";
 "settings.display.layout.detailed.help" = "一眼看清每個代理在做什麼。";
+
+/* Quiet scenes */
+"settings.notifications.quiet.focus.help" = "讀取 macOS 儲存的專注模式。勿擾、個人、工作、睡眠皆適用。";
+"settings.notifications.quiet.focus.unavailable" = "此 Mac 不提供專注模式狀態，此開關無法生效。";
+"settings.notifications.quiet.screenLocked.help" = "涵蓋鎖定畫面與顯示器睡眠。Apple Watch 仍會收到通知。";
+"settings.notifications.quiet.screenShared.help" = "依據已知的錄製與會議應用判斷。瀏覽器分頁的共享無法偵測。";
+"settings.pending.focusModeDetection" = "需要專注模式偵測。";
+"settings.pending.screenStateDetection" = "需要螢幕鎖定與睡眠偵測。";
+"settings.pending.screenCaptureDetection" = "需要螢幕錄製偵測。";

@@ -255,9 +255,6 @@
 "settings.pending.autoHideTimer" = "需要自动隐藏计时器。";
 "settings.pending.outsideClickDetection" = "需要面板外点击检测。";
 "settings.pending.idleSessionCleanup" = "需要空闲会话清理。";
-"settings.pending.focusModeDetection" = "需要 macOS 专注模式检测。";
-"settings.pending.screenStateDetection" = "需要屏幕锁定与睡眠检测。";
-"settings.pending.screenCaptureDetection" = "需要屏幕录制检测。";
 "settings.pending.globalHotkey" = "需要注册全局快捷键。";
 "settings.pending.switcherPanel" = "需要会话切换面板。";
 "settings.pending.panelKeyHandling" = "需要面板内按键处理。";
@@ -496,3 +493,12 @@
 "settings.display.layout.clean.help" = "为菜单栏留出更多空间。";
 "settings.display.layout.detailed" = "详细";
 "settings.display.layout.detailed.help" = "一眼看清每个代理在做什么。";
+
+/* Quiet scenes */
+"settings.notifications.quiet.focus.help" = "读取 macOS 保存的专注模式。勿扰、个人、工作、睡眠均适用。";
+"settings.notifications.quiet.focus.unavailable" = "此 Mac 不提供专注模式状态，此开关无法生效。";
+"settings.notifications.quiet.screenLocked.help" = "涵盖锁屏与显示器睡眠。Apple Watch 仍会收到通知。";
+"settings.notifications.quiet.screenShared.help" = "依据已知的录制与会议应用判断。浏览器标签页的共享无法检测。";
+"settings.pending.focusModeDetection" = "需要专注模式检测。";
+"settings.pending.screenStateDetection" = "需要屏幕锁定与睡眠检测。";
+"settings.pending.screenCaptureDetection" = "需要屏幕录制检测。";

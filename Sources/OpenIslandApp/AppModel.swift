@@ -56,6 +56,10 @@ final class AppModel {
     let lang = LanguageManager.shared
     let settings: SettingsStore
 
+    /// Focus, screen lock and screen sharing — the moments the user asked us to
+    /// hold the panel back.
+    let quietScenes: QuietSceneMonitor
+
     var state = SessionState() {
         didSet {
             _cachedSessionBuckets = nil
@@ -642,8 +646,10 @@ final class AppModel {
         isNotificationSessionAlreadyFrontmost: @escaping @Sendable (AgentSession) async -> Bool = { session in
             await ForegroundTerminalSessionProbe().matches(session: session)
         },
-        settings: SettingsStore = .shared
+        settings: SettingsStore = .shared,
+        quietScenes: QuietSceneMonitor = QuietSceneMonitor()
     ) {
+        self.quietScenes = quietScenes
         self.terminalJumpAction = terminalJumpAction
         self.isNotificationSessionAlreadyFrontmost = isNotificationSessionAlreadyFrontmost
         self.settings = settings
@@ -689,6 +695,8 @@ final class AppModel {
         if watchNotificationEnabled {
             startWatchRelay()
         }
+
+        quietScenes.start()
 
         overlay.appModel = self
         overlay.restoreDisplayPreference()
@@ -1666,6 +1674,10 @@ final class AppModel {
     /// Approvals and questions always are — nothing proceeds until they answer.
     /// A finished session is only worth a panel if they asked for that.
     private func shouldNotify(about event: AgentEvent) -> Bool {
+        // Focus, a locked screen and a shared screen suppress the panel only.
+        // The Watch relay still fires: a locked Mac is exactly when the wrist is
+        // the surface that works.
+        if quietScenes.shouldStayQuiet(under: settings.behaviour) { return false }
         switch event {
         case .sessionCompleted:
             return settings.behaviour.expandOnCompletion

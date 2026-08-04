@@ -43,8 +43,11 @@ struct NotificationSettingsPane: View {
         Section(lang.t("settings.notifications.section.quiet")) {
             SettingsToggleRow(
                 title: lang.t("settings.notifications.quiet.focus"),
+                help: lang.t("settings.notifications.quiet.focus.help"),
                 icon: "moon.fill",
-                availability: FeatureAvailability(.focusModeDetection),
+                availability: model.quietScenes.focusDetectionIsAvailable
+                    ? FeatureAvailability(.focusModeDetection)
+                    : .unsupported(reasonKey: "settings.notifications.quiet.focus.unavailable"),
                 isOn: Binding(
                     get: { !behaviour.quietFocusModes.isEmpty },
                     set: { on in
@@ -56,6 +59,7 @@ struct NotificationSettingsPane: View {
             )
             SettingsToggleRow(
                 title: lang.t("settings.notifications.quiet.screenLocked"),
+                help: lang.t("settings.notifications.quiet.screenLocked.help"),
                 icon: "lock.fill",
                 availability: FeatureAvailability(.screenStateDetection),
                 isOn: Binding(
@@ -65,6 +69,7 @@ struct NotificationSettingsPane: View {
             )
             SettingsToggleRow(
                 title: lang.t("settings.notifications.quiet.screenShared"),
+                help: lang.t("settings.notifications.quiet.screenShared.help"),
                 icon: "record.circle",
                 availability: FeatureAvailability(.screenCaptureDetection),
                 isOn: Binding(

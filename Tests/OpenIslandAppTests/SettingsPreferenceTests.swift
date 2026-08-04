@@ -258,6 +258,9 @@ struct FeatureAvailabilityTests {
             .outsideClickDetection,
             .fullscreenDetection,
             .autoHideTimer,
+            .focusModeDetection,
+            .screenStateDetection,
+            .screenCaptureDetection,
         ])
     }
 

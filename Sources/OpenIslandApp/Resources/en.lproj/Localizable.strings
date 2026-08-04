@@ -255,9 +255,6 @@
 "settings.pending.autoHideTimer" = "Needs the auto-hide timer.";
 "settings.pending.outsideClickDetection" = "Needs click-outside detection.";
 "settings.pending.idleSessionCleanup" = "Needs idle-session cleanup.";
-"settings.pending.focusModeDetection" = "Needs macOS Focus mode detection.";
-"settings.pending.screenStateDetection" = "Needs screen lock and sleep detection.";
-"settings.pending.screenCaptureDetection" = "Needs screen recording detection.";
 "settings.pending.globalHotkey" = "Needs system-wide hotkey registration.";
 "settings.pending.switcherPanel" = "Needs the session switcher panel.";
 "settings.pending.panelKeyHandling" = "Needs in-panel key handling.";
@@ -496,3 +493,12 @@
 "settings.display.layout.clean.help" = "Leaves more of the menu bar free.";
 "settings.display.layout.detailed" = "Detailed";
 "settings.display.layout.detailed.help" = "Shows what each agent is doing at a glance.";
+
+/* Quiet scenes */
+"settings.notifications.quiet.focus.help" = "Reads the Focus macOS keeps on disk. Do Not Disturb, Personal, Work and Sleep all count.";
+"settings.notifications.quiet.focus.unavailable" = "This Mac does not expose its Focus state, so this switch cannot fire.";
+"settings.notifications.quiet.screenLocked.help" = "Covers a locked screen and sleeping displays. The Watch still gets notified.";
+"settings.notifications.quiet.screenShared.help" = "Detects known recording and meeting apps. Sharing from a browser tab cannot be seen.";
+"settings.pending.focusModeDetection" = "Needs Focus mode detection.";
+"settings.pending.screenStateDetection" = "Needs screen lock and sleep detection.";
+"settings.pending.screenCaptureDetection" = "Needs screen recording detection.";
