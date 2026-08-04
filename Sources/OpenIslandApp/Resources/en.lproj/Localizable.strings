@@ -532,3 +532,20 @@
 "settings.appearance.agentIcon.brand" = "Official logos";
 "settings.display.agentIcon.help" = "Official logos are not shipped with the app; fetch them with scripts/fetch-agent-icons.sh.";
 "settings.display.agentIcon.missing" = "No logos have been fetched, so the pixel marks are in use.";
+
+/* Onboarding */
+"onboarding.welcome.title" = "One place for every agent you have running";
+"onboarding.welcome.body" = "Mitama Island lives in the notch. It shows what each coding agent is doing and lets you answer them without going to find the window.";
+"onboarding.cost.title" = "The expensive part is switching, not waiting";
+"onboarding.cost.body" = "Finding the terminal that asked you something costs more than the answer does. The island brings the question to you instead.";
+"onboarding.capabilities.title" = "Approve, answer and jump — from the notch";
+"onboarding.capabilities.body" = "Permission requests and questions arrive as cards you can act on directly. Tapping a session takes you to the window it is running in.";
+"onboarding.detection.title" = "What is on this Mac";
+"onboarding.detection.body" = "Found: {agents}. You can install or remove hooks for any of them later in Settings.";
+"onboarding.detection.none" = "nothing yet";
+"onboarding.finish.title" = "That is everything";
+"onboarding.finish.body" = "The island is at the top of your screen. Start an agent and it will appear. Settings are under the menu bar icon or ⌘,.";
+"onboarding.skip" = "Skip";
+"onboarding.back" = "Back";
+"onboarding.next" = "Next";
+"onboarding.finish" = "Get started";

@@ -40,6 +40,12 @@ final class OpenIslandAppDelegate: NSObject, NSApplicationDelegate {
             // Hide all windows on launch — settings opens on demand only.
             OpenIslandAppDelegate.hideAllAppWindows()
 
+            // Never during a harness run: an introduction window would sit on
+            // top of every screenshot the capture scripts take.
+            if model.needsOnboarding, harnessLaunchConfiguration.scenario == nil {
+                model.presentOnboarding?()
+            }
+
             // The recorder captures every visible window, so opening settings on
             // the requested pane is all it takes to get a shot of that pane.
             if let tab = harnessLaunchConfiguration.settingsTab {
@@ -106,6 +112,11 @@ struct OpenIslandApp: App {
             SettingsWindowContent(model: appDelegate.model)
         }
         .windowResizability(.contentMinSize)
+
+        Window("Welcome", id: "onboarding") {
+            OnboardingWindowContent(model: appDelegate.model)
+        }
+        .windowResizability(.contentSize)
         .commands {
             CommandGroup(replacing: .appSettings) {
                 Button("Settings…") {
@@ -120,6 +131,20 @@ struct OpenIslandApp: App {
 
 /// Refreshes the `openWindow` registration each time the settings
 /// window opens, keeping the closure current after window recreation.
+private struct OnboardingWindowContent: View {
+    var model: AppModel
+    @Environment(\.openWindow) private var openWindow
+    @Environment(\.dismissWindow) private var dismissWindow
+
+    var body: some View {
+        OnboardingView(model: model)
+            .onAppear {
+                model.presentOnboarding = { [openWindow] in openWindow(id: "onboarding") }
+                model.closeOnboardingWindow = { [dismissWindow] in dismissWindow(id: "onboarding") }
+            }
+    }
+}
+
 private struct SettingsWindowContent: View {
     var model: AppModel
     @Environment(\.openWindow) private var openWindow

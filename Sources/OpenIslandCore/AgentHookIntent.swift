@@ -28,4 +28,21 @@ public enum AgentIdentifier: String, Codable, Sendable, CaseIterable {
     case gemini
     case kimi
     case claudeUsageBridge
+
+    /// The name a person would recognise, for anything user-facing.
+    public var displayName: String {
+        switch self {
+        case .claudeCode: "Claude Code"
+        case .codex: "Codex"
+        case .cursor: "Cursor"
+        case .qoder: "Qoder"
+        case .qwenCode: "Qwen Code"
+        case .factory: "Factory"
+        case .codebuddy: "CodeBuddy"
+        case .openCode: "OpenCode"
+        case .gemini: "Gemini CLI"
+        case .kimi: "Kimi CLI"
+        case .claudeUsageBridge: "Claude Usage Bridge"
+        }
+    }
 }

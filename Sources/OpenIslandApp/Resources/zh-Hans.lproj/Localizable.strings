@@ -532,3 +532,20 @@
 "settings.appearance.agentIcon.brand" = "官方标志";
 "settings.display.agentIcon.help" = "官方标志未随应用附带；请用 scripts/fetch-agent-icons.sh 获取。";
 "settings.display.agentIcon.missing" = "尚未获取标志，因此使用像素图标。";
+
+/* Onboarding */
+"onboarding.welcome.title" = "所有正在运行的代理，汇于一处";
+"onboarding.welcome.body" = "Mitama Island 常驻于刘海。它显示每个代理正在做什么，让你无需切换窗口即可回应。";
+"onboarding.cost.title" = "真正昂贵的是切换，而非等待";
+"onboarding.cost.body" = "寻找发问的终端比作答本身更耗时。岛会把问题带到你面前。";
+"onboarding.capabilities.title" = "从刘海处批准、回答、跳转";
+"onboarding.capabilities.body" = "权限请求和提问以卡片形式送达，可直接处理。点击会话即可跳转到其所在窗口。";
+"onboarding.detection.title" = "此 Mac 上的代理";
+"onboarding.detection.body" = "已找到：{agents}。之后可随时在设置中安装或移除钩子。";
+"onboarding.detection.none" = "暂无";
+"onboarding.finish.title" = "就是这些";
+"onboarding.finish.body" = "岛位于屏幕顶部。启动代理后即会出现。设置在菜单栏图标或 ⌘, 中。";
+"onboarding.skip" = "跳过";
+"onboarding.back" = "返回";
+"onboarding.next" = "下一步";
+"onboarding.finish" = "开始使用";

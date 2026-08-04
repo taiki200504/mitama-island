@@ -1744,6 +1744,26 @@ final class AppModel {
         }
     }
 
+    /// Whether the one-time introduction still has to run.
+    ///
+    /// A Mac that already has hooks installed is not a first launch even if this
+    /// copy of the app has never run — `migrateFromLegacyStateIfNeeded` marks it
+    /// completed, so an existing user is never shown an introduction.
+    var needsOnboarding: Bool { !firstLaunchCompleted }
+
+    func completeOnboarding() {
+        firstLaunchCompleted = true
+        closeOnboardingWindow?()
+    }
+
+    var closeOnboardingWindow: (() -> Void)?
+    var presentOnboarding: (() -> Void)?
+
+    /// The agents actually present on this Mac, for the detection screen.
+    var installedAgentDisplayNames: [String] {
+        hooks.intentStore.installedAgents().map(\.displayName)
+    }
+
     var agentIconStyle: AgentIconStyle {
         get { AgentIconStyle(rawValue: settings.display.agentIconStyleRawValue) ?? .pixel }
         set { settings.display.agentIconStyleRawValue = newValue.rawValue }

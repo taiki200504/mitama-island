@@ -532,3 +532,20 @@
 "settings.appearance.agentIcon.brand" = "公式ロゴ";
 "settings.display.agentIcon.help" = "公式ロゴはアプリに同梱していません。scripts/fetch-agent-icons.sh で取得します。";
 "settings.display.agentIcon.missing" = "ロゴが取得されていないため、ドット絵を使っています。";
+
+/* Onboarding */
+"onboarding.welcome.title" = "動いているエージェントを、ひとつの場所で";
+"onboarding.welcome.body" = "Mitama Island はノッチに常駐します。どのエージェントが何をしているかを表示し、ウィンドウを探しに行かずに応答できます。";
+"onboarding.cost.title" = "重いのは待ち時間ではなく、切り替え";
+"onboarding.cost.body" = "「何か聞いてきたターミナル」を探す手間は、答えそのものより高くつきます。島の側から質問を持ってきます。";
+"onboarding.capabilities.title" = "承認・回答・移動を、ノッチから";
+"onboarding.capabilities.body" = "許可の確認と質問はカードで届き、その場で応答できます。セッションを押せば、それが動いているウィンドウへ移動します。";
+"onboarding.detection.title" = "この Mac にあるもの";
+"onboarding.detection.body" = "見つかったもの: {agents}。フックの導入・解除は後から設定でいつでも変えられます。";
+"onboarding.detection.none" = "まだありません";
+"onboarding.finish.title" = "以上です";
+"onboarding.finish.body" = "島は画面の上端にあります。エージェントを動かせば現れます。設定はメニューバーのアイコンか ⌘, から。";
+"onboarding.skip" = "スキップ";
+"onboarding.back" = "戻る";
+"onboarding.next" = "次へ";
+"onboarding.finish" = "はじめる";
