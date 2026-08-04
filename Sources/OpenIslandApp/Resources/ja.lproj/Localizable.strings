@@ -480,3 +480,6 @@
 "settings.mitama.source.envFile" = "平文のファイル";
 "settings.mitama.source.none" = "未設定";
 "settings.mitama.moveToKeychain" = "キーが平文のファイルにある。addkey -k MITAMA_SUPABASE_URL と addkey -k MITAMA_SUPABASE_KEY で移せる。";
+
+/* Plan approval */
+"approval.planReady" = "計画ができました";

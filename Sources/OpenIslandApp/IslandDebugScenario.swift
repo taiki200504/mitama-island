@@ -20,6 +20,7 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
     case questionCard
     case completionCard
     case longCompletionCard
+    case planApproval
 
     var id: String { rawValue }
 
@@ -37,6 +38,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Completion Card"
         case .longCompletionCard:
             "Long Completion Card"
+        case .planApproval:
+            "Plan Approval"
         }
     }
 
@@ -48,6 +51,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Manual expanded list with running, active, and inactive session rows."
         case .approvalCard:
             "Auto-expanded permission surface with approve and deny actions."
+        case .planApproval:
+            "Leaving plan mode, with the modes the agent offered as buttons."
         case .questionCard:
             "Auto-expanded question surface with selectable answer buttons."
         case .completionCard:
@@ -91,6 +96,19 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                 title: title,
                 summary: summary,
                 previewHeight: 330,
+                notchStatus: .opened,
+                notchOpenReason: .notification,
+                islandSurface: .sessionList(actionableSessionID: session.id),
+                sessions: DebugSessionFactory.notificationSessions(lead: session, now: now),
+                selectedSessionID: session.id
+            )
+
+        case .planApproval:
+            let session = DebugSessionFactory.planApprovalSession(now: now)
+            return IslandDebugSnapshot(
+                title: title,
+                summary: summary,
+                previewHeight: 380,
                 notchStatus: .opened,
                 notchOpenReason: .notification,
                 islandSurface: .sessionList(actionableSessionID: session.id),
@@ -301,6 +319,46 @@ private enum DebugSessionFactory {
                 initialUserPrompt: initialPrompt,
                 lastUserPrompt: latestPrompt,
                 lastAssistantMessage: assistant
+            )
+        )
+    }
+
+    /// Leaving plan mode. The agent hands over the modes it will accept in
+    /// `suggestedUpdates`; the card has to turn those into buttons.
+    static func planApprovalSession(now: Date) -> AgentSession {
+        AgentSession(
+            id: "session-plan-approval",
+            title: "Claude · open-island",
+            tool: .claudeCode,
+            origin: .demo,
+            attachmentState: .attached,
+            phase: .waitingForApproval,
+            summary: "Claude wants to exit plan mode and start implementation.",
+            updatedAt: now.addingTimeInterval(-8),
+            permissionRequest: PermissionRequest(
+                title: "Exit plan mode",
+                summary: "Claude wants to exit plan mode and start implementation.",
+                affectedPath: "",
+                primaryActionTitle: "Allow Once",
+                secondaryActionTitle: "Deny",
+                toolName: "ExitPlanMode",
+                suggestedUpdates: [
+                    .setMode(destination: .session, mode: .bypassPermissions),
+                    .setMode(destination: .session, mode: .acceptEdits),
+                ]
+            ),
+            jumpTarget: JumpTarget(
+                terminalApp: "Cursor",
+                workspaceName: "open-island",
+                paneTitle: "claude ~/Personal/open-island",
+                workingDirectory: "/Users/wangruobing/Personal/open-island",
+                terminalSessionID: "cursor-plan"
+            ),
+            claudeMetadata: ClaudeSessionMetadata(
+                transcriptPath: "/tmp/plan.jsonl",
+                initialUserPrompt: "残っている未修正を潰し切る計画を立てて",
+                currentTool: "ExitPlanMode",
+                currentToolInputPreview: "計画: 不要になったコードを削除し、提案をやめて実行に変える"
             )
         )
     }

@@ -479,3 +479,6 @@
 "settings.mitama.source.envFile" = "明文檔案";
 "settings.mitama.source.none" = "未設定";
 "settings.mitama.moveToKeychain" = "金鑰位於明文檔案中。可用 addkey -k MITAMA_SUPABASE_URL 與 addkey -k MITAMA_SUPABASE_KEY 遷移。";
+
+/* Plan approval */
+"approval.planReady" = "準備退出計畫模式";

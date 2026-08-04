@@ -1829,7 +1829,7 @@ private struct IslandSessionRow: View {
 
     private var approvalActionBody: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(lang.t("approval.toolPermissionRequested"))
+            Text(lang.t(isPlanApproval ? "approval.planReady" : "approval.toolPermissionRequested"))
                 .font(.system(size: 12.5, weight: .semibold))
                 .foregroundStyle(V6Palette.paper.opacity(0.86))
 
@@ -1861,20 +1861,35 @@ private struct IslandSessionRow: View {
                     .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true))
                 Button(session.permissionRequest?.primaryActionTitle ?? lang.t("approval.allowOnce")) { onApprove?(.allowOnce) }
                     .buttonStyle(IslandActionButtonStyle(kind: .warning, expands: true))
-                if let toolName = session.permissionRequest?.toolName {
-                    Button(lang.t("approval.alwaysAllow", toolName)) {
-                        let rule = ClaudePermissionRuleValue(toolName: toolName)
-                        let update = ClaudePermissionUpdate.addRules(
-                            destination: .session,
-                            rules: [rule],
-                            behavior: .allow
-                        )
-                        onApprove?(.allowWithUpdates([update]))
-                    }
-                    .buttonStyle(IslandActionButtonStyle(kind: .primary, expands: true))
+            }
+
+            // Whatever else the agent offered — "bypass permissions",
+            // "accept edits", a scoped always-allow. These arrive in
+            // `suggestedUpdates` and used to be dropped on the floor, which left
+            // the island unable to answer a plan-mode exit at all.
+            ForEach(Array(suggestedApprovalUpdates.enumerated()), id: \.offset) { _, update in
+                Button(update.displayLabel) {
+                    onApprove?(.allowWithUpdates([update]))
                 }
+                .buttonStyle(IslandActionButtonStyle(kind: .primary, expands: true))
             }
         }
+    }
+
+    /// The agent's own options, falling back to a session-scoped always-allow
+    /// when it offered none — which is what the card used to hard-code.
+    private var suggestedApprovalUpdates: [ClaudePermissionUpdate] {
+        if let suggested = session.permissionRequest?.suggestedUpdates, !suggested.isEmpty {
+            return suggested
+        }
+        guard let toolName = session.permissionRequest?.toolName else { return [] }
+        return [
+            .addRules(
+                destination: .session,
+                rules: [ClaudePermissionRuleValue(toolName: toolName)],
+                behavior: .allow
+            )
+        ]
     }
 
     // MARK: - Question action area
@@ -2006,9 +2021,15 @@ private struct IslandSessionRow: View {
     private var commandPreviewText: String {
         let preview = session.currentCommandPreviewText?.trimmedForNotificationCard
         if let preview, !preview.isEmpty {
-            return "$ \(preview)"
+            // A shell prompt in front of a plan reads as a command to run.
+            return isPlanApproval ? preview : "$ \(preview)"
         }
         return session.permissionRequest?.summary.trimmedForNotificationCard ?? session.summary.trimmedForNotificationCard
+    }
+
+    /// Leaving plan mode is a decision about how to proceed, not a tool call.
+    private var isPlanApproval: Bool {
+        session.permissionRequest?.toolName == "ExitPlanMode"
     }
 
     private var runningDetailText: String? {

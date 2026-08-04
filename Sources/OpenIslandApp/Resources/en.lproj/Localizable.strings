@@ -480,3 +480,6 @@
 "settings.mitama.source.envFile" = "A plaintext file";
 "settings.mitama.source.none" = "Not configured";
 "settings.mitama.moveToKeychain" = "The key is in a plaintext file. Move it with: addkey -k MITAMA_SUPABASE_URL and addkey -k MITAMA_SUPABASE_KEY";
+
+/* Plan approval */
+"approval.planReady" = "Ready to leave plan mode";

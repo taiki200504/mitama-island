@@ -856,3 +856,46 @@ private func sendOnGCDThread(
         }
     }
 }
+
+/// A plan-mode exit is answered by sending back a permission-mode change. If
+/// that update does not survive the wire format the agent silently proceeds
+/// under the old mode, which looks to the user like the button did nothing.
+struct PermissionModeUpdateWireTests {
+    private func roundTrip(_ update: ClaudePermissionUpdate) throws -> ClaudePermissionUpdate {
+        let data = try JSONEncoder().encode(update)
+        return try JSONDecoder().decode(ClaudePermissionUpdate.self, from: data)
+    }
+
+    @Test
+    func aModeChangeSurvivesEncoding() throws {
+        for mode: ClaudePermissionMode in [.bypassPermissions, .acceptEdits, .default, .plan] {
+            let update = ClaudePermissionUpdate.setMode(destination: .session, mode: mode)
+            #expect(try roundTrip(update) == update, "\(mode) did not round-trip")
+        }
+    }
+
+    @Test
+    func anAllowDecisionCarriesItsUpdatesThroughTheEncoder() throws {
+        let bypass = ClaudePermissionUpdate.setMode(destination: .session, mode: .bypassPermissions)
+        let decision = ClaudePermissionRequestDecision.allow(updatedPermissions: [bypass])
+
+        let data = try JSONEncoder().encode(decision)
+        let decoded = try JSONDecoder().decode(ClaudePermissionRequestDecision.self, from: data)
+
+        guard case let .allow(_, updates) = decoded else {
+            Issue.record("expected an allow decision")
+            return
+        }
+        #expect(updates == [bypass])
+    }
+
+    /// The card renders these strings as its buttons, so an empty one would ship
+    /// a blank button.
+    @Test
+    func everyModeHasANonEmptyLabel() {
+        for mode: ClaudePermissionMode in [.bypassPermissions, .acceptEdits, .default, .plan, .auto, .dontAsk] {
+            let label = ClaudePermissionUpdate.setMode(destination: .session, mode: mode).displayLabel
+            #expect(!label.isEmpty, "\(mode) has no label")
+        }
+    }
+}
