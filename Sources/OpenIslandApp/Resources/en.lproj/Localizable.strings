@@ -547,3 +547,9 @@
 "settings.shortcuts.hints.help" = "Hold the modifier to see which letter each button answers to.";
 "settings.shortcuts.hints.noPermission" = "Needs Accessibility permission. The shortcuts themselves work without it — only the hints are affected.";
 "settings.labs.sessionNaming.help" = "Uses the first prompt instead of the folder name, so sessions in one repository stay apart. Derived on the spot — no model is asked.";
+
+/* Diagnostics */
+"settings.general.diagnostics" = "Diagnostics";
+"settings.general.diagnostics.action" = "Write a report";
+"settings.general.diagnostics.help" = "Writes a text file describing what the app can see. Nothing is sent anywhere — no folders, prompts or session titles are included.";
+"settings.general.diagnostics.written" = "Report written and revealed in Finder.";

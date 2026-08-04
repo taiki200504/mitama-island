@@ -171,6 +171,15 @@ struct GeneralSettingsPane: View {
                     Text(lang.t(option.labelKey)).tag(option)
                 }
             }
+
+            SettingsRow(
+                title: lang.t("settings.general.diagnostics"),
+                help: lang.t("settings.general.diagnostics.help")
+            ) {
+                Button(lang.t("settings.general.diagnostics.action")) {
+                    model.exportDiagnostics()
+                }
+            }
         }
     }
 

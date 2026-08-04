@@ -547,3 +547,9 @@
 "settings.shortcuts.hints.help" = "修飾キーを押している間だけ、各ボタンの文字が出ます。";
 "settings.shortcuts.hints.noPermission" = "アクセシビリティの許可が要ります。ショートカット自体は許可なしで動き、影響を受けるのは表示だけです。";
 "settings.labs.sessionNaming.help" = "フォルダ名ではなく最初のプロンプトを使うので、同じリポジトリのセッションを見分けられます。その場で作るだけで、AI には尋ねません。";
+
+/* Diagnostics */
+"settings.general.diagnostics" = "診断レポート";
+"settings.general.diagnostics.action" = "書き出す";
+"settings.general.diagnostics.help" = "アプリから何が見えているかをテキストに書き出します。どこにも送信しません。フォルダ名・プロンプト・セッション名は含めません。";
+"settings.general.diagnostics.written" = "レポートを書き出し、Finder で表示しました。";

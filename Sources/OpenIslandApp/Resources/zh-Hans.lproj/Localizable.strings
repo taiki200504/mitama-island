@@ -547,3 +547,9 @@
 "settings.shortcuts.hints.help" = "按住修饰键即可看到每个按钮对应的字母。";
 "settings.shortcuts.hints.noPermission" = "需要辅助功能权限。快捷键本身无需权限即可使用，仅提示受影响。";
 "settings.labs.sessionNaming.help" = "使用首个提示而非文件夹名，便于区分同一仓库中的会话。就地生成，不调用模型。";
+
+/* Diagnostics */
+"settings.general.diagnostics" = "诊断报告";
+"settings.general.diagnostics.action" = "导出";
+"settings.general.diagnostics.help" = "将应用可见的内容写入文本文件。不会发送到任何地方，也不包含文件夹、提示或会话名称。";
+"settings.general.diagnostics.written" = "报告已导出并在访达中显示。";

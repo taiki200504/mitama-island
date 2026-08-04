@@ -546,3 +546,9 @@
 "settings.shortcuts.hints.help" = "按住修飾鍵即可看到每個按鈕對應的字母。";
 "settings.shortcuts.hints.noPermission" = "需要輔助使用權限。快捷鍵本身無需權限即可使用，僅提示受影響。";
 "settings.labs.sessionNaming.help" = "使用首個提示而非資料夾名稱，便於區分同一儲存庫中的工作階段。就地生成，不呼叫模型。";
+
+/* Diagnostics */
+"settings.general.diagnostics" = "診斷報告";
+"settings.general.diagnostics.action" = "匯出";
+"settings.general.diagnostics.help" = "將應用可見的內容寫入文字檔。不會傳送到任何地方，也不包含資料夾、提示或工作階段名稱。";
+"settings.general.diagnostics.written" = "報告已匯出並在 Finder 中顯示。";

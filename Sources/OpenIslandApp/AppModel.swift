@@ -1916,6 +1916,49 @@ final class AppModel {
         }
     }
 
+    /// Writes a diagnostics file and reveals it, so it can be attached to a
+    /// bug report. Nothing leaves the machine on its own.
+    func exportDiagnostics() {
+        let report = DiagnosticsReport(
+            appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown",
+            systemVersion: ProcessInfo.processInfo.operatingSystemVersionString,
+            installedAgents: installedAgentDisplayNames,
+            sessions: state.sessions.map { session in
+                DiagnosticsReport.SessionLine(
+                    tool: session.tool.displayName,
+                    phase: String(describing: session.phase),
+                    terminalApp: session.jumpTarget?.terminalApp,
+                    isVisible: session.isVisibleInIsland
+                        && !settings.notificationFilters.isSilenced(session),
+                    updatedSecondsAgo: Int(Date.now.timeIntervalSince(session.updatedAt))
+                )
+            },
+            activeFilterCount: settings.notificationFilters.activeRules.count,
+            quietScenes: activeQuietSceneNames,
+            generatedAt: .now
+        )
+
+        do {
+            let url = try report.write(to: FileManager.default.temporaryDirectory)
+            NSWorkspace.shared.activateFileViewerSelecting([url])
+            lastActionMessage = lang.t("settings.general.diagnostics.written")
+        } catch {
+            lastActionMessage = error.localizedDescription
+        }
+    }
+
+    /// Which of the quiet scenes is in effect right now, named plainly.
+    private var activeQuietSceneNames: [String] {
+        var names: [String] = []
+        let snapshot = quietScenes.snapshot
+        if let modes = snapshot.activeFocusModes, !modes.isEmpty {
+            names.append("focus: \(modes.sorted().joined(separator: "+"))")
+        }
+        if snapshot.screenIsObscured.isActive { names.append("screen locked") }
+        if snapshot.screenIsBeingShared.isActive { names.append("screen sharing app open") }
+        return names
+    }
+
     /// Adds a filter rule from the island's right-click menu.
     ///
     /// Deduplicated, because right-clicking the same folder twice should not
