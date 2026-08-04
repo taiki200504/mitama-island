@@ -148,6 +148,7 @@ final class OverlayUICoordinator {
                 self.autoCollapseSurfaceHasBeenEntered = false
                 self.isPointerInsideIslandSurface = false
                 self.updateNotificationAutoCollapse()
+                self.appModel?.panelHotkeys?.panelDidExpand()
             },
             onPlacementResolved: { [weak self] in
                 guard let self, let overlayPlacementDiagnostics else { return }
@@ -170,6 +171,7 @@ final class OverlayUICoordinator {
                 self?.autoCollapseSurfaceHasBeenEntered = false
                 self?.isPointerInsideIslandSurface = false
                 self?.appModel?.measuredNotificationContentHeight = 0
+                self?.appModel?.panelHotkeys?.panelDidCollapse()
             }
         )
     }

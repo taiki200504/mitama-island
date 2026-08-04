@@ -1163,6 +1163,12 @@ final class AppModel {
         }
         hasStarted = true
 
+        // Hot keys are registered process-wide. A harness run would take them
+        // away from the copy the user is actually using.
+        if !disablesOverlayEventMonitoringDuringHarness {
+            startPanelHotkeys()
+        }
+
         if loadRuntimeState {
             isResolvingInitialLiveSessions = true
 
@@ -1762,6 +1768,63 @@ final class AppModel {
     /// The agents actually present on this Mac, for the detection screen.
     var installedAgentDisplayNames: [String] {
         hooks.intentStore.installedAgents().map(\.displayName)
+    }
+
+    // MARK: Keyboard
+
+    /// Nil during a harness run: registering process-global hot keys from a
+    /// screenshot process would take them away from the real app.
+    private(set) var panelHotkeys: PanelHotkeyCoordinator?
+
+    /// Reveals each button's letter while the modifier is held.
+    let shortcutHints = ShortcutHintMonitor()
+
+    private func startPanelHotkeys() {
+        shortcutHints.start(modifier: settings.shortcuts.modifier)
+        let coordinator = PanelHotkeyCoordinator(
+            registrar: CarbonHotkeyController(),
+            settings: settings.shortcuts
+        )
+        coordinator.onAction = { [weak self] action in
+            self?.performShortcut(action)
+        }
+        panelHotkeys = coordinator
+    }
+
+    /// Applies a shortcut to whatever the panel is currently asking about.
+    ///
+    /// Falls back to the first session waiting on the user when no card is
+    /// showing, so ⌃Y works from a list as well as from a card.
+    func performShortcut(_ action: PanelShortcutAction) {
+        guard let session = activeIslandCardSession ?? pendingApprovalSessions.first else { return }
+
+        switch action {
+        case .approve:
+            approvePermission(for: session.id, action: .allowOnce)
+        case .deny:
+            approvePermission(for: session.id, action: .deny)
+        case .alwaysAllow:
+            approvePermission(for: session.id, action: alwaysAllowAction(for: session))
+        case .skipPermissions:
+            approvePermission(for: session.id, action: bypassAction(for: session))
+        case .jumpToTerminal:
+            jumpToSession(session)
+        }
+    }
+
+    /// The update the agent offered for "always allow", if it offered one.
+    /// Without it there is nothing to remember, so this falls back to one-off
+    /// approval rather than claiming a permission was stored.
+    private func alwaysAllowAction(for session: AgentSession) -> ApprovalAction {
+        let updates = session.permissionRequest?.suggestedUpdates ?? []
+        guard let rule = updates.first(where: { $0.isRuleAddition }) else { return .allowOnce }
+        return .allowWithUpdates([rule])
+    }
+
+    private func bypassAction(for session: AgentSession) -> ApprovalAction {
+        let updates = session.permissionRequest?.suggestedUpdates ?? []
+        guard let bypass = updates.first(where: { $0.isModeChange }) else { return .allowOnce }
+        return .allowWithUpdates([bypass])
     }
 
     var agentIconStyle: AgentIconStyle {

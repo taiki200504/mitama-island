@@ -131,11 +131,12 @@ struct ShortcutSettingsTests {
         #expect(FixedPanelShortcut.submitMultiSelect.usesModifier)
     }
 
-    /// Nothing in this pane fires yet. When either capability lands, the rows
-    /// have to stop being disabled — this is the reminder.
+    /// The five assignable actions fire now. What is left needs the panel to
+    /// take keyboard focus, or a switcher that does not exist yet — when either
+    /// lands, those rows have to stop being disabled.
     @Test
-    func nothingInThisPaneFiresYet() {
-        #expect(!PendingCapability.panelKeyHandling.isImplemented)
+    func whatStillDoesNotFire() {
+        #expect(!PendingCapability.inPanelTypedKeys.isImplemented)
         #expect(!PendingCapability.switcherPanel.isImplemented)
         #expect(!PendingCapability.globalHotkey.isImplemented)
     }

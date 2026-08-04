@@ -725,7 +725,8 @@ struct IslandPanelView: View {
                         ? { model.replyToSession(session, text: $0) } : nil,
                     onJump: { model.jumpToSession(session) },
                     onHide: { model.hideSessions(matching: $0) },
-                    agentIconStyle: model.agentIconStyle
+                    agentIconStyle: model.agentIconStyle,
+                    shortcutHint: model.shortcutHints.isModifierHeld ? model.settings.shortcuts : nil
                 )
                 .id(notificationCardIdentity(for: session))
 
@@ -772,7 +773,8 @@ struct IslandPanelView: View {
                                 onJump: { model.jumpToSession(session) },
                                 onDismiss: session.isRemote ? { model.dismissSession(session.id) } : nil,
                                 onHide: { model.hideSessions(matching: $0) },
-                    agentIconStyle: model.agentIconStyle
+                    agentIconStyle: model.agentIconStyle,
+                    shortcutHint: model.shortcutHints.isModifierHeld ? model.settings.shortcuts : nil
                             )
                         }
                     }
@@ -827,7 +829,8 @@ struct IslandPanelView: View {
                         onJump: { model.jumpToSession(session) },
                         onDismiss: session.isRemote ? { model.dismissSession(session.id) } : nil,
                         onHide: { model.hideSessions(matching: $0) },
-                    agentIconStyle: model.agentIconStyle
+                    agentIconStyle: model.agentIconStyle,
+                    shortcutHint: model.shortcutHints.isModifierHeld ? model.settings.shortcuts : nil
                     )
                 }
             }
@@ -1392,6 +1395,8 @@ private struct IslandSessionRow: View {
     /// Adds a rule that keeps this kind of session off the island for good.
     var onHide: ((SilenceRule) -> Void)?
     var agentIconStyle: AgentIconStyle = .pixel
+    /// Non-nil only while the shortcut modifier is held.
+    var shortcutHint: ShortcutSettings?
 
     @State private var isHighlighted = false
     @State private var detailOverride: Bool?
@@ -1962,10 +1967,14 @@ private struct IslandSessionRow: View {
             )
 
             HStack(spacing: 8) {
-                Button(session.permissionRequest?.secondaryActionTitle ?? lang.t("approval.deny")) { onApprove?(.deny) }
-                    .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true))
-                Button(session.permissionRequest?.primaryActionTitle ?? lang.t("approval.allowOnce")) { onApprove?(.allowOnce) }
-                    .buttonStyle(IslandActionButtonStyle(kind: .warning, expands: true))
+                Button(shortcutHinted(session.permissionRequest?.secondaryActionTitle ?? lang.t("approval.deny"), .deny)) {
+                    onApprove?(.deny)
+                }
+                .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true))
+                Button(shortcutHinted(session.permissionRequest?.primaryActionTitle ?? lang.t("approval.allowOnce"), .approve)) {
+                    onApprove?(.allowOnce)
+                }
+                .buttonStyle(IslandActionButtonStyle(kind: .warning, expands: true))
             }
 
             // Whatever else the agent offered — "bypass permissions",
@@ -1989,9 +1998,17 @@ private struct IslandSessionRow: View {
                 }
             }
 
-            Button(lang.t("approval.goToTerminal")) { onJump() }
+            Button(shortcutHinted(lang.t("approval.goToTerminal"), .jumpToTerminal)) { onJump() }
                 .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true))
         }
+    }
+
+    /// Appends the key that also triggers this button, but only while the
+    /// modifier is held — a permanent "⌃Y" on every button is clutter, and one
+    /// that appears on demand is a reminder.
+    private func shortcutHinted(_ title: String, _ action: PanelShortcutAction) -> String {
+        guard let hint = shortcutHint else { return title }
+        return "\(title)  \(hint.modifier.symbol)\(hint.key(for: action))"
     }
 
     /// The agent's own options, falling back to a session-scoped always-allow

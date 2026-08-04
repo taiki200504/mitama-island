@@ -256,7 +256,6 @@
 "settings.pending.outsideClickDetection" = "パネル外のクリック検知が要ります。";
 "settings.pending.globalHotkey" = "システム全体のホットキー登録が要ります。";
 "settings.pending.switcherPanel" = "セッション切替パネルが要ります。";
-"settings.pending.panelKeyHandling" = "パネル内のキー操作処理が要ります。";
 "settings.pending.approvalRouting" = "承認をパネルとターミナルに振り分ける処理が要ります。";
 "settings.pending.sessionAutoNaming" = "セッション自動命名の仕組みが要ります。";
 "settings.pending.memoryWatchdog" = "メモリ監視の仕組みが要ります。";
@@ -549,3 +548,12 @@
 "onboarding.back" = "戻る";
 "onboarding.next" = "次へ";
 "onboarding.finish" = "はじめる";
+
+/* Keyboard */
+"settings.pending.inPanelTypedKeys" = "パネルがキーボードの入力先になる必要がありますが、そうしていません。";
+"settings.shortcuts.unresolvable" = "いまのキーボード配列にこのキーが無いか、別の項目が先に使っています。";
+
+/* Shortcut hints */
+"settings.shortcuts.hints" = "ボタンにキーを表示";
+"settings.shortcuts.hints.help" = "修飾キーを押している間だけ、各ボタンの文字が出ます。";
+"settings.shortcuts.hints.noPermission" = "アクセシビリティの許可が要ります。ショートカット自体は許可なしで動き、影響を受けるのは表示だけです。";

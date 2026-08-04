@@ -255,7 +255,6 @@
 "settings.pending.outsideClickDetection" = "需要面板外點擊偵測。";
 "settings.pending.globalHotkey" = "需要註冊全域快捷鍵。";
 "settings.pending.switcherPanel" = "需要工作階段切換面板。";
-"settings.pending.panelKeyHandling" = "需要面板內按鍵處理。";
 "settings.pending.approvalRouting" = "需要在面板與終端機之間路由審批。";
 "settings.pending.sessionAutoNaming" = "需要工作階段自動命名服務。";
 "settings.pending.memoryWatchdog" = "需要記憶體監視。";
@@ -548,3 +547,12 @@
 "onboarding.back" = "返回";
 "onboarding.next" = "下一步";
 "onboarding.finish" = "開始使用";
+
+/* Keyboard */
+"settings.pending.inPanelTypedKeys" = "需要面板取得鍵盤焦點，但它不會。";
+"settings.shortcuts.unresolvable" = "目前鍵盤配置沒有此鍵，或已被其他操作佔用。";
+
+/* Shortcut hints */
+"settings.shortcuts.hints" = "按鈕上的按鍵提示";
+"settings.shortcuts.hints.help" = "按住修飾鍵即可看到每個按鈕對應的字母。";
+"settings.shortcuts.hints.noPermission" = "需要輔助使用權限。快捷鍵本身無需權限即可使用，僅提示受影響。";

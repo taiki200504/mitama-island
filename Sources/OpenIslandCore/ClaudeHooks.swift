@@ -43,6 +43,19 @@ public enum ClaudePermissionUpdate: Equatable, Codable, Sendable {
     case addDirectories(destination: ClaudePermissionUpdateDestination, directories: [String])
     case removeDirectories(destination: ClaudePermissionUpdateDestination, directories: [String])
 
+    /// Stores a standing permission, so "always allow" has something to store.
+    public var isRuleAddition: Bool {
+        if case .addRules = self { return true }
+        return false
+    }
+
+    /// Changes how the session handles permissions from here on — what the
+    /// "bypass" choice means.
+    public var isModeChange: Bool {
+        if case .setMode = self { return true }
+        return false
+    }
+
     private enum CodingKeys: String, CodingKey {
         case type
         case destination

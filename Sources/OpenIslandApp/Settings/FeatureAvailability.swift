@@ -27,7 +27,9 @@ enum PendingCapability: String, CaseIterable, Sendable {
     // Keyboard
     case globalHotkey
     case switcherPanel
-    case panelKeyHandling
+    /// Keys typed into the panel itself (1–9, return, escape), which need it
+    /// to take focus — it deliberately does not.
+    case inPanelTypedKeys
 
     // Sound
 

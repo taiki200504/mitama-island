@@ -2,9 +2,11 @@ import SwiftUI
 
 /// Keyboard assignments for the panel and the session switcher.
 ///
-/// Assignments are stored and editable now; nothing fires them yet, because the
-/// panel has no key handling and no system-wide hotkey is registered. Every row
-/// says so rather than looking live.
+/// The five assignable actions fire for real while the panel is expanded,
+/// registered through Carbon so no Accessibility permission is needed and the
+/// user keeps typing in their terminal. The three fixed keys below them still
+/// require the panel to take focus, which it deliberately does not, so those
+/// rows stay marked.
 struct ShortcutsSettingsPane: View {
     var model: AppModel
 
@@ -25,7 +27,6 @@ struct ShortcutsSettingsPane: View {
             SettingsToggleRow(
                 title: lang.t("settings.shortcuts.enabled"),
                 help: lang.t("settings.shortcuts.enabled.help"),
-                pendingNote: .panelKeyHandling,
                 isOn: Binding(
                     get: { shortcuts.keyboardShortcutsEnabled },
                     set: { shortcuts.keyboardShortcutsEnabled = $0 }
@@ -44,6 +45,18 @@ struct ShortcutsSettingsPane: View {
                     Text("\(modifier.symbol)  \(lang.t(modifier.labelKey))").tag(modifier)
                 }
             }
+            .onChange(of: shortcuts.modifier) { _, newValue in
+                model.shortcutHints.start(modifier: newValue)
+                model.panelHotkeys?.settingsDidChange(panelIsExpanded: true)
+            }
+
+            SettingsRow(
+                title: lang.t("settings.shortcuts.hints"),
+                help: lang.t("settings.shortcuts.hints.help"),
+                availability: model.shortcutHints.hasAccessibilityPermission
+                    ? .ready
+                    : .unsupported(reasonKey: "settings.shortcuts.hints.noPermission")
+            )
         }
     }
 
@@ -67,6 +80,12 @@ struct ShortcutsSettingsPane: View {
         }
     }
 
+    /// Letters this keyboard layout cannot produce, or that two actions share.
+    /// Either way the shortcut will not fire, and the row says so.
+    private var unresolvable: Set<PanelShortcutAction> {
+        Set(model.panelHotkeys?.unresolvableActions() ?? [])
+    }
+
     private var panelSection: some View {
         Section {
             ForEach(PanelShortcutAction.allCases, id: \.self) { action in
@@ -74,8 +93,12 @@ struct ShortcutsSettingsPane: View {
                     title: lang.t(action.labelKey),
                     modifier: shortcuts.modifier,
                     keyLabel: shortcuts.key(for: action),
-                    pendingNote: .panelKeyHandling,
                     onAssign: { shortcuts.setKey($0, for: action) }
+                )
+                .help(
+                    unresolvable.contains(action)
+                        ? lang.t("settings.shortcuts.unresolvable")
+                        : ""
                 )
             }
 
@@ -84,7 +107,7 @@ struct ShortcutsSettingsPane: View {
                     title: lang.t(fixed.labelKey),
                     modifier: fixed.usesModifier ? shortcuts.modifier : nil,
                     keyLabel: fixed.keyLabel,
-                    pendingNote: .panelKeyHandling
+                    pendingNote: .inPanelTypedKeys
                 )
             }
         } header: {
