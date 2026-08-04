@@ -195,8 +195,41 @@ enum HarnessArtifactRecorder {
             }
     }
 
+    /// Prefers a real screen capture, which is the only way to see the parts of
+    /// a window the app does not draw itself.
+    ///
+    /// `cacheDisplay` renders the view tree, so it misses the title bar, the
+    /// traffic lights, vibrancy-backed sidebars and Canvas content. A regression
+    /// that removed the window's close button survived six releases because the
+    /// captures could not show it. Screen capture needs the Screen Recording
+    /// permission; without it this falls back to the view-tree render, which is
+    /// still better than no image.
     private static func snapshotPNGData(for window: NSWindow) -> Data? {
         window.displayIfNeeded()
+        if let onScreen = screenCapturePNGData(for: window) {
+            return onScreen
+        }
+        return viewTreePNGData(for: window)
+    }
+
+    private static func screenCapturePNGData(for window: NSWindow) -> Data? {
+        let windowID = CGWindowID(window.windowNumber)
+        guard window.windowNumber > 0 else { return nil }
+
+        guard let image = CGWindowListCreateImage(
+            .null,
+            .optionIncludingWindow,
+            windowID,
+            [.boundsIgnoreFraming, .bestResolution]
+        ), image.width > 1, image.height > 1 else {
+            return nil
+        }
+
+        let bitmap = NSBitmapImageRep(cgImage: image)
+        return bitmap.representation(using: .png, properties: [:])
+    }
+
+    private static func viewTreePNGData(for window: NSWindow) -> Data? {
         guard let contentView = window.contentView else {
             return nil
         }
