@@ -452,3 +452,23 @@
 "settings.mitama.openHub" = "打开 Hub";
 "settings.mitama.feed.help" = "将 mitama-os 中需要处理的项目显示在代理会话上方。";
 "settings.pending.usageValueMode" = "灵动岛目前只有一种显示形式。";
+
+/* SSH remote and About */
+"settings.sshRemote.title" = "SSH 远程";
+"settings.sshRemote.beta" = "测试版";
+"settings.sshRemote.activeCount" = "%@ 个进行中";
+"settings.sshRemote.none" = "没有远程会话";
+"settings.sshRemote.intro" = "通过 SSH 查看在另一台机器上运行的 Claude Code。";
+"settings.sshRemote.step1" = "在远程机器上安装钩子";
+"settings.sshRemote.step1.help" = "在仓库目录中运行。";
+"settings.sshRemote.step2" = "转发套接字并连接";
+"settings.sshRemote.step2.help" = "将此加入 ~/.ssh/config。";
+"settings.sshRemote.direct" = "或直接连接：";
+"settings.sshRemote.note" = "为可靠重连，远程 sshd 的 /etc/ssh/sshd_config 需要 StreamLocalBindUnlink yes。";
+"settings.about.website" = "网站";
+"settings.about.source" = "源代码";
+"settings.about.reportBug" = "报告问题";
+"settings.about.credits" = "基于";
+"settings.about.credits.value" = "Open Island（GPL v3）";
+"settings.about.font" = "等宽字体";
+"settings.about.font.value" = "Departure Mono（SIL OFL 1.1）";

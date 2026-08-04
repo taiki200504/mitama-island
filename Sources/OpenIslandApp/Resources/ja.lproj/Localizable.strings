@@ -452,3 +452,23 @@
 "settings.mitama.openHub" = "Hub を開く";
 "settings.mitama.feed.help" = "mitama-os の要対応をエージェントのセッションより上に出す。";
 "settings.pending.usageValueMode" = "島はいまのところ1通りの出し方しかできません。";
+
+/* SSH remote and About */
+"settings.sshRemote.title" = "SSHリモート";
+"settings.sshRemote.beta" = "ベータ";
+"settings.sshRemote.activeCount" = "%@ 件実行中";
+"settings.sshRemote.none" = "リモートのセッションは無い";
+"settings.sshRemote.intro" = "別のマシンで動いている Claude Code を SSH 越しに見る。";
+"settings.sshRemote.step1" = "リモート側にフックを入れる";
+"settings.sshRemote.step1.help" = "リポジトリのディレクトリで実行する。";
+"settings.sshRemote.step2" = "ソケットを転送して接続する";
+"settings.sshRemote.step2.help" = "~/.ssh/config に足す。";
+"settings.sshRemote.direct" = "直接つなぐ場合:";
+"settings.sshRemote.note" = "確実に再接続するには、リモートの sshd の /etc/ssh/sshd_config に StreamLocalBindUnlink yes が要る。";
+"settings.about.website" = "ウェブサイト";
+"settings.about.source" = "ソースコード";
+"settings.about.reportBug" = "不具合を報告する";
+"settings.about.credits" = "土台";
+"settings.about.credits.value" = "Open Island（GPL v3）";
+"settings.about.font" = "等幅フォント";
+"settings.about.font.value" = "Departure Mono（SIL OFL 1.1）";

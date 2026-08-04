@@ -151,6 +151,22 @@ struct AboutSettingsPane: View {
                     .accessibilityIdentifier("settings.about.checkForUpdates")
                 }
 
+                // A GPL v3 fork bundling an OFL font owes both an acknowledgement.
+                Section(lang.t("settings.about.credits")) {
+                    LabeledContent(
+                        lang.t("settings.about.credits"),
+                        value: lang.t("settings.about.credits.value")
+                    )
+                    LabeledContent(
+                        lang.t("settings.about.font"),
+                        value: lang.t("settings.about.font.value")
+                    )
+                    Link(
+                        lang.t("settings.about.source"),
+                        destination: URL(string: "https://github.com/Octane0411/open-vibe-island")!
+                    )
+                }
+
                 Section {
                     aboutActionRow(
                         title: lang.t("settings.about.quitApp"),
@@ -859,6 +875,8 @@ struct PlaceholderSettingsPane: View {
 struct RemoteConnectionSection: View {
     var model: AppModel
 
+    private var lang: LanguageManager { model.lang }
+
     @State private var copiedCommand: String?
 
     private var remoteSessionCount: Int {
@@ -889,32 +907,32 @@ struct RemoteConnectionSection: View {
             VStack(alignment: .leading, spacing: 12) {
                 // Status
                 HStack {
-                    Label("SSH Remote", systemImage: "network")
+                    Label(lang.t("settings.sshRemote.title"), systemImage: "network")
                     Spacer()
                     if remoteSessionCount > 0 {
                         HStack(spacing: 4) {
                             Circle()
                                 .fill(.green)
                                 .frame(width: 7, height: 7)
-                            Text("\(remoteSessionCount) active")
+                            Text(lang.t("settings.sshRemote.activeCount", String(remoteSessionCount)))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                     } else {
-                        Text("No remote sessions")
+                        Text(lang.t("settings.sshRemote.none"))
                             .font(.caption)
                             .foregroundStyle(.tertiary)
                     }
                 }
 
-                Text("Monitor Claude Code running on remote servers via SSH.")
+                Text(lang.t("settings.sshRemote.intro"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
                 // Step 1
                 remoteSetupStep(
                     number: "1",
-                    title: "Deploy hooks to remote server",
+                    title: lang.t("settings.sshRemote.step1"),
                     description: "Run from the Open Island repo directory:",
                     command: setupCommand
                 )
@@ -922,7 +940,7 @@ struct RemoteConnectionSection: View {
                 // Step 2
                 remoteSetupStep(
                     number: "2",
-                    title: "Connect with socket forwarding",
+                    title: lang.t("settings.sshRemote.step2"),
                     description: "Add to ~/.ssh/config (recommended):",
                     command: sshConfigSnippet,
                     multiline: true
@@ -930,7 +948,7 @@ struct RemoteConnectionSection: View {
 
                 // Step 2 alternative
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Or connect directly:")
+                    Text(lang.t("settings.sshRemote.direct"))
                         .font(.system(size: 10.5))
                         .foregroundStyle(.tertiary)
                     copyableCommand(sshCommand)
@@ -942,14 +960,14 @@ struct RemoteConnectionSection: View {
                         .font(.system(size: 10))
                         .foregroundStyle(.blue.opacity(0.8))
                         .padding(.top, 1)
-                    Text("The remote sshd needs `StreamLocalBindUnlink yes` in /etc/ssh/sshd_config for reliable reconnects.")
+                    Text(lang.t("settings.sshRemote.note"))
                         .font(.system(size: 10.5))
                         .foregroundStyle(.secondary)
                 }
             }
         } header: {
             HStack(spacing: 4) {
-                Text("Remote")
+                Text(lang.t("settings.sshRemote.title"))
                 Text("Beta")
                     .foregroundStyle(.tertiary)
             }

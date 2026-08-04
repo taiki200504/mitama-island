@@ -11,11 +11,14 @@ struct PendingCapabilityBadge: View {
 
     var body: some View {
         Text(LanguageManager.shared.t("settings.pending.badge"))
-            .font(.system(size: 10, weight: .semibold))
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(Color.orange.opacity(0.22), in: Capsule())
-            .foregroundStyle(.orange)
+            .font(.system(size: 9.5, weight: .medium))
+            // Quiet on purpose. An orange chip on every other row made a pane
+            // full of honest "not yet" markers read as a pane full of faults.
+            // It has to be legible, not loud.
+            .padding(.horizontal, 5)
+            .padding(.vertical, 1.5)
+            .background(Color.primary.opacity(0.09), in: Capsule())
+            .foregroundStyle(.secondary)
             .help(LanguageManager.shared.t(capability.explanationKey))
     }
 }

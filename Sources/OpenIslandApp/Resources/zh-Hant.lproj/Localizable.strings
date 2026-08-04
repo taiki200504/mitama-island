@@ -451,3 +451,23 @@
 "settings.mitama.openHub" = "開啟 Hub";
 "settings.mitama.feed.help" = "將 mitama-os 中需要處理的項目顯示在代理工作階段上方。";
 "settings.pending.usageValueMode" = "島目前只有一種顯示形式。";
+
+/* SSH remote and About */
+"settings.sshRemote.title" = "SSH 遠端";
+"settings.sshRemote.beta" = "測試版";
+"settings.sshRemote.activeCount" = "%@ 個進行中";
+"settings.sshRemote.none" = "沒有遠端工作階段";
+"settings.sshRemote.intro" = "透過 SSH 檢視在另一台機器上執行的 Claude Code。";
+"settings.sshRemote.step1" = "在遠端機器上安裝掛鉤";
+"settings.sshRemote.step1.help" = "在儲存庫目錄中執行。";
+"settings.sshRemote.step2" = "轉送通訊端並連線";
+"settings.sshRemote.step2.help" = "將此加入 ~/.ssh/config。";
+"settings.sshRemote.direct" = "或直接連線：";
+"settings.sshRemote.note" = "為可靠重連，遠端 sshd 的 /etc/ssh/sshd_config 需要 StreamLocalBindUnlink yes。";
+"settings.about.website" = "網站";
+"settings.about.source" = "原始碼";
+"settings.about.reportBug" = "回報問題";
+"settings.about.credits" = "基於";
+"settings.about.credits.value" = "Open Island（GPL v3）";
+"settings.about.font" = "等寬字型";
+"settings.about.font.value" = "Departure Mono（SIL OFL 1.1）";

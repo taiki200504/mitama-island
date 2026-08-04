@@ -452,3 +452,23 @@
 "settings.mitama.openHub" = "Open the hub";
 "settings.mitama.feed.help" = "Shows items from mitama-os that need a decision, above the agent sessions.";
 "settings.pending.usageValueMode" = "The island shows one form of the number today.";
+
+/* SSH remote and About */
+"settings.sshRemote.title" = "SSH Remote";
+"settings.sshRemote.beta" = "Beta";
+"settings.sshRemote.activeCount" = "%@ running";
+"settings.sshRemote.none" = "No remote sessions";
+"settings.sshRemote.intro" = "Watch Claude Code running on another machine over SSH.";
+"settings.sshRemote.step1" = "Put the hooks on the remote machine";
+"settings.sshRemote.step1.help" = "Run this from the repository directory.";
+"settings.sshRemote.step2" = "Connect with the socket forwarded";
+"settings.sshRemote.step2.help" = "Add this to ~/.ssh/config.";
+"settings.sshRemote.direct" = "Or connect directly:";
+"settings.sshRemote.note" = "The remote sshd needs StreamLocalBindUnlink yes in /etc/ssh/sshd_config to reconnect reliably.";
+"settings.about.website" = "Website";
+"settings.about.source" = "Source code";
+"settings.about.reportBug" = "Report a problem";
+"settings.about.credits" = "Built on";
+"settings.about.credits.value" = "Open Island (GPL v3)";
+"settings.about.font" = "Monospace font";
+"settings.about.font.value" = "Departure Mono (SIL OFL 1.1)";
