@@ -51,6 +51,13 @@ final class DisplaySettings: PreferenceGroup {
         set { write(\.sessionAutoNaming, Keys.sessionAutoNaming, newValue) }
     }
 
+    /// Which visual language the island speaks. Stored raw so an unknown value
+    /// from a future version falls back rather than failing to decode.
+    var themeRawValue: String {
+        get { read(\.themeRawValue, Keys.theme, IslandThemeID.hud.rawValue) }
+        set { write(\.themeRawValue, Keys.theme, newValue) }
+    }
+
     // MARK: Notch calibration
 
     /// Override for the notch height in points. Zero means "trust the macOS value".
@@ -134,6 +141,7 @@ extension DisplaySettings {
         // that clips the card.
         static let completionCardMaxHeight = "display.completionCardMaxHeight"
         static let agentIconStyle = "display.agentIconStyle"
+        static let theme = "display.theme"
         static let sessionAutoNaming = "display.sessionAutoNaming"
         static let notchHeightOverride = "display.notchHeightOverride"
         static let notchWidthOverride = "display.notchWidthOverride"

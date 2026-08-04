@@ -35,7 +35,12 @@ struct V6ClosedPillShape: Shape {
     }
 }
 
+/// The two colours everything else is built from.
+///
+/// Kept under the original name so the ~120 call sites did not have to change
+/// when themes arrived; the values now come from whichever theme is selected.
+@MainActor
 enum V6Palette {
-    static let ink = Color(red: 0x0d / 255.0, green: 0x0d / 255.0, blue: 0x0f / 255.0)
-    static let paper = Color(red: 0xf1 / 255.0, green: 0xea / 255.0, blue: 0xd9 / 255.0)
+    static var ink: Color { IslandThemes.current.ink }
+    static var paper: Color { IslandThemes.current.paper }
 }

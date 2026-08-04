@@ -1,20 +1,22 @@
 import SwiftUI
 import OpenIslandCore
 
+@MainActor
 enum IslandDesignPalette {
-    /// Tool names in an activity line. Deliberately the same blue as the
+    /// Tool names in an activity line. Deliberately the same colour as the
     /// running-status tint so "this row is doing something" reads from one
     /// colour whether you look at the dot or the line.
-    static let toolAccent = Color(red: 110.0 / 255.0, green: 167.0 / 255.0, blue: 255.0 / 255.0)
+    static var toolAccent: Color { IslandThemes.current.statusTints.running }
 
+    @MainActor
     enum Status {
-        static let waitingAggregate = Color(red: 231.0 / 255.0, green: 167.0 / 255.0, blue: 98.0 / 255.0)
-        static let waitingForApproval = Color(red: 244.0 / 255.0, green: 164.0 / 255.0, blue: 164.0 / 255.0)
-        static let waitingForAnswer = Color(red: 255.0 / 255.0, green: 213.0 / 255.0, blue: 138.0 / 255.0)
-        static let running = Color(red: 110.0 / 255.0, green: 167.0 / 255.0, blue: 255.0 / 255.0)
-        static let completed = Color(red: 111.0 / 255.0, green: 185.0 / 255.0, blue: 130.0 / 255.0)
-        static let inactive = V6Palette.paper.opacity(0.38)
-        static let idle = V6Palette.paper.opacity(0.35)
+        static var waitingAggregate: Color { IslandThemes.current.statusTints.waitingAggregate }
+        static var waitingForApproval: Color { IslandThemes.current.statusTints.waitingForApproval }
+        static var waitingForAnswer: Color { IslandThemes.current.statusTints.waitingForAnswer }
+        static var running: Color { IslandThemes.current.statusTints.running }
+        static var completed: Color { IslandThemes.current.statusTints.completed }
+        static var inactive: Color { V6Palette.paper.opacity(0.38) }
+        static var idle: Color { V6Palette.paper.opacity(0.35) }
 
         static func tint(for phase: SessionPhase) -> Color {
             switch phase {

@@ -1333,6 +1333,7 @@ private struct SessionListLivePreviewRow: View {
 }
 
 private extension AppearanceSessionPreviewItem.Phase {
+    @MainActor
     var tint: Color {
         switch self {
         case .approval:
