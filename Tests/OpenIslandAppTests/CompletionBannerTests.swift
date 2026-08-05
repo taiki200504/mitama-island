@@ -1,6 +1,7 @@
 import Foundation
 import AppKit
 import SwiftUI
+@testable import OpenIslandCore
 import Testing
 @testable import OpenIslandApp
 
@@ -96,5 +97,83 @@ struct CompletionBannerControllerTests {
     func staysSmall() {
         #expect(CompletionBannerView.size.width <= 360)
         #expect(CompletionBannerView.size.height <= 70)
+    }
+}
+
+@Suite("Completion announcement is not doubled", .serialized)
+@MainActor
+struct CompletionAnnouncementTests {
+    private func makeModel() -> AppModel {
+        let defaults = UserDefaults(suiteName: "completion-\(UUID().uuidString)")!
+        return AppModel(settings: SettingsStore(store: PreferenceStore(suite: defaults)))
+    }
+
+    private func completedSession(id: String) -> AgentSession {
+        AgentSession(
+            id: id,
+            title: id,
+            tool: .claudeCode,
+            phase: .completed,
+            summary: "Done",
+            updatedAt: .now
+        )
+    }
+
+    /// The bug this closes: one finished session used to produce both a banner
+    /// under the notch and the notch opening behind it with the summary — one
+    /// event, two things to dismiss.
+    @Test("A finished session opens the panel or shows a banner, never both")
+    func neverBoth() {
+        let model = makeModel()
+        model.settings.display.completionBanner = true
+        model.settings.behaviour.expandOnCompletion = true
+        model.completionBanner.dismiss()
+
+        let session = completedSession(id: "s1")
+        model.loadDebugSnapshot(
+            IslandDebugSnapshot(
+                title: "t",
+                summary: "s",
+                previewHeight: 200,
+                notchStatus: .closed,
+                notchOpenReason: nil,
+                islandSurface: .sessionList(),
+                sessions: [session],
+                selectedSessionID: session.id
+            )
+        )
+        #expect(model.notchStatus == .closed)
+    }
+
+    /// Opening the announcement is what brings up the summary.
+    @Test("Opening the banner shows that session")
+    func openingShowsTheSession() {
+        let model = makeModel()
+        let session = completedSession(id: "s2")
+        model.loadDebugSnapshot(
+            IslandDebugSnapshot(
+                title: "t",
+                summary: "s",
+                previewHeight: 200,
+                notchStatus: .closed,
+                notchOpenReason: nil,
+                islandSurface: .sessionList(),
+                sessions: [session],
+                selectedSessionID: nil
+            )
+        )
+
+        model.openCompletionSummary(for: session.id)
+        #expect(model.selectedSessionID == session.id)
+        #expect(model.islandSurface.sessionID == session.id)
+        #expect(model.completionBanner.isPresenting == false)
+    }
+
+    /// A session that has gone away must not open an empty panel.
+    @Test("Opening an unknown session does nothing")
+    func unknownSessionIsIgnored() {
+        let model = makeModel()
+        model.openCompletionSummary(for: "nope")
+        #expect(model.islandSurface.sessionID == nil)
     }
 }

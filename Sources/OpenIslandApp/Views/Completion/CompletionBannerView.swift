@@ -18,6 +18,9 @@ struct CompletionBannerContent: Equatable, Sendable {
 /// in the vocabulary.
 struct CompletionBannerView: View {
     let content: CompletionBannerContent
+    /// Opens the island on this session. The banner says *that* it finished;
+    /// the panel behind this says what it did.
+    var onOpen: (() -> Void)?
     /// Dismisses the banner early. Also told when the pointer arrives so the
     /// countdown can be held — see `CompletionBannerController`.
     var onClose: (() -> Void)?
@@ -56,6 +59,15 @@ struct CompletionBannerView: View {
 
             Spacer(minLength: 4)
 
+            // Only shown once there is somewhere to go, so the banner never
+            // implies a summary it cannot open.
+            if onOpen != nil {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(theme.paper.opacity(isHovering ? 0.7 : 0.3))
+                    .accessibilityHidden(true)
+            }
+
             closeButton
         }
         .padding(.leading, 14)
@@ -79,8 +91,13 @@ struct CompletionBannerView: View {
             withAnimation(.easeOut(duration: 0.12)) { isHovering = hovering }
             onHoverChanged?(hovering)
         }
+        // The close button sits on top of this and stops the tap itself, so
+        // dismissing never also opens the panel.
+        .contentShape(Rectangle())
+        .onTapGesture { onOpen?() }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(LanguageManager.shared.t("banner.completed")) \(content.title)")
+        .accessibilityHint(onOpen == nil ? "" : LanguageManager.shared.t("banner.openHint"))
     }
 
     /// Hidden until the pointer arrives. A permanent close button on something
@@ -89,6 +106,8 @@ struct CompletionBannerView: View {
         Button {
             onClose?()
         } label: {
+            // The label carries the hit area; the surrounding tap opens the
+            // panel, so this has to swallow its own click.
             Image(systemName: "xmark")
                 .font(.system(size: 9, weight: .bold))
                 .foregroundStyle(theme.paper.opacity(0.75))

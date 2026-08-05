@@ -577,3 +577,4 @@
 "island.sessionOverview.done.hud" = "CLEAR";
 "island.sessionOverview.idle.hud" = "IDLE";
 "island.sessionOverview.total.hud" = "UNITS";
+"banner.openHint" = "開くと内容が見られます";

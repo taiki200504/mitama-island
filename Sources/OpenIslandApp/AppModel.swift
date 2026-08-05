@@ -1359,7 +1359,16 @@ final class AppModel {
         overlay.applyOverlayState(from: snapshot, presentOverlay: presentOverlay, autoCollapseNotificationCards: autoCollapseNotificationCards)
 
         if let banner = snapshot.completionBanner {
-            completionBanner.present(banner, on: overlay.overlayPanelController.currentOverlayScreen)
+            // The same open handler production uses, so what the harness
+            // captures is what ships — including the affordance that says the
+            // banner leads somewhere.
+            completionBanner.present(
+                banner,
+                on: overlay.overlayPanelController.currentOverlayScreen,
+                onOpen: { [weak self] sessionID in
+                    self?.openCompletionSummary(for: sessionID)
+                }
+            )
         }
     }
 
@@ -1694,11 +1703,21 @@ final class AppModel {
     ///
     /// Deliberately silent: `taskComplete` already plays from the notification
     /// card path, and two sounds for one event reads as a bug.
+    /// Whether this finished session gets a banner.
+    ///
+    /// One predicate for both decisions — showing the banner, and holding back
+    /// the panel that would otherwise duplicate it. Two copies of this rule
+    /// would eventually disagree and bring back the double announcement.
+    private func completionBannerApplies(to payload: SessionCompleted) -> Bool {
+        settings.display.completionBanner
+            && payload.isInterrupt != true
+            && !quietScenes.shouldStayQuiet(under: settings.behaviour)
+            && state.session(id: payload.sessionID) != nil
+    }
+
     private func presentCompletionBannerIfWanted(for event: AgentEvent) {
         guard case let .sessionCompleted(payload) = event,
-              settings.display.completionBanner,
-              payload.isInterrupt != true,
-              !quietScenes.shouldStayQuiet(under: settings.behaviour),
+              completionBannerApplies(to: payload),
               let session = state.session(id: payload.sessionID) else {
             return
         }
@@ -1712,7 +1731,25 @@ final class AppModel {
                     for: payload.timestamp.timeIntervalSince(session.firstSeenAt)
                 )
             ),
-            on: overlay.overlayPanelController.currentOverlayScreen
+            on: overlay.overlayPanelController.currentOverlayScreen,
+            onOpen: { [weak self] sessionID in
+                self?.openCompletionSummary(for: sessionID)
+            }
+        )
+    }
+
+    /// Opens the island on the session the banner is announcing.
+    ///
+    /// The banner says *that* it finished; the panel says what it did. Keeping
+    /// the second behind a click is what stops a finished session from taking
+    /// over the screen on its own.
+    func openCompletionSummary(for sessionID: String) {
+        completionBanner.dismiss()
+        guard state.session(id: sessionID) != nil else { return }
+        selectedSessionID = sessionID
+        overlay.notchOpen(
+            reason: .notification,
+            surface: .sessionList(actionableSessionID: sessionID)
         )
     }
 
@@ -1744,7 +1781,13 @@ final class AppModel {
         // the surface that works.
         if quietScenes.shouldStayQuiet(under: settings.behaviour) { return false }
         switch event {
-        case .sessionCompleted:
+        case let .sessionCompleted(payload):
+            // The banner and the card used to arrive together for the same
+            // finished session: an announcement under the notch, and the notch
+            // opening behind it with the summary. One event, two things to
+            // dismiss. The banner is the announcement now, and opening it is
+            // what brings up the summary.
+            if completionBannerApplies(to: payload) { return false }
             return settings.behaviour.expandOnCompletion
         default:
             return true

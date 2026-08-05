@@ -20,14 +20,18 @@ final class CompletionBannerController {
     private var panel: NSPanel?
     private let dismissTimer = RepeatingTimerBox()
 
-    func present(_ content: CompletionBannerContent, on screen: NSScreen?) {
+    func present(
+        _ content: CompletionBannerContent,
+        on screen: NSScreen?,
+        onOpen: ((String) -> Void)? = nil
+    ) {
         // A second completion while the first is still showing replaces it.
         // Stacking them under the notch would push the lower one into the work
         // area, which is the thing this position exists to avoid.
         dismiss()
 
         guard let screen = screen ?? NSScreen.main else { return }
-        let panel = makePanel(content: content, on: screen)
+        let panel = makePanel(content: content, on: screen, onOpen: onOpen)
         self.panel = panel
         panel.orderFrontRegardless()
         startDismissCountdown()
@@ -55,9 +59,14 @@ final class CompletionBannerController {
 
     var isPresenting: Bool { panel != nil }
 
-    private func makePanel(content: CompletionBannerContent, on screen: NSScreen) -> NSPanel {
+    private func makePanel(
+        content: CompletionBannerContent,
+        on screen: NSScreen,
+        onOpen: ((String) -> Void)?
+    ) -> NSPanel {
         let view = CompletionBannerView(
             content: content,
+            onOpen: onOpen.map { open in { open(content.sessionID) } },
             onClose: { [weak self] in self?.dismiss() },
             onHoverChanged: { [weak self] hovering in
                 guard let self else { return }
