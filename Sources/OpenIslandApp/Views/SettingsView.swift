@@ -32,6 +32,11 @@ struct SettingsView: View {
         }
         .frame(minWidth: 720, idealWidth: 820, minHeight: 520, idealHeight: 620)
         .preferredColorScheme(.dark)
+        // One line, and every switch, slider, picker and selection in the
+        // window follows the island. Rebuilding thirteen panes out of custom
+        // containers would look the same and cost a hundred times more.
+        .tint(IslandThemes.current.accent)
+        .settingsThemeGround()
         .onReceive(NotificationCenter.default.publisher(for: .openIslandSelectSetupTab)) { _ in
             selectedTab = .integrations
         }

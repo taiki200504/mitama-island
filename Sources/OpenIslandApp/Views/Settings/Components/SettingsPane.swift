@@ -26,6 +26,15 @@ struct SettingsPane<Content: View>: View {
                 content()
             }
             .formStyle(.grouped)
+            // The grouped form paints its own grey. Hiding it lets the window's
+            // ground show through, so the settings sit on the same surface the
+            // island does instead of on a slab of system chrome.
+            //
+            // The Section slabs on top of it keep the system's own material:
+            // `listRowBackground` does not reach them through `.grouped`, and
+            // restyling them would mean touching every Section in thirteen
+            // panes to change something already dark enough to sit here.
+            .scrollContentBackground(.hidden)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .navigationTitle(tab.label(lang))
