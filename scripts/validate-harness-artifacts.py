@@ -342,7 +342,7 @@ def main() -> None:
         # rather than the overlay's.
         assert_contains_any(
             set(banner.get("accessibilitySummary", {}).get("textValues") or []),
-            ["完了", "Done"],
+            ["完了", "Done", "QUEST COMPLETE"],
             "completionBanner text values",
         )
 

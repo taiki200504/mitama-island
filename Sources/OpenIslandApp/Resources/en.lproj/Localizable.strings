@@ -563,3 +563,17 @@
 "settings.appearance.theme.title" = "Theme";
 "settings.appearance.theme.note" = "HUD is cool and angular, lit from within. Classic is the warmer look the app had before.";
 "banner.dismiss" = "Dismiss";
+
+/* HUD theme wording. English uppercase in every locale on purpose: a
+   translated heads-up display reads as an ordinary label again. Only labels and
+   headings — the approval buttons stay in plain language, because a permission
+   prompt is the wrong place to make someone parse a second vocabulary. */
+"banner.completed.hud" = "QUEST COMPLETE";
+"island.sessionList.title.hud" = "PARTY";
+"island.sessionOverview.running.hud" = "ACTIVE";
+"island.sessionOverview.runningCompact.hud" = "ACT";
+"island.sessionOverview.waiting.hud" = "ALERT";
+"island.sessionOverview.waitingCompact.hud" = "ALT";
+"island.sessionOverview.done.hud" = "CLEAR";
+"island.sessionOverview.idle.hud" = "IDLE";
+"island.sessionOverview.total.hud" = "UNITS";

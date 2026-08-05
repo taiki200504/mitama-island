@@ -562,3 +562,17 @@
 "settings.appearance.theme.title" = "主題";
 "settings.appearance.theme.note" = "HUD 為冷色調的稜角發光風格；標準為此前的暖色外觀。";
 "banner.dismiss" = "關閉";
+
+/* HUD theme wording. English uppercase in every locale on purpose: a
+   translated heads-up display reads as an ordinary label again. Only labels and
+   headings — the approval buttons stay in plain language, because a permission
+   prompt is the wrong place to make someone parse a second vocabulary. */
+"banner.completed.hud" = "QUEST COMPLETE";
+"island.sessionList.title.hud" = "PARTY";
+"island.sessionOverview.running.hud" = "ACTIVE";
+"island.sessionOverview.runningCompact.hud" = "ACT";
+"island.sessionOverview.waiting.hud" = "ALERT";
+"island.sessionOverview.waitingCompact.hud" = "ALT";
+"island.sessionOverview.done.hud" = "CLEAR";
+"island.sessionOverview.idle.hud" = "IDLE";
+"island.sessionOverview.total.hud" = "UNITS";

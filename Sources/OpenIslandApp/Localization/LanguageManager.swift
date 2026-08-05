@@ -69,7 +69,29 @@ final class LanguageManager: @unchecked Sendable {
     /// Look up a localized string by key.
     func t(_ key: String) -> String {
         if key == "app.name" { return Self.applicationName }
+        if let hud = hudVariant(of: key) { return hud }
         return bundle.localizedString(forKey: key, value: key, table: nil)
+    }
+
+    /// The HUD theme's wording for a key, if there is one.
+    ///
+    /// Rather than a second switch next to the theme, the voice follows it: one
+    /// choice changes the whole personality. Only keys that actually have a
+    /// `<key>.hud` entry change, so the scope is exactly the set of variants
+    /// that were written — settings panes and error messages stay plain because
+    /// no variant was added for them.
+    private func hudVariant(of key: String) -> String? {
+        guard Self.usesHUDVoice else { return nil }
+        let hudKey = key + ".hud"
+        let value = bundle.localizedString(forKey: hudKey, value: hudKey, table: nil)
+        return value == hudKey ? nil : value
+    }
+
+    /// Read straight from defaults rather than through `DisplaySettings`, which
+    /// is main-actor isolated while this is not.
+    private static var usesHUDVoice: Bool {
+        let raw = UserDefaults.standard.string(forKey: DisplaySettings.Keys.theme)
+        return (raw ?? IslandThemeID.hud.rawValue) == IslandThemeID.hud.rawValue
     }
 
     /// The name the app is actually installed under.
