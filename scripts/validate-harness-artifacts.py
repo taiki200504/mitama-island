@@ -339,7 +339,8 @@ def main() -> None:
         if button_labels:
             assert_contains_any(
                 button_labels,
-                ["Send", "送信", "Submit", "回答"],
+                # Both vocabularies: the HUD theme renames this button.
+                ["Send", "送信", "Submit", "回答", "TRANSMIT"],
                 "longQuestionCard keeps its submit button reachable",
             )
         else:
