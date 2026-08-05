@@ -25,6 +25,7 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
     case longCompletionCard
     case planApproval
     case completionBanner
+    case longQuestionCard
 
     var id: String { rawValue }
 
@@ -48,6 +49,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Plan Approval"
         case .completionBanner:
             "Completion Banner"
+        case .longQuestionCard:
+            "Long Question Card"
         }
     }
 
@@ -68,7 +71,9 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
         case .longCompletionCard:
             "Long finished-task reply stays inside the card and scrolls internally."
         case .completionBanner:
-            "The middle-of-screen announcement shown when a session finishes."
+            "The announcement shown under the notch when a session finishes."
+        case .longQuestionCard:
+            "Many long options: the list scrolls and the submit button stays put."
         }
     }
 
@@ -136,6 +141,19 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                 notchOpenReason: .notification,
                 islandSurface: .sessionList(actionableSessionID: session.id),
                 sessions: DebugSessionFactory.notificationSessions(lead: session, now: now),
+                selectedSessionID: session.id
+            )
+
+        case .longQuestionCard:
+            let session = DebugSessionFactory.longQuestionSession(now: now)
+            return IslandDebugSnapshot(
+                title: title,
+                summary: summary,
+                previewHeight: 420,
+                notchStatus: .opened,
+                notchOpenReason: .notification,
+                islandSurface: .sessionList(actionableSessionID: session.id),
+                sessions: [session],
                 selectedSessionID: session.id
             )
 
@@ -464,6 +482,49 @@ private enum DebugSessionFactory {
                 lastAssistantMessage: "建议先把 approvalCard、questionCard、completionCard 拆成独立 surface。"
             )
         )
+    }
+
+    /// Eight options, most of them long enough to wrap. The case the old card
+    /// could not show: the list ran past the bottom and took the submit button
+    /// with it.
+    static func longQuestionSession(now: Date) -> AgentSession {
+        var session = questionSession(now: now)
+        session.id = "session-question-long"
+        session.questionPrompt = QuestionPrompt(
+            title: "How should the migration handle rows that fail validation?",
+            questions: [
+                QuestionPromptItem(
+                    question: "How should the migration handle rows that fail validation?",
+                    header: "Migration",
+                    options: [
+                        QuestionOption(
+                            label: "Skip the row and write it to a rejects file for review afterwards",
+                            description: "Nothing is lost, nothing blocks"
+                        ),
+                        QuestionOption(
+                            label: "Stop the whole migration on the first failure so nothing half-applies",
+                            description: "Safest, slowest to get through"
+                        ),
+                        QuestionOption(
+                            label: "Coerce what can be coerced and skip only what cannot",
+                            description: "Fewest rejects, hardest to audit"
+                        ),
+                        QuestionOption(
+                            label: "Write every failure to the log and carry on regardless",
+                            description: "Fast, easy to miss a problem"
+                        ),
+                        QuestionOption(
+                            label: "Roll back to the last checkpoint and retry once",
+                            description: "Handles a transient failure"
+                        ),
+                        QuestionOption(label: "Ask again per table", description: "Slow but precise"),
+                        QuestionOption(label: "Use whatever the previous run did", description: ""),
+                        QuestionOption(label: "Something else", description: "", allowsFreeform: true),
+                    ]
+                )
+            ]
+        )
+        return session
     }
 
     static func completionSession(now: Date) -> AgentSession {

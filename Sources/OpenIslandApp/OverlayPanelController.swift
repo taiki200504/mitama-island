@@ -20,11 +20,21 @@ final class OverlayPanelController {
     // Content padding top + scroll padding + v8 list header/footer + bottom inset.
     // Rows are now full-width scan rows, so the old inter-card spacing is gone.
     private static let openedContentVerticalInsets: CGFloat = 84
-    private static let notificationMeasuredContentPadding: CGFloat = 8
+    /// The gap between what the card measures and the room the panel has to
+    /// give it.
+    ///
+    /// Was 8, and a notification card's last control sat about forty points
+    /// below the panel's bottom edge — the shortfall was constant regardless of
+    /// how tall the card was, which is what pointed at this number rather than
+    /// at any one card's layout. Verified against the `longQuestionCard`
+    /// capture in `smoke-all`, where the submit button used to be cut in half.
+    private static let notificationMeasuredContentPadding: CGFloat = 48
     private static let notificationEstimatedVerticalInsets: CGFloat = 36
     private static let openedEmptyStateHeight: CGFloat = 108
     private static let questionCardBaseHeight: CGFloat = 110
-    private static let questionCardMaxHeight: CGFloat = 420
+    /// Tall enough for a full option list at its scroll cap plus the chrome
+    /// below it. Anything smaller clips the submit button.
+    private static let questionCardMaxHeight: CGFloat = 500
     // Completion card chrome breakdown (everything except the scrollable text):
     // openedContent vertical padding: 24, card container padding: 28,
     // card VStack spacing: 14, card header (title+prompt): ~50,
@@ -648,21 +658,39 @@ final class OverlayPanelController {
         let titleSuppressed = questions.count == 1
             && prompt.title == questions.first?.question
         let chromeHeight: CGFloat = titleSuppressed ? 82 : 102
-        var contentHeight: CGFloat = 0
+        var listHeight: CGFloat = 0
 
         for question in questions {
             if questions.count > 1 {
-                contentHeight += 16 // header
+                listHeight += 16 // header
             }
-            contentHeight += 20 // question text
-            contentHeight += CGFloat(question.options.count) * 38 // option rows
+            listHeight += 20 // question text
+            for option in question.options {
+                listHeight += Self.estimatedOptionRowHeight(for: option.label)
+            }
         }
 
         // Inter-question spacing (only between questions, not after the last).
-        contentHeight += CGFloat(max(0, questions.count - 1)) * 10
+        listHeight += CGFloat(max(0, questions.count - 1)) * 10
 
-        let estimated = chromeHeight + contentHeight
+        // The list scrolls past this, so the panel must be sized for the cap
+        // rather than for the whole list — otherwise a long question pushes the
+        // submit button outside the panel it is supposed to sit in.
+        let estimated = chromeHeight + min(listHeight, IslandChromeMetrics.questionOptionListMaxHeight)
         return min(Self.questionCardMaxHeight, max(Self.questionCardBaseHeight, estimated))
+    }
+
+    /// How tall one option row will be once its label has wrapped.
+    ///
+    /// A flat 38pt per row was the old guess. A long option wraps to two or three
+    /// lines, so the card was sized for less than it needed and the last options
+    /// fell outside it.
+    static func estimatedOptionRowHeight(for label: String) -> CGFloat {
+        let singleLine: CGFloat = 38
+        // Roughly what fits on one line at the option font inside the card.
+        let charactersPerLine = 46
+        let lines = max(1, Int(ceil(Double(label.count) / Double(charactersPerLine))))
+        return singleLine + CGFloat(lines - 1) * 15
     }
 
     private func completionCardHeight(for model: AppModel) -> CGFloat {

@@ -597,8 +597,15 @@ struct IslandPanelView: View {
             let referenceDate = context.date
 
             if isNotificationMode {
-                // Notification mode: NO ScrollView — content sizes naturally
-                sessionListContent(referenceDate: referenceDate)
+                // Sizes itself from its content, and scrolls once that content
+                // outgrows what the panel can be. The panel's height comes from
+                // an estimate first and a measurement second; when the two
+                // disagree the last control in the card used to end up outside
+                // the window with no way to reach it. Now the worst case is a
+                // scroll rather than something unreachable.
+                AutoHeightScrollView(maxHeight: IslandChromeMetrics.notificationContentMaxHeight) {
+                    sessionListContent(referenceDate: referenceDate)
+                }
                     .padding(.vertical, 2)
                     .onHover { hovering in
                         if hovering {
@@ -2479,9 +2486,15 @@ private struct StructuredQuestionPromptView: View {
                     .foregroundStyle(V6Palette.paper.opacity(0.5))
                 }
 
-                VStack(alignment: .leading, spacing: 8) {
-                    ForEach(structuredQuestions, id: \.question) { question in
-                        questionRow(question)
+                // Only the questions scroll. The submit button below stays put:
+                // with a long list it used to be pushed off the bottom of the
+                // card with no way to reach it, which left the question
+                // unanswerable from the island at all.
+                AutoHeightScrollView(maxHeight: IslandChromeMetrics.questionOptionListMaxHeight) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(structuredQuestions, id: \.question) { question in
+                            questionRow(question)
+                        }
                     }
                 }
 

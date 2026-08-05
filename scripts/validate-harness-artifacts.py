@@ -266,7 +266,7 @@ def main() -> None:
         require_frame_between(
             overlay_frame,
             width=(520, 780),
-            height=(180, 430),
+            height=(180, 480),
             context="questionCard overlay frame",
         )
         if selected_session_phase(report) != "waitingForAnswer":
@@ -321,6 +321,29 @@ def main() -> None:
             )
         else:
             print("planApproval: accessibility tree was empty, button check skipped")
+
+    elif scenario == "longQuestionCard":
+        if notch_status != "opened":
+            fail(f"expected opened notch for longQuestionCard, got {notch_status!r}")
+        if not is_actionable_session_surface(island_surface):
+            fail(f"expected an actionable session surface, got {island_surface!r}")
+        require_frame_between(
+            overlay_frame,
+            width=(520, 780),
+            height=(180, 620),
+            context="longQuestionCard overlay frame",
+        )
+        # The button used to be pushed off the bottom by a long option list,
+        # which left the question unanswerable from the island. If the
+        # accessibility tree came through, it has to be there.
+        if button_labels:
+            assert_contains_any(
+                button_labels,
+                ["Send", "送信", "Submit", "回答"],
+                "longQuestionCard keeps its submit button reachable",
+            )
+        else:
+            print("longQuestionCard: accessibility tree was empty, button check skipped")
 
     elif scenario == "completionBanner":
         # The island itself stays shut — the announcement is its own window.
