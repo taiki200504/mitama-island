@@ -827,10 +827,37 @@ final class AppModel {
         islandSessionSections.flatMap(\.sessions)
     }
 
+    /// Drops the rows that render grey.
+    ///
+    /// A finished session nobody is waiting on was still listed, just dimmed — a
+    /// thirteen-hour-old row for a directory that no longer means anything. The
+    /// island answers "what is happening now", and a greyed row answers a
+    /// question it is not asking.
+    ///
+    /// Uses the same two conditions the row itself uses to go grey, so the list
+    /// and the row can never disagree about what counts as quiet.
+    ///
+    /// Never empties a list that had rows: turning a populated list into an empty
+    /// one would read as the app having lost track. (A session that is already
+    /// too old to reach this point was never listed to begin with — that is the
+    /// bucketing above, not this.)
+    private func hidingIdleSessions(_ sessions: [AgentSession]) -> [AgentSession] {
+        guard settings.display.hideIdleSessions else { return sessions }
+        let now = Date.now
+        let threshold = completedStaleThreshold.seconds
+        let live = sessions.filter { session in
+            session.islandPresence(at: now) != .inactive
+                && !session.isStaleCompletedForIsland(at: now, threshold: threshold)
+        }
+        return live.isEmpty ? sessions : live
+    }
+
     var islandSessionSections: [IslandSessionSection] {
         // Live rows plus anything the registry restored but discovery has not
         // confirmed yet, so a relaunch does not blank the list.
-        let sessions = sortIslandSessions(surfacedSessions + sessionBuckets.restored)
+        let sessions = sortIslandSessions(
+            hidingIdleSessions(surfacedSessions + sessionBuckets.restored)
+        )
         switch islandSessionGroup {
         case .none:
             return [

@@ -586,3 +586,5 @@
 "question.submit.hud" = "TRANSMIT";
 "question.answerAllFirst.hud" = "ALL FIELDS REQUIRED";
 "setup.banner.noHooks.title.hud" = "LINK YOUR AGENTS";
+"settings.display.hideIdleSessions" = "Hide sessions that have gone quiet";
+"settings.display.hideIdleSessions.help" = "Keeps greyed-out rows out of the list. The last row is always kept, so the list never looks empty by mistake.";

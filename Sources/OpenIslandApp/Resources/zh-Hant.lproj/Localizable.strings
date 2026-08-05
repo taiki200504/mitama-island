@@ -585,3 +585,5 @@
 "question.submit.hud" = "TRANSMIT";
 "question.answerAllFirst.hud" = "ALL FIELDS REQUIRED";
 "setup.banner.noHooks.title.hud" = "LINK YOUR AGENTS";
+"settings.display.hideIdleSessions" = "隱藏已停止活動的工作階段";
+"settings.display.hideIdleSessions.help" = "不在清單中顯示已變灰的項目。始終保留最後一行，以免看起來像遺失了。";

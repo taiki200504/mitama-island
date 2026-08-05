@@ -82,7 +82,7 @@ struct AppearanceSettingsPane: View {
                     .foregroundStyle(selected ? V6Palette.paper : V6Palette.paper.opacity(0.55))
                     .frame(width: 34, height: 34)
                     .background(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        IslandThemes.current.shape(cornerRadius: 8)
                             .fill(Color.white.opacity(selected ? 0.11 : 0.05))
                     )
 
@@ -107,11 +107,11 @@ struct AppearanceSettingsPane: View {
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                IslandThemes.current.shape(cornerRadius: 12)
                     .fill(Color.white.opacity(selected ? 0.075 : 0.025))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                IslandThemes.current.shape(cornerRadius: 12)
                     .stroke(selected ? V6Palette.paper.opacity(0.86) : Color.white.opacity(0.08), lineWidth: selected ? 1.5 : 1)
             )
         }
@@ -123,6 +123,7 @@ struct AppearanceSettingsPane: View {
     private var notchPersonalizationPart: some View {
         VStack(alignment: .leading, spacing: 18) {
             partHeader(title: lang.t("settings.appearance.notchPart.title"))
+            themeSection
             previewSection
             rightSlotSection
             centerLabelSection
@@ -135,7 +136,6 @@ struct AppearanceSettingsPane: View {
         VStack(alignment: .leading, spacing: 18) {
             partHeader(title: lang.t("settings.appearance.sessionListPart.title"))
             sessionListPreviewSection
-            themeSection
             usageDisplaySection
             stateIndicatorSection
             sessionGroupSection
@@ -282,7 +282,7 @@ struct AppearanceSettingsPane: View {
         } label: {
             VStack(spacing: 10) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    IslandThemes.current.shape(cornerRadius: 10)
                         .fill(Color.white.opacity(0.04))
                     icon()
                 }
@@ -295,11 +295,11 @@ struct AppearanceSettingsPane: View {
             .padding(12)
             .frame(maxWidth: .infinity)
             .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                IslandThemes.current.shape(cornerRadius: 12)
                     .fill(Color.white.opacity(selected ? 0.07 : 0.02))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                IslandThemes.current.shape(cornerRadius: 12)
                     .stroke(
                         selected ? V6Palette.paper.opacity(0.9) : Color.white.opacity(0.08),
                         lineWidth: selected ? 1.5 : 1
@@ -337,7 +337,7 @@ struct AppearanceSettingsPane: View {
         } label: {
             VStack(spacing: 10) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    IslandThemes.current.shape(cornerRadius: 10)
                         .fill(Color.white.opacity(0.04))
                     Text(sample)
                         .font(.islandMono(size: 11.5, weight: .medium))
@@ -355,11 +355,11 @@ struct AppearanceSettingsPane: View {
             .padding(12)
             .frame(maxWidth: .infinity)
             .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                IslandThemes.current.shape(cornerRadius: 12)
                     .fill(Color.white.opacity(selected ? 0.07 : 0.02))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                IslandThemes.current.shape(cornerRadius: 12)
                     .stroke(
                         selected ? V6Palette.paper.opacity(0.9) : Color.white.opacity(0.08),
                         lineWidth: selected ? 1.5 : 1
@@ -538,7 +538,7 @@ struct AppearanceSettingsPane: View {
         Button(action: action) {
             VStack(spacing: 10) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    IslandThemes.current.shape(cornerRadius: 10)
                         .fill(Color.white.opacity(0.04))
                     icon()
                 }
@@ -553,11 +553,11 @@ struct AppearanceSettingsPane: View {
             .padding(12)
             .frame(maxWidth: .infinity)
             .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                IslandThemes.current.shape(cornerRadius: 12)
                     .fill(Color.white.opacity(selected ? 0.07 : 0.02))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                IslandThemes.current.shape(cornerRadius: 12)
                     .stroke(
                         selected ? V6Palette.paper.opacity(0.9) : Color.white.opacity(0.08),
                         lineWidth: selected ? 1.5 : 1
@@ -881,9 +881,9 @@ private struct SettingsPreviewStage<Content: View>: View {
         }
         .frame(maxWidth: .infinity)
         .background(SettingsPreviewWallpaper())
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .clipShape(IslandThemes.current.shape(cornerRadius: 14))
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            IslandThemes.current.shape(cornerRadius: 14)
                 .stroke(.white.opacity(0.08), lineWidth: 1)
         )
     }
@@ -1209,7 +1209,7 @@ private struct SessionListLivePreviewRow: View {
         }
         .overlay(alignment: .leading) {
             if indicator == .bar {
-                RoundedRectangle(cornerRadius: 999, style: .continuous)
+                IslandThemes.current.shape(cornerRadius: 999)
                     .fill(tint)
                     .frame(width: 3)
                     .padding(.vertical, 8)
@@ -1268,7 +1268,7 @@ private struct SessionListLivePreviewRow: View {
                     .foregroundStyle(V6Palette.paper.opacity(0.78))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
-                    .background(.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    .background(.white.opacity(0.045), in: IslandThemes.current.shape(cornerRadius: 7))
             case .answer:
                 Text(lang.t("settings.appearance.preview.pickOrTypeAnswer"))
                     .font(.system(size: 12.5, weight: .semibold))
@@ -1391,7 +1391,7 @@ private struct AgentsMiniGridPreview: View {
         let claude = Color(hex: AgentTool.claudeCode.brandColorHex) ?? .white
         HStack(spacing: 2) {
             ForEach(0..<3, id: \.self) { _ in
-                RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                IslandThemes.current.shape(cornerRadius: 1.5)
                     .fill(claude)
                     .frame(width: 8, height: 8)
             }
@@ -1405,14 +1405,14 @@ private struct StateIndicatorPreview: View {
     var body: some View {
         HStack(spacing: 8) {
             indicator
-            RoundedRectangle(cornerRadius: 2, style: .continuous)
+            IslandThemes.current.shape(cornerRadius: 2)
                 .fill(V6Palette.paper.opacity(option == .tint ? 0.55 : 0.22))
                 .frame(width: 58, height: 6)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
         .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
+            IslandThemes.current.shape(cornerRadius: 8)
                 .fill(option == .tint ? Color(hex: AgentTool.codex.brandColorHex)?.opacity(0.22) ?? Color.white.opacity(0.08) : Color.clear)
         )
     }
@@ -1427,7 +1427,7 @@ private struct StateIndicatorPreview: View {
                 .frame(width: 10, height: 10)
                 .shadow(color: color.opacity(0.55), radius: 5)
         case .bar:
-            RoundedRectangle(cornerRadius: 2, style: .continuous)
+            IslandThemes.current.shape(cornerRadius: 2)
                 .fill(color)
                 .frame(width: 4, height: 28)
         case .glyph:
@@ -1451,7 +1451,7 @@ private struct UsageDisplayPreview: View {
                 usageChip("Cl", window: "5h", value: 42, color: Color(hex: AgentTool.claudeCode.brandColorHex) ?? .orange)
                 usageChip("Cx", window: "7d", value: 13, color: Color(hex: AgentTool.codex.brandColorHex) ?? .blue)
             } else {
-                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                IslandThemes.current.shape(cornerRadius: 2)
                     .fill(V6Palette.paper.opacity(0.18))
                     .frame(width: 72, height: 5)
             }
@@ -1502,7 +1502,7 @@ private struct SessionGroupPreview: View {
     }
 
     private func previewLine(width: CGFloat, color: Color) -> some View {
-        RoundedRectangle(cornerRadius: 2, style: .continuous)
+        IslandThemes.current.shape(cornerRadius: 2)
             .fill(color)
             .frame(width: width, height: 5)
     }
@@ -1535,7 +1535,7 @@ private struct SessionSortPreview: View {
                         .font(.islandMono(size: 9, weight: .semibold))
                         .foregroundStyle(V6Palette.paper.opacity(0.55))
                         .frame(width: 12, alignment: .leading)
-                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                    IslandThemes.current.shape(cornerRadius: 2)
                         .fill(rows[index].color)
                         .frame(width: rows[index].width, height: 5)
                 }

@@ -64,6 +64,12 @@ final class DisplaySettings: PreferenceGroup {
         set { write(\.completionBanner, Keys.completionBanner, newValue) }
     }
 
+    /// Keep rows that have gone grey out of the list entirely.
+    var hideIdleSessions: Bool {
+        get { read(\.hideIdleSessions, Keys.hideIdleSessions, true) }
+        set { write(\.hideIdleSessions, Keys.hideIdleSessions, newValue) }
+    }
+
     // MARK: Notch calibration
 
     /// Override for the notch height in points. Zero means "trust the macOS value".
@@ -149,6 +155,7 @@ extension DisplaySettings {
         static let agentIconStyle = "display.agentIconStyle"
         static let theme = "display.theme"
         static let completionBanner = "display.completionBanner"
+        static let hideIdleSessions = "display.hideIdleSessions"
         static let sessionAutoNaming = "display.sessionAutoNaming"
         static let notchHeightOverride = "display.notchHeightOverride"
         static let notchWidthOverride = "display.notchWidthOverride"

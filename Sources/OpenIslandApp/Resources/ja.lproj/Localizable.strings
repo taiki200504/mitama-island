@@ -586,3 +586,5 @@
 "question.submit.hud" = "TRANSMIT";
 "question.answerAllFirst.hud" = "ALL FIELDS REQUIRED";
 "setup.banner.noHooks.title.hud" = "LINK YOUR AGENTS";
+"settings.display.hideIdleSessions" = "動きの止まったセッションを隠す";
+"settings.display.hideIdleSessions.help" = "灰色になった行を一覧に出しません。最後の1行は必ず残るので、見失ったように見えることはありません。";

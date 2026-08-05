@@ -110,6 +110,15 @@ struct DisplaySettingsPane: View {
             }
 
             SettingsToggleRow(
+                title: lang.t("settings.display.hideIdleSessions"),
+                help: lang.t("settings.display.hideIdleSessions.help"),
+                isOn: Binding(
+                    get: { display.hideIdleSessions },
+                    set: { display.hideIdleSessions = $0 }
+                )
+            )
+
+            SettingsToggleRow(
                 title: lang.t("settings.display.completionBanner"),
                 help: lang.t("settings.display.completionBanner.help"),
                 isOn: Binding(

@@ -329,6 +329,16 @@ struct AppModelSessionListTests {
 
         model.state = SessionState(sessions: [staleCompleted, freshCompleted])
 
+        // Pinned rather than assumed: these tests share `UserDefaults.standard`
+        // with every other one, so a sibling that turns the flag off would
+        // otherwise decide this test's outcome by running first.
+        model.settings.display.hideIdleSessions = true
+
+        // Stale completions are hidden now, so only the fresh one is listed.
+        // With hiding off, the ordering this test was written for still holds.
+        #expect(model.islandListSessions.map(\.id) == ["fresh-completed"])
+
+        model.settings.display.hideIdleSessions = false
         #expect(model.islandListSessions.map(\.id) == ["fresh-completed", "stale-completed"])
     }
 
@@ -353,6 +363,14 @@ struct AppModelSessionListTests {
 
         model.state = SessionState(sessions: [stale, done, approval])
 
+        model.settings.display.hideIdleSessions = true
+
+        // The idle group is empty now that grey rows are hidden, so it does not
+        // appear at all. Turning the hiding off restores the grouping this test
+        // was written to check.
+        #expect(model.islandSessionSections.map(\.id) == ["state-approval", "state-done"])
+
+        model.settings.display.hideIdleSessions = false
         #expect(model.islandSessionSections.map(\.id) == ["state-approval", "state-done", "state-idle"])
         #expect(model.islandSessionSections.map(\.sessions.first?.id) == ["approval", "done", "stale"])
     }

@@ -234,7 +234,9 @@ def main() -> None:
         require_frame_between(
             overlay_frame,
             width=(520, 780),
-            height=(360, 500),
+            # Shorter than it used to be: rows that have gone grey are no longer
+            # listed, so a scenario full of idle sessions produces fewer rows.
+            height=(240, 500),
             context="sessionList overlay frame",
         )
         if len(button_labels) < 3 and report.get("sessionCount", 0) < 3:
