@@ -34,8 +34,8 @@
 "settings.general.uninstall" = "削除";
 "settings.general.uninstallConfirmTitle" = "フックを削除しますか？";
 "settings.general.uninstallConfirmAction" = "削除";
-"settings.general.uninstallConfirmMessage.claude" = "Claude Code から Open Island のフックを削除します。いつでも入れ直せます。";
-"settings.general.uninstallConfirmMessage.codex" = "Codex から Open Island のフックを削除します。いつでも入れ直せます。";
+"settings.general.uninstallConfirmMessage.claude" = "Claude Code から {app} のフックを削除します。いつでも入れ直せます。";
+"settings.general.uninstallConfirmMessage.codex" = "Codex から {app} のフックを削除します。いつでも入れ直せます。";
 "settings.general.uninstallConfirmMessage.claudeUsage" = "Claude の使用量ブリッジを削除します。いつでも入れ直せます。";
 "settings.general.cancel" = "キャンセル";
 "settings.general.language" = "言語";
@@ -149,7 +149,7 @@
 "setup.permissionsTitle" = "アクセシビリティ";
 "setup.permissionsDesc" = "ターミナルのウインドウを特定するために、アクセシビリティの許可が必要になることがあります。システム設定 → プライバシーとセキュリティ → アクセシビリティ で許可してください。";
 "setup.installAll" = "すべて導入";
-"setup.banner.noHooks.title" = "Open Island を使いはじめる";
+"setup.banner.noHooks.title" = "{app} を使いはじめる";
 "setup.banner.noHooks.message" = "使っているエージェントのフックを下から導入してください。導入したセッションの監視が始まります。";
 "setup.revealConfigLocation" = "設定ファイルを Finder で表示";
 "setup.section.diagnostics" = "フックの診断";
@@ -166,8 +166,8 @@
 /* Settings - About */
 "settings.about.version" = "バージョン %@";
 "settings.about.checkForUpdates" = "アップデートを確認…";
-"settings.about.quitApp" = "Open Island を終了";
-"island.quit.confirmTitle" = "Open Island を終了しますか？";
+"settings.about.quitApp" = "{app} を終了";
+"island.quit.confirmTitle" = "{app} を終了しますか？";
 "island.quit.confirmAction" = "終了";
 "island.quit.confirmMessage" = "終了してよろしいですか？";
 
@@ -234,7 +234,7 @@
 "session.answerNeeded" = "回答が必要";
 
 /* Window Titles */
-"window.settings" = "Open Island 設定";
+"window.settings" = "{app} 設定";
 
 
 /* Settings surface rebuild — panes, shared controls, pending capabilities */
@@ -556,8 +556,8 @@
 
 /* Completion banner */
 "banner.completed" = "完了";
-"settings.display.completionBanner" = "完了を画面中央に出す";
-"settings.display.completionBanner.help" = "セッションが終わったら画面中央にバナーを出します。クリックを奪うことはなく、通知で設定した静かにする場面では出ません。";
+"settings.display.completionBanner" = "完了をノッチの下に出す";
+"settings.display.completionBanner.help" = "セッションが終わったらノッチの下に小さく出ます。押すと内容が見られます。通知で設定した静かにする場面では出ません。";
 "settings.appearance.theme.hud" = "HUD";
 "settings.appearance.theme.classic" = "標準";
 "settings.appearance.theme.title" = "テーマ";

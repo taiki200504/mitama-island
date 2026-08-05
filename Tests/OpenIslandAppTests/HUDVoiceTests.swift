@@ -58,3 +58,37 @@ struct HUDVoiceTests {
         }
     }
 }
+
+@Suite("Application name in strings")
+@MainActor
+struct ApplicationNameSubstitutionTests {
+    /// The bug this closes: the name was written out in every translation, and
+    /// the UI went on saying "Open Island" for months after the app shipped as
+    /// "Mitama Island".
+    @Test("No user-facing string names the old app")
+    func noStaleName() {
+        for key in [
+            "settings.about.quitApp",
+            "island.quit.confirmTitle",
+            "window.settings",
+            "setup.banner.noHooks.title",
+        ] {
+            let value = LanguageManager.shared.t(key)
+            #expect(!value.contains("Open Island"), "\(key) still names the old app")
+            #expect(!value.contains("{app}"), "\(key) left its placeholder unfilled")
+        }
+    }
+
+    @Test("The filled name is the one on the bundle")
+    func usesTheBundleName() {
+        #expect(LanguageManager.shared.t("settings.about.quitApp")
+            .contains(LanguageManager.applicationName))
+    }
+
+    /// The credits line names the project this is forked from, which is a fixed
+    /// fact and a GPL obligation — it must not be swept up by the rename.
+    @Test("Upstream attribution keeps its own name")
+    func creditsKeepUpstream() {
+        #expect(LanguageManager.shared.t("settings.about.credits.value").contains("Open Island"))
+    }
+}

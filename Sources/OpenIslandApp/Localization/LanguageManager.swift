@@ -69,8 +69,20 @@ final class LanguageManager: @unchecked Sendable {
     /// Look up a localized string by key.
     func t(_ key: String) -> String {
         if key == "app.name" { return Self.applicationName }
-        if let hud = hudVariant(of: key) { return hud }
-        return bundle.localizedString(forKey: key, value: key, table: nil)
+        let value = hudVariant(of: key)
+            ?? bundle.localizedString(forKey: key, value: key, table: nil)
+        return Self.substitutingApplicationName(in: value)
+    }
+
+    /// Fills in `{app}` wherever a string names this app.
+    ///
+    /// The name used to be written out in every translation, and the UI went on
+    /// saying "Open Island" for months after the app shipped as "Mitama Island".
+    /// One substitution here is what keeps a rename from having to find them all
+    /// again.
+    private static func substitutingApplicationName(in value: String) -> String {
+        guard value.contains("{app}") else { return value }
+        return value.replacingOccurrences(of: "{app}", with: applicationName)
     }
 
     /// The HUD theme's wording for a key, if there is one.
@@ -104,7 +116,11 @@ final class LanguageManager: @unchecked Sendable {
         let name = (info?["CFBundleDisplayName"] as? String)
             ?? (info?["CFBundleName"] as? String)
         let trimmed = name?.trimmingCharacters(in: .whitespacesAndNewlines)
-        return (trimmed?.isEmpty == false ? trimmed! : "Open Island")
+        // The fallback only fires where there is no app bundle to ask — under
+        // `swift test`, mainly. It used to be the upstream project's name,
+        // which meant the one place that could not read the real name confidently
+        // reported the wrong one.
+        return (trimmed?.isEmpty == false ? trimmed! : "Mitama Island")
     }()
 
     /// Look up a localized format string and apply arguments.
