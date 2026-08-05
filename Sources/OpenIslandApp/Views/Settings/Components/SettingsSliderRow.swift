@@ -57,6 +57,10 @@ struct SettingsSliderRow: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityValue(format(value))
+        // This row builds its own layout rather than going through
+        // `SettingsRow`, so it needs the ground applied here too — otherwise the
+        // sliders sit on the system's slab while everything around them does not.
+        .settingsRowGround()
     }
 
     @ViewBuilder

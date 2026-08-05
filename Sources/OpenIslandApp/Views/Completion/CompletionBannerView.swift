@@ -11,6 +11,17 @@ struct CompletionBannerContent: Equatable, Sendable {
     var duration: String?
 }
 
+/// Whether the banner is arriving, sitting, or being handed off to the island.
+///
+/// Shared with the controller so the exit can be played before the window goes
+/// away. Without it, clicking the banner made it vanish and a different panel
+/// appear in its place — two unrelated events for what is one movement.
+@MainActor
+@Observable
+final class CompletionBannerPhase {
+    var isLeaving = false
+}
+
 /// The "it's done" announcement, shown just under the notch.
 ///
 /// The words stay plain — "完了", a name, a duration. Everything that makes this
@@ -30,6 +41,10 @@ struct CompletionBannerView: View {
     /// layout pass before the view is in a window, and the panel has to be
     /// positioned relative to the notch before it can be shown anyway.
     static let size = CGSize(width: 320, height: 56)
+
+    /// Owned by the controller, which flips `isLeaving` before the window is
+    /// ordered out.
+    var phase: CompletionBannerPhase = CompletionBannerPhase()
 
     @State private var isRevealed = false
     @State private var isHovering = false
@@ -80,10 +95,13 @@ struct CompletionBannerView: View {
         .shadow(color: accent.opacity(0.25), radius: 14)
         .shadow(color: .black.opacity(0.45), radius: 18, y: 6)
         .clipShape(theme.shape(cornerRadius: 11))
-        // Slides down out of the notch rather than fading in place, so it reads
-        // as coming from the island instead of appearing over the work.
-        .offset(y: isRevealed ? 0 : -10)
-        .opacity(isRevealed ? 1 : 0)
+        // Slides down out of the notch on arrival and back up into it on the
+        // way out, so opening the summary reads as one movement rather than one
+        // thing disappearing and another appearing.
+        .offset(y: phase.isLeaving ? -22 : (isRevealed ? 0 : -10))
+        .opacity(phase.isLeaving ? 0 : (isRevealed ? 1 : 0))
+        .scaleEffect(phase.isLeaving ? 0.94 : 1, anchor: .top)
+        .animation(.easeIn(duration: CompletionBannerPhase.exitDuration), value: phase.isLeaving)
         .onAppear {
             withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) { isRevealed = true }
         }
@@ -150,4 +168,11 @@ struct CompletionBannerView: View {
             .filter { !$0.isEmpty }
             .joined(separator: "  ·  ")
     }
+}
+
+
+extension CompletionBannerPhase {
+    /// Long enough to read as movement, short enough that the panel it hands off
+    /// to is not left waiting.
+    static let exitDuration: TimeInterval = 0.18
 }

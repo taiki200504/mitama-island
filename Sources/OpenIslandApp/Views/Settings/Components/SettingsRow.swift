@@ -53,6 +53,7 @@ struct SettingsRow<Control: View>: View {
                 .settingsControlAvailability(availability)
         }
         .accessibilityElement(children: .combine)
+        .settingsRowGround()
     }
 }
 
@@ -115,5 +116,39 @@ struct SettingsPickerRow<Value: Hashable, Content: View>: View {
             .labelsHidden()
             .fixedSize()
         }
+    }
+}
+
+
+/// The surface a settings row sits on.
+///
+/// Applied per row rather than to the whole form: `listRowBackground` does not
+/// reach the rows through `.grouped` when it is set on the group, which is why
+/// the first attempt at this looked like it had done nothing.
+struct SettingsRowGround: ViewModifier {
+    func body(content: Content) -> some View {
+        let theme = IslandThemes.current
+        switch theme.cornerStyle {
+        case .rounded:
+            // The system's own slab, unchanged.
+            content
+        case .chamfered:
+            content
+                .listRowBackground(
+                    theme.shape(cornerRadius: 7)
+                        .fill(theme.paper.opacity(0.045))
+                        .overlay(
+                            theme.shape(cornerRadius: 7)
+                                .strokeBorder(theme.accent.opacity(0.12), lineWidth: 1)
+                        )
+                        .padding(.vertical, 1)
+                )
+        }
+    }
+}
+
+extension View {
+    func settingsRowGround() -> some View {
+        modifier(SettingsRowGround())
     }
 }

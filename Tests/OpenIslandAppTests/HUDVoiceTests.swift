@@ -45,16 +45,33 @@ struct HUDVoiceTests {
         }
     }
 
-    /// Granting a permission is the wrong place to make someone parse a second
-    /// vocabulary, so these two stay in plain language in both themes.
-    @Test("Approval buttons never take on the HUD vocabulary")
-    func approvalButtonsStayPlain() {
+    /// The approval pair speaks the HUD vocabulary too, at the owner's request.
+    /// The one property that must hold either way: the two must never be easy to
+    /// mistake for one another, because this is the button that grants a
+    /// permission.
+    @Test("Approval buttons stay unmistakable in both themes")
+    func approvalButtonsStayDistinct() {
+        for id in IslandThemeID.allCases {
+            withTheme(id) {
+                let allow = LanguageManager.shared.t("approval.allowOnce")
+                let deny = LanguageManager.shared.t("approval.deny")
+                #expect(!allow.isEmpty)
+                #expect(!deny.isEmpty)
+                #expect(allow != deny, "\(id) makes accept and reject identical")
+                // Not merely different — different from the first character, so
+                // a glance never lands on the wrong one.
+                #expect(allow.first != deny.first, "\(id) starts both with the same letter")
+            }
+        }
+    }
+
+    @Test("The HUD vocabulary reaches the question card")
+    func questionCardSpeaksHUD() {
         withTheme(.hud) {
-            let allow = LanguageManager.shared.t("approval.allowOnce")
-            let deny = LanguageManager.shared.t("approval.deny")
-            #expect(allow != "ACCEPT")
-            #expect(deny != "REJECT")
-            #expect(allow != allow.uppercased() || allow.count <= 3)
+            #expect(LanguageManager.shared.t("question.submit") == "TRANSMIT")
+        }
+        withTheme(.classic) {
+            #expect(LanguageManager.shared.t("question.submit") != "TRANSMIT")
         }
     }
 }

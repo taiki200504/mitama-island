@@ -169,11 +169,73 @@ struct CompletionAnnouncementTests {
         #expect(model.completionBanner.isPresenting == false)
     }
 
+    /// The banner travels up into the notch while the panel opens, so the two
+    /// overlap. Taking the window away immediately made them read as two
+    /// unrelated events.
+    @Test("Opening hands off rather than cutting")
+    func handsOffOnOpen() {
+        let model = makeModel()
+        let session = completedSession(id: "s3")
+        model.loadDebugSnapshot(
+            IslandDebugSnapshot(
+                title: "t",
+                summary: "s",
+                previewHeight: 200,
+                notchStatus: .closed,
+                notchOpenReason: nil,
+                islandSurface: .sessionList(),
+                sessions: [session],
+                selectedSessionID: nil,
+                completionBanner: CompletionBannerContent(
+                    sessionID: session.id,
+                    title: "repo",
+                    agentName: "Claude Code",
+                    duration: "1分"
+                )
+            )
+        )
+        #expect(model.completionBanner.isPresenting)
+
+        model.openCompletionSummary(for: session.id)
+        // Still on screen for the length of the exit, and the panel is already
+        // opening behind it.
+        #expect(model.completionBanner.isPresenting)
+        #expect(model.islandSurface.sessionID == session.id)
+        model.completionBanner.dismiss()
+    }
+
     /// A session that has gone away must not open an empty panel.
     @Test("Opening an unknown session does nothing")
     func unknownSessionIsIgnored() {
         let model = makeModel()
         model.openCompletionSummary(for: "nope")
         #expect(model.islandSurface.sessionID == nil)
+        // And the announcement goes away rather than sitting there leading
+        // nowhere.
+        #expect(model.completionBanner.isPresenting == false)
+    }
+
+    /// A session that has started working again still has to be reachable from
+    /// its announcement — the row is selected either way.
+    @Test("A session that moved on is still selected")
+    func staleSessionStillSelects() {
+        let model = makeModel()
+        var session = completedSession(id: "s4")
+        session.phase = .running
+        model.loadDebugSnapshot(
+            IslandDebugSnapshot(
+                title: "t",
+                summary: "s",
+                previewHeight: 200,
+                notchStatus: .closed,
+                notchOpenReason: nil,
+                islandSurface: .sessionList(),
+                sessions: [session],
+                selectedSessionID: nil
+            )
+        )
+
+        model.openCompletionSummary(for: session.id)
+        #expect(model.selectedSessionID == session.id)
     }
 }

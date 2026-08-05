@@ -578,3 +578,11 @@
 "island.sessionOverview.idle.hud" = "IDLE";
 "island.sessionOverview.total.hud" = "UNITS";
 "banner.openHint" = "開くと内容が見られます";
+"approval.allowOnce.hud" = "ACCEPT";
+"approval.deny.hud" = "REJECT";
+"approval.allowAll.hud" = "ACCEPT ALL";
+"approval.denyAll.hud" = "REJECT ALL";
+"approval.goToTerminal.hud" = "JUMP TO TERMINAL";
+"question.submit.hud" = "TRANSMIT";
+"question.answerAllFirst.hud" = "ALL FIELDS REQUIRED";
+"setup.banner.noHooks.title.hud" = "LINK YOUR AGENTS";

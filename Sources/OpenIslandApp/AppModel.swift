@@ -1744,13 +1744,21 @@ final class AppModel {
     /// the second behind a click is what stops a finished session from taking
     /// over the screen on its own.
     func openCompletionSummary(for sessionID: String) {
-        completionBanner.dismiss()
-        guard state.session(id: sessionID) != nil else { return }
+        guard state.session(id: sessionID) != nil else {
+            // Nothing to open. Take the banner away rather than leaving an
+            // announcement that leads nowhere.
+            completionBanner.dismiss()
+            return
+        }
+
+        // The panel starts opening while the banner is still travelling up into
+        // the notch, so the two overlap instead of following one another.
         selectedSessionID = sessionID
         overlay.notchOpen(
             reason: .notification,
             surface: .sessionList(actionableSessionID: sessionID)
         )
+        completionBanner.dismissHandingOff()
     }
 
     /// Sounds for the moments that never open a card.

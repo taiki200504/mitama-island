@@ -18,6 +18,7 @@ final class CompletionBannerController {
     static let notchGap: CGFloat = 8
 
     private var panel: NSPanel?
+    private var phase = CompletionBannerPhase()
     private let dismissTimer = RepeatingTimerBox()
 
     func present(
@@ -57,6 +58,25 @@ final class CompletionBannerController {
         panel = nil
     }
 
+    /// Plays the exit, then takes the window away.
+    ///
+    /// Used when the banner is opening into the island: the movement up into the
+    /// notch is what ties the announcement to the panel that follows it. The
+    /// window is ordered out on a timer rather than on an animation callback so
+    /// it cannot be left on screen if the animation is interrupted.
+    func dismissHandingOff() {
+        guard panel != nil else { return }
+        dismissTimer.invalidate()
+        phase.isLeaving = true
+        let timer = Timer.scheduledTimer(
+            withTimeInterval: CompletionBannerPhase.exitDuration,
+            repeats: false
+        ) { [weak self] _ in
+            Task { @MainActor in self?.dismiss() }
+        }
+        dismissTimer.timer = timer
+    }
+
     var isPresenting: Bool { panel != nil }
 
     private func makePanel(
@@ -64,6 +84,7 @@ final class CompletionBannerController {
         on screen: NSScreen,
         onOpen: ((String) -> Void)?
     ) -> NSPanel {
+        phase = CompletionBannerPhase()
         let view = CompletionBannerView(
             content: content,
             onOpen: onOpen.map { open in { open(content.sessionID) } },
@@ -71,7 +92,8 @@ final class CompletionBannerController {
             onHoverChanged: { [weak self] hovering in
                 guard let self else { return }
                 if hovering { dismissTimer.invalidate() } else { startDismissCountdown() }
-            }
+            },
+            phase: phase
         )
         let hosting = NSHostingView(rootView: view)
         let size = CompletionBannerView.size
