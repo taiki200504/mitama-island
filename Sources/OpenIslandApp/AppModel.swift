@@ -852,12 +852,20 @@ final class AppModel {
         return live.isEmpty ? sessions : live
     }
 
+    /// Every session the island shows, in no particular order.
+    ///
+    /// The single source for both the list and the counts. Two derivations of
+    /// "what is on the island" is how the badge and the rows came to disagree.
+    var islandVisibleSessions: [AgentSession] {
+        // Live rows plus anything the registry restored but discovery has not
+        // confirmed yet, so a relaunch does not blank the list.
+        hidingIdleSessions(surfacedSessions + sessionBuckets.restored)
+    }
+
     var islandSessionSections: [IslandSessionSection] {
         // Live rows plus anything the registry restored but discovery has not
         // confirmed yet, so a relaunch does not blank the list.
-        let sessions = sortIslandSessions(
-            hidingIdleSessions(surfacedSessions + sessionBuckets.restored)
-        )
+        let sessions = sortIslandSessions(islandVisibleSessions)
         switch islandSessionGroup {
         case .none:
             return [
@@ -891,8 +899,13 @@ final class AppModel {
         recentSessions.count
     }
 
+    /// What the closed island's count badge says.
+    ///
+    /// Counts the same set the opened list shows. It used to count
+    /// `surfacedSessions`, which still included the rows that had gone grey — so
+    /// the pill could read ×5 and open onto two rows.
     var liveSessionCount: Int {
-        surfacedSessions.count
+        islandVisibleSessions.count
     }
 
     var liveAttentionCount: Int {

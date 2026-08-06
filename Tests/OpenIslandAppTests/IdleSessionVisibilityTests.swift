@@ -102,3 +102,59 @@ struct IdleSessionVisibilityTests {
         #expect(makeModel().settings.display.hideIdleSessions)
     }
 }
+
+@Suite("The badge agrees with the list", .serialized)
+@MainActor
+struct IslandCountConsistencyTests {
+    private func makeModel() -> AppModel {
+        let defaults = UserDefaults(suiteName: "count-\(UUID().uuidString)")!
+        return AppModel(settings: SettingsStore(store: PreferenceStore(suite: defaults)))
+    }
+
+    private func session(id: String, phase: SessionPhase, minutesAgo: Double) -> AgentSession {
+        var session = AgentSession(
+            id: id,
+            title: id,
+            tool: .claudeCode,
+            phase: phase,
+            summary: "",
+            updatedAt: Date.now.addingTimeInterval(-minutesAgo * 60)
+        )
+        session.isProcessAlive = true
+        return session
+    }
+
+    /// The closed island's count came from a different derivation than the list,
+    /// so hiding the grey rows left the pill reading ×5 and opening onto two.
+    @Test("The count matches the number of rows")
+    func countMatchesRows() {
+        let model = makeModel()
+        model.state = SessionState(sessions: [
+            session(id: "live", phase: .running, minutesAgo: 0),
+            session(id: "fresh", phase: .completed, minutesAgo: 1),
+            session(id: "grey-a", phase: .completed, minutesAgo: 10),
+            session(id: "grey-b", phase: .completed, minutesAgo: 12),
+        ])
+        model.settings.display.hideIdleSessions = true
+        #expect(model.liveSessionCount == model.islandListSessions.count)
+    }
+
+    @Test("They still match with hiding turned off")
+    func countMatchesWithHidingOff() {
+        let model = makeModel()
+        model.state = SessionState(sessions: [
+            session(id: "live", phase: .running, minutesAgo: 0),
+            session(id: "grey", phase: .completed, minutesAgo: 10),
+        ])
+        model.settings.display.hideIdleSessions = false
+        #expect(model.liveSessionCount == model.islandListSessions.count)
+    }
+
+    @Test("An empty island counts nothing")
+    func emptyCountsZero() {
+        let model = makeModel()
+        model.state = SessionState(sessions: [])
+        #expect(model.liveSessionCount == 0)
+        #expect(model.islandListSessions.isEmpty)
+    }
+}
