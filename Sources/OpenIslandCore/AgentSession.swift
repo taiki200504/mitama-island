@@ -535,7 +535,20 @@ public extension AgentSession {
             }
             return isProcessAlive
         }
-        if isHookManaged { return !isSessionEnded }
+        if isHookManaged {
+            if isSessionEnded { return false }
+            // A finished session whose process has gone is a leftover, not a
+            // session. The agent's end-of-session hook only fires on a clean
+            // exit; close the terminal with ⌘W, or kill it, and the row used to
+            // sit in the island as "completed" indefinitely.
+            //
+            // Only applied to finished sessions on purpose. A running one that
+            // momentarily fails to match a process is still running — hiding
+            // live work because a probe missed once would be far worse than
+            // showing one row too many.
+            if phase == .completed, !isProcessAlive { return false }
+            return true
+        }
         if isProcessAlive { return true }
         return false
     }
