@@ -114,18 +114,24 @@ public struct MitamaWorkLogClient: Sendable {
         )
     }
 
-    /// The agents mitama will actually run work for.
+    /// The agents mitama will actually run work for, newest first.
     ///
-    /// Read live, and only the active ones. The orchestrator rejects a job for
-    /// an agent it does not know, so a hardcoded list here would quietly file
-    /// work that nothing ever picks up.
-    public func activeAgents() async -> [MitamaAgent] {
+    /// Derived from jobs that completed rather than from a roster table: the
+    /// roster lives in mitama's skill files, not in the database, and the
+    /// orchestrator refuses work for an agent it does not know. A job that
+    /// finished is the only proof from here that an agent exists and runs.
+    public func activeAgents(since: Date) async -> [MitamaAgent] {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+
         guard let url = environment.endpoint(
-            "mos_agent_manifests",
+            "mos_job_queue",
             queryItems: [
-                URLQueryItem(name: "select", value: "domain_id,agent_name"),
-                URLQueryItem(name: "status", value: "eq.active"),
-                URLQueryItem(name: "order", value: "domain_id.asc"),
+                URLQueryItem(name: "select", value: "agent_id"),
+                URLQueryItem(name: "status", value: "eq.completed"),
+                URLQueryItem(name: "created_at", value: "gte.\(formatter.string(from: since))"),
+                URLQueryItem(name: "order", value: "created_at.desc"),
+                URLQueryItem(name: "limit", value: "500"),
             ]
         ) else { return [] }
 
@@ -135,10 +141,11 @@ public struct MitamaWorkLogClient: Sendable {
               let rows = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
             return []
         }
-        return rows.compactMap { row in
-            guard let id = row["domain_id"] as? String else { return nil }
-            return MitamaAgent(id: id, name: row["agent_name"] as? String ?? id)
-        }
+
+        var seen: Set<String> = []
+        return rows.compactMap { $0["agent_id"] as? String }
+            .filter { seen.insert($0).inserted }
+            .map { MitamaAgent(id: $0, name: $0) }
     }
 
     /// Sessions and hours logged since `since`.

@@ -501,9 +501,12 @@ final class AppModel {
     }
 
     /// The agents mitama will accept work for right now, for the handoff picker.
+    ///
+    /// A month back: long enough to include the ones that only run weekly,
+    /// short enough to drop an agent that has been retired since.
     func mitamaAgents() async -> [MitamaAgent] {
         guard let workLog = mitamaFeed.workLog else { return [] }
-        return await workLog.activeAgents()
+        return await workLog.activeAgents(since: .now.addingTimeInterval(-30 * 24 * 60 * 60))
     }
 
     /// Puts a piece of work in mitama's queue.
