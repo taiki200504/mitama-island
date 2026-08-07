@@ -213,17 +213,30 @@ public struct PermissionRequest: Equatable, Identifiable, Codable, Sendable {
 }
 
 public extension AgentSession {
-    /// The update that stops this session asking for permission again.
+    /// The update that switches this session into `mode` from here on.
     ///
     /// Claude lists one only when the prompt happens to be about the mode — a
     /// plan-mode exit does, an ordinary Bash prompt does not — so the island
     /// asks for the mode itself rather than leaving the choice unreachable.
+    /// Its own offer wins when it made one, because that offer carries the
+    /// scope the agent is willing to accept.
+    ///
     /// Only Claude reads `updatedPermissions` back; the other agents would
     /// silently downgrade it to a one-off allow, so they are not offered it.
+    func permissionModeUpdate(for mode: ClaudePermissionMode) -> ClaudePermissionUpdate? {
+        guard tool == .claudeCode, let request = permissionRequest else { return nil }
+        return request.suggestedUpdates.first { $0.setsPermissionMode(mode) }
+            ?? .setMode(destination: .session, mode: mode)
+    }
+
+    /// Stops this session asking for permission again.
     var bypassPermissionsUpdate: ClaudePermissionUpdate? {
-        guard tool == .claudeCode, permissionRequest != nil else { return nil }
-        return permissionRequest?.suggestedUpdates.first(where: { $0.isBypassModeChange })
-            ?? .setMode(destination: .session, mode: .bypassPermissions)
+        permissionModeUpdate(for: .bypassPermissions)
+    }
+
+    /// Auto-accepts edits while still asking about everything else.
+    var acceptEditsUpdate: ClaudePermissionUpdate? {
+        permissionModeUpdate(for: .acceptEdits)
     }
 }
 

@@ -39,6 +39,7 @@ enum PanelShortcutAction: String, CaseIterable, Sendable {
     case approve
     case deny
     case alwaysAllow
+    case acceptEdits
     case skipPermissions
     case jumpToTerminal
 
@@ -50,6 +51,7 @@ enum PanelShortcutAction: String, CaseIterable, Sendable {
         case .approve:         "Y"
         case .deny:            "N"
         case .alwaysAllow:     "A"
+        case .acceptEdits:     "E"
         case .skipPermissions: "B"
         case .jumpToTerminal:  "T"
         }

@@ -2004,8 +2004,10 @@ final class AppModel {
             approvePermission(for: session.id, action: .deny)
         case .alwaysAllow:
             approvePermission(for: session.id, action: alwaysAllowAction(for: session))
+        case .acceptEdits:
+            approvePermission(for: session.id, action: modeAction(.acceptEdits, for: session))
         case .skipPermissions:
-            approvePermission(for: session.id, action: bypassAction(for: session))
+            approvePermission(for: session.id, action: modeAction(.bypassPermissions, for: session))
         case .jumpToTerminal:
             jumpToSession(session)
         }
@@ -2020,9 +2022,12 @@ final class AppModel {
         return .allowWithUpdates([rule])
     }
 
-    private func bypassAction(for session: AgentSession) -> ApprovalAction {
-        guard let bypass = session.bypassPermissionsUpdate else { return .allowOnce }
-        return .allowWithUpdates([bypass])
+    /// Falls back to a one-off approval for agents that do not read a mode
+    /// change back, so the shortcut still answers the prompt rather than
+    /// claiming a mode the agent will never enter.
+    private func modeAction(_ mode: ClaudePermissionMode, for session: AgentSession) -> ApprovalAction {
+        guard let update = session.permissionModeUpdate(for: mode) else { return .allowOnce }
+        return .allowWithUpdates([update])
     }
 
     var islandTheme: IslandThemeID {

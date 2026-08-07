@@ -335,6 +335,7 @@
 "settings.shortcuts.action.approve" = "Approve";
 "settings.shortcuts.action.deny" = "Deny";
 "settings.shortcuts.action.alwaysAllow" = "Always allow";
+"settings.shortcuts.action.acceptEdits" = "Auto-accept edits";
 "settings.shortcuts.action.skipPermissions" = "Skip permission prompts";
 "settings.shortcuts.action.jumpToTerminal" = "Jump to the terminal";
 "settings.shortcuts.action.selectOption" = "Pick an option";

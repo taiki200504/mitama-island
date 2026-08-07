@@ -76,16 +76,18 @@ struct ApprovalSuggestedUpdatesTests {
     }
 
     /// An ordinary tool prompt never offers a mode change, so the island has to
-    /// name one itself — otherwise "skip permission prompts" silently degrades
-    /// to a single allow.
+    /// name one itself — otherwise the mode shortcuts silently degrade to a
+    /// single allow.
     @Test
-    func aPromptWithoutAModeSuggestionStillOffersBypass() {
-        #expect(session(toolName: "Bash", suggested: []).bypassPermissionsUpdate == bypass)
+    func aPromptWithoutAModeSuggestionStillOffersBothModes() {
+        let plain = session(toolName: "Bash", suggested: [])
+        #expect(plain.bypassPermissionsUpdate == bypass)
+        #expect(plain.acceptEditsUpdate == acceptEdits)
     }
 
     /// When the agent named its own terms, use those rather than a second one.
     @Test
-    func theAgentsOwnBypassOfferWins() {
+    func theAgentsOwnOfferWins() {
         let offered = ClaudePermissionUpdate.setMode(destination: .localSettings, mode: .dontAsk)
         #expect(session(suggested: [acceptEdits, offered]).bypassPermissionsUpdate == offered)
     }
@@ -93,17 +95,28 @@ struct ApprovalSuggestedUpdatesTests {
     /// `acceptEdits` is a mode change but not a bypass — treating it as one
     /// would answer "stop asking" by only auto-accepting edits.
     @Test
-    func acceptEditsIsNotMistakenForBypass() {
-        #expect(acceptEdits.isBypassModeChange == false)
-        #expect(bypass.isBypassModeChange)
+    func theTwoModesAreNotMistakenForEachOther() {
+        #expect(acceptEdits.setsPermissionMode(.bypassPermissions) == false)
+        #expect(bypass.setsPermissionMode(.acceptEdits) == false)
+        #expect(bypass.setsPermissionMode(.bypassPermissions))
+        #expect(acceptEdits.setsPermissionMode(.acceptEdits))
         #expect(session(suggested: [acceptEdits]).bypassPermissionsUpdate == bypass)
+    }
+
+    /// `dontAsk` is the same offer as bypass under another name.
+    @Test
+    func dontAskCountsAsBypass() {
+        let dontAsk = ClaudePermissionUpdate.setMode(destination: .session, mode: .dontAsk)
+        #expect(dontAsk.setsPermissionMode(.bypassPermissions))
+        #expect(bypass.setsPermissionMode(.dontAsk))
     }
 
     /// Only Claude reads `updatedPermissions` back; offering the choice to the
     /// others would promise a mode change that never happens.
     @Test
-    func nonClaudeSessionsAreNotOfferedBypass() {
+    func nonClaudeSessionsAreNotOfferedModeChanges() {
         #expect(session(tool: .codex).bypassPermissionsUpdate == nil)
+        #expect(session(tool: .codex).acceptEditsUpdate == nil)
     }
 }
 

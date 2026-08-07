@@ -334,6 +334,7 @@
 "settings.shortcuts.action.approve" = "批准";
 "settings.shortcuts.action.deny" = "拒絕";
 "settings.shortcuts.action.alwaysAllow" = "一律允許";
+"settings.shortcuts.action.acceptEdits" = "自動允許編輯";
 "settings.shortcuts.action.skipPermissions" = "略過權限確認";
 "settings.shortcuts.action.jumpToTerminal" = "跳轉到終端機";
 "settings.shortcuts.action.selectOption" = "選擇選項";

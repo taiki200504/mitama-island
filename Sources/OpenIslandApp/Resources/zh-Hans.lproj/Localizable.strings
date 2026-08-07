@@ -335,6 +335,7 @@
 "settings.shortcuts.action.approve" = "批准";
 "settings.shortcuts.action.deny" = "拒绝";
 "settings.shortcuts.action.alwaysAllow" = "始终允许";
+"settings.shortcuts.action.acceptEdits" = "自动允许编辑";
 "settings.shortcuts.action.skipPermissions" = "跳过权限确认";
 "settings.shortcuts.action.jumpToTerminal" = "跳转到终端";
 "settings.shortcuts.action.selectOption" = "选择选项";

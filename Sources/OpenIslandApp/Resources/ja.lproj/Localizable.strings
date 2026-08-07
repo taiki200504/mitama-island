@@ -335,6 +335,7 @@
 "settings.shortcuts.action.approve" = "承認";
 "settings.shortcuts.action.deny" = "拒否";
 "settings.shortcuts.action.alwaysAllow" = "常に許可";
+"settings.shortcuts.action.acceptEdits" = "編集だけ自動で許可";
 "settings.shortcuts.action.skipPermissions" = "権限の確認を飛ばす";
 "settings.shortcuts.action.jumpToTerminal" = "ターミナルへジャンプ";
 "settings.shortcuts.action.selectOption" = "選択肢を選ぶ";

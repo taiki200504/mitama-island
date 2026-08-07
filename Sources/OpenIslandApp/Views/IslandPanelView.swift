@@ -2066,9 +2066,10 @@ private struct IslandSessionRow: View {
     /// The agent's own options, falling back to a session-scoped always-allow
     /// when it offered none — which is what the card used to hard-code.
     ///
-    /// Bypass is appended when the agent left it out, because it names a mode
-    /// the agent only volunteers for mode-shaped prompts, and without it the
-    /// island cannot answer "stop asking" at all.
+    /// The mode choices are appended when the agent left them out, because it
+    /// only volunteers those for mode-shaped prompts like a plan-mode exit, and
+    /// without them the island cannot answer "stop asking" at all. They go last,
+    /// widest-reaching at the bottom, so the safe answers stay under the cursor.
     private var suggestedApprovalUpdates: [ClaudePermissionUpdate] {
         var options = session.permissionRequest?.suggestedUpdates ?? []
 
@@ -2082,9 +2083,10 @@ private struct IslandSessionRow: View {
             )
         }
 
-        if !options.contains(where: { $0.isBypassModeChange }),
-           let bypass = session.bypassPermissionsUpdate {
-            options.append(bypass)
+        for mode in [ClaudePermissionMode.acceptEdits, .bypassPermissions] {
+            guard !options.contains(where: { $0.setsPermissionMode(mode) }),
+                  let update = session.permissionModeUpdate(for: mode) else { continue }
+            options.append(update)
         }
 
         return options
