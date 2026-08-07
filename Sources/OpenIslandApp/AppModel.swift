@@ -487,6 +487,31 @@ final class AppModel {
         NSWorkspace.shared.open(MitamaFeedCoordinator.hubURL)
     }
 
+    /// Agent sessions and hours mitama has counted since Monday.
+    ///
+    /// The week starts where mitama's own weekly report starts, or the island
+    /// would show a different "this week" than the report it is meant to
+    /// preview.
+    func mitamaWeekSoFar() async -> (sessions: Int, seconds: Int)? {
+        guard let workLog = mitamaFeed.workLog else { return nil }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.firstWeekday = 2
+        let start = calendar.dateInterval(of: .weekOfYear, for: .now)?.start ?? .now
+        return await workLog.weekSoFar(since: start)
+    }
+
+    /// The agents mitama will accept work for right now, for the handoff picker.
+    func mitamaAgents() async -> [MitamaAgent] {
+        guard let workLog = mitamaFeed.workLog else { return [] }
+        return await workLog.activeAgents()
+    }
+
+    /// Puts a piece of work in mitama's queue.
+    func handToMitama(objective: String, agentID: String) async -> Bool {
+        guard let workLog = mitamaFeed.workLog else { return false }
+        return await workLog.enqueue(IslandJobSubmission(objective: objective, agentID: agentID))
+    }
+
     // MARK: - Watch Notification
 
     private static let watchNotificationEnabledKey = "watch.notification.enabled"
@@ -523,6 +548,7 @@ final class AppModel {
         setupWatchRelayCallbacks(relay)
         relay.start()
         self.watchRelay = relay
+        mitamaFeed.watchRelay = relay
     }
 
     /// Wire up resolution callbacks so Watch/iPhone actions flow back to the bridge.
@@ -554,6 +580,7 @@ final class AppModel {
     private func stopWatchRelay() {
         watchRelay?.stop()
         watchRelay = nil
+        mitamaFeed.watchRelay = nil
     }
 
     var ignoresPointerExitDuringHarness = false
@@ -1701,6 +1728,15 @@ final class AppModel {
         // about a decision already made is the noise the rule was written to end.
         if autoAnsweredPermission(for: event) {
             return
+        }
+
+        // A finished session is one more unit of work done, which is the number
+        // mitama's scoreboard is built on. Counted once, on the transition —
+        // `wasAlreadyCompleted` filters the rediscovery of old sessions at launch.
+        if case let .sessionCompleted(payload) = event,
+           !wasAlreadyCompleted,
+           let session = state.session(id: payload.sessionID) {
+            mitamaFeed.record(session)
         }
 
         // Push relevant events to the Watch/iPhone via the relay

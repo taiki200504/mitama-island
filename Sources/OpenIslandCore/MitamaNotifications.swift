@@ -110,6 +110,24 @@ public struct MitamaEnvironment: Equatable, Sendable {
         }
         return (parsed, .envFile)
     }
+
+    /// The key goes into headers here and nowhere else, so every caller signs
+    /// requests the same way and none of them has to hold the key to do it.
+    public func authorized(_ request: URLRequest) -> URLRequest {
+        var request = request
+        request.setValue(apiKey, forHTTPHeaderField: "apikey")
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        return request
+    }
+
+    func endpoint(_ table: String, queryItems: [URLQueryItem] = []) -> URL? {
+        var components = URLComponents(
+            url: url.appendingPathComponent("rest/v1/\(table)"),
+            resolvingAgainstBaseURL: false
+        )
+        components?.queryItems = queryItems.isEmpty ? nil : queryItems
+        return components?.url
+    }
 }
 
 /// Reads and acknowledges mitama's notification queue over PostgREST.
@@ -160,10 +178,7 @@ public struct MitamaNotificationClient: Sendable {
     }
 
     private func authorized(_ request: URLRequest) -> URLRequest {
-        var request = request
-        request.setValue(environment.apiKey, forHTTPHeaderField: "apikey")
-        request.setValue("Bearer \(environment.apiKey)", forHTTPHeaderField: "Authorization")
-        return request
+        environment.authorized(request)
     }
 
     /// Unread rows at the levels that ask something of the reader, newest first.

@@ -408,6 +408,20 @@ final class ConnectionManager: ObservableObject {
                 event = nil
             }
 
+        case "mitamaAlert":
+            if let e = try? decoder.decode(WatchMitamaAlertEvent.self, from: data) {
+                event = .from(e)
+                // Always notified. mitama only sends urgent this way, and the
+                // per-kind switches above are about local agents, not about it.
+                notificationManager?.sendMitamaAlertNotification(e)
+                WatchConnectivityManager.shared.sendEvent(.mitamaAlert(.init(
+                    notificationID: e.notificationID, title: e.title, body: e.body
+                )))
+                Self.logger.info("mitama alert: \(e.title)")
+            } else {
+                event = nil
+            }
+
         case "actionableStateResolved":
             if let e = try? decoder.decode(WatchResolvedEvent.self, from: data) {
                 handleRemoteResolution(e)

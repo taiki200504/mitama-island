@@ -210,6 +210,33 @@ final class NotificationManager: NSObject, ObservableObject {
             }
         }
     }
+
+    /// No category, so it carries no buttons: mitama's alerts are read at the
+    /// Hub, and a decision tapped from a lock screen is a worse one.
+    ///
+    /// The id is the row, so the same alert arriving again replaces its own
+    /// notification instead of stacking.
+    func sendMitamaAlertNotification(_ event: WatchMitamaAlertEvent) {
+        guard isAuthorized else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = event.title
+        content.body = event.body
+        content.sound = .default
+        content.userInfo = ["eventType": "mitamaAlert"]
+
+        center.add(
+            UNNotificationRequest(
+                identifier: "mitama-\(event.notificationID)",
+                content: content,
+                trigger: nil
+            )
+        ) { error in
+            if let error {
+                Self.logger.error("Failed to send mitama alert: \(error.localizedDescription)")
+            }
+        }
+    }
 }
 
 // MARK: - UNUserNotificationCenterDelegate

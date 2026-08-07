@@ -25,6 +25,9 @@ public final class WatchNotificationRelay: @unchecked Sendable {
     // Maps requestID → (sessionID, kind) for pending requests
     private let queue = DispatchQueue(label: "app.openisland.watch.relay")
     private var pendingRequests: [String: (sessionID: String, kind: PendingRequestKind)] = [:]
+    /// mitama alert ids already sent this run, so the minute-by-minute re-read
+    /// of the same unread rows does not buzz the wrist again.
+    private var relayedMitamaAlerts: Set<Int> = []
 
     public init(endpoint: WatchHTTPEndpoint = WatchHTTPEndpoint()) {
         self.endpoint = endpoint
@@ -104,6 +107,23 @@ public final class WatchNotificationRelay: @unchecked Sendable {
         default:
             break
         }
+    }
+
+    /// Relays one of mitama's urgent alerts. Deduplicated by row id, because
+    /// the feed re-reads the same unread rows every minute and a wrist that
+    /// buzzes once a minute until you sit down is worse than no wrist at all.
+    public func notifyMitamaAlert(_ notification: MitamaNotification) {
+        guard notification.level == .urgent else { return }
+
+        let isNew = queue.sync { relayedMitamaAlerts.insert(notification.id).inserted }
+        guard isNew else { return }
+
+        endpoint.pushEvent(.mitamaAlert(WatchMitamaAlertEvent(
+            notificationID: notification.id,
+            title: notification.title,
+            body: notification.body
+        )))
+        Self.logger.info("Pushed mitamaAlert \(notification.id)")
     }
 
     // MARK: - Lifecycle

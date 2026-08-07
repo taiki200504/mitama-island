@@ -34,6 +34,13 @@ struct WatchResolvedEvent: Codable, Sendable {
     var sessionID: String
 }
 
+/// One of mitama's own alerts, forwarded by the Mac. Not tied to a session.
+struct WatchMitamaAlertEvent: Codable, Sendable {
+    var notificationID: Int
+    var title: String
+    var body: String
+}
+
 // MARK: - Pairing
 
 struct WatchPairRequest: Codable, Sendable {
@@ -79,6 +86,9 @@ struct WatchEvent: Identifiable {
                                  primaryAction: String, secondaryAction: String)
         case questionAsked(title: String, options: [String], requestID: String)
         case sessionCompleted(summary: String)
+        /// Not an agent event. Listed here so it lands in the same feed the user
+        /// already checks, rather than in a second place they have to remember.
+        case mitamaAlert(title: String, body: String)
     }
 
     /// The requestID associated with actionable events (permission/question), nil for completion.
@@ -88,7 +98,7 @@ struct WatchEvent: Identifiable {
             return requestID
         case let .questionAsked(_, _, requestID):
             return requestID
-        case .sessionCompleted:
+        case .sessionCompleted, .mitamaAlert:
             return nil
         }
     }
@@ -101,6 +111,8 @@ struct WatchEvent: Identifiable {
             return title
         case let .sessionCompleted(summary):
             return summary
+        case let .mitamaAlert(title, _):
+            return title
         }
     }
 
@@ -112,6 +124,8 @@ struct WatchEvent: Identifiable {
             return options.joined(separator: " / ")
         case .sessionCompleted:
             return nil
+        case let .mitamaAlert(_, body):
+            return body
         }
     }
 
@@ -120,6 +134,7 @@ struct WatchEvent: Identifiable {
         case .permissionRequested: return "lock.shield"
         case .questionAsked: return "questionmark.bubble"
         case .sessionCompleted: return "checkmark.circle"
+        case .mitamaAlert: return "exclamationmark.bubble.fill"
         }
     }
 
@@ -128,6 +143,7 @@ struct WatchEvent: Identifiable {
         case .permissionRequested: return .orange
         case .questionAsked: return .blue
         case .sessionCompleted: return .green
+        case .mitamaAlert: return .red
         }
     }
 
@@ -159,6 +175,16 @@ struct WatchEvent: Identifiable {
             ),
             agentTool: event.agentTool,
             sessionID: event.sessionID,
+            workingDirectory: nil
+        )
+    }
+
+    static func from(_ event: WatchMitamaAlertEvent) -> WatchEvent {
+        WatchEvent(
+            timestamp: Date(),
+            kind: .mitamaAlert(title: event.title, body: event.body),
+            agentTool: "mitama",
+            sessionID: "mitama-\(event.notificationID)",
             workingDirectory: nil
         )
     }

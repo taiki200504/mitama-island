@@ -115,6 +115,15 @@ struct EventDetailView: View {
                 Text(summary)
                     .font(.body)
             }
+
+        case let .mitamaAlert(title, body):
+            Section("mitama 提醒") {
+                Text(title)
+                    .font(.body)
+                Text(body)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 
@@ -146,7 +155,7 @@ struct EventDetailView: View {
                     }
                 }
 
-            case .sessionCompleted:
+            case .sessionCompleted, .mitamaAlert:
                 EmptyView()
             }
         } header: {
@@ -199,6 +208,7 @@ struct EventDetailView: View {
         case .permissionRequested: return "权限请求"
         case .questionAsked: return "问题"
         case .sessionCompleted: return "任务完成"
+        case .mitamaAlert: return "mitama 提醒"
         }
     }
 

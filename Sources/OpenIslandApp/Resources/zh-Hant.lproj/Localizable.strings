@@ -411,6 +411,16 @@
 "settings.labs.sessionNaming" = "自動為工作階段命名";
 "settings.mitama.section.feed" = "Hub 通知";
 "settings.mitama.section.hub" = "Hub";
+"settings.mitama.section.week" = "本週";
+"settings.mitama.week.sessions" = "工作階段數";
+"settings.mitama.week.hours" = "工作時數";
+"settings.mitama.section.handoff" = "把工作交給 mitama";
+"settings.mitama.handoff.placeholder" = "要讓 mitama 做什麼？";
+"settings.mitama.handoff.agent" = "負責";
+"settings.mitama.handoff.send" = "交給它";
+"settings.mitama.handoff.sent" = "已排入佇列";
+"settings.mitama.handoff.failed" = "沒能送到 mitama";
+"settings.mitama.handoff.help" = "會進入 mitama 的佇列。結果透過上面的通知回覆。";
 "settings.mitama.openHub" = "開啟 Hub";
 "settings.mitama.feed.help" = "將 mitama-os 中需要處理的項目顯示在代理工作階段上方。";
 

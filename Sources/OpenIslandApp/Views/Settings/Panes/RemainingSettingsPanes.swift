@@ -170,10 +170,25 @@ struct LabsSettingsPane: View {
 struct MitamaSettingsPane: View {
     var model: AppModel
 
+    @State private var objective = ""
+    @State private var agents: [MitamaAgent] = []
+    @State private var agentID = ""
+    @State private var handoffState: HandoffState = .idle
+    @State private var week: (sessions: Int, seconds: Int)?
+
+    private enum HandoffState: Equatable {
+        case idle
+        case sending
+        case sent
+        case failed
+    }
+
     private var lang: LanguageManager { model.lang }
 
     var body: some View {
         SettingsPane(tab: .mitama) {
+            scoreboardSection
+            handoffSection
             Section(lang.t("settings.mitama.section.feed")) {
                 SettingsToggleRow(
                     title: lang.t("settings.general.mitamaFeed"),
@@ -201,6 +216,97 @@ struct MitamaSettingsPane: View {
                     }
                 }
             }
+        }
+    }
+
+    /// This week's agent hours, as mitama counts them.
+    ///
+    /// Shown here and not on the island itself: it is a number to look at when
+    /// you go looking, not one to have in the corner of your eye all day.
+    @ViewBuilder
+    private var scoreboardSection: some View {
+        Section(lang.t("settings.mitama.section.week")) {
+            SettingsRow(title: lang.t("settings.mitama.week.sessions")) {
+                Text(week.map { String($0.sessions) } ?? "—")
+                    .foregroundStyle(.secondary)
+            }
+            SettingsRow(title: lang.t("settings.mitama.week.hours")) {
+                Text(week.map { String(format: "%.1f", Double($0.seconds) / 3600) } ?? "—")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .task {
+            week = await model.mitamaWeekSoFar()
+        }
+    }
+
+    /// Hands a piece of work to mitama.
+    ///
+    /// The agent has to be named because the orchestrator refuses work for one
+    /// it does not know, and the list is fetched rather than hardcoded for the
+    /// same reason — the roster is mitama's, and it changes.
+    @ViewBuilder
+    private var handoffSection: some View {
+        Section {
+            if model.mitamaFeed.isConfigured {
+                TextField(lang.t("settings.mitama.handoff.placeholder"), text: $objective, axis: .vertical)
+                    .lineLimit(2...5)
+                    .textFieldStyle(.roundedBorder)
+
+                Picker(lang.t("settings.mitama.handoff.agent"), selection: $agentID) {
+                    ForEach(agents) { agent in
+                        Text(agent.name).tag(agent.id)
+                    }
+                }
+                .disabled(agents.isEmpty)
+
+                HStack {
+                    if handoffState == .sent {
+                        Label(lang.t("settings.mitama.handoff.sent"), systemImage: "checkmark.circle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.green)
+                    } else if handoffState == .failed {
+                        Label(lang.t("settings.mitama.handoff.failed"), systemImage: "exclamationmark.triangle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    }
+
+                    Spacer()
+
+                    Button(lang.t("settings.mitama.handoff.send")) { send() }
+                        .disabled(
+                            handoffState == .sending
+                                || agentID.isEmpty
+                                || objective.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        )
+                }
+            } else {
+                Text(lang.t("settings.general.mitamaFeedMissingConfig"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        } header: {
+            Text(lang.t("settings.mitama.section.handoff"))
+        } footer: {
+            Text(lang.t("settings.mitama.handoff.help"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .task {
+            guard agents.isEmpty else { return }
+            agents = await model.mitamaAgents()
+            agentID = agents.first?.id ?? ""
+        }
+    }
+
+    private func send() {
+        let text = objective.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty, !agentID.isEmpty else { return }
+        handoffState = .sending
+        Task {
+            let sent = await model.handToMitama(objective: text, agentID: agentID)
+            handoffState = sent ? .sent : .failed
+            if sent { objective = "" }
         }
     }
 

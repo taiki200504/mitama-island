@@ -412,6 +412,16 @@
 "settings.labs.sessionNaming" = "Name sessions automatically";
 "settings.mitama.section.feed" = "Hub notifications";
 "settings.mitama.section.hub" = "Hub";
+"settings.mitama.section.week" = "This week";
+"settings.mitama.week.sessions" = "Agent sessions";
+"settings.mitama.week.hours" = "Hours";
+"settings.mitama.section.handoff" = "Hand work to mitama";
+"settings.mitama.handoff.placeholder" = "What should mitama take on?";
+"settings.mitama.handoff.agent" = "Agent";
+"settings.mitama.handoff.send" = "Hand over";
+"settings.mitama.handoff.sent" = "Queued";
+"settings.mitama.handoff.failed" = "Could not reach mitama";
+"settings.mitama.handoff.help" = "Goes into mitama's queue. It reports back through the notifications above.";
 "settings.mitama.openHub" = "Open the hub";
 "settings.mitama.feed.help" = "Shows items from mitama-os that need a decision, above the agent sessions.";
 

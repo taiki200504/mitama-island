@@ -81,6 +81,8 @@ final class WatchSessionManager: NSObject, ObservableObject {
             requestID = q.requestID
         case .sessionCompleted(let c):
             requestID = c.sessionID
+        case .mitamaAlert(let a):
+            requestID = "mitama-\(a.notificationID)"
         case .resolved(let rid):
             // Remote resolution — remove matching event and return
             DispatchQueue.main.async {
@@ -132,6 +134,12 @@ final class WatchSessionManager: NSObject, ObservableObject {
             content.title = "✅ \(c.agentTool)"
             content.body = c.summary
             content.categoryIdentifier = "SESSION_COMPLETED"
+
+        case .mitamaAlert(let a):
+            // No category: there are no buttons to attach. Answering mitama
+            // takes the Hub, and this is only here to make you look.
+            content.title = "🔴 \(a.title)"
+            content.body = a.body
 
         case .resolved:
             return

@@ -27,8 +27,12 @@ final class MitamaFeedCoordinator {
     private(set) var credentialSource: MitamaEnvironment.Source?
 
     @ObservationIgnored private var client: MitamaNotificationClient?
+    @ObservationIgnored private(set) var workLog: MitamaWorkLogClient?
     @ObservationIgnored private var pollTask: Task<Void, Never>?
     @ObservationIgnored private var currentInterval = MitamaFeedCoordinator.pollInterval
+    /// Set by `AppModel` when the Watch endpoint is running. Nil is the normal
+    /// case — most people never pair a watch.
+    @ObservationIgnored var watchRelay: WatchNotificationRelay?
 
     var isRunning: Bool { pollTask != nil }
 
@@ -43,6 +47,7 @@ final class MitamaFeedCoordinator {
         isConfigured = true
         credentialSource = loaded.source
         client = MitamaNotificationClient(environment: loaded.environment)
+        workLog = MitamaWorkLogClient(environment: loaded.environment)
         currentInterval = Self.pollInterval
         pollTask = Task { [weak self] in
             while !Task.isCancelled {
@@ -56,7 +61,23 @@ final class MitamaFeedCoordinator {
     func stop() {
         pollTask?.cancel()
         pollTask = nil
+        workLog = nil
         notifications = []
+    }
+
+    /// Counts a finished session towards mitama's measure of how much its owner
+    /// built this week. Silent either way — this is bookkeeping, and the island
+    /// has a session list to keep drawing.
+    func record(_ session: AgentSession, endedAt: Date = .now) {
+        guard let workLog else { return }
+        let record = IslandSessionRecord(
+            sessionID: session.id,
+            agentID: session.tool.rawValue,
+            startedAt: session.firstSeenAt,
+            endedAt: endedAt,
+            status: .completed
+        )
+        Task { await workLog.record(record) }
     }
 
     func refresh() async {
@@ -65,6 +86,9 @@ final class MitamaFeedCoordinator {
         do {
             let rows = try await client.fetchActionable()
             notifications = Self.presentable(rows, now: .now)
+            for alert in notifications where alert.level == .urgent {
+                watchRelay?.notifyMitamaAlert(alert)
+            }
             currentInterval = Self.pollInterval
         } catch {
             // Back off instead of hammering: the usual failure here is being

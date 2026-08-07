@@ -6,6 +6,9 @@ enum WatchMessage: Codable, Sendable {
     case question(QuestionPayload)
     case sessionCompleted(CompletionPayload)
     case resolved(requestID: String)  // Mac 侧已处理，通知 Watch 清理 UI
+    /// mitama needs its owner. Carries no action — the point is to be seen away
+    /// from the desk, and the decision is made back at the Hub.
+    case mitamaAlert(MitamaAlertPayload)
 
     struct PermissionPayload: Codable, Sendable {
         let requestID: String
@@ -28,6 +31,12 @@ enum WatchMessage: Codable, Sendable {
         let sessionID: String
         let agentTool: String
         let summary: String
+    }
+
+    struct MitamaAlertPayload: Codable, Sendable {
+        let notificationID: Int
+        let title: String
+        let body: String
     }
 }
 

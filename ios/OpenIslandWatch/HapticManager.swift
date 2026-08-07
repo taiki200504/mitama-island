@@ -9,6 +9,8 @@ enum HapticManager {
             WKInterfaceDevice.current().play(.directionUp)
         case .sessionCompleted:
             WKInterfaceDevice.current().play(.success)
+        case .mitamaAlert:
+            WKInterfaceDevice.current().play(.failure)
         case .resolved:
             break
         }

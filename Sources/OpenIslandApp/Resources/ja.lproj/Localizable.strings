@@ -412,6 +412,16 @@
 "settings.labs.sessionNaming" = "セッションに自動で名前を付ける";
 "settings.mitama.section.feed" = "Hub の通知";
 "settings.mitama.section.hub" = "Hub";
+"settings.mitama.section.week" = "今週";
+"settings.mitama.week.sessions" = "セッション数";
+"settings.mitama.week.hours" = "稼働時間";
+"settings.mitama.section.handoff" = "mitama に仕事を渡す";
+"settings.mitama.handoff.placeholder" = "mitama に何をやらせますか";
+"settings.mitama.handoff.agent" = "担当";
+"settings.mitama.handoff.send" = "渡す";
+"settings.mitama.handoff.sent" = "積みました";
+"settings.mitama.handoff.failed" = "mitama に届きませんでした";
+"settings.mitama.handoff.help" = "mitama のキューに入ります。結果は上の通知で返ってきます。";
 "settings.mitama.openHub" = "Hub を開く";
 "settings.mitama.feed.help" = "mitama-os の要対応をエージェントのセッションより上に出す。";
 

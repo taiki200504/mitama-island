@@ -412,6 +412,16 @@
 "settings.labs.sessionNaming" = "自动为会话命名";
 "settings.mitama.section.feed" = "Hub 通知";
 "settings.mitama.section.hub" = "Hub";
+"settings.mitama.section.week" = "本周";
+"settings.mitama.week.sessions" = "会话数";
+"settings.mitama.week.hours" = "工作时长";
+"settings.mitama.section.handoff" = "把工作交给 mitama";
+"settings.mitama.handoff.placeholder" = "要让 mitama 做什么？";
+"settings.mitama.handoff.agent" = "负责";
+"settings.mitama.handoff.send" = "交给它";
+"settings.mitama.handoff.sent" = "已入队";
+"settings.mitama.handoff.failed" = "没能送到 mitama";
+"settings.mitama.handoff.help" = "会进入 mitama 的队列。结果通过上面的通知返回。";
 "settings.mitama.openHub" = "打开 Hub";
 "settings.mitama.feed.help" = "将 mitama-os 中需要处理的项目显示在代理会话上方。";
 

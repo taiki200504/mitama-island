@@ -12,6 +12,8 @@ struct EventCardView: View {
             questionCard(payload)
         case .sessionCompleted(let payload):
             completionCard(payload)
+        case .mitamaAlert(let payload):
+            mitamaAlertCard(payload)
         case .resolved:
             EmptyView()
         }
@@ -97,6 +99,31 @@ struct EventCardView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(3)
+
+            Text(event.receivedAt, style: .relative)
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+        }
+    }
+
+    // MARK: - mitama Alert Card
+
+    /// Read-only on purpose. The other cards unblock an agent that is waiting;
+    /// this one is mitama saying something needs its owner, and that gets
+    /// answered at the Hub with the whole picture in view.
+    private func mitamaAlertCard(_ payload: WatchMessage.MitamaAlertPayload) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("mitama", systemImage: "exclamationmark.bubble.fill")
+                .font(.caption2)
+                .foregroundStyle(.red)
+
+            Text(payload.title)
+                .font(.headline)
+
+            Text(payload.body)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(6)
 
             Text(event.receivedAt, style: .relative)
                 .font(.caption2)

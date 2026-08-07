@@ -11,6 +11,10 @@ public enum WatchSSEEvent: Sendable {
     case sessionCompleted(WatchCompletionEvent)
     /// Sent when an actionable request (permission/question) has been resolved on the Mac side.
     case actionableStateResolved(WatchResolvedEvent)
+    /// Something mitama needs its owner for. Not about a local agent at all,
+    /// but it reaches the wrist through the same pipe — which is the whole
+    /// point of urgent: it has to find you away from the desk.
+    case mitamaAlert(WatchMitamaAlertEvent)
 
     func sseString() -> String {
         switch self {
@@ -26,6 +30,9 @@ public enum WatchSSEEvent: Sendable {
         case let .actionableStateResolved(event):
             let data = (try? JSONEncoder().encode(event)) ?? Data()
             return "event: actionableStateResolved\ndata: \(String(data: data, encoding: .utf8) ?? "{}")\n\n"
+        case let .mitamaAlert(event):
+            let data = (try? JSONEncoder().encode(event)) ?? Data()
+            return "event: mitamaAlert\ndata: \(String(data: data, encoding: .utf8) ?? "{}")\n\n"
         }
     }
 }
@@ -53,6 +60,24 @@ public struct WatchCompletionEvent: Codable, Sendable {
     public var sessionID: String
     public var agentTool: String
     public var summary: String
+}
+
+/// One of mitama's own alerts, relayed to the wrist.
+///
+/// Carries no action. The Watch answers permission requests because the agent
+/// is blocked until it does; mitama's alerts are not blocking anything, and a
+/// yes/no tapped without the Hub in front of you is a worse decision than one
+/// made a minute later at the desk.
+public struct WatchMitamaAlertEvent: Codable, Sendable {
+    public var notificationID: Int
+    public var title: String
+    public var body: String
+
+    public init(notificationID: Int, title: String, body: String) {
+        self.notificationID = notificationID
+        self.title = title
+        self.body = body
+    }
 }
 
 // MARK: - Resolved Event
