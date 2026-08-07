@@ -11,12 +11,13 @@ struct ApprovalSuggestedUpdatesTests {
     private func session(
         id: String = "plan",
         toolName: String = "ExitPlanMode",
-        suggested: [ClaudePermissionUpdate] = []
+        suggested: [ClaudePermissionUpdate] = [],
+        tool: AgentTool = .claudeCode
     ) -> AgentSession {
         var session = AgentSession(
             id: id,
             title: "Claude · demo",
-            tool: .claudeCode,
+            tool: tool,
             origin: .live,
             attachmentState: .attached,
             phase: .waitingForApproval,
@@ -72,6 +73,37 @@ struct ApprovalSuggestedUpdatesTests {
     func suggestionsSurviveOnTheRequest() {
         let request = session(suggested: [bypass, acceptEdits]).permissionRequest
         #expect(request?.suggestedUpdates == [bypass, acceptEdits])
+    }
+
+    /// An ordinary tool prompt never offers a mode change, so the island has to
+    /// name one itself — otherwise "skip permission prompts" silently degrades
+    /// to a single allow.
+    @Test
+    func aPromptWithoutAModeSuggestionStillOffersBypass() {
+        #expect(session(toolName: "Bash", suggested: []).bypassPermissionsUpdate == bypass)
+    }
+
+    /// When the agent named its own terms, use those rather than a second one.
+    @Test
+    func theAgentsOwnBypassOfferWins() {
+        let offered = ClaudePermissionUpdate.setMode(destination: .localSettings, mode: .dontAsk)
+        #expect(session(suggested: [acceptEdits, offered]).bypassPermissionsUpdate == offered)
+    }
+
+    /// `acceptEdits` is a mode change but not a bypass — treating it as one
+    /// would answer "stop asking" by only auto-accepting edits.
+    @Test
+    func acceptEditsIsNotMistakenForBypass() {
+        #expect(acceptEdits.isBypassModeChange == false)
+        #expect(bypass.isBypassModeChange)
+        #expect(session(suggested: [acceptEdits]).bypassPermissionsUpdate == bypass)
+    }
+
+    /// Only Claude reads `updatedPermissions` back; offering the choice to the
+    /// others would promise a mode change that never happens.
+    @Test
+    func nonClaudeSessionsAreNotOfferedBypass() {
+        #expect(session(tool: .codex).bypassPermissionsUpdate == nil)
     }
 }
 

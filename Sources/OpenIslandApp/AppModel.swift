@@ -2021,8 +2021,7 @@ final class AppModel {
     }
 
     private func bypassAction(for session: AgentSession) -> ApprovalAction {
-        let updates = session.permissionRequest?.suggestedUpdates ?? []
-        guard let bypass = updates.first(where: { $0.isModeChange }) else { return .allowOnce }
+        guard let bypass = session.bypassPermissionsUpdate else { return .allowOnce }
         return .allowWithUpdates([bypass])
     }
 

@@ -212,6 +212,21 @@ public struct PermissionRequest: Equatable, Identifiable, Codable, Sendable {
     }
 }
 
+public extension AgentSession {
+    /// The update that stops this session asking for permission again.
+    ///
+    /// Claude lists one only when the prompt happens to be about the mode — a
+    /// plan-mode exit does, an ordinary Bash prompt does not — so the island
+    /// asks for the mode itself rather than leaving the choice unreachable.
+    /// Only Claude reads `updatedPermissions` back; the other agents would
+    /// silently downgrade it to a one-off allow, so they are not offered it.
+    var bypassPermissionsUpdate: ClaudePermissionUpdate? {
+        guard tool == .claudeCode, permissionRequest != nil else { return nil }
+        return permissionRequest?.suggestedUpdates.first(where: { $0.isBypassModeChange })
+            ?? .setMode(destination: .session, mode: .bypassPermissions)
+    }
+}
+
 /// A single selectable option within a structured question prompt.
 public struct QuestionOption: Equatable, Identifiable, Codable, Sendable {
     public var id: UUID

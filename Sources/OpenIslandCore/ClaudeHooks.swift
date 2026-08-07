@@ -49,11 +49,12 @@ public enum ClaudePermissionUpdate: Equatable, Codable, Sendable {
         return false
     }
 
-    /// Changes how the session handles permissions from here on — what the
-    /// "bypass" choice means.
-    public var isModeChange: Bool {
-        if case .setMode = self { return true }
-        return false
+    /// Stops the agent asking for the rest of the session — what the "bypass"
+    /// choice means. `dontAsk` is the same offer under another name, which is
+    /// why both share a label below.
+    public var isBypassModeChange: Bool {
+        guard case let .setMode(_, mode) = self else { return false }
+        return mode == .bypassPermissions || mode == .dontAsk
     }
 
     private enum CodingKeys: String, CodingKey {

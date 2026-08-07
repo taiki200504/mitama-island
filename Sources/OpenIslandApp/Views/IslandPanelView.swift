@@ -2065,18 +2065,29 @@ private struct IslandSessionRow: View {
 
     /// The agent's own options, falling back to a session-scoped always-allow
     /// when it offered none — which is what the card used to hard-code.
+    ///
+    /// Bypass is appended when the agent left it out, because it names a mode
+    /// the agent only volunteers for mode-shaped prompts, and without it the
+    /// island cannot answer "stop asking" at all.
     private var suggestedApprovalUpdates: [ClaudePermissionUpdate] {
-        if let suggested = session.permissionRequest?.suggestedUpdates, !suggested.isEmpty {
-            return suggested
-        }
-        guard let toolName = session.permissionRequest?.toolName else { return [] }
-        return [
-            .addRules(
-                destination: .session,
-                rules: [ClaudePermissionRuleValue(toolName: toolName)],
-                behavior: .allow
+        var options = session.permissionRequest?.suggestedUpdates ?? []
+
+        if options.isEmpty, let toolName = session.permissionRequest?.toolName {
+            options.append(
+                .addRules(
+                    destination: .session,
+                    rules: [ClaudePermissionRuleValue(toolName: toolName)],
+                    behavior: .allow
+                )
             )
-        ]
+        }
+
+        if !options.contains(where: { $0.isBypassModeChange }),
+           let bypass = session.bypassPermissionsUpdate {
+            options.append(bypass)
+        }
+
+        return options
     }
 
     // MARK: - Question action area
