@@ -1696,6 +1696,13 @@ final class AppModel {
         discovery.scheduleOpenCodeSessionPersistence()
         discovery.scheduleCursorSessionPersistence()
 
+        // A request the user has standing instructions for is answered here and
+        // goes no further — no card, no sound, no push to the Watch. Being told
+        // about a decision already made is the noise the rule was written to end.
+        if autoAnsweredPermission(for: event) {
+            return
+        }
+
         // Push relevant events to the Watch/iPhone via the relay
         if let relay = watchRelay {
             let eventSessionID: String? = {
@@ -2022,6 +2029,32 @@ final class AppModel {
         return .allowWithUpdates([rule])
     }
 
+    /// Answers a permission request the user wrote a standing rule for.
+    ///
+    /// Silenced sessions are left alone. A rule that fires on something the
+    /// island never showed is a decision made entirely out of sight, and the
+    /// user cannot notice it went wrong.
+    private func autoAnsweredPermission(for event: AgentEvent) -> Bool {
+        guard case let .permissionRequested(payload) = event,
+              let session = state.session(id: payload.sessionID),
+              session.phase == .waitingForApproval,
+              !settings.notificationFilters.isSilenced(session),
+              let rule = settings.autoResponse.rule(for: session) else {
+            return false
+        }
+
+        approvePermission(for: session.id, action: action(for: rule, in: session))
+        lastActionMessage = lang.t("island.autoResponse.applied")
+            .replacingOccurrences(of: "{pattern}", with: rule.pattern)
+            .replacingOccurrences(of: "{behavior}", with: lang.t(rule.behavior.labelKey))
+        return true
+    }
+
+    private func action(for rule: AutoResponseRule, in session: AgentSession) -> ApprovalAction {
+        guard let mode = rule.behavior.permissionMode else { return .allowOnce }
+        return modeAction(mode, for: session)
+    }
+
     /// Falls back to a one-off approval for agents that do not read a mode
     /// change back, so the shortcut still answers the prompt rather than
     /// claiming a mode the agent will never enter.
@@ -2107,6 +2140,16 @@ final class AppModel {
         guard !alreadyPresent else { return }
         filters.customRules.append(rule)
         lastActionMessage = lang.t("island.session.hidden")
+            .replacingOccurrences(of: "{pattern}", with: rule.pattern)
+    }
+
+    /// Adds an auto-response rule from the island's right-click menu.
+    ///
+    /// Deduplication lives in the settings group, so the menu and the settings
+    /// pane cannot end up with different ideas of what counts as a duplicate.
+    func autoAnswerSessions(matching rule: AutoResponseRule) {
+        settings.autoResponse.addRule(rule)
+        lastActionMessage = lang.t("island.session.autoApproved")
             .replacingOccurrences(of: "{pattern}", with: rule.pattern)
     }
 

@@ -19,7 +19,58 @@ struct NotificationSettingsPane: View {
             presetSection
             customSection
             blockedAppsSection
+            autoResponseSection
         }
+    }
+
+    // MARK: Answering without asking
+
+    private var autoResponse: AutoResponseSettings { model.settings.autoResponse }
+
+    /// Listed last, under the filters it borrows its matching from. Approving
+    /// on someone's behalf is the one thing here they cannot undo afterwards,
+    /// so the switch that stops all of it sits above the rules, not below them.
+    private var autoResponseSection: some View {
+        Section {
+            SettingsToggleRow(
+                title: lang.t("settings.autoResponse.enabled"),
+                isOn: Binding(
+                    get: { autoResponse.isEnabled },
+                    set: { autoResponse.isEnabled = $0 }
+                )
+            )
+
+            ForEach(autoResponse.rules) { rule in
+                SettingsRow(
+                    title: autoResponseDescription(rule),
+                    help: lang.t(rule.behavior.labelKey)
+                ) {
+                    Button(lang.t("settings.autoResponse.remove")) {
+                        autoResponse.removeRule(id: rule.id)
+                    }
+                    .foregroundStyle(.red)
+                }
+            }
+
+            if autoResponse.rules.isEmpty {
+                Text(lang.t("settings.autoResponse.empty"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        } header: {
+            Text(lang.t("settings.autoResponse.section"))
+        } footer: {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(lang.t("settings.autoResponse.explainer"))
+                Text(lang.t("settings.autoResponse.claudeOnly"))
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+    }
+
+    private func autoResponseDescription(_ rule: AutoResponseRule) -> String {
+        "\(lang.t(rule.field.labelKey)) \(lang.t(rule.match.labelKey))  \(rule.pattern)"
     }
 
     // MARK: Completion

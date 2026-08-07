@@ -514,6 +514,18 @@
 "island.session.hideFolder" = "不再顯示 {name} 中的工作階段";
 "island.session.hideApp" = "不再顯示來自 {name} 的工作階段";
 "island.session.hidden" = "已隱藏。可在通知設定中復原。";
+"island.session.autoApproveFolder" = "今後自動允許 {name} 的請求";
+"island.session.autoApproved" = "將自動回答 {pattern}。可在通知設定中復原。";
+"island.autoResponse.applied" = "已自動回答：{pattern} → {behavior}";
+"settings.autoResponse.section" = "無需詢問直接回答";
+"settings.autoResponse.explainer" = "符合規則的權限請求將代為回答，不會出現在動態島上。拒絕永遠不會自動執行。";
+"settings.autoResponse.enabled" = "套用這些規則";
+"settings.autoResponse.empty" = "尚無規則。右鍵點擊動態島上的工作階段即可新增。";
+"settings.autoResponse.remove" = "刪除";
+"settings.autoResponse.behavior.allowOnce" = "僅允許本次請求";
+"settings.autoResponse.behavior.acceptEdits" = "此後自動允許編輯";
+"settings.autoResponse.behavior.bypassPermissions" = "本工作階段此後不再詢問";
+"settings.autoResponse.claudeOnly" = "這兩種模式僅支援 Claude Code。其他代理將改為一次性允許。";
 
 /* Agent icons */
 "settings.display.agentIcon" = "代理圖示";

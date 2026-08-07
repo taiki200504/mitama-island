@@ -515,6 +515,18 @@
 "island.session.hideFolder" = "Never show sessions in {name}";
 "island.session.hideApp" = "Never show sessions from {name}";
 "island.session.hidden" = "Hidden. Undo it under Notifications.";
+"island.session.autoApproveFolder" = "Always allow requests from {name}";
+"island.session.autoApproved" = "Answering {pattern} automatically. Undo it under Notifications.";
+"island.autoResponse.applied" = "Answered automatically: {pattern} → {behavior}";
+"settings.autoResponse.section" = "Answer without asking";
+"settings.autoResponse.explainer" = "Permission requests matching a rule are answered for you and never reach the island. Denying is never automatic.";
+"settings.autoResponse.enabled" = "Apply these rules";
+"settings.autoResponse.empty" = "No rules. Right-click a session on the island to add one.";
+"settings.autoResponse.remove" = "Remove";
+"settings.autoResponse.behavior.allowOnce" = "Allow this request";
+"settings.autoResponse.behavior.acceptEdits" = "Auto-accept edits from here on";
+"settings.autoResponse.behavior.bypassPermissions" = "Stop asking for this session";
+"settings.autoResponse.claudeOnly" = "The two modes need Claude Code. Other agents get a one-off approval instead.";
 
 /* Agent icons */
 "settings.display.agentIcon" = "Agent icons";

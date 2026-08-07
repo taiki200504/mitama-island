@@ -18,6 +18,7 @@ final class SettingsStore: Sendable {
     let shortcuts: ShortcutSettings
     let sound: SoundSettings
     let notificationFilters: NotificationFilterSettings
+    let autoResponse: AutoResponseSettings
     let usage: UsageSettings
 
     init(store: PreferenceStore = .standard) {
@@ -26,6 +27,7 @@ final class SettingsStore: Sendable {
         shortcuts = ShortcutSettings(store: store)
         sound = SoundSettings(store: store)
         notificationFilters = NotificationFilterSettings(store: store)
+        autoResponse = AutoResponseSettings(store: store)
         usage = UsageSettings(store: store)
     }
 }

@@ -515,6 +515,18 @@
 "island.session.hideFolder" = "{name} のセッションを今後表示しない";
 "island.session.hideApp" = "{name} から始まったセッションを今後表示しない";
 "island.session.hidden" = "非表示にしました。通知の設定から戻せます。";
+"island.session.autoApproveFolder" = "{name} の確認を今後自動で許可する";
+"island.session.autoApproved" = "{pattern} を自動で答えます。通知の設定から戻せます。";
+"island.autoResponse.applied" = "自動で答えました: {pattern} → {behavior}";
+"settings.autoResponse.section" = "確認せずに答える";
+"settings.autoResponse.explainer" = "ルールに一致した許可の確認は代わりに答え、島には出しません。拒否は自動化しません。";
+"settings.autoResponse.enabled" = "ルールを適用する";
+"settings.autoResponse.empty" = "ルールはありません。島のセッションを右クリックすると追加できます。";
+"settings.autoResponse.remove" = "削除";
+"settings.autoResponse.behavior.allowOnce" = "この確認だけ許可";
+"settings.autoResponse.behavior.acceptEdits" = "以後は編集だけ自動で許可";
+"settings.autoResponse.behavior.bypassPermissions" = "このセッションでは以後聞かない";
+"settings.autoResponse.claudeOnly" = "2つのモードは Claude Code のみ。他のエージェントでは一回きりの許可になります。";
 
 /* Agent icons */
 "settings.display.agentIcon" = "エージェントのアイコン";

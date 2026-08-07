@@ -515,6 +515,18 @@
 "island.session.hideFolder" = "不再显示 {name} 中的会话";
 "island.session.hideApp" = "不再显示来自 {name} 的会话";
 "island.session.hidden" = "已隐藏。可在通知设置中撤销。";
+"island.session.autoApproveFolder" = "今后自动允许 {name} 的请求";
+"island.session.autoApproved" = "将自动回答 {pattern}。可在通知设置中撤销。";
+"island.autoResponse.applied" = "已自动回答：{pattern} → {behavior}";
+"settings.autoResponse.section" = "无需询问直接回答";
+"settings.autoResponse.explainer" = "匹配规则的权限请求将代为回答，不会出现在灵动岛上。拒绝永远不会自动执行。";
+"settings.autoResponse.enabled" = "应用这些规则";
+"settings.autoResponse.empty" = "暂无规则。右键点击灵动岛上的会话即可添加。";
+"settings.autoResponse.remove" = "删除";
+"settings.autoResponse.behavior.allowOnce" = "仅允许本次请求";
+"settings.autoResponse.behavior.acceptEdits" = "此后自动允许编辑";
+"settings.autoResponse.behavior.bypassPermissions" = "本会话此后不再询问";
+"settings.autoResponse.claudeOnly" = "这两种模式仅支持 Claude Code。其他智能体将改为一次性允许。";
 
 /* Agent icons */
 "settings.display.agentIcon" = "代理图标";

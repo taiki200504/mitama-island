@@ -741,6 +741,7 @@ struct IslandPanelView: View {
                         ? { model.replyToSession(session, text: $0) } : nil,
                     onJump: { model.jumpToSession(session) },
                     onHide: { model.hideSessions(matching: $0) },
+                    onAutoApprove: { model.autoAnswerSessions(matching: $0) },
                     agentIconStyle: model.agentIconStyle,
                     shortcutHint: model.shortcutHints.isModifierHeld ? model.settings.shortcuts : nil,
                     isSwitcherHighlighted: model.switcher.highlightedID == session.id,
@@ -791,6 +792,7 @@ struct IslandPanelView: View {
                                 onJump: { model.jumpToSession(session) },
                                 onDismiss: session.isRemote ? { model.dismissSession(session.id) } : nil,
                                 onHide: { model.hideSessions(matching: $0) },
+                    onAutoApprove: { model.autoAnswerSessions(matching: $0) },
                     agentIconStyle: model.agentIconStyle,
                     shortcutHint: model.shortcutHints.isModifierHeld ? model.settings.shortcuts : nil,
                     isSwitcherHighlighted: model.switcher.highlightedID == session.id,
@@ -849,6 +851,7 @@ struct IslandPanelView: View {
                         onJump: { model.jumpToSession(session) },
                         onDismiss: session.isRemote ? { model.dismissSession(session.id) } : nil,
                         onHide: { model.hideSessions(matching: $0) },
+                    onAutoApprove: { model.autoAnswerSessions(matching: $0) },
                     agentIconStyle: model.agentIconStyle,
                     shortcutHint: model.shortcutHints.isModifierHeld ? model.settings.shortcuts : nil,
                     isSwitcherHighlighted: model.switcher.highlightedID == session.id,
@@ -1416,6 +1419,8 @@ private struct IslandSessionRow: View {
     var onDismiss: (() -> Void)?
     /// Adds a rule that keeps this kind of session off the island for good.
     var onHide: ((SilenceRule) -> Void)?
+    /// Adds a rule that answers this kind of session's permission requests.
+    var onAutoApprove: ((AutoResponseRule) -> Void)?
     var agentIconStyle: AgentIconStyle = .pixel
     /// Non-nil only while the shortcut modifier is held.
     var shortcutHint: ShortcutSettings?
@@ -1530,6 +1535,21 @@ private struct IslandSessionRow: View {
                     .replacingOccurrences(of: "{name}", with: app)
             ) {
                 onHide?(SilenceRule(field: .terminalApp, match: .equals, pattern: app))
+            }
+        }
+        if onAutoApprove != nil, let directory = session.jumpTarget?.workingDirectory, !directory.isEmpty {
+            Button(
+                LanguageManager.shared.t("island.session.autoApproveFolder")
+                    .replacingOccurrences(of: "{name}", with: (directory as NSString).lastPathComponent)
+            ) {
+                onAutoApprove?(
+                    AutoResponseRule(
+                        field: .workingDirectory,
+                        match: .equals,
+                        pattern: directory,
+                        behavior: .allowOnce
+                    )
+                )
             }
         }
     }
