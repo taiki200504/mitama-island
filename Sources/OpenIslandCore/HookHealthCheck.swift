@@ -20,6 +20,9 @@ public struct HookHealthReport: Equatable, Sendable {
         case staleCommandPath(recorded: String, configPath: String)
         /// Other hooks detected alongside Open Island hooks (informational).
         case otherHooksDetected(names: [String])
+        /// Another island's hooks are still registered. Both answer the same
+        /// permission request, so one of the two answers is discarded.
+        case strayIslandHooksDetected(commands: [String])
         /// The manifest file is missing even though hooks appear installed.
         case manifestMissing(expectedPath: String)
         /// The OpenCode plugin file is missing even though it should be installed.
@@ -37,6 +40,8 @@ public struct HookHealthReport: Equatable, Sendable {
                 "Command path in \(configPath) points to missing binary: \(recorded)"
             case .otherHooksDetected(let names):
                 "Other hooks coexist: \(names.joined(separator: ", "))"
+            case .strayIslandHooksDetected(let commands):
+                "Another island still answers the same events: \(commands.joined(separator: ", "))"
             case .manifestMissing(let expectedPath):
                 "Installation manifest missing: \(expectedPath)"
             case .pluginMissing(let expectedPath):
@@ -146,6 +151,21 @@ public enum HookHealthCheck {
                     }
                     if !otherNames.isEmpty {
                         issues.append(.otherHooksDetected(names: otherNames.sorted()))
+                    }
+
+                    // Another island answering the same events is a conflict,
+                    // not a coexistence — reported separately so it can be
+                    // cleared deliberately rather than by the silent repair.
+                    // Skipped without a resolved binary, since every island row
+                    // including our own would then read as someone else's.
+                    if let binaryPath = resolvedBinaryPath {
+                        let strays = ClaudeHookInstaller.strayIslandHookCommands(
+                            in: data,
+                            excluding: ClaudeHookInstaller.hookCommand(for: binaryPath)
+                        )
+                        if !strays.isEmpty {
+                            issues.append(.strayIslandHooksDetected(commands: strays))
+                        }
                     }
                 }
             }

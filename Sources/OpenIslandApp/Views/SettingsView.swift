@@ -663,6 +663,16 @@ struct SetupSettingsPane: View {
         return claude || codex
     }
 
+    /// Re-installing is what clears another island's rows, so the button says
+    /// what it removes rather than what it runs. Never triggered on its own:
+    /// deleting hooks another app installed is the user's call.
+    private var hasStrayIslandHooks: Bool {
+        model.claudeHealthReport?.issues.contains {
+            if case .strayIslandHooksDetected = $0 { return true }
+            return false
+        } == true
+    }
+
     private var hasNotices: Bool {
         let claude = model.claudeHealthReport?.notices.isEmpty == false
         let codex = model.codexHealthReport?.notices.isEmpty == false
@@ -710,6 +720,13 @@ struct SetupSettingsPane: View {
                             model.repairHooks()
                         }
                         .buttonStyle(.borderedProminent)
+                    }
+
+                    if hasStrayIslandHooks {
+                        Button(lang.t("setup.diagnostics.removeStrayHooks")) {
+                            model.installClaudeHooks()
+                            model.runHealthChecks()
+                        }
                     }
                 }
             }

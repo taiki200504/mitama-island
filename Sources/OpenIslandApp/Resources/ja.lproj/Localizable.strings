@@ -157,6 +157,7 @@
 "setup.diagnostics.runCheck" = "診断する";
 "setup.diagnostics.recheck" = "再診断";
 "setup.diagnostics.repair" = "フックを修復";
+"setup.diagnostics.removeStrayHooks" = "別の Island のフックを削除";
 "setup.diagnostics.allHealthy" = "フックはすべて正常です。";
 
 /* Settings - Placeholder */

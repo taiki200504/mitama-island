@@ -67,6 +67,35 @@ public enum ClaudeHookInstaller {
         "\(shellQuote(binaryPath)) --source \(source)"
     }
 
+    /// Hook commands left behind by another island — a build that moved, or a
+    /// different fork such as Vibe Island.
+    ///
+    /// They matter because two islands answering the same `PermissionRequest`
+    /// race each other and one answer is thrown away. Installing already strips
+    /// them, but nothing else does, so a fork the user stopped running keeps its
+    /// rows in `settings.json` indefinitely.
+    public static func strayIslandHookCommands(in settingsData: Data, excluding managedCommand: String?) -> [String] {
+        guard let root = try? JSONSerialization.jsonObject(with: settingsData) as? [String: Any],
+              let hooks = root["hooks"] as? [String: Any] else {
+            return []
+        }
+
+        var commands: Set<String> = []
+        for (_, eventValue) in hooks {
+            for group in eventValue as? [Any] ?? [] {
+                guard let group = group as? [String: Any] else { continue }
+                for entry in group["hooks"] as? [Any] ?? [] {
+                    guard let entry = entry as? [String: Any],
+                          let command = entry["command"] as? String,
+                          command != managedCommand,
+                          isLegacyOpenIslandHookCommand(command) else { continue }
+                    commands.insert(command)
+                }
+            }
+        }
+        return commands.sorted()
+    }
+
     public static func installSettingsJSON(
         existingData: Data?,
         hookCommand: String

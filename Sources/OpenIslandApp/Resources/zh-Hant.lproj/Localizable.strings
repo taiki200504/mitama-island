@@ -156,6 +156,7 @@
 "setup.diagnostics.runCheck" = "執行檢查";
 "setup.diagnostics.recheck" = "重新檢查";
 "setup.diagnostics.repair" = "修復 Hooks";
+"setup.diagnostics.removeStrayHooks" = "刪除其他 Island 的 Hooks";
 "setup.diagnostics.allHealthy" = "所有 Hooks 運作正常。";
 
 /* Settings - Placeholder */

@@ -156,6 +156,7 @@
 "setup.diagnostics.runCheck" = "Run Check";
 "setup.diagnostics.recheck" = "Re-check";
 "setup.diagnostics.repair" = "Repair Hooks";
+"setup.diagnostics.removeStrayHooks" = "Remove the Other Island's Hooks";
 "setup.diagnostics.allHealthy" = "All hooks are healthy.";
 
 /* Settings - Placeholder */
