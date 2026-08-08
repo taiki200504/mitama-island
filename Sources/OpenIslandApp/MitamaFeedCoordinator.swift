@@ -36,24 +36,42 @@ final class MitamaFeedCoordinator {
 
     var isRunning: Bool { pollTask != nil }
 
+    /// Starts polling once credentials are in hand.
+    ///
+    /// The credentials are fetched off the main actor, and that is not a
+    /// nicety. `SecItemCopyMatching` blocks for as long as macOS takes to decide
+    /// whether to show its "wants to use a keychain item" prompt, and this is
+    /// called from `AppModel.init` — inside SwiftUI's scene construction. Read
+    /// on the main actor, the prompt cannot be drawn until the app finishes
+    /// launching and the app cannot finish launching until the prompt is
+    /// answered. The whole app hung at a black screen with no window and no log.
     func start(environmentFileURL: URL = MitamaEnvironment.defaultEnvFileURL) {
         guard pollTask == nil else { return }
-        guard let loaded = MitamaEnvironment.loadWithSource(from: environmentFileURL) else {
-            isConfigured = false
-            credentialSource = nil
-            return
-        }
 
-        isConfigured = true
-        credentialSource = loaded.source
-        client = MitamaNotificationClient(environment: loaded.environment)
-        workLog = MitamaWorkLogClient(environment: loaded.environment)
-        currentInterval = Self.pollInterval
         pollTask = Task { [weak self] in
+            let loaded = await Task.detached(priority: .utility) {
+                MitamaEnvironment.loadWithSource(from: environmentFileURL)
+            }.value
+
+            // The keychain read can outlive a `stop()`, and assigning a client
+            // after that would leave a stopped feed holding live credentials.
+            guard let self, !Task.isCancelled else { return }
+            guard let loaded else {
+                self.isConfigured = false
+                self.credentialSource = nil
+                self.pollTask = nil
+                return
+            }
+
+            self.isConfigured = true
+            self.credentialSource = loaded.source
+            self.client = MitamaNotificationClient(environment: loaded.environment)
+            self.workLog = MitamaWorkLogClient(environment: loaded.environment)
+            self.currentInterval = Self.pollInterval
+
             while !Task.isCancelled {
-                await self?.refresh()
-                guard let interval = self?.currentInterval else { return }
-                try? await Task.sleep(for: .seconds(interval))
+                await self.refresh()
+                try? await Task.sleep(for: .seconds(self.currentInterval))
             }
         }
     }
