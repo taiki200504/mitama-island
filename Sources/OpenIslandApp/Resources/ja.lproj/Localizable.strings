@@ -583,6 +583,7 @@
 "settings.display.completionBanner" = "完了をノッチの下に出す";
 "settings.display.completionBanner.help" = "セッションが終わったらノッチの下に小さく出ます。押すと内容が見られます。通知で設定した静かにする場面では出ません。";
 "settings.appearance.theme.hud" = "HUD";
+"settings.appearance.theme.sao" = "SAO";
 "settings.appearance.theme.classic" = "標準";
 "settings.appearance.theme.title" = "テーマ";
 "settings.appearance.theme.note" = "HUD は角張った冷たい発光。標準はこれまでの温かい見た目です。";

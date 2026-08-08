@@ -21,6 +21,28 @@ struct IslandStatusTints: Sendable {
     var critical: Color
 }
 
+/// Motion values that make the island feel responsive without turning every
+/// state change into a separate panel-level implementation detail.
+struct IslandAnimationProfile: Sendable {
+    var open: Animation
+    var close: Animation
+    var pop: Animation
+}
+
+/// The edge treatment shared by the opened island's outer frame.
+struct IslandBorderStyle: Sendable {
+    var width: CGFloat
+    var opacity: Double
+    var isDouble: Bool
+}
+
+/// The sounds that belong to a visual language. Playback remains independent
+/// so adding a theme does not silently change a person's notification settings.
+enum IslandSoundProfile: Sendable {
+    case standard
+    case sao
+}
+
 /// The whole visual language, in one value.
 ///
 /// Read through `IslandTheme.current` rather than an `Environment` value: the
@@ -39,11 +61,18 @@ protocol IslandTheme: Sendable {
     var cornerStyle: IslandCornerStyle { get }
     /// How far a glow bleeds past its shape. Zero switches glows off entirely.
     var glowRadius: CGFloat { get }
+    var animationProfile: IslandAnimationProfile { get }
+    var borderStyle: IslandBorderStyle { get }
+    /// Opacity of horizontal scanlines spaced three points apart; zero omits them.
+    var scanlineIntensity: Double { get }
+    var soundProfile: IslandSoundProfile { get }
 }
 
 enum IslandThemeID: String, CaseIterable, Identifiable, Sendable {
     /// The heads-up-display look: cool, angular, lit from within.
     case hud
+    /// Cool, crystalline interface language with a more pronounced frame.
+    case sao
     /// What the app looked like before themes existed: warm paper on black.
     case classic
 
@@ -53,6 +82,7 @@ enum IslandThemeID: String, CaseIterable, Identifiable, Sendable {
     var theme: any IslandTheme {
         switch self {
         case .hud: HUDTheme()
+        case .sao: SAOTheme()
         case .classic: ClassicTheme()
         }
     }
@@ -90,6 +120,51 @@ struct HUDTheme: IslandTheme {
 
     let cornerStyle = IslandCornerStyle.chamfered
     let glowRadius: CGFloat = 2.5
+    // Timings measured off a 120fps capture of the reference product: the panel
+    // grows for ~225ms with a decelerating curve and no overshoot, and collapses
+    // in ~150ms. The previous 0.42s response felt soft and lagged the pointer;
+    // 0.3s response at high damping lands on the same wall-clock duration.
+    let animationProfile = IslandAnimationProfile(
+        open: .spring(response: 0.3, dampingFraction: 0.9, blendDuration: 0),
+        close: .smooth(duration: 0.15),
+        pop: .spring(response: 0.3, dampingFraction: 0.5)
+    )
+    let borderStyle = IslandBorderStyle(width: 1, opacity: 0.07, isDouble: false)
+    let scanlineIntensity = 0.0
+    let soundProfile = IslandSoundProfile.standard
+}
+
+/// A crystalline HUD inspired by the cool, luminous language of Aincrad.
+struct SAOTheme: IslandTheme {
+    let id = IslandThemeID.sao
+
+    // A bluer black preserves contrast against the physical notch while the
+    // icy paper and cyan distinguish this from the more neutral HUD palette.
+    let ink = Color(hex: 0x06101E)
+    let paper = Color(hex: 0xE8F7FF)
+    let accent = Color(hex: 0x54C8F2)
+
+    let statusTints = IslandStatusTints(
+        running: Color(hex: 0x54C8F2),
+        // Warm waiting colours remain visually distinct for people who cannot
+        // rely on the cold running tint alone.
+        waitingForApproval: Color(hex: 0xFF9A58),
+        waitingForAnswer: Color(hex: 0xFFD35A),
+        completed: Color(hex: 0x63E6C4),
+        waitingAggregate: Color(hex: 0xFFB86B),
+        critical: Color(hex: 0xFF5275)
+    )
+
+    let cornerStyle = IslandCornerStyle.chamfered
+    let glowRadius: CGFloat = 3.0
+    let animationProfile = IslandAnimationProfile(
+        open: .spring(response: 0.36, dampingFraction: 0.76, blendDuration: 0),
+        close: .smooth(duration: 0.15),
+        pop: .spring(response: 0.36, dampingFraction: 0.76)
+    )
+    let borderStyle = IslandBorderStyle(width: 1, opacity: 0.22, isDouble: true)
+    let scanlineIntensity = 0.06
+    let soundProfile = IslandSoundProfile.sao
 }
 
 /// The original look, kept so the change is reversible.
@@ -111,6 +186,14 @@ struct ClassicTheme: IslandTheme {
 
     let cornerStyle = IslandCornerStyle.rounded
     let glowRadius: CGFloat = 2.5
+    let animationProfile = IslandAnimationProfile(
+        open: .spring(response: 0.3, dampingFraction: 0.9, blendDuration: 0),
+        close: .smooth(duration: 0.15),
+        pop: .spring(response: 0.3, dampingFraction: 0.5)
+    )
+    let borderStyle = IslandBorderStyle(width: 1, opacity: 0.07, isDouble: false)
+    let scanlineIntensity = 0.0
+    let soundProfile = IslandSoundProfile.standard
 }
 
 // MARK: - The current theme

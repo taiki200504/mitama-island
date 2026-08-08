@@ -119,16 +119,7 @@ struct IslandSessionCardFields: Equatable, Sendable {
     }
 }
 
-// MARK: - Animations
-
-// Timings measured off a 120fps capture of the reference product: the panel
-// grows for ~225ms with a decelerating curve and no overshoot, and collapses
-// in ~150ms. The previous 0.42s response felt soft and lagged the pointer;
-// 0.3s response at high damping lands on the same wall-clock duration.
-private let openAnimation = Animation.spring(response: 0.3, dampingFraction: 0.9, blendDuration: 0)
-private let closeAnimation = Animation.smooth(duration: 0.15)
-private let popAnimation = Animation.spring(response: 0.3, dampingFraction: 0.5)
-// Slightly longer than `closeAnimation` so the collapse is never cut off
+// Slightly longer than the close animation so the collapse is never cut off
 // mid-shrink by the surface being torn down.
 private let openedSurfaceUnmountDelay: TimeInterval = 0.22
 
@@ -182,9 +173,9 @@ struct IslandPanelView: View {
     /// Single animation selection based on the current notch status.
     private var notchTransitionAnimation: Animation {
         switch model.notchStatus {
-        case .opened:  return openAnimation
-        case .closed:  return closeAnimation
-        case .popping: return popAnimation
+        case .opened:  return IslandThemes.current.animationProfile.open
+        case .closed:  return IslandThemes.current.animationProfile.close
+        case .popping: return IslandThemes.current.animationProfile.pop
         }
     }
 
@@ -346,7 +337,7 @@ struct IslandPanelView: View {
             minWidth: 70
         )
         .scaleEffect(isPopping ? 1.04 : 1, anchor: .top)
-        .animation(popAnimation, value: isPopping)
+        .animation(IslandThemes.current.animationProfile.pop, value: isPopping)
     }
 
     // MARK: - Opened surface
@@ -360,6 +351,8 @@ struct IslandPanelView: View {
         let surfaceShape = OpenedIslandSurfaceShape(
             topProfile: usesNotchAwareOpenedHeader ? .notch : .topBar
         )
+        let borderStyle = IslandThemes.current.borderStyle
+        let scanlineIntensity = IslandThemes.current.scanlineIntensity
 
         ZStack(alignment: .top) {
             surfaceShape
@@ -380,8 +373,31 @@ struct IslandPanelView: View {
             .padding(.bottom, bottomInset)
             .clipShape(surfaceShape)
             .overlay {
-                surfaceShape
-                    .stroke(Color.white.opacity(0.07), lineWidth: 1)
+                ZStack {
+                    surfaceShape
+                        .stroke(Color.white.opacity(borderStyle.opacity), lineWidth: borderStyle.width)
+                    if borderStyle.isDouble {
+                        surfaceShape
+                            .stroke(Color.white.opacity(borderStyle.opacity), lineWidth: borderStyle.width)
+                            .padding(2)
+                    }
+                }
+            }
+
+            if scanlineIntensity > 0 {
+                Canvas { context, size in
+                    var scanlines = Path()
+                    for y in stride(from: 0, through: size.height, by: 3) {
+                        scanlines.move(to: CGPoint(x: 0, y: y))
+                        scanlines.addLine(to: CGPoint(x: size.width, y: y))
+                    }
+                    context.stroke(scanlines, with: .color(.white.opacity(scanlineIntensity)), lineWidth: 1)
+                }
+                .frame(width: openedWidth, height: openedHeight)
+                .padding(.horizontal, horizontalInset)
+                .padding(.bottom, bottomInset)
+                .clipShape(surfaceShape)
+                .allowsHitTesting(false)
             }
         }
         .frame(width: surfaceWidth, height: surfaceHeight, alignment: .top)

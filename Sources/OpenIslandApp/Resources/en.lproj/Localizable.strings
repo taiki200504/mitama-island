@@ -583,6 +583,7 @@
 "settings.display.completionBanner" = "Announce completion under the notch";
 "settings.display.completionBanner.help" = "A small banner under the notch when a session finishes. Click it to see what it did. It stays away during the quiet scenes set under Notifications.";
 "settings.appearance.theme.hud" = "HUD";
+"settings.appearance.theme.sao" = "SAO";
 "settings.appearance.theme.classic" = "Classic";
 "settings.appearance.theme.title" = "Theme";
 "settings.appearance.theme.note" = "HUD is cool and angular, lit from within. Classic is the warmer look the app had before.";

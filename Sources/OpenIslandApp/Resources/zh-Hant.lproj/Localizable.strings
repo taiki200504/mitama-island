@@ -582,6 +582,7 @@
 "settings.display.completionBanner" = "在瀏海下方顯示完成";
 "settings.display.completionBanner.help" = "工作階段結束時在瀏海下方顯示小橫幅。點擊可查看內容。在通知中設定的安靜場景下不顯示。";
 "settings.appearance.theme.hud" = "HUD";
+"settings.appearance.theme.sao" = "SAO";
 "settings.appearance.theme.classic" = "標準";
 "settings.appearance.theme.title" = "主題";
 "settings.appearance.theme.note" = "HUD 為冷色調的稜角發光風格；標準為此前的暖色外觀。";

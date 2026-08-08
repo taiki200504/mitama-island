@@ -25,6 +25,33 @@ struct IslandThemeTests {
         #expect(IslandThemeID.hud.theme.cornerStyle != IslandThemeID.classic.theme.cornerStyle)
     }
 
+    /// Themes are allowed to add their own motion, but the two existing looks
+    /// must preserve the panel timing and frame that people already know.
+    @Test("HUD and Classic preserve the legacy motion and frame")
+    func legacyThemesPreserveVisualProfile() {
+        let expectedOpen = "\(Animation.spring(response: 0.3, dampingFraction: 0.9, blendDuration: 0))"
+        let expectedClose = "\(Animation.smooth(duration: 0.15))"
+        let expectedPop = "\(Animation.spring(response: 0.3, dampingFraction: 0.5))"
+
+        for theme in [IslandThemeID.hud.theme, IslandThemeID.classic.theme] {
+            #expect("\(theme.animationProfile.open)" == expectedOpen)
+            #expect("\(theme.animationProfile.close)" == expectedClose)
+            #expect("\(theme.animationProfile.pop)" == expectedPop)
+            #expect(theme.borderStyle.width == 1)
+            #expect(theme.borderStyle.opacity == 0.07)
+            #expect(!theme.borderStyle.isDouble)
+            #expect(theme.scanlineIntensity == 0)
+        }
+    }
+
+    @Test("SAO is available and uses its themed scanlines")
+    func saoThemeIsAvailable() {
+        #expect(IslandThemeID.allCases.contains(.sao))
+        #expect(IslandThemeID.sao.theme is SAOTheme)
+        #expect(IslandThemeID.sao.theme.scanlineIntensity > 0)
+        #expect(IslandThemeID.hud.theme.scanlineIntensity == 0)
+    }
+
     /// The panel is drawn over the physical notch, which is pure black. A panel
     /// that is also pure black has no edge against the hardware.
     @Test("The HUD panel is not pure black")

@@ -583,6 +583,7 @@
 "settings.display.completionBanner" = "在刘海下方显示完成";
 "settings.display.completionBanner.help" = "会话结束时在刘海下方显示小横幅。点击可查看内容。在通知中设置的安静场景下不显示。";
 "settings.appearance.theme.hud" = "HUD";
+"settings.appearance.theme.sao" = "SAO";
 "settings.appearance.theme.classic" = "标准";
 "settings.appearance.theme.title" = "主题";
 "settings.appearance.theme.note" = "HUD 为冷色调的棱角发光风格；标准为此前的暖色外观。";
