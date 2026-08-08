@@ -525,6 +525,12 @@
 "island.session.hideFolder" = "不再顯示 {name} 中的工作階段";
 "island.session.hideApp" = "不再顯示來自 {name} 的工作階段";
 "island.session.hidden" = "已隱藏。可在通知設定中復原。";
+"camera.status.lookingForFace" = "攝影機已開啟 — 正在尋找你";
+"camera.status.awaitingGesture" = "兩指由上往下滑動";
+"camera.status.notYou" = "無法確認是你。再按一次快速鍵可直接開啟。";
+"camera.status.enrollStart" = "正在記住你的臉 — 請保持不動";
+"camera.status.enrolling" = "正在記住你的臉（{count}/5）";
+"camera.status.enrolled" = "已儲存。按下快速鍵後兩指向下滑動。";
 "island.session.autoApproveFolder" = "今後自動允許 {name} 的請求";
 "island.session.autoApproved" = "將自動回答 {pattern}。可在通知設定中復原。";
 "island.autoResponse.applied" = "已自動回答：{pattern} → {behavior}";
@@ -613,3 +619,14 @@
 "setup.banner.noHooks.title.hud" = "LINK YOUR AGENTS";
 "settings.display.hideIdleSessions" = "隱藏已停止活動的工作階段";
 "settings.display.hideIdleSessions.help" = "不在清單中顯示已變灰的項目。始終保留最後一行，以免看起來像遺失了。";
+
+"settings.camera.section" = "用手勢開啟";
+"settings.camera.section.footer" = "先按快速鍵，然後在攝影機前用兩指由上往下滑動。攝影機只在這幾秒內運作，視窗關閉後指示燈即熄滅。連按兩次快速鍵可略過攝影機直接開啟。";
+"settings.camera.enabled" = "啟用攝影機手勢";
+"settings.camera.enabled.help" = "預設關閉。開啟前不會要求攝影機權限。";
+"settings.camera.trigger" = "喚醒攝影機";
+"settings.camera.requiresFaceMatch" = "只對我回應";
+"settings.camera.requiresFaceMatch.help" = "首次使用時記住你的臉，只儲存為數值，不儲存影像。這只是篩選，不是鎖，精度不足以保護任何東西。";
+"settings.camera.face" = "已儲存的臉";
+"settings.camera.face.help" = "刪除後，下次使用會重新記住。";
+"settings.camera.forgetFace" = "刪除";

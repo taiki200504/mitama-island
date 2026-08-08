@@ -526,6 +526,12 @@
 "island.session.hideFolder" = "不再显示 {name} 中的会话";
 "island.session.hideApp" = "不再显示来自 {name} 的会话";
 "island.session.hidden" = "已隐藏。可在通知设置中撤销。";
+"camera.status.lookingForFace" = "摄像头已开启 — 正在寻找你";
+"camera.status.awaitingGesture" = "两指从上向下滑动";
+"camera.status.notYou" = "无法确认是你。再按一次快捷键可直接打开。";
+"camera.status.enrollStart" = "正在记住你的脸 — 请保持不动";
+"camera.status.enrolling" = "正在记住你的脸（{count}/5）";
+"camera.status.enrolled" = "已保存。按下快捷键后两指向下滑动。";
 "island.session.autoApproveFolder" = "今后自动允许 {name} 的请求";
 "island.session.autoApproved" = "将自动回答 {pattern}。可在通知设置中撤销。";
 "island.autoResponse.applied" = "已自动回答：{pattern} → {behavior}";
@@ -614,3 +620,14 @@
 "setup.banner.noHooks.title.hud" = "LINK YOUR AGENTS";
 "settings.display.hideIdleSessions" = "隐藏已停止活动的会话";
 "settings.display.hideIdleSessions.help" = "不在列表中显示已变灰的条目。始终保留最后一行，以免看起来像丢失了。";
+
+"settings.camera.section" = "用手势打开";
+"settings.camera.section.footer" = "先按快捷键，然后在摄像头前用两指从上向下滑动。摄像头只在这几秒内工作，窗口关闭后指示灯即熄灭。连按两次快捷键可跳过摄像头直接打开。";
+"settings.camera.enabled" = "启用摄像头手势";
+"settings.camera.enabled.help" = "默认关闭。开启前不会请求摄像头权限。";
+"settings.camera.trigger" = "唤醒摄像头";
+"settings.camera.requiresFaceMatch" = "只对我响应";
+"settings.camera.requiresFaceMatch.help" = "首次使用时记住你的脸，只保存为数值，不保存图像。这只是筛选，不是锁，精度不足以保护任何东西。";
+"settings.camera.face" = "已保存的脸";
+"settings.camera.face.help" = "删除后，下次使用会重新记住。";
+"settings.camera.forgetFace" = "删除";

@@ -526,6 +526,12 @@
 "island.session.hideFolder" = "{name} のセッションを今後表示しない";
 "island.session.hideApp" = "{name} から始まったセッションを今後表示しない";
 "island.session.hidden" = "非表示にしました。通知の設定から戻せます。";
+"camera.status.lookingForFace" = "カメラ起動 — 顔を探しています";
+"camera.status.awaitingGesture" = "2本指で上から下へ";
+"camera.status.notYou" = "本人と判定できません。もう一度キーを押すとそのまま開きます。";
+"camera.status.enrollStart" = "顔を覚えています — そのままで";
+"camera.status.enrolling" = "顔を覚えています（{count}/5）";
+"camera.status.enrolled" = "顔を保存しました。キーを押して2本指で下へ。";
 "island.session.autoApproveFolder" = "{name} の確認を今後自動で許可する";
 "island.session.autoApproved" = "{pattern} を自動で答えます。通知の設定から戻せます。";
 "island.autoResponse.applied" = "自動で答えました: {pattern} → {behavior}";
@@ -614,3 +620,14 @@
 "setup.banner.noHooks.title.hud" = "LINK YOUR AGENTS";
 "settings.display.hideIdleSessions" = "動きの止まったセッションを隠す";
 "settings.display.hideIdleSessions.help" = "灰色になった行を一覧に出しません。最後の1行は必ず残るので、見失ったように見えることはありません。";
+
+"settings.camera.section" = "ジェスチャで開く";
+"settings.camera.section.footer" = "キーを押してから、カメラの前で2本指を上から下へ。カメラが動くのはその数秒だけで、窓が閉じればランプも消えます。キーを2回押すとカメラを使わずそのまま開きます。";
+"settings.camera.enabled" = "カメラのジェスチャを使う";
+"settings.camera.enabled.help" = "既定はオフ。オンにするまでカメラの許可は求めません。";
+"settings.camera.trigger" = "カメラを起こす";
+"settings.camera.requiresFaceMatch" = "本人のときだけ反応する";
+"settings.camera.requiresFaceMatch.help" = "初回に顔を覚え、数値として保存します（画像は保存しません）。これは絞り込みであって鍵ではありません。何かを守れるほどの精度はありません。";
+"settings.camera.face" = "保存した顔";
+"settings.camera.face.help" = "消すと、次に使うときにもう一度覚え直します。";
+"settings.camera.forgetFace" = "消す";

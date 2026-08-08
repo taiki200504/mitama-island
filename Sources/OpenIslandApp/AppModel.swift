@@ -483,6 +483,17 @@ final class AppModel {
 
     let mitamaFeed = MitamaFeedCoordinator()
 
+    /// Built at startup, but it holds no camera until someone presses the key.
+    ///
+    /// Deliberately not `lazy`. Declaring it that way — even `@ObservationIgnored`
+    /// and never read — made `bridgeNotificationStillPresentsWhenSessionIsNotFrontmost`
+    /// fail every time: a bridge notification stopped opening the panel inside
+    /// its 200ms budget. The mechanism was never pinned down; what is certain is
+    /// that a lazy property in this `@Observable` class costs something on a path
+    /// that has none to spare. Eager construction is free here, so it is not
+    /// worth understanding further.
+    @ObservationIgnored let cameraActivation: CameraActivationSession
+
     func openMitamaHub() {
         NSWorkspace.shared.open(MitamaFeedCoordinator.hubURL)
     }
@@ -684,6 +695,7 @@ final class AppModel {
         self.isNotificationSessionAlreadyFrontmost = isNotificationSessionAlreadyFrontmost
         self.settings = settings
         self.overlay = OverlayUICoordinator(settings: settings)
+        self.cameraActivation = CameraActivationSession(settings: settings.cameraGesture)
         UserDefaults.standard.register(defaults: [
             Self.showDockIconDefaultsKey: true,
             Self.hapticFeedbackEnabledDefaultsKey: false,
@@ -1397,8 +1409,13 @@ final class AppModel {
     func notchClose() { overlay.notchClose() }
     func notchPop() { overlay.notchPop() }
     func performBootAnimation() { overlay.performBootAnimation() }
+    /// Opens the camera window, or opens the island outright when the window is
+    /// already up — pressing the key twice is how you get in on the day the face
+    /// gate stops recognising you.
     func beginTouchlessActivation() {
-        // TODO: Start the opt-in camera activation window when capture wiring lands.
+        if cameraActivation.begin() {
+            notchOpen(reason: .handGesture)
+        }
     }
     func ensureOverlayPanel() { overlay.ensureOverlayPanel() }
     func showOverlay() { overlay.showOverlay() }
@@ -2044,6 +2061,13 @@ final class AppModel {
             self?.beginTouchlessActivation()
         }
         coordinator.touchlessActivationEnabled = settings.cameraGesture.isEnabled
+        cameraActivation.onGesture = { [weak self] in
+            self?.notchOpen(reason: .handGesture)
+        }
+        cameraActivation.onStatus = { [weak self] status in
+            guard let status else { return }
+            self?.lastActionMessage = status
+        }
         coordinator.startPersistentBindings()
         panelHotkeys = coordinator
     }

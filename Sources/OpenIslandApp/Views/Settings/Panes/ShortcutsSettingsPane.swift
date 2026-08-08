@@ -17,8 +17,64 @@ struct ShortcutsSettingsPane: View {
         SettingsPane(tab: .shortcuts) {
             globalSection
             switcherSection
+            cameraGestureSection
             panelSection
             resetSection
+        }
+    }
+
+    private var cameraGesture: CameraGestureSettings { model.settings.cameraGesture }
+    private var faceStore: FaceReferenceStore { FaceReferenceStore() }
+
+    /// Filed under shortcuts because a key is what starts it. The camera only
+    /// runs inside the few seconds that key opens, so this is a shortcut with a
+    /// second step rather than a background watcher.
+    private var cameraGestureSection: some View {
+        Section {
+            SettingsToggleRow(
+                title: lang.t("settings.camera.enabled"),
+                help: lang.t("settings.camera.enabled.help"),
+                isOn: Binding(
+                    get: { cameraGesture.isEnabled },
+                    set: {
+                        cameraGesture.isEnabled = $0
+                        model.panelHotkeys?.touchlessActivationEnabled = $0
+                        model.panelHotkeys?.startPersistentBindings()
+                    }
+                )
+            )
+
+            if cameraGesture.isEnabled {
+                SettingsRow(title: lang.t("settings.camera.trigger")) {
+                    ShortcutKeyChip(label: "⌃⇧space")
+                }
+
+                SettingsToggleRow(
+                    title: lang.t("settings.camera.requiresFaceMatch"),
+                    help: lang.t("settings.camera.requiresFaceMatch.help"),
+                    isOn: Binding(
+                        get: { cameraGesture.requiresFaceMatch },
+                        set: { cameraGesture.requiresFaceMatch = $0 }
+                    )
+                )
+
+                SettingsRow(
+                    title: lang.t("settings.camera.face"),
+                    help: lang.t("settings.camera.face.help")
+                ) {
+                    Button(lang.t("settings.camera.forgetFace")) {
+                        faceStore.clear()
+                    }
+                    .foregroundStyle(.red)
+                    .disabled(!faceStore.hasReference)
+                }
+            }
+        } header: {
+            Text(lang.t("settings.camera.section"))
+        } footer: {
+            Text(lang.t("settings.camera.section.footer"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 

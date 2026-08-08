@@ -526,6 +526,12 @@
 "island.session.hideFolder" = "Never show sessions in {name}";
 "island.session.hideApp" = "Never show sessions from {name}";
 "island.session.hidden" = "Hidden. Undo it under Notifications.";
+"camera.status.lookingForFace" = "Camera on — looking for you";
+"camera.status.awaitingGesture" = "Swipe two fingers down";
+"camera.status.notYou" = "That doesn't look like you. Press the key again to open anyway.";
+"camera.status.enrollStart" = "Learning your face — hold still";
+"camera.status.enrolling" = "Learning your face ({count}/5)";
+"camera.status.enrolled" = "Face saved. Press the key and swipe two fingers down.";
 "island.session.autoApproveFolder" = "Always allow requests from {name}";
 "island.session.autoApproved" = "Answering {pattern} automatically. Undo it under Notifications.";
 "island.autoResponse.applied" = "Answered automatically: {pattern} → {behavior}";
@@ -614,3 +620,14 @@
 "setup.banner.noHooks.title.hud" = "LINK YOUR AGENTS";
 "settings.display.hideIdleSessions" = "Hide sessions that have gone quiet";
 "settings.display.hideIdleSessions.help" = "Keeps greyed-out rows out of the list. The last row is always kept, so the list never looks empty by mistake.";
+
+"settings.camera.section" = "Open with a gesture";
+"settings.camera.section.footer" = "Press the key, then swipe two fingers down in front of the camera. The camera runs only during those few seconds — the indicator light goes out when the window closes. Press the key twice to skip the camera and open the island directly.";
+"settings.camera.enabled" = "Enable camera gesture";
+"settings.camera.enabled.help" = "Off by default. Nothing asks for camera access until this is on.";
+"settings.camera.trigger" = "Wake the camera";
+"settings.camera.requiresFaceMatch" = "Only respond to me";
+"settings.camera.requiresFaceMatch.help" = "Your face is learned the first time and kept as numbers, never as an image. This is a filter, not a lock — it is not accurate enough to protect anything.";
+"settings.camera.face" = "Saved face";
+"settings.camera.face.help" = "Deleting it means the next use learns your face again.";
+"settings.camera.forgetFace" = "Forget";
