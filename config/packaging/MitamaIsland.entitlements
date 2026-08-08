@@ -18,5 +18,18 @@
     <true/>
     <key>com.apple.security.cs.disable-library-validation</key>
     <true/>
+    <!--
+      Required to ask for the camera at all. Under the hardened runtime macOS
+      refuses to even show the permission dialog without this, and denies
+      immediately — tccd says so plainly:
+
+        Prompting policy for hardened runtime; service: kTCCServiceCamera
+        requires entitlement com.apple.security.device.camera but it is missing
+        Policy disallows prompt ... access to kTCCServiceCamera denied
+
+      The usage description in Info.plist is necessary but not sufficient.
+    -->
+    <key>com.apple.security.device.camera</key>
+    <true/>
 </dict>
 </plist>
