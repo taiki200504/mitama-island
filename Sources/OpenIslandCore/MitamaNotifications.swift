@@ -98,10 +98,14 @@ public struct MitamaEnvironment: Equatable, Sendable {
         loadWithSource(from: fileURL)?.environment
     }
 
+    /// `keychain` is a parameter so a test can describe an empty keychain.
+    /// Reading the real login keychain made the file-fallback tests pass only on
+    /// machines where the key had never been stored — they broke the day it was.
     public static func loadWithSource(
-        from fileURL: URL = defaultEnvFileURL
+        from fileURL: URL = defaultEnvFileURL,
+        keychain: () -> MitamaEnvironment? = MitamaKeychain.environment
     ) -> (environment: MitamaEnvironment, source: Source)? {
-        if let fromKeychain = MitamaKeychain.environment() {
+        if let fromKeychain = keychain() {
             return (fromKeychain, .keychain)
         }
         guard let contents = try? String(contentsOf: fileURL, encoding: .utf8),

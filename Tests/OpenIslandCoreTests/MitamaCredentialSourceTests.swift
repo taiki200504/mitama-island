@@ -5,6 +5,11 @@ import Testing
 /// The key grants access to the notification queue, so where it is read from
 /// matters as much as whether it loads.
 struct MitamaCredentialSourceTests {
+    /// Stands in for a keychain holding nothing. Without it these tests read the
+    /// developer's real login keychain and start failing the moment the key is
+    /// stored there for real.
+    private let emptyKeychain: () -> MitamaEnvironment? = { nil }
+
     private func writeEnvFile(_ contents: String) throws -> URL {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("mitama-\(UUID().uuidString).env")
@@ -20,7 +25,7 @@ struct MitamaCredentialSourceTests {
         """)
         defer { try? FileManager.default.removeItem(at: url) }
 
-        let loaded = MitamaEnvironment.loadWithSource(from: url)
+        let loaded = MitamaEnvironment.loadWithSource(from: url, keychain: emptyKeychain)
 
         #expect(loaded?.source == .envFile)
         #expect(loaded?.environment.url.absoluteString == "https://example.supabase.co")
@@ -31,7 +36,7 @@ struct MitamaCredentialSourceTests {
         let missing = FileManager.default.temporaryDirectory
             .appendingPathComponent("absent-\(UUID().uuidString).env")
 
-        #expect(MitamaEnvironment.loadWithSource(from: missing) == nil)
+        #expect(MitamaEnvironment.loadWithSource(from: missing, keychain: emptyKeychain) == nil)
     }
 
     /// A file holding only half the pair cannot produce a working client.
@@ -40,7 +45,7 @@ struct MitamaCredentialSourceTests {
         let url = try writeEnvFile("SUPABASE_URL=https://example.supabase.co")
         defer { try? FileManager.default.removeItem(at: url) }
 
-        #expect(MitamaEnvironment.loadWithSource(from: url) == nil)
+        #expect(MitamaEnvironment.loadWithSource(from: url, keychain: emptyKeychain) == nil)
     }
 
     @Test
