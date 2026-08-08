@@ -41,6 +41,9 @@ final class CarbonHotkeyController: HotkeyRegistering {
     }
 
     func setBindings(_ bindings: [HotkeyBinding], for scope: HotkeyScope) {
+        Self.logger.notice(
+            "setBindings scope=\(String(describing: scope), privacy: .public) ids=\(bindings.map(\.id).joined(separator: ","), privacy: .public)"
+        )
         removeBindings(for: scope)
 
         var registered: [Registration] = []
@@ -67,6 +70,9 @@ final class CarbonHotkeyController: HotkeyRegistering {
             }
             bindingIDsByCarbonID[carbonID] = binding.id
             registered.append(Registration(ref: ref, bindingID: binding.id))
+            Self.logger.notice(
+                "Registered \(binding.id, privacy: .public) key=\(binding.keyCode) mods=\(binding.modifiers.rawValue)"
+            )
         }
         registrations[scope] = registered
     }

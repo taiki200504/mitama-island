@@ -630,3 +630,4 @@
 "settings.camera.face" = "已儲存的臉";
 "settings.camera.face.help" = "刪除後，下次使用會重新記住。";
 "settings.camera.forgetFace" = "刪除";
+"settings.camera.trigger.claimed" = "此組合已被 macOS 佔用。快速鍵能註冊但收不到按鍵。請在系統設定 → 鍵盤 → 鍵盤快速鍵中取消佔用。";

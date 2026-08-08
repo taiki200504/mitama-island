@@ -76,7 +76,17 @@ final class PanelHotkeyCoordinator {
     private static let escapeKeyCode: UInt16 = 53
     private static let upArrowKeyCode: UInt16 = 126
     private static let downArrowKeyCode: UInt16 = 125
-    private static let spaceKeyCode: UInt16 = 49
+
+    /// True when macOS has reserved the camera trigger for itself. Carbon will
+    /// still register it and still never deliver it, so this is the only way the
+    /// UI can say why nothing happens.
+    var touchlessActivationIsClaimedBySystem: Bool {
+        SystemHotkeys.isClaimed(
+            keyCode: TouchlessActivationTrigger.keyCode,
+            modifiers: TouchlessActivationTrigger.modifiers,
+            in: SystemHotkeys.current()
+        )
+    }
 
     /// The one always-live shortcut. Registered at startup and never released.
     func startPersistentBindings() {
@@ -93,8 +103,8 @@ final class PanelHotkeyCoordinator {
             bindings.append(
                 HotkeyBinding(
                     id: Self.touchlessActivationBindingID,
-                    keyCode: Self.spaceKeyCode,
-                    modifiers: [.control, .shift],
+                    keyCode: UInt16(TouchlessActivationTrigger.keyCode),
+                    modifiers: NSEvent.ModifierFlags(rawValue: UInt(TouchlessActivationTrigger.modifiers)),
                     scope: .persistent
                 )
             )

@@ -1,3 +1,4 @@
+import OpenIslandCore
 import SwiftUI
 
 /// Keyboard assignments for the panel and the session switcher.
@@ -26,6 +27,13 @@ struct ShortcutsSettingsPane: View {
     private var cameraGesture: CameraGestureSettings { model.settings.cameraGesture }
     private var faceStore: FaceReferenceStore { FaceReferenceStore() }
 
+    /// Carbon registers a key macOS has already reserved and reports success,
+    /// then the key never arrives. Saying so here is the difference between a
+    /// shortcut the user can fix and one that is simply dead.
+    private var triggerIsClaimed: Bool {
+        model.panelHotkeys?.touchlessActivationIsClaimedBySystem ?? false
+    }
+
     /// Filed under shortcuts because a key is what starts it. The camera only
     /// runs inside the few seconds that key opens, so this is a shortcut with a
     /// second step rather than a background watcher.
@@ -45,8 +53,11 @@ struct ShortcutsSettingsPane: View {
             )
 
             if cameraGesture.isEnabled {
-                SettingsRow(title: lang.t("settings.camera.trigger")) {
-                    ShortcutKeyChip(label: "⌃⇧space")
+                SettingsRow(
+                    title: lang.t("settings.camera.trigger"),
+                    help: triggerIsClaimed ? lang.t("settings.camera.trigger.claimed") : nil
+                ) {
+                    ShortcutKeyChip(label: TouchlessActivationTrigger.displayLabel)
                 }
 
                 SettingsToggleRow(

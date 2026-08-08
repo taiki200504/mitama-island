@@ -1,4 +1,5 @@
 import AppKit
+import OpenIslandCore
 import Foundation
 import Testing
 @testable import OpenIslandApp
@@ -190,8 +191,8 @@ struct SwitcherHotkeyTests {
         let binding = (registrar.bindingsByScope[.persistent] ?? []).first {
             $0.id == PanelHotkeyCoordinator.touchlessActivationBindingID
         }
-        #expect(binding?.keyCode == 49)
-        #expect(binding?.modifiers == [.control, .shift])
+        #expect(binding?.keyCode == UInt16(TouchlessActivationTrigger.keyCode))
+        #expect(binding?.modifiers.rawValue == UInt(TouchlessActivationTrigger.modifiers))
     }
 
     /// Someone who never turns the camera on keeps ⌃⇧Space for whatever they

@@ -2,6 +2,7 @@ import AVFoundation
 import Foundation
 import Observation
 import OpenIslandCore
+import os
 
 /// Opens the camera for a few seconds, watches for the gesture, and closes it.
 ///
@@ -28,6 +29,8 @@ final class CameraActivationSession {
         case denied
         case unavailable
     }
+
+    private static let logger = Logger(subsystem: "com.mitama.island", category: "camera")
 
     private(set) var phase: Phase = .idle
 
@@ -59,6 +62,10 @@ final class CameraActivationSession {
     /// Returns true when the caller should open the island itself.
     @discardableResult
     func begin() -> Bool {
+        Self.logger.notice(
+            "begin phase=\(String(describing: self.phase), privacy: .public) enabled=\(self.settings.isEnabled) auth=\(AVCaptureDevice.authorizationStatus(for: .video).rawValue)"
+        )
+
         if isRunning {
             stop()
             return true

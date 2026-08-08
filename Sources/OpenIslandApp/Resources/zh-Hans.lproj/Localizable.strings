@@ -631,3 +631,4 @@
 "settings.camera.face" = "已保存的脸";
 "settings.camera.face.help" = "删除后，下次使用会重新记住。";
 "settings.camera.forgetFace" = "删除";
+"settings.camera.trigger.claimed" = "该组合已被 macOS 占用。快捷键能注册但收不到按键。请在系统设置 → 键盘 → 键盘快捷键中取消占用。";
