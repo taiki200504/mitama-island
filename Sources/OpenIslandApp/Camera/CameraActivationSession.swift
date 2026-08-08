@@ -84,8 +84,13 @@ final class CameraActivationSession {
                 }
             }
         case .denied, .restricted:
+            // Say so, and open the island anyway. The key was pressed three
+            // times against a denied camera and the island stayed silent and
+            // shut — indistinguishable from the app being broken. A shortcut
+            // that does nothing and explains nothing is worse than no shortcut.
             phase = .denied
-            onStatus?(nil)
+            onStatus?(LanguageManager.shared.t("camera.status.denied"))
+            return true
         @unknown default:
             phase = .unavailable
         }

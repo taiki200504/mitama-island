@@ -632,3 +632,4 @@
 "settings.camera.face.help" = "消すと、次に使うときにもう一度覚え直します。";
 "settings.camera.forgetFace" = "消す";
 "settings.camera.trigger.claimed" = "この組み合わせは macOS が予約しています。登録はできてもキーは届きません。システム設定 → キーボード → キーボードショートカット で解除してください。";
+"camera.status.denied" = "カメラのアクセスが拒否されています。システム設定 → プライバシーとセキュリティ → カメラ で許可してください。";

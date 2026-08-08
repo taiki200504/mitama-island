@@ -632,3 +632,4 @@
 "settings.camera.face.help" = "Deleting it means the next use learns your face again.";
 "settings.camera.forgetFace" = "Forget";
 "settings.camera.trigger.claimed" = "macOS has reserved this combination. The key registers but never arrives — change it in System Settings → Keyboard → Keyboard Shortcuts.";
+"camera.status.denied" = "Camera access is denied. System Settings → Privacy & Security → Camera.";
