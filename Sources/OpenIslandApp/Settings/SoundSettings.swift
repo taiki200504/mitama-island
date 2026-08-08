@@ -70,9 +70,18 @@ final class SoundSettings: PreferenceGroup {
 
     // MARK: Per-event assignment
 
+    /// The theme picks the default, and a choice the user made outranks it.
+    ///
+    /// Reading the theme here rather than rewriting stored values on every theme
+    /// switch: overwriting them would silently discard sounds someone had picked
+    /// for themselves, and switching back would not bring them back.
+    @MainActor
     func soundName(for event: NotificationSoundEvent) -> String {
         registrar.access(self, keyPath: \.assignmentsRevision)
-        return store.value(event.preferenceKey, default: Defaults.soundName)
+        return store.value(
+            event.preferenceKey,
+            default: IslandThemes.current.soundProfile.soundName(for: event)
+        )
     }
 
     func setSoundName(_ name: String, for event: NotificationSoundEvent) {

@@ -36,11 +36,32 @@ struct IslandBorderStyle: Sendable {
     var isDouble: Bool
 }
 
-/// The sounds that belong to a visual language. Playback remains independent
-/// so adding a theme does not silently change a person's notification settings.
+/// The sounds that belong to a visual language.
+///
+/// These are only the defaults a theme suggests — a sound the user picked for an
+/// event still wins, so switching themes never throws away their choices.
+///
+/// Every name here is a macOS system sound. The sounds this look is reaching for
+/// are someone else's work and cannot ship inside the app; these are the nearest
+/// thing already on the machine, and the sound picker imports a real one.
 enum IslandSoundProfile: Sendable {
     case standard
     case sao
+
+    func soundName(for event: NotificationSoundEvent) -> String {
+        switch self {
+        case .standard:
+            return "Bottle"
+        case .sao:
+            // Crystalline over percussive. Glass for the two moments that ask
+            // something of you, Tink for the ones that only report.
+            switch event {
+            case .approvalNeeded, .answerNeeded: return "Glass"
+            case .taskComplete: return "Hero"
+            case .sessionStart, .contextLimit, .usageAlmostFull: return "Tink"
+            }
+        }
+    }
 }
 
 /// The whole visual language, in one value.
