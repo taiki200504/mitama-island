@@ -17,6 +17,9 @@ enum NotchOpenReason: Equatable {
     /// The session switcher, which reuses the expanded panel rather than
     /// standing up a second window that would have to stay in step with it.
     case switcher
+    /// A gesture needs its own reason so its intentional feedback never turns
+    /// ordinary pointer-driven opens into a stream of sounds.
+    case handGesture
 }
 
 enum TrackedEventIngress {

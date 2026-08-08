@@ -19,6 +19,7 @@ final class SettingsStore: Sendable {
     let sound: SoundSettings
     let notificationFilters: NotificationFilterSettings
     let autoResponse: AutoResponseSettings
+    let cameraGesture: CameraGestureSettings
     let usage: UsageSettings
 
     init(store: PreferenceStore = .standard) {
@@ -28,6 +29,7 @@ final class SettingsStore: Sendable {
         sound = SoundSettings(store: store)
         notificationFilters = NotificationFilterSettings(store: store)
         autoResponse = AutoResponseSettings(store: store)
+        cameraGesture = CameraGestureSettings(store: store)
         usage = UsageSettings(store: store)
     }
 }

@@ -364,6 +364,7 @@
 "settings.sound.event.sessionStart" = "工作階段開始時";
 "settings.sound.event.contextLimit" = "達到上下文上限時";
 "settings.sound.event.usageAlmostFull" = "用量即將耗盡時";
+"settings.sound.event.islandOpenedByGesture" = "手勢開啟動態島時";
 
 /* Notifications pane */
 "settings.notifications.section.completion" = "完成通知";

@@ -365,6 +365,7 @@
 "settings.sound.event.sessionStart" = "セッションが始まったとき";
 "settings.sound.event.contextLimit" = "文脈の上限に達したとき";
 "settings.sound.event.usageAlmostFull" = "使用量が残り少ないとき";
+"settings.sound.event.islandOpenedByGesture" = "ジェスチャで島を開いたとき";
 
 /* Notifications pane */
 "settings.notifications.section.completion" = "完了通知";

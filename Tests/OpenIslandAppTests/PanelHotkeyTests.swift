@@ -181,6 +181,44 @@ struct SwitcherHotkeyTests {
         #expect(ids.contains(PanelHotkeyCoordinator.switcherBindingID))
     }
 
+    @Test("The touchless activation key is live once the feature is on")
+    func touchlessActivationIsPersistentWhenEnabled() {
+        let (coordinator, registrar) = makeCoordinator()
+        coordinator.touchlessActivationEnabled = true
+        coordinator.startPersistentBindings()
+
+        let binding = (registrar.bindingsByScope[.persistent] ?? []).first {
+            $0.id == PanelHotkeyCoordinator.touchlessActivationBindingID
+        }
+        #expect(binding?.keyCode == 49)
+        #expect(binding?.modifiers == [.control, .shift])
+    }
+
+    /// Someone who never turns the camera on keeps ⌃⇧Space for whatever they
+    /// had bound it to. A global shortcut that does nothing is still taken.
+    @Test("The touchless activation key is not claimed while the feature is off")
+    func touchlessActivationIsAbsentWhenDisabled() {
+        let (coordinator, registrar) = makeCoordinator()
+        coordinator.startPersistentBindings()
+
+        #expect(
+            (registrar.bindingsByScope[.persistent] ?? []).contains {
+                $0.id == PanelHotkeyCoordinator.touchlessActivationBindingID
+            } == false
+        )
+    }
+
+    @Test("The touchless activation key only forwards its activation")
+    func touchlessActivationRoutes() {
+        let (coordinator, registrar) = makeCoordinator()
+        var activations = 0
+        coordinator.onTouchlessActivation = { activations += 1 }
+
+        registrar.onFire?(PanelHotkeyCoordinator.touchlessActivationBindingID)
+
+        #expect(activations == 1)
+    }
+
     @Test("Turning reverse off drops its binding")
     func reverseIsOptional() {
         let (coordinator, registrar) = makeCoordinator { $0.reverseSwitcherEnabled = false }

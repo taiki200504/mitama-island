@@ -22,6 +22,11 @@ final class PanelHotkeyCoordinator {
     var onSwitcherNavigate: ((Bool) -> Void)?
     var onSwitcherConfirm: (() -> Void)?
     var onSwitcherCancel: (() -> Void)?
+    var onTouchlessActivation: (() -> Void)?
+    /// Off until the camera feature is switched on. A global shortcut that does
+    /// nothing still takes ⌃⇧Space away from whatever else the user bound it to.
+    /// Re-run `startPersistentBindings()` after changing this.
+    var touchlessActivationEnabled = false
 
     init(
         registrar: any HotkeyRegistering,
@@ -46,6 +51,7 @@ final class PanelHotkeyCoordinator {
         case Self.switcherPreviousBindingID: onSwitcherNavigate?(true)
         case Self.switcherConfirmBindingID: onSwitcherConfirm?()
         case Self.switcherCancelBindingID:  onSwitcherCancel?()
+        case Self.touchlessActivationBindingID: onTouchlessActivation?()
         default:
             guard let action = PanelShortcutAction(rawValue: id) else { return }
             onAction?(action)
@@ -60,6 +66,7 @@ final class PanelHotkeyCoordinator {
     static let switcherPreviousBindingID = "switcher.previous"
     static let switcherConfirmBindingID = "switcher.confirm"
     static let switcherCancelBindingID = "switcher.cancel"
+    static let touchlessActivationBindingID = "touchlessActivation.begin"
 
     /// Backtick, next to the shift key on every layout this app runs on. Not
     /// user-assignable: it is the one shortcut that has to be live all the time,
@@ -69,6 +76,7 @@ final class PanelHotkeyCoordinator {
     private static let escapeKeyCode: UInt16 = 53
     private static let upArrowKeyCode: UInt16 = 126
     private static let downArrowKeyCode: UInt16 = 125
+    private static let spaceKeyCode: UInt16 = 49
 
     /// The one always-live shortcut. Registered at startup and never released.
     func startPersistentBindings() {
@@ -81,6 +89,16 @@ final class PanelHotkeyCoordinator {
                 scope: .persistent
             )
         ]
+        if touchlessActivationEnabled {
+            bindings.append(
+                HotkeyBinding(
+                    id: Self.touchlessActivationBindingID,
+                    keyCode: Self.spaceKeyCode,
+                    modifiers: [.control, .shift],
+                    scope: .persistent
+                )
+            )
+        }
         if settings.reverseSwitcherEnabled {
             bindings.append(
                 HotkeyBinding(

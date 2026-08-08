@@ -365,6 +365,7 @@
 "settings.sound.event.sessionStart" = "Session started";
 "settings.sound.event.contextLimit" = "Context limit reached";
 "settings.sound.event.usageAlmostFull" = "Usage nearly spent";
+"settings.sound.event.islandOpenedByGesture" = "Island opened by gesture";
 
 /* Notifications pane */
 "settings.notifications.section.completion" = "Completion";

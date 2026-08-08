@@ -54,10 +54,13 @@ enum IslandSoundProfile: Sendable {
             return "Bottle"
         case .sao:
             // Crystalline over percussive. Glass for the two moments that ask
-            // something of you, Tink for the ones that only report.
+            // something of you, Tink for the ones that only report, and a low
+            // sustained note for the gesture — it answers a deliberate pull of
+            // the hand, so it should not sound like another notification.
             switch event {
             case .approvalNeeded, .answerNeeded: return "Glass"
             case .taskComplete: return "Hero"
+            case .islandOpenedByGesture: return "Submarine"
             case .sessionStart, .contextLimit, .usageAlmostFull: return "Tink"
             }
         }

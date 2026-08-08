@@ -16,6 +16,7 @@ enum NotificationSoundEvent: String, CaseIterable, Sendable {
     /// The agent is compacting its conversation — the moment work slows down.
     case contextLimit
     case usageAlmostFull
+    case islandOpenedByGesture
 
     var labelKey: String { "settings.sound.event.\(rawValue)" }
 

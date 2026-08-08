@@ -365,6 +365,7 @@
 "settings.sound.event.sessionStart" = "会话开始时";
 "settings.sound.event.contextLimit" = "达到上下文上限时";
 "settings.sound.event.usageAlmostFull" = "用量即将耗尽时";
+"settings.sound.event.islandOpenedByGesture" = "手势打开灵动岛时";
 
 /* Notifications pane */
 "settings.notifications.section.completion" = "完成通知";

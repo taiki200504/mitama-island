@@ -1388,10 +1388,18 @@ final class AppModel {
     // MARK: - Overlay forwarding
 
     func toggleOverlay() { overlay.toggleOverlay() }
-    func notchOpen(reason: NotchOpenReason, surface: IslandSurface = .sessionList()) { overlay.notchOpen(reason: reason, surface: surface) }
+    func notchOpen(reason: NotchOpenReason, surface: IslandSurface = .sessionList()) {
+        if reason == .handGesture {
+            NotificationSoundService.play(.islandOpenedByGesture, settings: settings.sound)
+        }
+        overlay.notchOpen(reason: reason, surface: surface)
+    }
     func notchClose() { overlay.notchClose() }
     func notchPop() { overlay.notchPop() }
     func performBootAnimation() { overlay.performBootAnimation() }
+    func beginTouchlessActivation() {
+        // TODO: Start the opt-in camera activation window when capture wiring lands.
+    }
     func ensureOverlayPanel() { overlay.ensureOverlayPanel() }
     func showOverlay() { overlay.showOverlay() }
     func hideOverlay() { overlay.hideOverlay() }
@@ -2032,6 +2040,10 @@ final class AppModel {
         coordinator.onSwitcherCancel = { [weak self] in
             self?.switcherCancel()
         }
+        coordinator.onTouchlessActivation = { [weak self] in
+            self?.beginTouchlessActivation()
+        }
+        coordinator.touchlessActivationEnabled = settings.cameraGesture.isEnabled
         coordinator.startPersistentBindings()
         panelHotkeys = coordinator
     }
