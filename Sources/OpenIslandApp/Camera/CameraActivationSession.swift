@@ -77,12 +77,22 @@ final class CameraActivationSession {
         case .authorized:
             start()
         case .notDetermined:
+            // The prompt arrives on its own schedule and can land behind other
+            // windows. Saying what is being waited for is the difference between
+            // "nothing happened" and "answer the dialog".
+            onStatus?(LanguageManager.shared.t("camera.status.requesting"))
             AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
                 Task { @MainActor in
                     guard let self else { return }
-                    if granted { self.start() } else { self.phase = .denied }
+                    if granted {
+                        self.start()
+                    } else {
+                        self.phase = .denied
+                        self.onStatus?(LanguageManager.shared.t("camera.status.denied"))
+                    }
                 }
             }
+            return true
         case .denied, .restricted:
             // Say so, and open the island anyway. The key was pressed three
             // times against a denied camera and the island stayed silent and
@@ -139,9 +149,29 @@ final class CameraActivationSession {
         }
     }
 
+    /// The built-in camera, never the iPhone.
+    ///
+    /// `AVCaptureDevice.default(for: .video)` picks Continuity Camera when a
+    /// phone is nearby, and that is a combined audio/video device: selecting it
+    /// makes macOS ask for microphone access as well. This app has no
+    /// `NSMicrophoneUsageDescription` — it does not want the microphone — so
+    /// that request cannot be answered and the camera never opens. The symptom
+    /// is a permission prompt that never resolves and no camera at all.
+    private func builtInCamera() -> AVCaptureDevice? {
+        AVCaptureDevice.DiscoverySession(
+            deviceTypes: [.builtInWideAngleCamera],
+            mediaType: .video,
+            position: .unspecified
+        ).devices.first
+    }
+
     private func makeCaptureSession(reference: FaceReference?, isEnrolling: Bool) -> AVCaptureSession? {
-        guard let device = AVCaptureDevice.default(for: .video),
-              let input = try? AVCaptureDeviceInput(device: device) else { return nil }
+        guard let device = builtInCamera() else {
+            Self.logger.notice("No built-in camera found")
+            return nil
+        }
+        Self.logger.notice("Using camera \(device.localizedName, privacy: .public)")
+        guard let input = try? AVCaptureDeviceInput(device: device) else { return nil }
 
         let session = AVCaptureSession()
         // The smallest preset the hardware offers. Vision needs a face and a
