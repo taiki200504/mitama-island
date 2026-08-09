@@ -2061,8 +2061,14 @@ final class AppModel {
             self?.beginTouchlessActivation()
         }
         coordinator.touchlessActivationEnabled = settings.cameraGesture.isEnabled
-        cameraActivation.onGesture = { [weak self] in
-            self?.notchOpen(reason: .handGesture)
+        // Down opens, up closes. The same window accepts either, so the island
+        // can be dismissed the way it was summoned rather than reaching for the
+        // keyboard to undo a gesture.
+        cameraActivation.onGesture = { [weak self] direction in
+            switch direction {
+            case .down: self?.notchOpen(reason: .handGesture)
+            case .up: self?.notchClose()
+            }
         }
         cameraActivation.onStatus = { [weak self] status in
             guard let status else { return }

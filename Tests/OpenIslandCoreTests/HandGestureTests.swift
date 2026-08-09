@@ -30,11 +30,11 @@ struct HandGestureTests {
     func recognizesDownwardSwipe() {
         var detector = SwipeDetector()
         let fired1 = detector.push(isTwoFingerPose: true, representativeTipPosition: point(0.5, 0.8), timestamp: 0)
-        #expect(!fired1)
+        #expect(nil == fired1)
         let fired2 = detector.push(isTwoFingerPose: true, representativeTipPosition: point(0.5, 0.7), timestamp: 0.1)
-        #expect(!fired2)
+        #expect(nil == fired2)
         let fired3 = detector.push(isTwoFingerPose: true, representativeTipPosition: point(0.5, 0.6), timestamp: 0.2)
-        #expect(fired3)
+        #expect(.down == fired3)
     }
 
     @Test("Horizontal movement is not a downward swipe")
@@ -43,7 +43,7 @@ struct HandGestureTests {
         _ = detector.push(isTwoFingerPose: true, representativeTipPosition: point(0.2, 0.7), timestamp: 0)
         _ = detector.push(isTwoFingerPose: true, representativeTipPosition: point(0.35, 0.68), timestamp: 0.1)
         let fired4 = detector.push(isTwoFingerPose: true, representativeTipPosition: point(0.5, 0.66), timestamp: 0.2)
-        #expect(!fired4)
+        #expect(nil == fired4)
     }
 
     @Test("A slow lowering motion is not a swipe")
@@ -52,7 +52,7 @@ struct HandGestureTests {
         _ = detector.push(isTwoFingerPose: true, representativeTipPosition: point(0.5, 0.8), timestamp: 0)
         _ = detector.push(isTwoFingerPose: true, representativeTipPosition: point(0.5, 0.7), timestamp: 0.75)
         let fired5 = detector.push(isTwoFingerPose: true, representativeTipPosition: point(0.5, 0.6), timestamp: 1.5)
-        #expect(!fired5)
+        #expect(nil == fired5)
     }
 
     @Test("Cooldown prevents a second panel opening")
@@ -61,12 +61,12 @@ struct HandGestureTests {
         _ = detector.push(isTwoFingerPose: true, representativeTipPosition: point(0.5, 0.8), timestamp: 0)
         _ = detector.push(isTwoFingerPose: true, representativeTipPosition: point(0.5, 0.7), timestamp: 0.1)
         let fired6 = detector.push(isTwoFingerPose: true, representativeTipPosition: point(0.5, 0.6), timestamp: 0.2)
-        #expect(fired6)
+        #expect(.down == fired6)
 
         _ = detector.push(isTwoFingerPose: true, representativeTipPosition: point(0.5, 0.8), timestamp: 0.3)
         _ = detector.push(isTwoFingerPose: true, representativeTipPosition: point(0.5, 0.7), timestamp: 0.4)
         let fired7 = detector.push(isTwoFingerPose: true, representativeTipPosition: point(0.5, 0.6), timestamp: 0.5)
-        #expect(!fired7)
+        #expect(nil == fired7)
     }
 
     private func landmarks(
@@ -110,5 +110,18 @@ struct HandGestureTests {
 
     private func point(_ x: Double, _ y: Double, confidence: Double = 0.9) -> HandLandmarks.Point {
         .init(x: x, y: y, confidence: confidence)
+    }
+
+    /// Closing the panel is the opposite motion, and it must not be mistaken
+    /// for the one that opens it.
+    @Test("An upward swipe is reported as up, not down")
+    func recognizesUpwardSwipe() {
+        var detector = SwipeDetector()
+        let fired8 = detector.push(isTwoFingerPose: true, representativeTipPosition: point(0.5, 0.6), timestamp: 0)
+        #expect(nil == fired8)
+        let fired9 = detector.push(isTwoFingerPose: true, representativeTipPosition: point(0.5, 0.7), timestamp: 0.1)
+        #expect(nil == fired9)
+        let fired10 = detector.push(isTwoFingerPose: true, representativeTipPosition: point(0.5, 0.8), timestamp: 0.2)
+        #expect(.up == fired10)
     }
 }

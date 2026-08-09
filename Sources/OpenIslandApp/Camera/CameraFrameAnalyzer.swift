@@ -13,8 +13,8 @@ enum CameraFrameOutcome: Equatable, Sendable {
     case faceRejected
     /// One enrolment sample was captured.
     case enrolled(sample: [Float])
-    /// The gesture completed.
-    case swiped
+    /// The gesture completed, in this direction.
+    case swiped(SwipeDirection)
 }
 
 /// Runs Vision over capture frames and turns them into outcomes.
@@ -128,8 +128,12 @@ final class CameraFrameAnalyzer: NSObject, AVCaptureVideoDataOutputSampleBufferD
             return
         }
 
-        if swipeDetector.push(isTwoFingerPose: true, representativeTipPosition: tip, timestamp: timestamp) {
-            onOutcome(.swiped)
+        if let direction = swipeDetector.push(
+            isTwoFingerPose: true,
+            representativeTipPosition: tip,
+            timestamp: timestamp
+        ) {
+            onOutcome(.swiped(direction))
         }
     }
 

@@ -34,8 +34,8 @@ final class CameraActivationSession {
 
     private(set) var phase: Phase = .idle
 
-    /// Fires on the main actor when the gesture completes.
-    var onGesture: (() -> Void)?
+    /// Fires on the main actor when the gesture completes, with its direction.
+    var onGesture: ((SwipeDirection) -> Void)?
     /// Progress the UI can show. Nil clears it.
     var onStatus: ((String?) -> Void)?
 
@@ -223,10 +223,10 @@ final class CameraActivationSession {
             )
             if enrolmentSamples.count >= 5 { finishEnrolment() }
 
-        case .swiped:
+        case let .swiped(direction):
             let fired = onGesture
             stop()
-            fired?()
+            fired?(direction)
         }
     }
 

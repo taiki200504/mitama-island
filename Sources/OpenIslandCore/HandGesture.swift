@@ -127,7 +127,14 @@ public struct TwoFingerPoseDetector: Equatable, Sendable {
     }
 }
 
-/// Detects one deliberate downward swipe from a bounded run of valid hand-pose frames.
+/// Which way a swipe travelled, in the real world rather than in Vision's
+/// bottom-left coordinate system.
+public enum SwipeDirection: Equatable, Sendable {
+    case down
+    case up
+}
+
+/// Detects one deliberate vertical swipe from a bounded run of valid hand-pose frames.
 public struct SwipeDetector: Equatable, Sendable {
     public struct Configuration: Equatable, Sendable {
         public var minimumConsecutiveFrames: Int
@@ -170,47 +177,52 @@ public struct SwipeDetector: Equatable, Sendable {
         self.configuration = configuration
     }
 
-    /// Returns true at most once per gesture; an invalid pose breaks continuity.
+    /// Reports a direction at most once per gesture; an invalid pose breaks
+    /// continuity. Nil means "nothing yet", which is most frames.
     public mutating func push(
         isTwoFingerPose: Bool,
         representativeTipPosition: HandLandmarks.Point,
         timestamp: TimeInterval
-    ) -> Bool {
+    ) -> SwipeDirection? {
         guard isTwoFingerPose else {
             observations.removeAll(keepingCapacity: true)
-            return false
+            return nil
         }
 
         if let lastRecognitionTimestamp, timestamp - lastRecognitionTimestamp < configuration.cooldownDuration {
             observations.removeAll(keepingCapacity: true)
-            return false
+            return nil
         }
 
-        guard observations.last.map({ timestamp > $0.timestamp }) ?? true else { return false }
+        guard observations.last.map({ timestamp > $0.timestamp }) ?? true else { return nil }
         observations.append(.init(position: representativeTipPosition, timestamp: timestamp))
         if observations.count > configuration.maximumBufferedObservations {
             observations.removeFirst(observations.count - configuration.maximumBufferedObservations)
         }
 
-        guard observations.count >= configuration.minimumConsecutiveFrames else { return false }
+        guard observations.count >= configuration.minimumConsecutiveFrames else { return nil }
         for start in observations.dropLast().reversed() {
             let end = observations[observations.count - 1]
             let duration = end.timestamp - start.timestamp
             if duration > configuration.maximumDuration { break }
-            guard duration >= configuration.minimumDuration, isDownwardSwipe(from: start, to: end) else { continue }
+            guard duration >= configuration.minimumDuration,
+                  let direction = swipeDirection(from: start, to: end) else { continue }
 
             lastRecognitionTimestamp = timestamp
             observations.removeAll(keepingCapacity: true)
-            return true
+            return direction
         }
-        return false
+        return nil
     }
 
-    private func isDownwardSwipe(from start: Observation, to end: Observation) -> Bool {
+    /// Vision's y grows upward, so a hand moving down the screen produces a
+    /// falling y. Converting here keeps that inversion out of the caller.
+    private func swipeDirection(from start: Observation, to end: Observation) -> SwipeDirection? {
         let movement = vector(from: start.position, to: end.position)
         let distance = length(movement)
-        guard distance >= configuration.minimumDistance, movement.y < 0 else { return false }
-        return abs(movement.y) / distance >= configuration.minimumVerticalDominance
+        guard distance >= configuration.minimumDistance else { return nil }
+        guard abs(movement.y) / distance >= configuration.minimumVerticalDominance else { return nil }
+        return movement.y < 0 ? .down : .up
     }
 }
 
