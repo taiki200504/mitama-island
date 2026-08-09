@@ -633,3 +633,6 @@
 "settings.camera.forgetFace" = "Forget";
 "settings.camera.trigger.claimed" = "macOS has reserved this combination. The key registers but never arrives — change it in System Settings → Keyboard → Keyboard Shortcuts.";
 "camera.status.denied" = "Camera access is denied. System Settings → Privacy & Security → Camera.";
+"camera.status.requesting" = "Waiting for camera permission — answer the dialog";
+"camera.status.timedOutOnFace" = "Could not recognise you. Press again to open without the camera, or turn off \"Only respond to me\".";
+"camera.status.timedOutOnGesture" = "No gesture seen. Two fingers, down the frame.";

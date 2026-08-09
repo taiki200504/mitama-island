@@ -633,3 +633,6 @@
 "settings.camera.forgetFace" = "删除";
 "settings.camera.trigger.claimed" = "该组合已被 macOS 占用。快捷键能注册但收不到按键。请在系统设置 → 键盘 → 键盘快捷键中取消占用。";
 "camera.status.denied" = "摄像头访问被拒绝。系统设置 → 隐私与安全性 → 摄像头。";
+"camera.status.requesting" = "正在等待摄像头权限 — 请回应对话框";
+"camera.status.timedOutOnFace" = "无法确认是你。再按一次可不用摄像头直接打开，或关闭「只对我响应」。";
+"camera.status.timedOutOnGesture" = "未识别到手势。请立起两指，从上向下滑动。";

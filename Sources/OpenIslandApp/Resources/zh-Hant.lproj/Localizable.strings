@@ -632,3 +632,6 @@
 "settings.camera.forgetFace" = "刪除";
 "settings.camera.trigger.claimed" = "此組合已被 macOS 佔用。快速鍵能註冊但收不到按鍵。請在系統設定 → 鍵盤 → 鍵盤快速鍵中取消佔用。";
 "camera.status.denied" = "攝影機存取被拒絕。系統設定 → 隱私權與安全性 → 攝影機。";
+"camera.status.requesting" = "正在等待攝影機權限 — 請回應對話框";
+"camera.status.timedOutOnFace" = "無法確認是你。再按一次可不用攝影機直接開啟，或關閉「只對我回應」。";
+"camera.status.timedOutOnGesture" = "未辨識到手勢。請立起兩指，由上往下滑動。";
