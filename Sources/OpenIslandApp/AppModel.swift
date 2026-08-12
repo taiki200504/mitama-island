@@ -42,8 +42,12 @@ final class AppModel {
             ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support")
         return base
             .appendingPathComponent("Open Island", isDirectory: true)
-            .appendingPathComponent("\u{66}\u{61}\u{63}\u{65}-reference.json")
+            .appendingPathComponent("face-reference.json")
     }()
+    private static let legacyFaceGateDefaultsKeys = [
+        "cameraGesture.requiresFaceMatch",
+        "cameraGesture.faceMatchThreshold"
+    ]
 
     private static let syntheticClaudeSessionPrefix = "claude-process:"
     private static let liveSessionStalenessWindow: TimeInterval = 15 * 60
@@ -1258,6 +1262,9 @@ final class AppModel {
 
         // ponytail: 顔ゲートを消した版に一度でも上がれば不要になる。2026-10 以降に削除する。
         try? FileManager.default.removeItem(at: Self.legacyCameraReferenceURL)
+        for key in Self.legacyFaceGateDefaultsKeys {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
 
         // Hot keys are registered process-wide. A harness run would take them
         // away from the copy the user is actually using.

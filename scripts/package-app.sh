@@ -111,7 +111,7 @@ cat > "$bundle_dir/Contents/Info.plist" <<EOF
     <key>NSSpeechRecognitionUsageDescription</key>
     <string>Speech is recognized on this Mac so a waiting request can be answered out loud. Nothing is saved or sent.</string>
     <key>NSCameraUsageDescription</key>
-    <string>Open Island uses the camera to recognize your face and gesture to open the island. Video is never saved or sent.</string>
+    <string>Open Island uses the camera to see a hand gesture that opens the island. Video is never saved or sent.</string>
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSPrincipalClass</key>
