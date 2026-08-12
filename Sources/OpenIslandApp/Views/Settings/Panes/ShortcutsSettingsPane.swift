@@ -19,6 +19,7 @@ struct ShortcutsSettingsPane: View {
             globalSection
             switcherSection
             cameraGestureSection
+            voiceAnswerSection
             panelSection
             resetSection
         }
@@ -134,6 +135,50 @@ struct ShortcutsSettingsPane: View {
     /// Either way the shortcut will not fire, and the row says so.
     private var unresolvable: Set<PanelShortcutAction> {
         Set(model.panelHotkeys?.unresolvableActions() ?? [])
+    }
+
+    private var voiceCommand: VoiceCommandSettings { model.settings.voiceCommand }
+
+    private var voiceTriggerIsClaimed: Bool {
+        SystemHotkeys.isClaimed(
+            keyCode: VoiceAnswerTrigger.keyCode,
+            modifiers: VoiceAnswerTrigger.modifiers,
+            in: SystemHotkeys.current()
+        )
+    }
+
+    /// Next to the camera gesture: both are ways of answering the island
+    /// without reaching for it, and both are a key plus a few seconds.
+    private var voiceAnswerSection: some View {
+        Section {
+            SettingsToggleRow(
+                title: lang.t("settings.voice.enabled"),
+                help: lang.t("settings.voice.enabled.help"),
+                isOn: Binding(
+                    get: { voiceCommand.isEnabled },
+                    set: {
+                        voiceCommand.isEnabled = $0
+                        model.panelHotkeys?.voiceAnswerEnabled = $0
+                        model.panelHotkeys?.startPersistentBindings()
+                    }
+                )
+            )
+
+            if voiceCommand.isEnabled {
+                SettingsRow(
+                    title: lang.t("settings.voice.trigger"),
+                    help: voiceTriggerIsClaimed ? lang.t("settings.voice.trigger.claimed") : nil
+                ) {
+                    ShortcutKeyChip(label: VoiceAnswerTrigger.displayLabel)
+                }
+            }
+        } header: {
+            Text(lang.t("settings.voice.section"))
+        } footer: {
+            Text(lang.t("settings.voice.section.footer"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
     }
 
     private var panelSection: some View {

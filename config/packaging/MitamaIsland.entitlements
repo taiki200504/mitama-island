@@ -31,5 +31,13 @@
     -->
     <key>com.apple.security.device.camera</key>
     <true/>
+    <!--
+      Required to ask for the microphone at all. Under the hardened runtime
+      macOS refuses to show the permission dialog without this and denies on
+      the spot — exactly what happened with the camera before
+      com.apple.security.device.camera was added.
+    -->
+    <key>com.apple.security.device.audio-input</key>
+    <true/>
 </dict>
 </plist>

@@ -106,6 +106,10 @@ cat > "$bundle_dir/Contents/Info.plist" <<EOF
     <string>14.0</string>
     <key>NSAppleEventsUsageDescription</key>
     <string>Open Island needs automation access to focus Terminal and iTerm sessions for jump-back.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Open Island uses the microphone only while you hold its shortcut, to hear a spoken yes or no for a request an agent is waiting on. Speech is recognized on this Mac and is never saved or sent.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>Speech is recognized on this Mac so a waiting request can be answered out loud. Nothing is saved or sent.</string>
     <key>NSCameraUsageDescription</key>
     <string>Open Island uses the camera to recognize your face and gesture to open the island. Video is never saved or sent.</string>
     <key>NSHighResolutionCapable</key>

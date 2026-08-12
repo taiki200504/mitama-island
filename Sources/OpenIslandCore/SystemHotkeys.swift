@@ -69,3 +69,16 @@ public enum TouchlessActivationTrigger {
     public static let modifiers = 262144 | 524288
     public static let displayLabel = "⌃⌥space"
 }
+
+/// The key that opens the microphone to answer a waiting card.
+///
+/// Checked against the system's reserved list before shipping, the same way the
+/// camera trigger had to be after ⌃⇧Space turned out to be taken and Carbon
+/// reported success anyway.
+public enum VoiceAnswerTrigger {
+    /// V.
+    public static let keyCode = 9
+    /// control + option.
+    public static let modifiers = 262144 | 524288
+    public static let displayLabel = "⌃⌥V"
+}

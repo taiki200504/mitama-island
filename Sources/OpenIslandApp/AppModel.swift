@@ -501,6 +501,9 @@ final class AppModel {
     /// worth understanding further.
     @ObservationIgnored let cameraActivation: CameraActivationSession
 
+    /// Holds no microphone until the key is pressed with a card waiting.
+    @ObservationIgnored let voiceAnswer: VoiceCommandSession
+
     func openMitamaHub() {
         NSWorkspace.shared.open(MitamaFeedCoordinator.hubURL)
     }
@@ -703,6 +706,7 @@ final class AppModel {
         self.settings = settings
         self.overlay = OverlayUICoordinator(settings: settings)
         self.cameraActivation = CameraActivationSession(settings: settings.cameraGesture)
+        self.voiceAnswer = VoiceCommandSession(settings: settings.voiceCommand)
         UserDefaults.standard.register(defaults: [
             Self.showDockIconDefaultsKey: true,
             Self.hapticFeedbackEnabledDefaultsKey: false,
@@ -1420,11 +1424,70 @@ final class AppModel {
     func notchPop() { overlay.notchPop() }
     func performBootAnimation() { overlay.performBootAnimation() }
     /// Opens the camera window, or opens the island outright when the window is
-    /// already up.
+    /// already up — pressing the key twice is the escape hatch.
     func beginTouchlessActivation() {
         if cameraActivation.begin() {
             notchOpen(reason: .handGesture)
         }
+    }
+
+    /// The session a spoken answer would go to, and the options it offers.
+    ///
+    /// Nil when nothing is waiting. That is what keeps the microphone shut: the
+    /// feature exists to answer a question that has already been asked, so
+    /// there is never a reason to listen at any other moment.
+    private var voiceAnswerTarget: (session: AgentSession, options: [String])? {
+        if let waiting = pendingApprovalSessions.first {
+            return (waiting, [])
+        }
+        if let asking = surfacedSessions.first(where: { $0.questionPrompt != nil }),
+           let prompt = asking.questionPrompt {
+            return (asking, prompt.options)
+        }
+        return nil
+    }
+
+    func beginVoiceAnswer() {
+        guard let target = voiceAnswerTarget else {
+            lastActionMessage = lang.t("voice.status.nothingToAnswer")
+            return
+        }
+        voiceAnswer.begin(options: target.options)
+    }
+
+    /// Carries out what was heard, against the card that was waiting when the
+    /// answer arrived — not the one that was waiting when the key was pressed.
+    /// Several seconds pass in between and the agent may have moved on.
+    private func apply(_ intent: VoiceIntent, heard: String) {
+        guard let target = voiceAnswerTarget else {
+            lastActionMessage = lang.t("voice.status.nothingToAnswer")
+            return
+        }
+
+        switch intent {
+        case .approve:
+            approvePermission(for: target.session.id, action: .allowOnce)
+        case .deny:
+            approvePermission(for: target.session.id, action: .deny)
+        case let .chooseOption(index):
+            guard index < target.options.count else {
+                lastActionMessage = voiceNotUnderstood(heard)
+                return
+            }
+            answerQuestion(
+                for: target.session.id,
+                answer: QuestionPromptResponse(answer: target.options[index])
+            )
+        case .unrecognised:
+            // Say what was heard rather than a bare failure. Half the time the
+            // recogniser heard something quite different from what was said,
+            // and that is the only way to find out.
+            lastActionMessage = voiceNotUnderstood(heard)
+        }
+    }
+
+    private func voiceNotUnderstood(_ heard: String) -> String {
+        lang.t("voice.status.notUnderstood").replacingOccurrences(of: "{heard}", with: heard)
     }
     func ensureOverlayPanel() { overlay.ensureOverlayPanel() }
     func showOverlay() { overlay.showOverlay() }
@@ -2080,6 +2143,17 @@ final class AppModel {
             }
         }
         cameraActivation.onStatus = { [weak self] status in
+            guard let status else { return }
+            self?.lastActionMessage = status
+        }
+        coordinator.voiceAnswerEnabled = settings.voiceCommand.isEnabled
+        coordinator.onVoiceAnswer = { [weak self] in
+            self?.beginVoiceAnswer()
+        }
+        voiceAnswer.onIntent = { [weak self] intent, heard in
+            self?.apply(intent, heard: heard)
+        }
+        voiceAnswer.onStatus = { [weak self] status in
             guard let status else { return }
             self?.lastActionMessage = status
         }

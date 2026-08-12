@@ -20,6 +20,7 @@ final class SettingsStore: Sendable {
     let notificationFilters: NotificationFilterSettings
     let autoResponse: AutoResponseSettings
     let cameraGesture: CameraGestureSettings
+    let voiceCommand: VoiceCommandSettings
     let usage: UsageSettings
 
     init(store: PreferenceStore = .standard) {
@@ -30,6 +31,7 @@ final class SettingsStore: Sendable {
         notificationFilters = NotificationFilterSettings(store: store)
         autoResponse = AutoResponseSettings(store: store)
         cameraGesture = CameraGestureSettings(store: store)
+        voiceCommand = VoiceCommandSettings(store: store)
         usage = UsageSettings(store: store)
     }
 }

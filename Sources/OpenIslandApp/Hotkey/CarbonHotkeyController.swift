@@ -41,9 +41,19 @@ final class CarbonHotkeyController: HotkeyRegistering {
     }
 
     func setBindings(_ bindings: [HotkeyBinding], for scope: HotkeyScope) {
-        Self.logger.notice(
-            "setBindings scope=\(String(describing: scope), privacy: .public) ids=\(bindings.map(\.id).joined(separator: ","), privacy: .public)"
-        )
+        // The panel scope is re-registered every time the island opens, so it
+        // logs at debug. The always-live scope is registered once and is what
+        // any "the key does nothing" investigation starts from — that one stays
+        // at notice. Finding the ⌃⇧Space collision was impossible without it.
+        if scope == .persistent {
+            Self.logger.notice(
+                "setBindings scope=persistent ids=\(bindings.map(\.id).joined(separator: ","), privacy: .public)"
+            )
+        } else {
+            Self.logger.debug(
+                "setBindings scope=\(String(describing: scope), privacy: .public) ids=\(bindings.map(\.id).joined(separator: ","), privacy: .public)"
+            )
+        }
         removeBindings(for: scope)
 
         var registered: [Registration] = []
@@ -70,9 +80,15 @@ final class CarbonHotkeyController: HotkeyRegistering {
             }
             bindingIDsByCarbonID[carbonID] = binding.id
             registered.append(Registration(ref: ref, bindingID: binding.id))
-            Self.logger.notice(
-                "Registered \(binding.id, privacy: .public) key=\(binding.keyCode) mods=\(binding.modifiers.rawValue)"
-            )
+            if scope == .persistent {
+                Self.logger.notice(
+                    "Registered \(binding.id, privacy: .public) key=\(binding.keyCode) mods=\(binding.modifiers.rawValue)"
+                )
+            } else {
+                Self.logger.debug(
+                    "Registered \(binding.id, privacy: .public) key=\(binding.keyCode) mods=\(binding.modifiers.rawValue)"
+                )
+            }
         }
         registrations[scope] = registered
     }

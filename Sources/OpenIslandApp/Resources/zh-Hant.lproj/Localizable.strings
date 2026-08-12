@@ -624,3 +624,19 @@
 "camera.status.denied" = "攝影機存取被拒絕。系統設定 → 隱私權與安全性 → 攝影機。";
 "camera.status.requesting" = "正在等待攝影機權限 — 請回應對話框";
 "camera.status.timedOutOnGesture" = "未辨識到手勢。請立起兩指，由上往下滑動。";
+
+"voice.status.nothingToAnswer" = "沒有等待回答的內容";
+"voice.status.requesting" = "正在等待麥克風權限 — 請回應對話框";
+"voice.status.denied" = "麥克風存取被拒絕。系統設定 → 隱私權與安全性 → 麥克風。";
+"voice.status.preparing" = "正在準備聆聽…";
+"voice.status.downloading" = "正在下載語音模型 — 僅首次";
+"voice.status.listening" = "正在聆聽 — 是 / 否 / 選項";
+"voice.status.heardNothing" = "沒有聽到任何內容。";
+"voice.status.notUnderstood" = "聽到「{heard}」，但無法理解，因此未執行任何操作。";
+"voice.status.unavailable" = "此 Mac 無法使用語音辨識。";
+"settings.voice.section" = "用語音回答";
+"settings.voice.section.footer" = "當動態島上有請求或問題時按下快速鍵，然後說是、否或選項。麥克風僅在這幾秒內開啟，且只在有等待項時開啟。辨識在本機完成。";
+"settings.voice.enabled" = "啟用語音回答";
+"settings.voice.enabled.help" = "預設關閉。開啟前不會要求麥克風權限。";
+"settings.voice.trigger" = "開啟麥克風";
+"settings.voice.trigger.claimed" = "此組合已被 macOS 佔用。快速鍵能註冊但收不到按鍵。請在系統設定 → 鍵盤 → 鍵盤快速鍵中取消佔用。";

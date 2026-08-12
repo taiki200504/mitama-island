@@ -23,10 +23,14 @@ final class PanelHotkeyCoordinator {
     var onSwitcherConfirm: (() -> Void)?
     var onSwitcherCancel: (() -> Void)?
     var onTouchlessActivation: (() -> Void)?
+    var onVoiceAnswer: (() -> Void)?
     /// Off until the camera feature is switched on. A global shortcut that does
     /// nothing still takes ⌃⇧Space away from whatever else the user bound it to.
     /// Re-run `startPersistentBindings()` after changing this.
     var touchlessActivationEnabled = false
+    /// Same rule as the camera: an unused global shortcut still takes the key
+    /// away from whatever else the user bound it to.
+    var voiceAnswerEnabled = false
 
     init(
         registrar: any HotkeyRegistering,
@@ -52,6 +56,7 @@ final class PanelHotkeyCoordinator {
         case Self.switcherConfirmBindingID: onSwitcherConfirm?()
         case Self.switcherCancelBindingID:  onSwitcherCancel?()
         case Self.touchlessActivationBindingID: onTouchlessActivation?()
+        case Self.voiceAnswerBindingID: onVoiceAnswer?()
         default:
             guard let action = PanelShortcutAction(rawValue: id) else { return }
             onAction?(action)
@@ -67,6 +72,7 @@ final class PanelHotkeyCoordinator {
     static let switcherConfirmBindingID = "switcher.confirm"
     static let switcherCancelBindingID = "switcher.cancel"
     static let touchlessActivationBindingID = "touchlessActivation.begin"
+    static let voiceAnswerBindingID = "voiceAnswer.begin"
 
     /// Backtick, next to the shift key on every layout this app runs on. Not
     /// user-assignable: it is the one shortcut that has to be live all the time,
@@ -105,6 +111,16 @@ final class PanelHotkeyCoordinator {
                     id: Self.touchlessActivationBindingID,
                     keyCode: UInt16(TouchlessActivationTrigger.keyCode),
                     modifiers: NSEvent.ModifierFlags(rawValue: UInt(TouchlessActivationTrigger.modifiers)),
+                    scope: .persistent
+                )
+            )
+        }
+        if voiceAnswerEnabled {
+            bindings.append(
+                HotkeyBinding(
+                    id: Self.voiceAnswerBindingID,
+                    keyCode: UInt16(VoiceAnswerTrigger.keyCode),
+                    modifiers: NSEvent.ModifierFlags(rawValue: UInt(VoiceAnswerTrigger.modifiers)),
                     scope: .persistent
                 )
             )

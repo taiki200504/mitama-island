@@ -625,3 +625,19 @@
 "camera.status.denied" = "Camera access is denied. System Settings → Privacy & Security → Camera.";
 "camera.status.requesting" = "Waiting for camera permission — answer the dialog";
 "camera.status.timedOutOnGesture" = "No gesture seen. Two fingers, down the frame.";
+
+"voice.status.nothingToAnswer" = "Nothing is waiting for an answer";
+"voice.status.requesting" = "Waiting for microphone permission — answer the dialog";
+"voice.status.denied" = "Microphone access is denied. System Settings → Privacy & Security → Microphone.";
+"voice.status.preparing" = "Getting ready to listen…";
+"voice.status.downloading" = "Downloading the speech model — this happens once";
+"voice.status.listening" = "Listening — yes, no, or the option";
+"voice.status.heardNothing" = "Heard nothing.";
+"voice.status.notUnderstood" = "Heard \"{heard}\" — not sure what that means, so nothing was done.";
+"voice.status.unavailable" = "Speech recognition is unavailable on this Mac.";
+"settings.voice.section" = "Answer by voice";
+"settings.voice.section.footer" = "Press the key while a request or question is on the island, then say yes, no, or which option. The microphone opens only for those few seconds, and only when something is waiting. Speech is recognized on this Mac.";
+"settings.voice.enabled" = "Enable voice answers";
+"settings.voice.enabled.help" = "Off by default. Nothing asks for the microphone until this is on.";
+"settings.voice.trigger" = "Open the microphone";
+"settings.voice.trigger.claimed" = "macOS has reserved this combination. The key registers but never arrives — change it in System Settings → Keyboard → Keyboard Shortcuts.";
