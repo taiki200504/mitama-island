@@ -194,7 +194,12 @@ final class CameraActivationSession {
     }
 
     private func finishByTimeout() {
+        // Say why the camera went out. Turning on and off with no explanation is
+        // the same silence as never turning on.
+        Self.logger.notice("Window closed in phase=\(String(describing: self.phase), privacy: .public)")
+        let wasWaiting = phase == .awaitingGesture
         stop()
+        if wasWaiting { onStatus?(LanguageManager.shared.t("camera.status.timedOutOnGesture")) }
     }
 
     private func statusText(for phase: Phase) -> String? {
