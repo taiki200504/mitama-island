@@ -526,12 +526,7 @@
 "island.session.hideFolder" = "Never show sessions in {name}";
 "island.session.hideApp" = "Never show sessions from {name}";
 "island.session.hidden" = "Hidden. Undo it under Notifications.";
-"camera.status.lookingForFace" = "Camera on — looking for you";
 "camera.status.awaitingGesture" = "Swipe two fingers down";
-"camera.status.notYou" = "That doesn't look like you. Press the key again to open anyway.";
-"camera.status.enrollStart" = "Learning your face — hold still";
-"camera.status.enrolling" = "Learning your face ({count}/5)";
-"camera.status.enrolled" = "Face saved. Press the key and swipe two fingers down.";
 "island.session.autoApproveFolder" = "Always allow requests from {name}";
 "island.session.autoApproved" = "Answering {pattern} automatically. Undo it under Notifications.";
 "island.autoResponse.applied" = "Answered automatically: {pattern} → {behavior}";
@@ -626,13 +621,7 @@
 "settings.camera.enabled" = "Enable camera gesture";
 "settings.camera.enabled.help" = "Off by default. Nothing asks for camera access until this is on.";
 "settings.camera.trigger" = "Wake the camera";
-"settings.camera.requiresFaceMatch" = "Only respond to me";
-"settings.camera.requiresFaceMatch.help" = "Your face is learned the first time and kept as numbers, never as an image. This is a filter, not a lock — it is not accurate enough to protect anything.";
-"settings.camera.face" = "Saved face";
-"settings.camera.face.help" = "Deleting it means the next use learns your face again.";
-"settings.camera.forgetFace" = "Forget";
 "settings.camera.trigger.claimed" = "macOS has reserved this combination. The key registers but never arrives — change it in System Settings → Keyboard → Keyboard Shortcuts.";
 "camera.status.denied" = "Camera access is denied. System Settings → Privacy & Security → Camera.";
 "camera.status.requesting" = "Waiting for camera permission — answer the dialog";
-"camera.status.timedOutOnFace" = "Could not recognise you. Press again to open without the camera, or turn off \"Only respond to me\".";
 "camera.status.timedOutOnGesture" = "No gesture seen. Two fingers, down the frame.";

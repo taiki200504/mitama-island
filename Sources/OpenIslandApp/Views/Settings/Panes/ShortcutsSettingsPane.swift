@@ -25,7 +25,6 @@ struct ShortcutsSettingsPane: View {
     }
 
     private var cameraGesture: CameraGestureSettings { model.settings.cameraGesture }
-    private var faceStore: FaceReferenceStore { FaceReferenceStore() }
 
     /// Carbon registers a key macOS has already reserved and reports success,
     /// then the key never arrives. Saying so here is the difference between a
@@ -60,25 +59,6 @@ struct ShortcutsSettingsPane: View {
                     ShortcutKeyChip(label: TouchlessActivationTrigger.displayLabel)
                 }
 
-                SettingsToggleRow(
-                    title: lang.t("settings.camera.requiresFaceMatch"),
-                    help: lang.t("settings.camera.requiresFaceMatch.help"),
-                    isOn: Binding(
-                        get: { cameraGesture.requiresFaceMatch },
-                        set: { cameraGesture.requiresFaceMatch = $0 }
-                    )
-                )
-
-                SettingsRow(
-                    title: lang.t("settings.camera.face"),
-                    help: lang.t("settings.camera.face.help")
-                ) {
-                    Button(lang.t("settings.camera.forgetFace")) {
-                        faceStore.clear()
-                    }
-                    .foregroundStyle(.red)
-                    .disabled(!faceStore.hasReference)
-                }
             }
         } header: {
             Text(lang.t("settings.camera.section"))

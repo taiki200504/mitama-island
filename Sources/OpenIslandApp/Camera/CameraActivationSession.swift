@@ -20,12 +20,8 @@ import os
 final class CameraActivationSession {
     enum Phase: Equatable, Sendable {
         case idle
-        /// Camera running, waiting for a face to match.
-        case lookingForFace
-        /// Face accepted (or not required) — waiting for the swipe.
+        /// Camera running, waiting for the swipe.
         case awaitingGesture
-        /// Recording the reference face for the first time.
-        case enrolling
         case denied
         case unavailable
     }
@@ -40,24 +36,20 @@ final class CameraActivationSession {
     var onStatus: ((String?) -> Void)?
 
     private let settings: CameraGestureSettings
-    private let store: FaceReferenceStore
 
     private let queue = DispatchQueue(label: "app.openisland.camera", qos: .userInitiated)
     private var captureSession: AVCaptureSession?
     private var analyzer: CameraFrameAnalyzer?
     private var timeout: Task<Void, Never>?
-    private var enrolmentSamples: [[Float]] = []
 
-    init(settings: CameraGestureSettings, store: FaceReferenceStore = FaceReferenceStore()) {
+    init(settings: CameraGestureSettings) {
         self.settings = settings
-        self.store = store
     }
 
     var isRunning: Bool { phase != .idle && phase != .denied && phase != .unavailable }
 
     /// Opens the window. Called again while already open, it gives up on the
-    /// camera and opens the island directly — the escape hatch for the day the
-    /// face gate stops recognising its owner.
+    /// camera and opens the island directly.
     ///
     /// Returns true when the caller should open the island itself.
     @discardableResult
@@ -112,7 +104,6 @@ final class CameraActivationSession {
         timeout = nil
         phase = .idle
         onStatus?(nil)
-        enrolmentSamples = []
 
         let session = captureSession
         captureSession = nil
@@ -125,23 +116,18 @@ final class CameraActivationSession {
     // MARK: - Private
 
     private func start() {
-        let reference = store.load()
-        let isEnrolling = settings.requiresFaceMatch && reference?.representativeVector == nil
-
-        guard let session = makeCaptureSession(reference: reference, isEnrolling: isEnrolling) else {
+        guard let session = makeCaptureSession() else {
             phase = .unavailable
             return
         }
 
         captureSession = session
-        phase = isEnrolling ? .enrolling : (settings.requiresFaceMatch ? .lookingForFace : .awaitingGesture)
+        phase = .awaitingGesture
         onStatus?(statusText(for: phase))
 
         queue.async { session.startRunning() }
 
-        // Enrolment needs longer than a gesture does — the user has to hold
-        // still while several samples are taken.
-        let seconds = isEnrolling ? max(settings.windowSeconds, 8) : settings.windowSeconds
+        let seconds = settings.windowSeconds
         timeout = Task { [weak self] in
             try? await Task.sleep(for: .seconds(seconds))
             guard !Task.isCancelled else { return }
@@ -165,7 +151,7 @@ final class CameraActivationSession {
         ).devices.first
     }
 
-    private func makeCaptureSession(reference: FaceReference?, isEnrolling: Bool) -> AVCaptureSession? {
+    private func makeCaptureSession() -> AVCaptureSession? {
         guard let device = builtInCamera() else {
             Self.logger.notice("No built-in camera found")
             return nil
@@ -174,8 +160,8 @@ final class CameraActivationSession {
         guard let input = try? AVCaptureDeviceInput(device: device) else { return nil }
 
         let session = AVCaptureSession()
-        // The smallest preset the hardware offers. Vision needs a face and a
-        // hand, not a portrait, and every pixel here is power spent per frame.
+        // The smallest preset the hardware offers. Vision needs a hand, not a
+        // portrait, and every pixel here is power spent per frame.
         session.sessionPreset = session.canSetSessionPreset(.vga640x480) ? .vga640x480 : .low
         guard session.canAddInput(input) else { return nil }
         session.addInput(input)
@@ -184,15 +170,9 @@ final class CameraActivationSession {
         output.alwaysDiscardsLateVideoFrames = true
         output.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA]
 
-        let analyzer = CameraFrameAnalyzer(
-            reference: reference,
-            faceThreshold: Float(settings.faceMatchThreshold),
-            requiresFaceMatch: settings.requiresFaceMatch,
-            isEnrolling: isEnrolling,
-            onOutcome: { [weak self] outcome in
-                Task { @MainActor in self?.handle(outcome) }
-            }
-        )
+        let analyzer = CameraFrameAnalyzer { [weak self] outcome in
+            Task { @MainActor in self?.handle(outcome) }
+        }
         self.analyzer = analyzer
         output.setSampleBufferDelegate(analyzer, queue: queue)
 
@@ -206,23 +186,6 @@ final class CameraActivationSession {
         case .idle:
             break
 
-        case .faceMatched:
-            guard phase == .lookingForFace else { return }
-            phase = .awaitingGesture
-            onStatus?(statusText(for: phase))
-
-        case .faceRejected:
-            guard phase == .lookingForFace else { return }
-            onStatus?(LanguageManager.shared.t("camera.status.notYou"))
-
-        case let .enrolled(sample):
-            enrolmentSamples.append(sample)
-            onStatus?(
-                LanguageManager.shared.t("camera.status.enrolling")
-                    .replacingOccurrences(of: "{count}", with: String(enrolmentSamples.count))
-            )
-            if enrolmentSamples.count >= 5 { finishEnrolment() }
-
         case let .swiped(direction):
             let fired = onGesture
             stop()
@@ -230,30 +193,13 @@ final class CameraActivationSession {
         }
     }
 
-    private func finishEnrolment() {
-        let samples = enrolmentSamples
-        stop()
-        guard !samples.isEmpty else { return }
-        try? store.save(FaceReference(samples: samples))
-        onStatus?(LanguageManager.shared.t("camera.status.enrolled"))
-    }
-
     private func finishByTimeout() {
-        // A half-finished enrolment is still better than none: the average of
-        // three samples recognises its owner, and the alternative is asking them
-        // to sit through the whole thing again.
-        if phase == .enrolling, !enrolmentSamples.isEmpty {
-            finishEnrolment()
-            return
-        }
         stop()
     }
 
     private func statusText(for phase: Phase) -> String? {
         switch phase {
-        case .lookingForFace: LanguageManager.shared.t("camera.status.lookingForFace")
         case .awaitingGesture: LanguageManager.shared.t("camera.status.awaitingGesture")
-        case .enrolling: LanguageManager.shared.t("camera.status.enrollStart")
         case .idle, .denied, .unavailable: nil
         }
     }

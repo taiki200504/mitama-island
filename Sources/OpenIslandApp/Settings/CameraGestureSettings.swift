@@ -1,12 +1,5 @@
 import Foundation
 import Observation
-import OpenIslandCore
-
-extension FaceReference {
-    /// Kept with face matching so enrollment and activation never quietly use
-    /// different tolerances for the same person.
-    static let defaultMatchThreshold: Double = 0.6
-}
 
 /// The opt-in controls for opening the island with a two-finger camera gesture.
 ///
@@ -25,19 +18,9 @@ final class CameraGestureSettings: PreferenceGroup {
         set { write(\.isEnabled, Keys.enabled, newValue) }
     }
 
-    var requiresFaceMatch: Bool {
-        get { read(\.requiresFaceMatch, Keys.requiresFaceMatch, true) }
-        set { write(\.requiresFaceMatch, Keys.requiresFaceMatch, newValue) }
-    }
-
     var windowSeconds: Double {
         get { read(\.windowSeconds, Keys.windowSeconds, Defaults.windowSeconds) }
         set { write(\.windowSeconds, Keys.windowSeconds, Self.clampWindowSeconds(newValue)) }
-    }
-
-    var faceMatchThreshold: Double {
-        get { read(\.faceMatchThreshold, Keys.faceMatchThreshold, FaceReference.defaultMatchThreshold) }
-        set { write(\.faceMatchThreshold, Keys.faceMatchThreshold, newValue) }
     }
 
     private static func clampWindowSeconds(_ seconds: Double) -> Double {
@@ -54,8 +37,6 @@ extension CameraGestureSettings {
 
     enum Keys {
         static let enabled = "cameraGesture.enabled"
-        static let requiresFaceMatch = "cameraGesture.requiresFaceMatch"
         static let windowSeconds = "cameraGesture.windowSeconds"
-        static let faceMatchThreshold = "cameraGesture.faceMatchThreshold"
     }
 }

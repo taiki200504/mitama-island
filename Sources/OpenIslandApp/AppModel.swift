@@ -37,6 +37,13 @@ final class AppModel {
     private static let legacyIslandSessionSortDefaultsKey = "appearance.island.v8.sessionSort"
     private static let legacyCompletedStaleThresholdDefaultsKey = "appearance.island.v8.completedStaleThreshold"
     private static let appearanceProfileSettingsDefaultsKey = "appearance.island.v8.settingsProfile"
+    private static let legacyCameraReferenceURL: URL = {
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support")
+        return base
+            .appendingPathComponent("Open Island", isDirectory: true)
+            .appendingPathComponent("\u{66}\u{61}\u{63}\u{65}-reference.json")
+    }()
 
     private static let syntheticClaudeSessionPrefix = "claude-process:"
     private static let liveSessionStalenessWindow: TimeInterval = 15 * 60
@@ -1245,6 +1252,9 @@ final class AppModel {
         }
         hasStarted = true
 
+        // ponytail: 顔ゲートを消した版に一度でも上がれば不要になる。2026-10 以降に削除する。
+        try? FileManager.default.removeItem(at: Self.legacyCameraReferenceURL)
+
         // Hot keys are registered process-wide. A harness run would take them
         // away from the copy the user is actually using.
         if !disablesOverlayEventMonitoringDuringHarness {
@@ -1410,8 +1420,7 @@ final class AppModel {
     func notchPop() { overlay.notchPop() }
     func performBootAnimation() { overlay.performBootAnimation() }
     /// Opens the camera window, or opens the island outright when the window is
-    /// already up — pressing the key twice is how you get in on the day the face
-    /// gate stops recognising you.
+    /// already up.
     func beginTouchlessActivation() {
         if cameraActivation.begin() {
             notchOpen(reason: .handGesture)
