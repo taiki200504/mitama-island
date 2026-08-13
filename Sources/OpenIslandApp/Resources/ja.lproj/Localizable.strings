@@ -625,6 +625,7 @@
 "settings.camera.answersByPalm" = "手をかざして答える";
 "settings.camera.answersByPalm.help" = "承認や質問が島に出ている間だけカメラを開けておきます。手のひらを開いて少し止めるとマイクが開くので、キーを押す必要がありません。それ以外のときカメラは止まっています。";
 "linkstart.title" = "LINK START";
+"linkstart.say" = "「リンクスタート」と言ってください";
 "linkstart.sense.touch" = "触覚";
 "linkstart.sense.sight" = "視覚";
 "linkstart.sense.hearing" = "聴覚";
@@ -635,7 +636,7 @@
 "linkstart.welcome" = "ようこそ、{name}";
 "linkstart.dismiss" = "どれかキーを押すと戻ります";
 "settings.linkstart.section" = "リンクスタート";
-"settings.linkstart.section.footer" = "画面全体にログイン演出を出します。数秒で終わり、どれかキーを押すかクリックすれば途中でも閉じます。それ以外のことはしません。";
+"settings.linkstart.section.footer" = "画面全体を暗くして「リンクスタート」の声を待ち、ログイン演出を再生します。数秒で終わり、どれかキーを押すかクリックすれば途中でも閉じます。「声で答える」がオフのときは、キーだけで再生します。";
 "settings.linkstart.enabled" = "ログイン演出を使う";
 "settings.linkstart.enabled.help" = "既定はオフ。使わないショートカットでも、その組み合わせを他の用途から奪ってしまうためです。";
 "settings.linkstart.trigger" = "再生";

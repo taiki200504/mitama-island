@@ -624,6 +624,7 @@
 "settings.camera.answersByPalm" = "舉手作答";
 "settings.camera.answersByPalm.help" = "當島上有請求或問題等待時，攝影機保持開啟。舉起張開的手掌稍作停留即可開啟麥克風，不必按鍵。其餘時間攝影機始終關閉。";
 "linkstart.title" = "LINK START";
+"linkstart.say" = "請說：LINK START";
 "linkstart.sense.touch" = "觸覺";
 "linkstart.sense.sight" = "視覺";
 "linkstart.sense.hearing" = "聽覺";
@@ -634,7 +635,7 @@
 "linkstart.welcome" = "歡迎，{name}";
 "linkstart.dismiss" = "按任意鍵返回";
 "settings.linkstart.section" = "Link Start";
-"settings.linkstart.section.footer" = "在所有螢幕上播放登入動畫。幾秒即結束，按任意鍵或點擊可提前退出。除此之外不做任何事。";
+"settings.linkstart.section.footer" = "讓所有螢幕變暗並等待你說出「link start」，隨後播放登入動畫。幾秒即結束，按任意鍵或點擊可提前退出。若關閉語音作答，按鍵即直接播放。";
 "settings.linkstart.enabled" = "啟用登入動畫";
 "settings.linkstart.enabled.help" = "預設關閉。即使不使用，全域快速鍵也會佔用該組合。";
 "settings.linkstart.trigger" = "播放";

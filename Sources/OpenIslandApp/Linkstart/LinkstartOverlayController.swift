@@ -1,4 +1,5 @@
 import AppKit
+import Observation
 import OpenIslandCore
 import os
 import SwiftUI
@@ -10,11 +11,29 @@ import SwiftUI
 /// owns full-screen windows that exist for six seconds and are meant to be the
 /// only thing you can see.
 @MainActor
+@Observable
 final class LinkstartOverlayController {
+    /// What the overlay is doing. The view draws from this.
+    enum Stage: Equatable, Sendable {
+        /// Waiting to be told to start. The screen is dark and says so.
+        case listening
+        /// Running, from this moment.
+        case playing(startedAt: Date)
+    }
+
     private static let logger = Logger(subsystem: "com.mitama.island", category: "linkstart")
 
-    private var panels: [NSPanel] = []
-    private var dismissal: Task<Void, Never>?
+    private(set) var stage: Stage = .listening
+    /// What the microphone heard, shown back so a failed attempt is visible
+    /// rather than silent.
+    private(set) var heard: String?
+
+    /// Set by `AppModel`. Nil when speaking is switched off, in which case the
+    /// key alone plays the sequence.
+    @ObservationIgnored var voice: VoiceCommandSession?
+
+    @ObservationIgnored private var panels: [NSPanel] = []
+    @ObservationIgnored private var dismissal: Task<Void, Never>?
 
     var isPresenting: Bool { !panels.isEmpty }
 
@@ -35,13 +54,15 @@ final class LinkstartOverlayController {
         guard !screens.isEmpty else { return }
         Self.logger.notice("Presenting across \(screens.count) screen(s)")
 
-        let startedAt = Date()
         let mainScreen = NSScreen.main ?? screens[0]
+        heard = nil
+        // Say the words if the microphone is available; otherwise the key that
+        // got here is enough on its own.
+        stage = voice == nil ? .playing(startedAt: Date()) : .listening
 
         panels = screens.map { screen in
             makePanel(
                 on: screen,
-                startedAt: startedAt,
                 // The checklist belongs on the screen being looked at. Repeating
                 // it on every display reads as a bug rather than as spectacle.
                 showsDetail: screen == mainScreen
@@ -52,8 +73,62 @@ final class LinkstartOverlayController {
         // and the closing click arrive.
         panels.first?.makeKeyAndOrderFront(nil)
 
+        if case .listening = stage {
+            listenForPhrase()
+        } else {
+            scheduleDismissalAfterSequence()
+        }
+    }
+
+    // MARK: - Voice
+
+    private func listenForPhrase() {
+        guard let voice else { return }
+
+        voice.onIntent = { [weak self] _, heard in
+            guard let self, case .listening = self.stage else { return }
+            self.heard = heard
+            if LinkstartPhrase.isSpoken(in: heard) {
+                Self.logger.notice("Phrase heard, starting")
+                self.begin()
+            } else {
+                // Wrong words are not an error worth a dialog, but the screen
+                // should not sit there as if nothing was said.
+                Self.logger.notice("Heard something else; leaving")
+                self.dismissShortly()
+            }
+        }
+        voice.begin(options: [])
+
+        // Nothing said at all: the microphone closes itself, and so should this.
+        dismissal = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(9))
+            guard !Task.isCancelled else { return }
+            guard let self, case .listening = self.stage else { return }
+            self.dismiss()
+        }
+    }
+
+    /// Starts the sequence, whatever got us here.
+    private func begin() {
+        dismissal?.cancel()
+        stage = .playing(startedAt: Date())
+        scheduleDismissalAfterSequence()
+    }
+
+    private func scheduleDismissalAfterSequence() {
         dismissal = Task { [weak self] in
             try? await Task.sleep(for: .seconds(LinkstartSequence.duration + 1.0))
+            guard !Task.isCancelled else { return }
+            self?.dismiss()
+        }
+    }
+
+    /// Leaves the misheard text on screen just long enough to read.
+    private func dismissShortly() {
+        dismissal?.cancel()
+        dismissal = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(1.6))
             guard !Task.isCancelled else { return }
             self?.dismiss()
         }
@@ -62,6 +137,7 @@ final class LinkstartOverlayController {
     func dismiss() {
         dismissal?.cancel()
         dismissal = nil
+        voice?.stop()
         guard !panels.isEmpty else { return }
         Self.logger.notice("Dismissing")
         panels.forEach { $0.orderOut(nil) }
@@ -70,7 +146,7 @@ final class LinkstartOverlayController {
 
     // MARK: - Private
 
-    private func makePanel(on screen: NSScreen, startedAt: Date, showsDetail: Bool) -> NSPanel {
+    private func makePanel(on screen: NSScreen, showsDetail: Bool) -> NSPanel {
         let panel = LinkstartPanel(
             contentRect: screen.frame,
             styleMask: [.borderless, .nonactivatingPanel],
@@ -91,7 +167,7 @@ final class LinkstartOverlayController {
         panel.collectionBehavior = [.fullScreenAuxiliary, .canJoinAllSpaces, .ignoresCycle, .stationary]
 
         let hosting = NSHostingView(
-            rootView: LinkstartView(startedAt: startedAt, showsDetail: showsDetail)
+            rootView: LinkstartView(controller: self, showsDetail: showsDetail)
         )
         hosting.frame = CGRect(origin: .zero, size: screen.frame.size)
         panel.contentView = hosting
