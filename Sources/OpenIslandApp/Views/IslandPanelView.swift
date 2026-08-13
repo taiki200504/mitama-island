@@ -2966,6 +2966,16 @@ private struct StructuredQuestionPromptView: View {
 /// NSTextField wrapper that fires `onSubmit` only when the IME composition
 /// is finished — pressing Enter during Chinese/Japanese IME composition
 /// confirms the candidate instead of submitting.
+private extension NSTextField {
+    /// True while an input method is holding uncommitted text.
+    ///
+    /// The field itself never knows: editing happens in the window's shared
+    /// field editor, so the question has to be asked of that.
+    var isComposing: Bool {
+        (currentEditor() as? NSTextView)?.hasMarkedText() ?? false
+    }
+}
+
 private struct ReplyTextField: NSViewRepresentable {
     var placeholder: String
     @Binding var text: String
@@ -2992,10 +3002,17 @@ private struct ReplyTextField: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: NSTextField, context: Context) {
+        context.coordinator.onSubmit = onSubmit
+
+        // Writing `stringValue` while the IME is mid-composition tears down the
+        // field editor's marked text, and the half-typed reading disappears.
+        // Every keystroke of a Japanese word goes through that state, so the
+        // binding must wait until the candidate is committed.
+        guard !nsView.isComposing else { return }
+
         if nsView.stringValue != text {
             nsView.stringValue = text
         }
-        context.coordinator.onSubmit = onSubmit
     }
 
     func makeCoordinator() -> Coordinator {
