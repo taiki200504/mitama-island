@@ -127,6 +127,114 @@ public struct TwoFingerPoseDetector: Equatable, Sendable {
     }
 }
 
+/// Classifies the open hand — every finger extended, held still.
+///
+/// Deliberately exclusive with `TwoFingerPoseDetector`: that one requires the
+/// ring and little fingers to be folded, this one requires them extended. A
+/// swipe can never be mistaken for a raised palm, so the two gestures can watch
+/// the same camera frames without stealing from each other.
+public struct OpenPalmDetector: Equatable, Sendable {
+    public struct Configuration: Equatable, Sendable {
+        public var minimumConfidence: Double
+        public var minimumExtendedProjection: Double
+        public var minimumPalmAxisLength: Double
+
+        public init(
+            minimumConfidence: Double = 0.3,
+            minimumExtendedProjection: Double = 0.08,
+            minimumPalmAxisLength: Double = 0.04
+        ) {
+            self.minimumConfidence = minimumConfidence
+            self.minimumExtendedProjection = minimumExtendedProjection
+            self.minimumPalmAxisLength = minimumPalmAxisLength
+        }
+    }
+
+    public var configuration: Configuration
+
+    public init(configuration: Configuration = .init()) {
+        self.configuration = configuration
+    }
+
+    /// The thumb is left out on purpose: it leaves the palm sideways rather than
+    /// along the wrist-to-knuckle axis, so measuring it the same way as the
+    /// others would reject perfectly ordinary open hands.
+    public func isRecognized(in landmarks: HandLandmarks) -> Bool {
+        guard landmarks.allPoints.allSatisfy({ $0.confidence >= configuration.minimumConfidence }) else {
+            return false
+        }
+
+        let knuckleCenter = average([
+            landmarks.index.metacarpophalangeal,
+            landmarks.middle.metacarpophalangeal,
+            landmarks.ring.metacarpophalangeal,
+            landmarks.little.metacarpophalangeal,
+        ])
+        let palmAxis = vector(from: landmarks.wrist, to: knuckleCenter)
+        let palmAxisLength = length(palmAxis)
+        guard palmAxisLength >= configuration.minimumPalmAxisLength else { return false }
+        let unitPalmAxis = (x: palmAxis.x / palmAxisLength, y: palmAxis.y / palmAxisLength)
+
+        return [landmarks.index, landmarks.middle, landmarks.ring, landmarks.little].allSatisfy { finger in
+            projection(vector(from: finger.metacarpophalangeal, to: finger.tip), onto: unitPalmAxis)
+                >= configuration.minimumExtendedProjection
+        }
+    }
+}
+
+/// Fires once when a pose has been held for long enough to be deliberate.
+///
+/// A pose that fired the moment it was recognised would go off while the hand
+/// is on its way somewhere else. Holding is the part that carries intent, and
+/// it is also what keeps this from firing again every frame afterwards.
+public struct PoseHoldDetector: Equatable, Sendable {
+    public struct Configuration: Equatable, Sendable {
+        public var minimumHoldDuration: TimeInterval
+        public var cooldownDuration: TimeInterval
+
+        public init(
+            minimumHoldDuration: TimeInterval = 0.6,
+            cooldownDuration: TimeInterval = 2.0
+        ) {
+            self.minimumHoldDuration = minimumHoldDuration
+            self.cooldownDuration = cooldownDuration
+        }
+    }
+
+    public var configuration: Configuration
+
+    private var holdStartedAt: TimeInterval?
+    private var lastFiredAt: TimeInterval?
+
+    public init(configuration: Configuration = .init()) {
+        self.configuration = configuration
+    }
+
+    /// Returns true on the single frame where the hold becomes long enough.
+    public mutating func push(isPosed: Bool, timestamp: TimeInterval) -> Bool {
+        guard isPosed else {
+            holdStartedAt = nil
+            return false
+        }
+
+        if let lastFiredAt, timestamp - lastFiredAt < configuration.cooldownDuration {
+            // Still inside the cooldown. The hand is usually still up at this
+            // point, so the hold must not start counting again yet.
+            return false
+        }
+
+        guard let startedAt = holdStartedAt else {
+            holdStartedAt = timestamp
+            return false
+        }
+
+        guard timestamp - startedAt >= configuration.minimumHoldDuration else { return false }
+        holdStartedAt = nil
+        lastFiredAt = timestamp
+        return true
+    }
+}
+
 /// Which way a swipe travelled, in the real world rather than in Vision's
 /// bottom-left coordinate system.
 public enum SwipeDirection: Equatable, Sendable {

@@ -1454,6 +1454,21 @@ final class AppModel {
         return nil
     }
 
+    /// Opens or closes the camera according to whether a raised hand would mean
+    /// anything right now.
+    ///
+    /// The rule is deliberately narrow — island open **and** a card waiting —
+    /// so the camera light is never on without something on screen to explain
+    /// it. Called from every place either half can change.
+    func refreshSustainedCamera() {
+        let handWouldMeanSomething = overlay.notchStatus != .closed && voiceAnswerTarget != nil
+        if handWouldMeanSomething {
+            cameraActivation.beginSustained()
+        } else {
+            cameraActivation.endSustained()
+        }
+    }
+
     func beginVoiceAnswer() {
         guard let target = voiceAnswerTarget else {
             lastActionMessage = lang.t("voice.status.nothingToAnswer")
@@ -1719,6 +1734,7 @@ final class AppModel {
         state.resolvePermission(sessionID: session.id, resolution: resolution)
         synchronizeSelection()
         refreshOverlayPlacementIfVisible()
+        refreshSustainedCamera()
 
         send(
             .resolvePermission(sessionID: session.id, resolution: resolution),
@@ -1741,6 +1757,7 @@ final class AppModel {
         state.answerQuestion(sessionID: session.id, response: answer)
         synchronizeSelection()
         refreshOverlayPlacementIfVisible()
+        refreshSustainedCamera()
 
         send(
             .answerQuestion(sessionID: session.id, response: answer),
@@ -2148,6 +2165,9 @@ final class AppModel {
             case .down: self?.notchOpen(reason: .handGesture)
             case .up: self?.notchClose()
             }
+        }
+        cameraActivation.onPalmHeld = { [weak self] in
+            self?.beginVoiceAnswer()
         }
         cameraActivation.onStatus = { [weak self] status in
             guard let status else { return }

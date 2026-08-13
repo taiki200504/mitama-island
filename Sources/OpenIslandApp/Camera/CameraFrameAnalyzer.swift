@@ -9,6 +9,8 @@ enum CameraFrameOutcome: Equatable, Sendable {
     case idle
     /// The gesture completed, in this direction.
     case swiped(SwipeDirection)
+    /// An open hand was held up long enough to mean it.
+    case palmHeld
 }
 
 /// Runs Vision over capture frames and turns them into outcomes.
@@ -28,6 +30,8 @@ final class CameraFrameAnalyzer: NSObject, AVCaptureVideoDataOutputSampleBufferD
 
     private let poseDetector = TwoFingerPoseDetector()
     private var swipeDetector = SwipeDetector()
+    private let palmDetector = OpenPalmDetector()
+    private var palmHoldDetector = PoseHoldDetector()
 
     init(onOutcome: @escaping @Sendable (CameraFrameOutcome) -> Void) {
         self.onOutcome = onOutcome
@@ -57,12 +61,15 @@ final class CameraFrameAnalyzer: NSObject, AVCaptureVideoDataOutputSampleBufferD
               let landmarks = Self.landmarks(from: observation) else {
             // A frame with no hand breaks the run, which is what stops two
             // separate downward motions from being stitched into one swipe.
-            _ = swipeDetector.push(
-                isTwoFingerPose: false,
-                representativeTipPosition: .init(x: 0, y: 0, confidence: 0),
-                timestamp: timestamp
-            )
+            breakRun(at: timestamp)
             return
+        }
+
+        // Both gestures read the same frame. They cannot answer for each other:
+        // the swipe needs the ring and little fingers folded, the palm needs
+        // them extended.
+        if palmHoldDetector.push(isPosed: palmDetector.isRecognized(in: landmarks), timestamp: timestamp) {
+            onOutcome(.palmHeld)
         }
 
         guard let tip = poseDetector.representativeTipPosition(in: landmarks) else {
@@ -81,6 +88,16 @@ final class CameraFrameAnalyzer: NSObject, AVCaptureVideoDataOutputSampleBufferD
         ) {
             onOutcome(.swiped(direction))
         }
+    }
+
+    /// Tells both detectors that the hand left the frame.
+    private func breakRun(at timestamp: TimeInterval) {
+        _ = swipeDetector.push(
+            isTwoFingerPose: false,
+            representativeTipPosition: .init(x: 0, y: 0, confidence: 0),
+            timestamp: timestamp
+        )
+        _ = palmHoldDetector.push(isPosed: false, timestamp: timestamp)
     }
 
     private static func landmarks(from observation: VNHumanHandPoseObservation) -> HandLandmarks? {

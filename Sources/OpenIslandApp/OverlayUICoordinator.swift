@@ -149,6 +149,7 @@ final class OverlayUICoordinator {
                 self.isPointerInsideIslandSurface = false
                 self.updateNotificationAutoCollapse()
                 self.appModel?.panelHotkeys?.panelDidExpand()
+                self.appModel?.refreshSustainedCamera()
             },
             onPlacementResolved: { [weak self] in
                 guard let self, let overlayPlacementDiagnostics else { return }
@@ -172,6 +173,7 @@ final class OverlayUICoordinator {
                 self?.isPointerInsideIslandSurface = false
                 self?.appModel?.measuredNotificationContentHeight = 0
                 self?.appModel?.panelHotkeys?.panelDidCollapse()
+                self?.appModel?.refreshSustainedCamera()
                 // Typing in a reply box brings the app forward so an input
                 // method can attach. Closing is where that ends.
                 TextInputFocusHandoff.giveBack()

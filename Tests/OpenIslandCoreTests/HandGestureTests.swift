@@ -69,6 +69,107 @@ struct HandGestureTests {
         #expect(nil == fired7)
     }
 
+    // MARK: - Open palm
+
+    @Test("Every finger extended is read as an open palm")
+    func recognizesOpenPalm() {
+        #expect(OpenPalmDetector().isRecognized(in: landmarks(ringExtended: true, littleExtended: true)))
+    }
+
+    /// The two gestures share the camera, so neither may answer for the other.
+    @Test("The two-finger pose is not an open palm, and the reverse holds")
+    func openPalmAndTwoFingerPoseAreExclusive() {
+        let twoFingers = landmarks()
+        let openPalm = landmarks(ringExtended: true, littleExtended: true)
+
+        #expect(!OpenPalmDetector().isRecognized(in: twoFingers))
+        #expect(!TwoFingerPoseDetector().isRecognized(in: openPalm))
+    }
+
+    @Test("A fist is not an open palm")
+    func rejectsFistAsOpenPalm() {
+        let fist = landmarks(indexExtended: false, middleExtended: false)
+        #expect(!OpenPalmDetector().isRecognized(in: fist))
+    }
+
+    @Test("A tilted open palm is still an open palm")
+    func recognizesTiltedOpenPalm() {
+        #expect(
+            OpenPalmDetector().isRecognized(
+                in: landmarks(ringExtended: true, littleExtended: true, rotationDegrees: 20)
+            )
+        )
+    }
+
+    @Test("Low-confidence landmarks never unlock the open palm")
+    func rejectsLowConfidenceOpenPalm() {
+        #expect(
+            !OpenPalmDetector().isRecognized(
+                in: landmarks(ringExtended: true, littleExtended: true, confidence: 0.1)
+            )
+        )
+    }
+
+    // MARK: - Holding a pose
+
+    @Test("A pose held briefly does not fire")
+    func holdBelowThresholdDoesNotFire() {
+        var detector = PoseHoldDetector()
+        let atStart = detector.push(isPosed: true, timestamp: 0)
+        #expect(atStart == false)
+        let tooSoon = detector.push(isPosed: true, timestamp: 0.3)
+        #expect(tooSoon == false)
+    }
+
+    @Test("A pose held long enough fires exactly once")
+    func holdFiresOnceWhenSustained() {
+        var detector = PoseHoldDetector()
+        let atStart = detector.push(isPosed: true, timestamp: 0)
+        #expect(atStart == false)
+        let held = detector.push(isPosed: true, timestamp: 0.7)
+        #expect(held)
+        // The hand is still up on the next frame; that is not a second answer.
+        let stillUp = detector.push(isPosed: true, timestamp: 0.8)
+        #expect(stillUp == false)
+    }
+
+    /// Dropping the hand halfway is how you change your mind.
+    @Test("Losing the pose restarts the hold")
+    func losingThePoseRestartsTheHold() {
+        var detector = PoseHoldDetector()
+        let atStart = detector.push(isPosed: true, timestamp: 0)
+        #expect(atStart == false)
+        let dropped = detector.push(isPosed: false, timestamp: 0.3)
+        #expect(dropped == false)
+        let raisedAgain = detector.push(isPosed: true, timestamp: 0.4)
+        #expect(raisedAgain == false)
+        // 0.9 is 0.9s after the first frame but only 0.5s into this hold.
+        let notYet = detector.push(isPosed: true, timestamp: 0.9)
+        #expect(notYet == false)
+        let held = detector.push(isPosed: true, timestamp: 1.1)
+        #expect(held)
+    }
+
+    @Test("A raised hand cannot fire twice inside the cooldown")
+    func cooldownSuppressesRepeatFiring() {
+        var detector = PoseHoldDetector()
+        _ = detector.push(isPosed: true, timestamp: 0)
+        let firstFire = detector.push(isPosed: true, timestamp: 0.7)
+        #expect(firstFire)
+
+        let insideCooldown = detector.push(isPosed: true, timestamp: 1.5)
+        #expect(insideCooldown == false)
+        let stillInsideCooldown = detector.push(isPosed: true, timestamp: 2.5)
+        #expect(stillInsideCooldown == false)
+
+        // Leaving the cooldown is not itself an answer: the hold has to be
+        // earned again, or a hand left up would fire on a timer.
+        let cooldownJustEnded = detector.push(isPosed: true, timestamp: 3.3)
+        #expect(cooldownJustEnded == false)
+        let heldAgain = detector.push(isPosed: true, timestamp: 4.0)
+        #expect(heldAgain)
+    }
+
     private func landmarks(
         indexExtended: Bool = true,
         middleExtended: Bool = true,
