@@ -24,6 +24,7 @@ final class PanelHotkeyCoordinator {
     var onSwitcherCancel: (() -> Void)?
     var onTouchlessActivation: (() -> Void)?
     var onVoiceAnswer: (() -> Void)?
+    var onLinkstart: (() -> Void)?
     /// Off until the camera feature is switched on. A global shortcut that does
     /// nothing still takes ⌃⇧Space away from whatever else the user bound it to.
     /// Re-run `startPersistentBindings()` after changing this.
@@ -31,6 +32,9 @@ final class PanelHotkeyCoordinator {
     /// Same rule as the camera: an unused global shortcut still takes the key
     /// away from whatever else the user bound it to.
     var voiceAnswerEnabled = false
+    /// Same rule again: the sequence is a party trick, and a global key that
+    /// nobody asked for should not hold ⌃⌥L hostage.
+    var linkstartEnabled = false
 
     init(
         registrar: any HotkeyRegistering,
@@ -57,6 +61,7 @@ final class PanelHotkeyCoordinator {
         case Self.switcherCancelBindingID:  onSwitcherCancel?()
         case Self.touchlessActivationBindingID: onTouchlessActivation?()
         case Self.voiceAnswerBindingID: onVoiceAnswer?()
+        case Self.linkstartBindingID: onLinkstart?()
         default:
             guard let action = PanelShortcutAction(rawValue: id) else { return }
             onAction?(action)
@@ -73,6 +78,7 @@ final class PanelHotkeyCoordinator {
     static let switcherCancelBindingID = "switcher.cancel"
     static let touchlessActivationBindingID = "touchlessActivation.begin"
     static let voiceAnswerBindingID = "voiceAnswer.begin"
+    static let linkstartBindingID = "linkstart.play"
 
     /// Backtick, next to the shift key on every layout this app runs on. Not
     /// user-assignable: it is the one shortcut that has to be live all the time,
@@ -121,6 +127,16 @@ final class PanelHotkeyCoordinator {
                     id: Self.voiceAnswerBindingID,
                     keyCode: UInt16(VoiceAnswerTrigger.keyCode),
                     modifiers: NSEvent.ModifierFlags(rawValue: UInt(VoiceAnswerTrigger.modifiers)),
+                    scope: .persistent
+                )
+            )
+        }
+        if linkstartEnabled {
+            bindings.append(
+                HotkeyBinding(
+                    id: Self.linkstartBindingID,
+                    keyCode: UInt16(LinkstartTrigger.keyCode),
+                    modifiers: NSEvent.ModifierFlags(rawValue: UInt(LinkstartTrigger.modifiers)),
                     scope: .persistent
                 )
             )
