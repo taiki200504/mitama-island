@@ -622,6 +622,8 @@
 "settings.camera.enabled.help" = "既定はオフ。オンにするまでカメラの許可は求めません。";
 "settings.camera.trigger" = "カメラを起こす";
 "settings.camera.trigger.claimed" = "この組み合わせは macOS が予約しています。登録はできてもキーは届きません。システム設定 → キーボード → キーボードショートカット で解除してください。";
+"settings.camera.answersByPalm" = "手をかざして答える";
+"settings.camera.answersByPalm.help" = "承認や質問が島に出ている間だけカメラを開けておきます。手のひらを開いて少し止めるとマイクが開くので、キーを押す必要がありません。それ以外のときカメラは止まっています。";
 "camera.status.denied" = "カメラのアクセスが拒否されています。システム設定 → プライバシーとセキュリティ → カメラ で許可してください。";
 "camera.status.requesting" = "カメラの許可を待っています — ダイアログに答えてください";
 "camera.status.timedOutOnGesture" = "ジェスチャを認識できませんでした。2本指を立てて、上から下へ。";

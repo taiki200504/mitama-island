@@ -60,6 +60,17 @@ struct ShortcutsSettingsPane: View {
                     ShortcutKeyChip(label: TouchlessActivationTrigger.displayLabel)
                 }
 
+                SettingsToggleRow(
+                    title: lang.t("settings.camera.answersByPalm"),
+                    help: lang.t("settings.camera.answersByPalm.help"),
+                    isOn: Binding(
+                        get: { cameraGesture.answersByPalm },
+                        set: {
+                            cameraGesture.answersByPalm = $0
+                            model.refreshSustainedCamera()
+                        }
+                    )
+                )
             }
         } header: {
             Text(lang.t("settings.camera.section"))

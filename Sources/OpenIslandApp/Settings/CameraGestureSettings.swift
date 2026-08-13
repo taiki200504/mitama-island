@@ -23,6 +23,16 @@ final class CameraGestureSettings: PreferenceGroup {
         set { write(\.windowSeconds, Keys.windowSeconds, Self.clampWindowSeconds(newValue)) }
     }
 
+    /// Holds the camera open while a card is waiting, so a raised hand starts
+    /// the microphone instead of a keystroke.
+    ///
+    /// Off by default, and worth leaving off: this is the one path where the
+    /// camera runs for longer than a keypress.
+    var answersByPalm: Bool {
+        get { read(\.answersByPalm, Keys.answersByPalm, false) }
+        set { write(\.answersByPalm, Keys.answersByPalm, newValue) }
+    }
+
     private static func clampWindowSeconds(_ seconds: Double) -> Double {
         min(max(seconds, Defaults.minimumWindowSeconds), Defaults.maximumWindowSeconds)
     }
@@ -38,5 +48,6 @@ extension CameraGestureSettings {
     enum Keys {
         static let enabled = "cameraGesture.enabled"
         static let windowSeconds = "cameraGesture.windowSeconds"
+        static let answersByPalm = "cameraGesture.answersByPalm"
     }
 }

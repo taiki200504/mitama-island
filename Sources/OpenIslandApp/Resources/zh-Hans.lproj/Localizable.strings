@@ -622,6 +622,8 @@
 "settings.camera.enabled.help" = "默认关闭。开启前不会请求摄像头权限。";
 "settings.camera.trigger" = "唤醒摄像头";
 "settings.camera.trigger.claimed" = "该组合已被 macOS 占用。快捷键能注册但收不到按键。请在系统设置 → 键盘 → 键盘快捷键中取消占用。";
+"settings.camera.answersByPalm" = "举手作答";
+"settings.camera.answersByPalm.help" = "当岛上有请求或问题等待时，摄像头保持开启。举起张开的手掌稍作停留即可打开麦克风，无需按键。其余时间摄像头始终关闭。";
 "camera.status.denied" = "摄像头访问被拒绝。系统设置 → 隐私与安全性 → 摄像头。";
 "camera.status.requesting" = "正在等待摄像头权限 — 请回应对话框";
 "camera.status.timedOutOnGesture" = "未识别到手势。请立起两指，从上向下滑动。";

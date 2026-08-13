@@ -32,6 +32,8 @@ final class CameraActivationSession {
 
     /// Fires on the main actor when the gesture completes, with its direction.
     var onGesture: ((SwipeDirection) -> Void)?
+    /// Fires when an open hand was held up. The camera stays on.
+    var onPalmHeld: (() -> Void)?
     /// Progress the UI can show. Nil clears it.
     var onStatus: ((String?) -> Void)?
 
@@ -41,6 +43,8 @@ final class CameraActivationSession {
     private var captureSession: AVCaptureSession?
     private var analyzer: CameraFrameAnalyzer?
     private var timeout: Task<Void, Never>?
+    /// True while the camera is held open by a waiting card rather than by a keypress.
+    private var keepsCameraOpen = false
 
     init(settings: CameraGestureSettings) {
         self.settings = settings
@@ -99,7 +103,36 @@ final class CameraActivationSession {
         return false
     }
 
+    /// Keeps the camera open for as long as a card is waiting to be answered,
+    /// so a raised hand is enough — no key to press first.
+    ///
+    /// Unlike `begin()` there is no timeout: the thing that closes this is the
+    /// card being answered or going away. The green light therefore means
+    /// exactly one thing — something is waiting on you.
+    func beginSustained() {
+        guard settings.isEnabled, settings.answersByPalm else { return }
+        guard AVCaptureDevice.authorizationStatus(for: .video) == .authorized else {
+            // Never ask for the camera on this path. A permission dialog that
+            // appears because a card arrived, rather than because a key was
+            // pressed, has no explanation attached to it.
+            return
+        }
+
+        keepsCameraOpen = true
+        guard !isRunning else { return }
+        Self.logger.notice("Sustained camera opening")
+        start()
+    }
+
+    func endSustained() {
+        guard keepsCameraOpen else { return }
+        keepsCameraOpen = false
+        Self.logger.notice("Sustained camera closing")
+        stop()
+    }
+
     func stop() {
+        keepsCameraOpen = false
         timeout?.cancel()
         timeout = nil
         phase = .idle
@@ -126,6 +159,9 @@ final class CameraActivationSession {
         onStatus?(statusText(for: phase))
 
         queue.async { session.startRunning() }
+
+        // A sustained camera is closed by the card going away, not by a clock.
+        guard !keepsCameraOpen else { return }
 
         let seconds = settings.windowSeconds
         timeout = Task { [weak self] in
@@ -190,6 +226,11 @@ final class CameraActivationSession {
             let fired = onGesture
             stop()
             fired?(direction)
+
+        case .palmHeld:
+            // The camera stays on: the answer is spoken next, and the card may
+            // still be there afterwards.
+            onPalmHeld?()
         }
     }
 
