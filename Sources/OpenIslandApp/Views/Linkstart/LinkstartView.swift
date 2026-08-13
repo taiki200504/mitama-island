@@ -8,12 +8,51 @@ import SwiftUI
 /// frame here changes what one frame looks like instead of putting the sequence
 /// out of step with itself.
 struct LinkstartView: View {
-    let startedAt: Date
-    /// Nil on the screens that are only along for the ride, so the checklist
+    let controller: LinkstartOverlayController
+    /// False on the screens that are only along for the ride, so the checklist
     /// appears once rather than on every display.
     let showsDetail: Bool
 
     var body: some View {
+        switch controller.stage {
+        case .listening:
+            listening
+        case let .playing(startedAt):
+            sequence(startedAt: startedAt)
+        }
+    }
+
+    /// The dark screen that waits for the words.
+    private var listening: some View {
+        let theme = IslandThemes.current
+        return ZStack {
+            VStack(spacing: 18) {
+                if showsDetail {
+                    Text(LanguageManager.shared.t("linkstart.say"))
+                        .font(IslandTypography.mono(size: 30, weight: .bold))
+                        .foregroundStyle(theme.paper)
+                        .tracking(10)
+                        .shadow(color: theme.accent.opacity(0.7), radius: theme.glowRadius * 2)
+
+                    if let heard = controller.heard {
+                        Text(heard)
+                            .font(IslandTypography.mono(size: 15))
+                            .foregroundStyle(theme.paper.opacity(0.45))
+                    }
+
+                    Text(LanguageManager.shared.t("linkstart.dismiss"))
+                        .font(IslandTypography.mono(size: 12))
+                        .foregroundStyle(theme.paper.opacity(0.3))
+                        .tracking(3)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.black.opacity(0.62))
+        .ignoresSafeArea()
+    }
+
+    private func sequence(startedAt: Date) -> some View {
         TimelineView(.animation) { context in
             let elapsed = context.date.timeIntervalSince(startedAt)
             let phase = LinkstartSequence.phase(at: elapsed)

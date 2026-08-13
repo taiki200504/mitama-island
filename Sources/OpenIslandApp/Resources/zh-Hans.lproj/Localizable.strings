@@ -625,6 +625,7 @@
 "settings.camera.answersByPalm" = "举手作答";
 "settings.camera.answersByPalm.help" = "当岛上有请求或问题等待时，摄像头保持开启。举起张开的手掌稍作停留即可打开麦克风，无需按键。其余时间摄像头始终关闭。";
 "linkstart.title" = "LINK START";
+"linkstart.say" = "请说：LINK START";
 "linkstart.sense.touch" = "触觉";
 "linkstart.sense.sight" = "视觉";
 "linkstart.sense.hearing" = "听觉";
@@ -635,7 +636,7 @@
 "linkstart.welcome" = "欢迎，{name}";
 "linkstart.dismiss" = "按任意键返回";
 "settings.linkstart.section" = "Link Start";
-"settings.linkstart.section.footer" = "在所有屏幕上播放登录动画。几秒即结束，按任意键或点击可提前退出。除此之外不做任何事。";
+"settings.linkstart.section.footer" = "让所有屏幕变暗并等待你说出“link start”，随后播放登录动画。几秒即结束，按任意键或点击可提前退出。若关闭语音作答，按键即直接播放。";
 "settings.linkstart.enabled" = "启用登录动画";
 "settings.linkstart.enabled.help" = "默认关闭。即使不使用，全局快捷键也会占用该组合。";
 "settings.linkstart.trigger" = "播放";

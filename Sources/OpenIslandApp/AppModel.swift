@@ -2194,7 +2194,14 @@ final class AppModel {
         }
         coordinator.linkstartEnabled = settings.display.playsLinkstart
         coordinator.onLinkstart = { [weak self] in
-            self?.linkstart.toggle()
+            guard let self else { return }
+            // A fresh session each time: it lives for a few seconds and starting
+            // from a clean one is cheaper than reasoning about a stale one.
+            // Nil when speaking is off, and then the key alone plays it.
+            self.linkstart.voice = self.settings.voiceCommand.isEnabled
+                ? VoiceCommandSession(settings: self.settings.voiceCommand)
+                : nil
+            self.linkstart.toggle()
         }
         voiceAnswer.onIntent = { [weak self] intent, heard in
             self?.apply(intent, heard: heard)

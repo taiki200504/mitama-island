@@ -625,6 +625,7 @@
 "settings.camera.answersByPalm" = "Hold up a hand to answer";
 "settings.camera.answersByPalm.help" = "While a request or question is on the island, the camera stays on. Hold an open hand up for a moment and the microphone opens — no key to press. The camera is off at every other time.";
 "linkstart.title" = "LINK START";
+"linkstart.say" = "SAY: LINK START";
 "linkstart.sense.touch" = "TOUCH";
 "linkstart.sense.sight" = "SIGHT";
 "linkstart.sense.hearing" = "HEARING";
@@ -635,7 +636,7 @@
 "linkstart.welcome" = "WELCOME, {name}";
 "linkstart.dismiss" = "PRESS ANY KEY TO RETURN";
 "settings.linkstart.section" = "Link Start";
-"settings.linkstart.section.footer" = "Plays a login sequence over every screen. It lasts a few seconds and any key or click ends it early. It does nothing else.";
+"settings.linkstart.section.footer" = "Darkens every screen and waits for you to say “link start”, then plays the login sequence. It lasts a few seconds and any key or click ends it early. With speaking switched off, the key plays it straight away.";
 "settings.linkstart.enabled" = "Enable the login sequence";
 "settings.linkstart.enabled.help" = "Off by default. An unused global shortcut still takes the combination away from anything else you have bound to it.";
 "settings.linkstart.trigger" = "Play";
