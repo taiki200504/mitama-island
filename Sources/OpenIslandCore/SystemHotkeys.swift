@@ -82,3 +82,12 @@ public enum VoiceAnswerTrigger {
     public static let modifiers = 262144 | 524288
     public static let displayLabel = "⌃⌥V"
 }
+
+/// The key that plays the login sequence.
+public enum LinkstartTrigger {
+    /// L.
+    public static let keyCode = 37
+    /// control + option.
+    public static let modifiers = 262144 | 524288
+    public static let displayLabel = "⌃⌥L"
+}

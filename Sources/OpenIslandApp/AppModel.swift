@@ -508,6 +508,9 @@ final class AppModel {
     /// Holds no microphone until the key is pressed with a card waiting.
     @ObservationIgnored let voiceAnswer: VoiceCommandSession
 
+    /// The login sequence. Nothing exists until the key is pressed.
+    @ObservationIgnored let linkstart = LinkstartOverlayController()
+
     func openMitamaHub() {
         NSWorkspace.shared.open(MitamaFeedCoordinator.hubURL)
     }
@@ -2188,6 +2191,10 @@ final class AppModel {
         coordinator.voiceAnswerEnabled = settings.voiceCommand.isEnabled
         coordinator.onVoiceAnswer = { [weak self] in
             self?.beginVoiceAnswer()
+        }
+        coordinator.linkstartEnabled = settings.display.playsLinkstart
+        coordinator.onLinkstart = { [weak self] in
+            self?.linkstart.toggle()
         }
         voiceAnswer.onIntent = { [weak self] intent, heard in
             self?.apply(intent, heard: heard)

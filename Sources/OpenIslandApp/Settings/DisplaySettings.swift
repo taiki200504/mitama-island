@@ -58,6 +58,16 @@ final class DisplaySettings: PreferenceGroup {
         set { write(\.themeRawValue, Keys.theme, newValue) }
     }
 
+    /// Whether ⌃⌥L plays the login sequence.
+    ///
+    /// Off by default for the same reason every other global key here is: an
+    /// unused shortcut still takes the combination away from whatever else the
+    /// user bound it to.
+    var playsLinkstart: Bool {
+        get { read(\.playsLinkstart, Keys.playsLinkstart, false) }
+        set { write(\.playsLinkstart, Keys.playsLinkstart, newValue) }
+    }
+
     /// Announce a finished session in the middle of the screen.
     var completionBanner: Bool {
         get { read(\.completionBanner, Keys.completionBanner, true) }
@@ -155,6 +165,7 @@ extension DisplaySettings {
         static let agentIconStyle = "display.agentIconStyle"
         static let theme = "display.theme"
         static let completionBanner = "display.completionBanner"
+        static let playsLinkstart = "display.playsLinkstart"
         static let hideIdleSessions = "display.hideIdleSessions"
         static let sessionAutoNaming = "display.sessionAutoNaming"
         static let notchHeightOverride = "display.notchHeightOverride"

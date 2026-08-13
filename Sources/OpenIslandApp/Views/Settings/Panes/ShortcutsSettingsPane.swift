@@ -20,6 +20,7 @@ struct ShortcutsSettingsPane: View {
             switcherSection
             cameraGestureSection
             voiceAnswerSection
+            linkstartSection
             panelSection
             resetSection
         }
@@ -187,6 +188,47 @@ struct ShortcutsSettingsPane: View {
             Text(lang.t("settings.voice.section"))
         } footer: {
             Text(lang.t("settings.voice.section.footer"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var linkstartTriggerIsClaimed: Bool {
+        SystemHotkeys.isClaimed(
+            keyCode: LinkstartTrigger.keyCode,
+            modifiers: LinkstartTrigger.modifiers,
+            in: SystemHotkeys.current()
+        )
+    }
+
+    /// The one shortcut here that does nothing useful, which is the point.
+    private var linkstartSection: some View {
+        Section {
+            SettingsToggleRow(
+                title: lang.t("settings.linkstart.enabled"),
+                help: lang.t("settings.linkstart.enabled.help"),
+                isOn: Binding(
+                    get: { model.settings.display.playsLinkstart },
+                    set: {
+                        model.settings.display.playsLinkstart = $0
+                        model.panelHotkeys?.linkstartEnabled = $0
+                        model.panelHotkeys?.startPersistentBindings()
+                    }
+                )
+            )
+
+            if model.settings.display.playsLinkstart {
+                SettingsRow(
+                    title: lang.t("settings.linkstart.trigger"),
+                    help: linkstartTriggerIsClaimed ? lang.t("settings.linkstart.trigger.claimed") : nil
+                ) {
+                    ShortcutKeyChip(label: LinkstartTrigger.displayLabel)
+                }
+            }
+        } header: {
+            Text(lang.t("settings.linkstart.section"))
+        } footer: {
+            Text(lang.t("settings.linkstart.section.footer"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
