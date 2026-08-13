@@ -119,7 +119,14 @@ final class CameraActivationSession {
         }
 
         keepsCameraOpen = true
-        guard !isRunning else { return }
+        guard !isRunning else {
+            // Already open from a keypress, and that window has a clock on it.
+            // Leaving the clock running would close the camera out from under a
+            // card that is still waiting.
+            timeout?.cancel()
+            timeout = nil
+            return
+        }
         Self.logger.notice("Sustained camera opening")
         start()
     }

@@ -1746,6 +1746,7 @@ final class AppModel {
         state.dismissSession(id: sessionID)
         dismissNotificationSurfaceIfPresent(for: sessionID)
         synchronizeSelection()
+        refreshSustainedCamera()
     }
 
     func answerQuestion(for sessionID: String, answer: QuestionPromptResponse) {
@@ -1813,6 +1814,17 @@ final class AppModel {
         updateLastActionMessage: Bool = true,
         ingress: TrackedEventIngress = .bridge
     ) {
+        // A card can stop waiting without anyone answering it — the agent gives
+        // up, the session ends, a rule answers it silently. This function
+        // returns early on several of those paths, and every one of them leaves
+        // the camera running if it is not re-checked. `defer` so the answer is
+        // the same whichever way the function ends.
+        //
+        // Deliberately at the end rather than beside `state.apply`: reading the
+        // session list mid-flight caches a view of it that the rest of this
+        // function then invalidates.
+        defer { refreshSustainedCamera() }
+
         // Snapshot whether this session was already completed before applying
         // the event. Used to suppress duplicate/stale completion notifications
         // (e.g. rollout watcher re-discovering an old completion on startup,
