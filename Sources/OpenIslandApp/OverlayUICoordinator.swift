@@ -172,6 +172,9 @@ final class OverlayUICoordinator {
                 self?.isPointerInsideIslandSurface = false
                 self?.appModel?.measuredNotificationContentHeight = 0
                 self?.appModel?.panelHotkeys?.panelDidCollapse()
+                // Typing in a reply box brings the app forward so an input
+                // method can attach. Closing is where that ends.
+                TextInputFocusHandoff.giveBack()
             }
         )
     }
