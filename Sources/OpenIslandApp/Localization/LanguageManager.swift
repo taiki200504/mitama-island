@@ -69,7 +69,7 @@ final class LanguageManager: @unchecked Sendable {
     /// Look up a localized string by key.
     func t(_ key: String) -> String {
         if key == "app.name" { return Self.applicationName }
-        let value = hudVariant(of: key)
+        let value = themeVariant(of: key)
             ?? bundle.localizedString(forKey: key, value: key, table: nil)
         return Self.substitutingApplicationName(in: value)
     }
@@ -85,25 +85,30 @@ final class LanguageManager: @unchecked Sendable {
         return value.replacingOccurrences(of: "{app}", with: applicationName)
     }
 
-    /// The HUD theme's wording for a key, if there is one.
+    /// The current theme's wording for a key, if one was written.
     ///
     /// Rather than a second switch next to the theme, the voice follows it: one
     /// choice changes the whole personality. Only keys that actually have a
-    /// `<key>.hud` entry change, so the scope is exactly the set of variants
+    /// `<key>.<theme>` entry change, so the scope is exactly the set of variants
     /// that were written — settings panes and error messages stay plain because
     /// no variant was added for them.
-    private func hudVariant(of key: String) -> String? {
-        guard Self.usesHUDVoice else { return nil }
-        let hudKey = key + ".hud"
-        let value = bundle.localizedString(forKey: hudKey, value: hudKey, table: nil)
-        return value == hudKey ? nil : value
+    private func themeVariant(of key: String) -> String? {
+        guard let suffix = Self.voiceSuffix else { return nil }
+        let themedKey = key + "." + suffix
+        let value = bundle.localizedString(forKey: themedKey, value: themedKey, table: nil)
+        return value == themedKey ? nil : value
     }
 
     /// Read straight from defaults rather than through `DisplaySettings`, which
     /// is main-actor isolated while this is not.
-    private static var usesHUDVoice: Bool {
+    ///
+    /// Nil for `classic`, which is what the app looked like before themes
+    /// existed — its words should be the plain ones for the same reason.
+    private static var voiceSuffix: String? {
         let raw = UserDefaults.standard.string(forKey: DisplaySettings.Keys.theme)
-        return (raw ?? IslandThemeID.hud.rawValue) == IslandThemeID.hud.rawValue
+        let theme = IslandThemeID(rawValue: raw ?? "") ?? .hud
+        guard theme != .classic else { return nil }
+        return theme.rawValue
     }
 
     /// The name the app is actually installed under.

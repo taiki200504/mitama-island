@@ -16,6 +16,13 @@ struct HUDVoiceTests {
         body()
     }
 
+    private func withLanguage(_ language: LanguageManager.AppLanguage, _ body: () -> Void) {
+        let previous = LanguageManager.shared.language
+        LanguageManager.shared.language = language
+        defer { LanguageManager.shared.language = previous }
+        body()
+    }
+
     @Test("The HUD theme speaks in its own vocabulary")
     func hudSpeaksHUD() {
         withTheme(.hud) {
@@ -24,11 +31,59 @@ struct HUDVoiceTests {
         }
     }
 
+    @Test("The SAO theme speaks in its own vocabulary")
+    func saoSpeaksSAO() {
+        withTheme(.sao) {
+            #expect(LanguageManager.shared.t("banner.completed") == "CONGRATULATIONS")
+            #expect(LanguageManager.shared.t("island.sessionOverview.running") == "DIVING")
+            #expect(LanguageManager.shared.t("island.sessionOverview.waiting") == "SYSTEM CALL")
+            #expect(LanguageManager.shared.t("setup.banner.noHooks.title") == "LINK START")
+        }
+    }
+
+    /// Two voices that said the same words would make the choice pointless.
+    @Test("The two themed voices do not overlap")
+    func themedVoicesAreDistinct() {
+        let keys = [
+            "banner.completed",
+            "island.sessionList.title",
+            "island.sessionOverview.running",
+            "island.sessionOverview.waiting",
+            "approval.allowOnce",
+            "question.submit",
+        ]
+
+        var hudWords: [String] = []
+        withTheme(.hud) { hudWords = keys.map { LanguageManager.shared.t($0) } }
+
+        var saoWords: [String] = []
+        withTheme(.sao) { saoWords = keys.map { LanguageManager.shared.t($0) } }
+
+        for (hud, sao) in zip(hudWords, saoWords) {
+            #expect(hud != sao)
+        }
+    }
+
     @Test("The classic theme keeps plain language")
     func classicStaysPlain() {
         withTheme(.classic) {
             #expect(LanguageManager.shared.t("banner.completed") != "QUEST COMPLETE")
+            #expect(LanguageManager.shared.t("banner.completed") != "CONGRATULATIONS")
             #expect(LanguageManager.shared.t("island.sessionOverview.running") != "ACTIVE")
+            #expect(LanguageManager.shared.t("island.sessionOverview.running") != "DIVING")
+        }
+    }
+
+    /// The words are the system's, not the reader's language. Japanese and
+    /// Chinese see the same English the show puts on screen.
+    @Test("A themed voice reads the same in every language")
+    func themedVoiceIgnoresLanguage() {
+        for language in [LanguageManager.AppLanguage.en, .ja, .zhHans] {
+            withLanguage(language) {
+                withTheme(.sao) {
+                    #expect(LanguageManager.shared.t("banner.completed") == "CONGRATULATIONS")
+                }
+            }
         }
     }
 
