@@ -31,6 +31,18 @@ public enum MitamaKeychain {
             kSecAttrService as String: service,
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne,
+            // Never put up the "Mitama Island wants to use a keychain item"
+            // panel. The items were written by `addkey`, so this app is not on
+            // their access list, and every rebuild changes the binary — which
+            // means the panel came back after each install, asking for the login
+            // password to read a notification feed. A background nicety must not
+            // interrogate the user.
+            //
+            // Skipping the UI turns that case into a plain failure, and the
+            // caller falls back to the .env file. Granting "Always Allow" once
+            // still works: an app already on the list reads without any UI at
+            // all, so nothing is lost by refusing to ask.
+            kSecUseAuthenticationUI as String: kSecUseAuthenticationUISkip,
         ]
 
         var item: CFTypeRef?
