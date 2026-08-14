@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import os
 import OpenIslandCore
 
 /// Keeps mitama's actionable notifications on the island.
@@ -11,6 +12,8 @@ import OpenIslandCore
 @MainActor
 @Observable
 final class MitamaFeedCoordinator {
+    private static let logger = Logger(subsystem: "com.mitama.island", category: "mitama")
+
     /// Rows shown at once. The queue routinely holds hundreds of unread
     /// homework items; an island that lists them all is a wall, not a signal.
     static let displayLimit = 4
@@ -57,6 +60,7 @@ final class MitamaFeedCoordinator {
             // after that would leave a stopped feed holding live credentials.
             guard let self, !Task.isCancelled else { return }
             guard let loaded else {
+                Self.logger.notice("No credentials in the keychain or the .env file")
                 self.isConfigured = false
                 self.credentialSource = nil
                 self.pollTask = nil
@@ -65,6 +69,10 @@ final class MitamaFeedCoordinator {
 
             self.isConfigured = true
             self.credentialSource = loaded.source
+            // Which source won is the one thing worth knowing when the feed
+            // misbehaves, and it is also how you check that reading the
+            // keychain no longer puts a password panel on screen.
+            Self.logger.notice("Credentials from \(String(describing: loaded.source), privacy: .public)")
             self.client = MitamaNotificationClient(environment: loaded.environment)
             self.workLog = MitamaWorkLogClient(environment: loaded.environment)
             self.currentInterval = Self.pollInterval
