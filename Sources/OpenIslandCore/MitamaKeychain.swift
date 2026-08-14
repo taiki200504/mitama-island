@@ -25,24 +25,32 @@ public enum MitamaKeychain {
         return MitamaEnvironment(url: url, apiKey: apiKey)
     }
 
+    /// Reads without ever putting a panel on screen.
+    ///
+    /// The items were written by `addkey`, so this app is not on their access
+    /// list, and every rebuild changes the binary — the "Mitama Island wants to
+    /// use a keychain item" panel therefore came back after every install,
+    /// asking for the login password to read a notification feed. A background
+    /// nicety must not interrogate the user.
+    ///
+    /// `kSecUseAuthenticationUI` was the first attempt and does nothing here: it
+    /// governs the biometric/passcode prompt for items guarded by an access
+    /// *control*, not the password panel an access *list* mismatch produces.
+    /// The switch for that one is process-wide and lives on the old
+    /// `SecKeychain` API, which is deprecated but has no replacement for this.
+    ///
+    /// Refusing the panel turns the mismatch into a plain failure, and the
+    /// caller falls back to the .env file. An app already on the list still
+    /// reads without any UI, so nothing is lost by refusing to ask.
     public static func value(for service: String) -> String? {
+        setUserInteraction(allowed: false)
+        defer { setUserInteraction(allowed: true) }
+
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecReturnData as String: true,
             kSecMatchLimit as String: kSecMatchLimitOne,
-            // Never put up the "Mitama Island wants to use a keychain item"
-            // panel. The items were written by `addkey`, so this app is not on
-            // their access list, and every rebuild changes the binary — which
-            // means the panel came back after each install, asking for the login
-            // password to read a notification feed. A background nicety must not
-            // interrogate the user.
-            //
-            // Skipping the UI turns that case into a plain failure, and the
-            // caller falls back to the .env file. Granting "Always Allow" once
-            // still works: an app already on the list reads without any UI at
-            // all, so nothing is lost by refusing to ask.
-            kSecUseAuthenticationUI as String: kSecUseAuthenticationUISkip,
         ]
 
         var item: CFTypeRef?
@@ -54,5 +62,11 @@ public enum MitamaKeychain {
             return nil
         }
         return text
+    }
+
+    /// Process-wide, so it is turned back on the moment the read is done —
+    /// anything else in the app that legitimately needs to ask still can.
+    private static func setUserInteraction(allowed: Bool) {
+        SecKeychainSetUserInteractionAllowed(allowed)
     }
 }
