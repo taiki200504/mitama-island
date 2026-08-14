@@ -507,6 +507,14 @@ struct IslandPanelView: View {
 
     private var openedContent: some View {
         VStack(spacing: 8) {
+            if let notice = model.notice {
+                noticeBar(notice)
+                    .padding(.horizontal, 18)
+                    .padding(.top, 8)
+                    .transition(.opacity)
+                    .id(notice.id)
+            }
+
             if !model.hasAnyInstalledAgent {
                 installHooksHint
                     .padding(.horizontal, 18)
@@ -526,6 +534,42 @@ struct IslandPanelView: View {
             }
         }
         .padding(.bottom, 0)
+    }
+
+    /// What the camera and the microphone have to say for themselves.
+    ///
+    /// Sits above everything else because it is always about the thing that just
+    /// happened — a refused permission, a gesture that did not read, words that
+    /// made no sense. Tapping it takes it away early.
+    private func noticeBar(_ notice: IslandNotice) -> some View {
+        Button {
+            model.clearNotice()
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "info.circle")
+                    .font(.islandText(size: 12, weight: .semibold))
+                    .foregroundStyle(IslandThemes.current.accent)
+                Text(notice.text)
+                    .font(.islandText(size: 12, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.9))
+                    .lineLimit(3)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(
+                IslandThemes.current.shape(cornerRadius: 10)
+                    .fill(.white.opacity(0.07))
+                    .overlay(
+                        IslandThemes.current.shape(cornerRadius: 10)
+                            .stroke(IslandThemes.current.accent.opacity(0.30), lineWidth: 0.5)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(notice.text)
     }
 
     /// Persistent hint at the top of the expanded island while no agent
