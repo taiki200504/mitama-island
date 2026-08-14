@@ -111,7 +111,9 @@ struct VoiceAnswerTargetTests {
         model.beginVoiceAnswer()
 
         #expect(model.voiceAnswer.isRunning == false)
-        #expect(model.lastActionMessage == model.lang.t("voice.status.nothingToAnswer"))
+        // Said on the island, not only in a log: a shortcut that does nothing
+        // and explains nothing is indistinguishable from a broken one.
+        #expect(model.notice?.text == model.lang.t("voice.status.nothingToAnswer"))
     }
 
     /// Even with a card waiting, the switch decides. Off means the microphone

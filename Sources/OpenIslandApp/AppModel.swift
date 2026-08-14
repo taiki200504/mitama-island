@@ -508,6 +508,19 @@ final class AppModel {
     /// Holds no microphone until the key is pressed with a card waiting.
     @ObservationIgnored let voiceAnswer: VoiceCommandSession
 
+    /// The one sentence the island is currently showing the user.
+    ///
+    /// The camera and the microphone explain themselves here — refused
+    /// permission, nothing heard, words that made no sense. Before this existed
+    /// those sentences went only to the harness log, which meant every failure
+    /// looked identical from the outside: nothing happened.
+    private(set) var notice: IslandNotice?
+
+    @ObservationIgnored private var noticeExpiry: Task<Void, Never>?
+    /// True when the island was closed and a notice opened it, so it can be put
+    /// back the way it was found.
+    @ObservationIgnored private var noticeOpenedTheIsland = false
+
     /// The login sequence. Nothing exists until the key is pressed.
     @ObservationIgnored let linkstart = LinkstartOverlayController()
 
@@ -1457,6 +1470,42 @@ final class AppModel {
         return nil
     }
 
+    /// Puts a sentence on the island for a few seconds.
+    ///
+    /// Opens the island if it was closed — the camera shortcut is pressed with
+    /// the island shut, so without this its failures would have nowhere to
+    /// appear — and closes it again afterwards if that is how it was found.
+    func present(notice text: String) {
+        guard let next = IslandNoticeQueue.accept(text, over: notice, at: Date()) else { return }
+        notice = next
+
+        if overlay.notchStatus == .closed {
+            noticeOpenedTheIsland = true
+            overlay.notchOpen(reason: .notification)
+        }
+
+        noticeExpiry?.cancel()
+        noticeExpiry = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(IslandNotice.lifetime))
+            guard !Task.isCancelled else { return }
+            self?.clearNotice()
+        }
+    }
+
+    /// Takes the sentence away, and the island with it if it came for this.
+    func clearNotice() {
+        noticeExpiry?.cancel()
+        noticeExpiry = nil
+        notice = nil
+
+        guard noticeOpenedTheIsland else { return }
+        noticeOpenedTheIsland = false
+        // Something arrived while the notice was up — a card, the user opening
+        // the list. That is now the reason the island is open, not this.
+        guard voiceAnswerTarget == nil, overlay.notchOpenReason == .notification else { return }
+        overlay.notchClose()
+    }
+
     /// Opens or closes the camera according to whether a raised hand would mean
     /// anything right now.
     ///
@@ -1474,7 +1523,7 @@ final class AppModel {
 
     func beginVoiceAnswer() {
         guard let target = voiceAnswerTarget else {
-            lastActionMessage = lang.t("voice.status.nothingToAnswer")
+            present(notice: lang.t("voice.status.nothingToAnswer"))
             return
         }
         voiceAnswer.begin(options: target.options)
@@ -1485,7 +1534,7 @@ final class AppModel {
     /// Several seconds pass in between and the agent may have moved on.
     private func apply(_ intent: VoiceIntent, heard: String) {
         guard let target = voiceAnswerTarget else {
-            lastActionMessage = lang.t("voice.status.nothingToAnswer")
+            present(notice: lang.t("voice.status.nothingToAnswer"))
             return
         }
 
@@ -1496,7 +1545,7 @@ final class AppModel {
             approvePermission(for: target.session.id, action: .deny)
         case let .chooseOption(index):
             guard index < target.options.count else {
-                lastActionMessage = voiceNotUnderstood(heard)
+                present(notice: voiceNotUnderstood(heard))
                 return
             }
             answerQuestion(
@@ -1507,7 +1556,7 @@ final class AppModel {
             // Say what was heard rather than a bare failure. Half the time the
             // recogniser heard something quite different from what was said,
             // and that is the only way to find out.
-            lastActionMessage = voiceNotUnderstood(heard)
+            present(notice: voiceNotUnderstood(heard))
         }
     }
 
@@ -2186,7 +2235,7 @@ final class AppModel {
         }
         cameraActivation.onStatus = { [weak self] status in
             guard let status else { return }
-            self?.lastActionMessage = status
+            self?.present(notice: status)
         }
         coordinator.voiceAnswerEnabled = settings.voiceCommand.isEnabled
         coordinator.onVoiceAnswer = { [weak self] in
@@ -2208,7 +2257,7 @@ final class AppModel {
         }
         voiceAnswer.onStatus = { [weak self] status in
             guard let status else { return }
-            self?.lastActionMessage = status
+            self?.present(notice: status)
         }
         coordinator.startPersistentBindings()
         panelHotkeys = coordinator
