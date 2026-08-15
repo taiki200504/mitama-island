@@ -126,7 +126,13 @@ final class VoiceCommandSession {
             start()
         case .notDetermined:
             onStatus?(LanguageManager.shared.t("voice.status.requesting"))
-            SFSpeechRecognizer.requestAuthorization { [weak self] status in
+            // `@Sendable` is load-bearing. Without it Swift 6 infers the
+            // closure inherits this method's main-actor isolation, then TCC
+            // calls it back on an XPC reply thread and the isolation check
+            // traps before the first line runs. The camera's callback next door
+            // is already `@Sendable` in its own declaration, which is why that
+            // one never had the problem.
+            SFSpeechRecognizer.requestAuthorization { @Sendable [weak self] status in
                 Task { @MainActor in
                     guard let self else { return }
                     if status == .authorized {
