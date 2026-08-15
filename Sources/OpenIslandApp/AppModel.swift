@@ -2266,6 +2266,7 @@ final class AppModel {
             // A fresh session each time: it lives for a few seconds and starting
             // from a clean one is cheaper than reasoning about a stale one.
             // Nil when speaking is off, and then the key alone plays it.
+            self.linkstart.isMuted = { [weak self] in self?.settings.sound.isMuted ?? false }
             self.linkstart.voice = self.settings.voiceCommand.isEnabled
                 ? VoiceCommandSession(settings: self.settings.voiceCommand)
                 : nil

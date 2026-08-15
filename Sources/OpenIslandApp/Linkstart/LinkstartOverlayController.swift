@@ -35,6 +35,10 @@ final class LinkstartOverlayController {
     @ObservationIgnored private var panels: [NSPanel] = []
     /// Whoever was in front before the sequence took over.
     @ObservationIgnored private var returnFocusTo: NSRunningApplication?
+    @ObservationIgnored private var soundtrack: Task<Void, Never>?
+    /// Set by `AppModel`. The sequence is not a notification, but the mute
+    /// switch is about the machine making noise, and it means that here too.
+    @ObservationIgnored var isMuted: () -> Bool = { false }
     @ObservationIgnored private var dismissal: Task<Void, Never>?
 
     var isPresenting: Bool { !panels.isEmpty }
@@ -91,6 +95,7 @@ final class LinkstartOverlayController {
             listenForPhrase()
         } else {
             scheduleDismissalAfterSequence()
+            playSoundtrack()
         }
     }
 
@@ -128,6 +133,35 @@ final class LinkstartOverlayController {
         dismissal?.cancel()
         stage = .playing(startedAt: Date())
         scheduleDismissalAfterSequence()
+        playSoundtrack()
+    }
+
+    /// Follows the choreography rather than the frames.
+    ///
+    /// Timed from the same durations the view draws from, so the sound and the
+    /// picture cannot drift apart. The real thing's audio is someone else's
+    /// work and cannot ship here — these are the nearest sounds already on the
+    /// machine, which is the same compromise the SAO theme makes for
+    /// notifications.
+    private func playSoundtrack() {
+        soundtrack?.cancel()
+        guard !isMuted() else { return }
+
+        soundtrack = Task { [weak self] in
+            // The light arriving: low and sustained, not a notification chime.
+            NotificationSoundService.play("Submarine", volume: 0.5)
+            try? await Task.sleep(for: .seconds(LinkstartSequence.awakeningDuration))
+
+            for _ in LinkstartSequence.senses {
+                guard !Task.isCancelled, self != nil else { return }
+                NotificationSoundService.play("Tink", volume: 0.35)
+                try? await Task.sleep(for: .seconds(LinkstartSequence.perSenseDuration))
+            }
+
+            try? await Task.sleep(for: .seconds(LinkstartSequence.languageDuration))
+            guard !Task.isCancelled, self != nil else { return }
+            NotificationSoundService.play("Hero", volume: 0.5)
+        }
     }
 
     private func scheduleDismissalAfterSequence() {
@@ -151,6 +185,8 @@ final class LinkstartOverlayController {
     func dismiss() {
         dismissal?.cancel()
         dismissal = nil
+        soundtrack?.cancel()
+        soundtrack = nil
         voice?.stop()
         guard !panels.isEmpty else { return }
         Self.logger.notice("Dismissing")
