@@ -32,6 +32,18 @@ enum TextInputFocusHandoff {
         NSApp.activate()
     }
 
+    /// Drops the record without moving the front.
+    ///
+    /// Called when the app loses focus by some other route — the user switching
+    /// away while the island is still open. Without this the record survives
+    /// until the island next closes, and the reply after that would send the
+    /// front to whichever app was in front two edits ago.
+    static func forget() {
+        guard borrowedFrom != nil else { return }
+        logger.notice("Forgetting the borrow; focus left by another route")
+        borrowedFrom = nil
+    }
+
     /// Returns the front to whoever had it. Safe to call when nothing was borrowed.
     static func giveBack() {
         guard let application = borrowedFrom else { return }
