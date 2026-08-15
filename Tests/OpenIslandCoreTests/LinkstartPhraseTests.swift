@@ -15,6 +15,23 @@ struct LinkstartPhraseTests {
         #expect(LinkstartPhrase.isSpoken(in: "LINKSTART"))
     }
 
+    /// What the recogniser actually returned the first time anyone said it out
+    /// loud. A Japanese recogniser mixes scripts inside the loanword.
+    @Test("Mixed script is heard")
+    func recognisesMixedScript() {
+        #expect(LinkstartPhrase.isSpoken(in: "Linkスタート"))
+        #expect(LinkstartPhrase.isSpoken(in: "リンク start"))
+        #expect(LinkstartPhrase.isSpoken(in: "link スタート"))
+        #expect(LinkstartPhrase.isSpoken(in: "りんくスタート"))
+    }
+
+    /// The halves have to arrive in that order, or "start the link" would do it.
+    @Test("The halves must be in order")
+    func halvesMustBeInOrder() {
+        #expect(!LinkstartPhrase.isSpoken(in: "スタートリンク"))
+        #expect(!LinkstartPhrase.isSpoken(in: "start the link"))
+    }
+
     @Test("It is heard inside a longer sentence")
     func recognisesInsideASentence() {
         #expect(LinkstartPhrase.isSpoken(in: "じゃあ、リンクスタート！"))
