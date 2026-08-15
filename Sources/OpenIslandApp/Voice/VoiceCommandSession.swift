@@ -71,7 +71,7 @@ final class VoiceCommandSession {
             startAfterSpeechAuthorisation()
         case .notDetermined:
             onStatus?(LanguageManager.shared.t("voice.status.requesting"))
-            AVCaptureDevice.requestAccess(for: .audio) { [weak self] granted in
+            AVCaptureDevice.requestAccess(for: .audio) { @Sendable [weak self] granted in
                 Task { @MainActor in
                     guard let self else { return }
                     if granted {
@@ -216,7 +216,12 @@ final class VoiceCommandSession {
         defer { withExtendedLifetime(analyzer) {} }
 
         let format = engine.inputNode.outputFormat(forBus: 0)
-        engine.inputNode.installTap(onBus: 0, bufferSize: 4096, format: format) { buffer, _ in
+        // `@Sendable` again, and for the sharpest version of the same reason:
+        // this one is called on the audio render thread, many times a second.
+        // Without it Swift 6 infers main-actor isolation from the enclosing
+        // type and traps on the very first buffer — the microphone opens and
+        // the app is gone before a word is finished.
+        engine.inputNode.installTap(onBus: 0, bufferSize: 4096, format: format) { @Sendable buffer, _ in
             continuation.yield(AnalyzerInput(buffer: buffer))
         }
         engine.prepare()

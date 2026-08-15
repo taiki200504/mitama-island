@@ -80,7 +80,7 @@ final class CameraActivationSession {
             // windows. Saying what is being waited for is the difference between
             // "nothing happened" and "answer the dialog".
             onStatus?(LanguageManager.shared.t("camera.status.requesting"))
-            AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
+            AVCaptureDevice.requestAccess(for: .video) { @Sendable [weak self] granted in
                 Task { @MainActor in
                     guard let self else { return }
                     if granted {
