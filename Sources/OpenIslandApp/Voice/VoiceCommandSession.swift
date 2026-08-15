@@ -5,6 +5,48 @@ import OpenIslandCore
 import os
 import Speech
 
+/// Carries the sample-rate conversion onto the audio thread.
+///
+/// `AVAudioConverter` is not `Sendable`, and the tap closure has to be. The
+/// unchecked conformance is sound here for one reason only: `installTap`
+/// delivers on a single render thread, so nothing else ever touches this.
+private final class AudioConverterBox: @unchecked Sendable {
+    private let converter: AVAudioConverter
+    private let outputFormat: AVAudioFormat
+
+    init(converter: AVAudioConverter, outputFormat: AVAudioFormat) {
+        self.converter = converter
+        self.outputFormat = outputFormat
+    }
+
+    func convert(_ buffer: AVAudioPCMBuffer) -> AVAudioPCMBuffer? {
+        let ratio = outputFormat.sampleRate / buffer.format.sampleRate
+        // Round up, with room to spare: a converter given too small an output
+        // buffer drops the tail of the chunk, and a clipped word is worse than
+        // a few wasted frames.
+        let capacity = AVAudioFrameCount(Double(buffer.frameLength) * ratio) + 1024
+        guard let output = AVAudioPCMBuffer(pcmFormat: outputFormat, frameCapacity: capacity) else {
+            return nil
+        }
+
+        var consumed = false
+        var error: NSError?
+        converter.convert(to: output, error: &error) { _, status in
+            // The converter asks repeatedly until told there is no more. Handing
+            // it the same buffer twice would stutter the audio.
+            if consumed {
+                status.pointee = .noDataNow
+                return nil
+            }
+            consumed = true
+            status.pointee = .haveData
+            return buffer
+        }
+        guard error == nil, output.frameLength > 0 else { return nil }
+        return output
+    }
+}
+
 /// Opens the microphone for a few seconds, listens for an answer, and closes it.
 ///
 /// The same shape as `CameraActivationSession`, for the same reason: a standing
@@ -215,14 +257,30 @@ final class VoiceCommandSession {
         // holds it open until the loop is done.
         defer { withExtendedLifetime(analyzer) {} }
 
-        let format = engine.inputNode.outputFormat(forBus: 0)
+        let microphoneFormat = engine.inputNode.outputFormat(forBus: 0)
+
+        // The recogniser does not take whatever the microphone happens to
+        // produce. Handed a raw 48kHz float stream it crashes inside
+        // `SpeechRecognizerWorker.preRunRecognition` — not a refusal, a trap.
+        // Ask what it wants and convert into that.
+        guard let analyzerFormat = await SpeechAnalyzer.bestAvailableAudioFormat(
+            compatibleWith: [transcriber],
+            considering: microphoneFormat
+        ), let converter = AVAudioConverter(from: microphoneFormat, to: analyzerFormat) else {
+            phase = .unavailable
+            onStatus?(LanguageManager.shared.t("voice.status.unavailable"))
+            return
+        }
+        let box = AudioConverterBox(converter: converter, outputFormat: analyzerFormat)
+
         // `@Sendable` again, and for the sharpest version of the same reason:
         // this one is called on the audio render thread, many times a second.
         // Without it Swift 6 infers main-actor isolation from the enclosing
         // type and traps on the very first buffer — the microphone opens and
         // the app is gone before a word is finished.
-        engine.inputNode.installTap(onBus: 0, bufferSize: 4096, format: format) { @Sendable buffer, _ in
-            continuation.yield(AnalyzerInput(buffer: buffer))
+        engine.inputNode.installTap(onBus: 0, bufferSize: 4096, format: microphoneFormat) { @Sendable buffer, _ in
+            guard let converted = box.convert(buffer) else { return }
+            continuation.yield(AnalyzerInput(buffer: converted))
         }
         engine.prepare()
         try engine.start()
