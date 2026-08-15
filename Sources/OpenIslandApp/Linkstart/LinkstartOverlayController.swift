@@ -33,6 +33,8 @@ final class LinkstartOverlayController {
     @ObservationIgnored var voice: VoiceCommandSession?
 
     @ObservationIgnored private var panels: [NSPanel] = []
+    /// Whoever was in front before the sequence took over.
+    @ObservationIgnored private var returnFocusTo: NSRunningApplication?
     @ObservationIgnored private var dismissal: Task<Void, Never>?
 
     var isPresenting: Bool { !panels.isEmpty }
@@ -57,8 +59,11 @@ final class LinkstartOverlayController {
         let mainScreen = NSScreen.main ?? screens[0]
         heard = nil
         // Say the words if the microphone is available; otherwise the key that
-        // got here is enough on its own.
-        stage = voice == nil ? .playing(startedAt: Date()) : .listening
+        // got here is enough on its own. Permission that has not been granted
+        // counts as unavailable: waiting nine seconds for a microphone that was
+        // never going to open is a dead screen with no way to know why.
+        let canListen = voice != nil && VoiceCommandSession.canListenWithoutAsking
+        stage = canListen ? .listening : .playing(startedAt: Date())
 
         panels = screens.map { screen in
             makePanel(
@@ -72,6 +77,15 @@ final class LinkstartOverlayController {
         // Key on one panel only: whichever has the key window is where Escape
         // and the closing click arrive.
         panels.first?.makeKeyAndOrderFront(nil)
+
+        // A key window in a background app does not receive keystrokes, and
+        // this covers every display — leaving the mouse as the only way out of
+        // something that owns the whole screen is not acceptable. Come forward
+        // for the length of the sequence and hand the front back on the way out.
+        if !NSApp.isActive {
+            returnFocusTo = NSWorkspace.shared.frontmostApplication
+            NSApp.activate()
+        }
 
         if case .listening = stage {
             listenForPhrase()
@@ -142,6 +156,11 @@ final class LinkstartOverlayController {
         Self.logger.notice("Dismissing")
         panels.forEach { $0.orderOut(nil) }
         panels = []
+
+        if let returnFocusTo, !returnFocusTo.isTerminated {
+            returnFocusTo.activate()
+        }
+        returnFocusTo = nil
     }
 
     // MARK: - Private

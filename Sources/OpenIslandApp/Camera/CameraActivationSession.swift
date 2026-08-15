@@ -45,6 +45,9 @@ final class CameraActivationSession {
     private var timeout: Task<Void, Never>?
     /// True while the camera is held open by a waiting card rather than by a keypress.
     private var keepsCameraOpen = false
+    /// So the explanation is given once per run of refusals rather than on
+    /// every card that arrives.
+    private var hasSaidCameraIsNotAllowed = false
 
     init(settings: CameraGestureSettings) {
         self.settings = settings
@@ -115,8 +118,17 @@ final class CameraActivationSession {
             // Never ask for the camera on this path. A permission dialog that
             // appears because a card arrived, rather than because a key was
             // pressed, has no explanation attached to it.
+            //
+            // Say why once. Silence here reads as "the setting does nothing",
+            // and the way out — press the key, answer the dialog — is not
+            // something anyone would guess.
+            if !hasSaidCameraIsNotAllowed {
+                hasSaidCameraIsNotAllowed = true
+                onStatus?(LanguageManager.shared.t("camera.status.palmNeedsPermission"))
+            }
             return
         }
+        hasSaidCameraIsNotAllowed = false
 
         keepsCameraOpen = true
         guard !isRunning else {

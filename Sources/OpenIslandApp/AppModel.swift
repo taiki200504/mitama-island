@@ -521,6 +521,8 @@ final class AppModel {
     /// back the way it was found.
     @ObservationIgnored private var noticeOpenedTheIsland = false
 
+    @ObservationIgnored private var resignObserver: (any NSObjectProtocol)?
+
     /// The login sequence. Nothing exists until the key is pressed.
     @ObservationIgnored let linkstart = LinkstartOverlayController()
 
@@ -1275,6 +1277,18 @@ final class AppModel {
             return
         }
         hasStarted = true
+
+        // Typing in the island borrows application focus and gives it back when
+        // the island closes. Leaving by any other route — the user switching
+        // apps mid-reply — has to drop the record, or the next reply would send
+        // the front to whichever app was there two edits ago.
+        resignObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didResignActiveNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            MainActor.assumeIsolated { TextInputFocusHandoff.forget() }
+        }
 
         // ponytail: 顔ゲートを消した版に一度でも上がれば不要になる。2026-10 以降に削除する。
         try? FileManager.default.removeItem(at: Self.legacyCameraReferenceURL)

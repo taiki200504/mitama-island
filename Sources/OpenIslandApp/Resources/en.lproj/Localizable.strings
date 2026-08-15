@@ -640,7 +640,7 @@
 "settings.camera.trigger" = "Wake the camera";
 "settings.camera.trigger.claimed" = "macOS has reserved this combination. The key registers but never arrives — change it in System Settings → Keyboard → Keyboard Shortcuts.";
 "settings.camera.answersByPalm" = "Hold up a hand to answer";
-"settings.camera.answersByPalm.help" = "While a request or question is on the island, the camera stays on. Hold an open hand up for a moment and the microphone opens — no key to press. The camera is off at every other time.";
+"settings.camera.answersByPalm.help" = "While a request or question is on the island, the camera stays on. Hold an open hand up for a moment and the microphone opens — no key to press. Needs “Answer by voice” switched on as well, since speaking is what answers. The camera is off at every other time.";
 "linkstart.title" = "LINK START";
 "linkstart.say" = "SAY: LINK START";
 "linkstart.sense.touch" = "TOUCH";
@@ -659,12 +659,14 @@
 "settings.linkstart.trigger" = "Play";
 "settings.linkstart.trigger.claimed" = "macOS has reserved this combination. The key registers but never arrives — change it in System Settings → Keyboard → Keyboard Shortcuts.";
 "camera.status.denied" = "Camera access is denied. System Settings → Privacy & Security → Camera.";
+"camera.status.palmNeedsPermission" = "Answering with a raised hand needs camera access. Press ⌃⌥space once and answer the dialog.";
 "camera.status.requesting" = "Waiting for camera permission — answer the dialog";
 "camera.status.timedOutOnGesture" = "No gesture seen. Two fingers, down the frame.";
 
 "voice.status.nothingToAnswer" = "Nothing is waiting for an answer";
 "voice.status.requesting" = "Waiting for microphone permission — answer the dialog";
 "voice.status.denied" = "Microphone access is denied. System Settings → Privacy & Security → Microphone.";
+"voice.status.speechDenied" = "Speech recognition is not allowed. Turn it on in System Settings → Privacy & Security → Speech Recognition.";
 "voice.status.preparing" = "Getting ready to listen…";
 "voice.status.downloading" = "Downloading the speech model — this happens once";
 "voice.status.listening" = "Listening — yes, no, or the option";

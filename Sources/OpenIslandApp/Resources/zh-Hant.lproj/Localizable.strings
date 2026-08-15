@@ -639,7 +639,7 @@
 "settings.camera.trigger" = "喚醒攝影機";
 "settings.camera.trigger.claimed" = "此組合已被 macOS 佔用。快速鍵能註冊但收不到按鍵。請在系統設定 → 鍵盤 → 鍵盤快速鍵中取消佔用。";
 "settings.camera.answersByPalm" = "舉手作答";
-"settings.camera.answersByPalm.help" = "當島上有請求或問題等待時，攝影機保持開啟。舉起張開的手掌稍作停留即可開啟麥克風，不必按鍵。其餘時間攝影機始終關閉。";
+"settings.camera.answersByPalm.help" = "當島上有請求或問題等待時，攝影機保持開啟。舉起張開的手掌稍作停留即可開啟麥克風，不必按鍵。作答靠語音，因此需同時開啟「語音作答」。其餘時間攝影機始終關閉。";
 "linkstart.title" = "LINK START";
 "linkstart.say" = "請說：LINK START";
 "linkstart.sense.touch" = "觸覺";
@@ -658,12 +658,14 @@
 "settings.linkstart.trigger" = "播放";
 "settings.linkstart.trigger.claimed" = "此組合已被 macOS 佔用。快速鍵能註冊但收不到按鍵。請在系統設定 → 鍵盤 → 鍵盤快速鍵中取消佔用。";
 "camera.status.denied" = "攝影機存取被拒絕。系統設定 → 隱私權與安全性 → 攝影機。";
+"camera.status.palmNeedsPermission" = "舉手作答需要攝影機權限。按一次 ⌃⌥space 並在彈出的對話框中允許。";
 "camera.status.requesting" = "正在等待攝影機權限 — 請回應對話框";
 "camera.status.timedOutOnGesture" = "未辨識到手勢。請立起兩指，由上往下滑動。";
 
 "voice.status.nothingToAnswer" = "沒有等待回答的內容";
 "voice.status.requesting" = "正在等待麥克風權限 — 請回應對話框";
 "voice.status.denied" = "麥克風存取被拒絕。系統設定 → 隱私權與安全性 → 麥克風。";
+"voice.status.speechDenied" = "語音辨識未獲授權。請在系統設定 → 隱私權與安全性 → 語音辨識中開啟。";
 "voice.status.preparing" = "正在準備聆聽…";
 "voice.status.downloading" = "正在下載語音模型 — 僅首次";
 "voice.status.listening" = "正在聆聽 — 是 / 否 / 選項";

@@ -68,14 +68,14 @@ final class VoiceCommandSession {
 
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
         case .authorized:
-            start()
+            startAfterSpeechAuthorisation()
         case .notDetermined:
             onStatus?(LanguageManager.shared.t("voice.status.requesting"))
             AVCaptureDevice.requestAccess(for: .audio) { [weak self] granted in
                 Task { @MainActor in
                     guard let self else { return }
                     if granted {
-                        self.start()
+                        self.startAfterSpeechAuthorisation()
                     } else {
                         self.phase = .denied
                         self.onStatus?(LanguageManager.shared.t("voice.status.denied"))
@@ -107,6 +107,43 @@ final class VoiceCommandSession {
     }
 
     // MARK: - Private
+
+    /// True when the microphone can be opened right now without asking anyone.
+    ///
+    /// Callers that arrive without a keypress use this: a permission dialog
+    /// should follow a deliberate action, never a card showing up on its own.
+    static var canListenWithoutAsking: Bool {
+        AVCaptureDevice.authorizationStatus(for: .audio) == .authorized
+            && SFSpeechRecognizer.authorizationStatus() == .authorized
+    }
+
+    /// Recognising speech is a second permission, separate from the microphone.
+    /// Without it the audio arrives and nothing is ever transcribed — the window
+    /// would close saying nothing was heard, whatever was said into it.
+    private func startAfterSpeechAuthorisation() {
+        switch SFSpeechRecognizer.authorizationStatus() {
+        case .authorized:
+            start()
+        case .notDetermined:
+            onStatus?(LanguageManager.shared.t("voice.status.requesting"))
+            SFSpeechRecognizer.requestAuthorization { [weak self] status in
+                Task { @MainActor in
+                    guard let self else { return }
+                    if status == .authorized {
+                        self.start()
+                    } else {
+                        self.phase = .denied
+                        self.onStatus?(LanguageManager.shared.t("voice.status.speechDenied"))
+                    }
+                }
+            }
+        case .denied, .restricted:
+            phase = .denied
+            onStatus?(LanguageManager.shared.t("voice.status.speechDenied"))
+        @unknown default:
+            phase = .unavailable
+        }
+    }
 
     private func start() {
         phase = .preparing
@@ -165,7 +202,12 @@ final class VoiceCommandSession {
         // Constructed with the sequence, so it starts consuming on its own.
         // Calling `start(inputSequence:)` as well would hand it a second source.
         let analyzer = SpeechAnalyzer(inputSequence: stream, modules: [transcriber])
-        _ = analyzer
+        // Nothing below mentions the analyzer again — it feeds the transcriber
+        // from the inside — and ARC is free to release a local at its last use.
+        // Released mid-listen, the results stop arriving and the window ends
+        // with "nothing heard" no matter what was said. The `defer` is what
+        // holds it open until the loop is done.
+        defer { withExtendedLifetime(analyzer) {} }
 
         let format = engine.inputNode.outputFormat(forBus: 0)
         engine.inputNode.installTap(onBus: 0, bufferSize: 4096, format: format) { buffer, _ in
