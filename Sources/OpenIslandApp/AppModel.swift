@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import Observation
+import os
 import OpenIslandCore
 import SwiftUI
 
@@ -522,6 +523,8 @@ final class AppModel {
     @ObservationIgnored private var noticeOpenedTheIsland = false
 
     @ObservationIgnored private var resignObserver: (any NSObjectProtocol)?
+
+    private static let voiceLogger = Logger(subsystem: "com.mitama.island", category: "voice")
 
     /// The login sequence. Nothing exists until the key is pressed.
     @ObservationIgnored let linkstart = LinkstartOverlayController()
@@ -1537,9 +1540,11 @@ final class AppModel {
 
     func beginVoiceAnswer() {
         guard let target = voiceAnswerTarget else {
+            Self.voiceLogger.notice("Nothing is waiting; the microphone stays shut")
             present(notice: lang.t("voice.status.nothingToAnswer"))
             return
         }
+        Self.voiceLogger.notice("Answering \(target.session.id, privacy: .public) with \(target.options.count) option(s)")
         voiceAnswer.begin(options: target.options)
     }
 

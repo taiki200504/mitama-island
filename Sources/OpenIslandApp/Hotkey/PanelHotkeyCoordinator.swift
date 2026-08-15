@@ -1,6 +1,7 @@
 import AppKit
 import Carbon.HIToolbox
 import Foundation
+import os
 import OpenIslandCore
 
 /// Decides which shortcuts exist right now, and what each one does.
@@ -10,6 +11,8 @@ import OpenIslandCore
 /// registering anything system-wide.
 @MainActor
 final class PanelHotkeyCoordinator {
+    private static let logger = Logger(subsystem: "com.mitama.island", category: "hotkey")
+
     private let registrar: any HotkeyRegistering
     private let settings: ShortcutSettings
     private var resolver: KeycodeResolver
@@ -52,6 +55,12 @@ final class PanelHotkeyCoordinator {
     }
 
     private func handleFire(_ id: String) {
+        // The one line that separates "the key never arrived" from "the key
+        // arrived and the thing it triggers decided to do nothing". Both look
+        // identical from the outside, and telling them apart by guesswork cost
+        // a whole round on the camera trigger.
+        Self.logger.notice("Fired \(id, privacy: .public)")
+
         switch id {
         case Self.switcherBindingID:        onSwitcherKey?(false)
         case Self.switcherReverseBindingID: onSwitcherKey?(true)
