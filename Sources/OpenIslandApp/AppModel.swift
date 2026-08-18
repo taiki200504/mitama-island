@@ -531,6 +531,8 @@ final class AppModel {
     /// The last thing power said no to, so the sentence is said once rather
     /// than on every card that arrives.
     @ObservationIgnored private var lastPowerRefusal: CameraPowerPolicy.Refusal?
+    /// A spoken approval waiting to be said a second time.
+    @ObservationIgnored private var voiceApprovalPending: VoiceApprovalGate.Pending?
 
     /// The login sequence. Nothing exists until the key is pressed.
     @ObservationIgnored let linkstart = LinkstartOverlayController()
@@ -1585,8 +1587,28 @@ final class AppModel {
 
         switch intent {
         case .approve:
+            // A recogniser that writes "Linkスタート" for "リンクスタート" will
+            // eventually write something that reads as "はい". On a file read
+            // that costs a moment; on a shell command it is not recoverable, so
+            // the dangerous half is made to say itself twice.
+            let risk = PermissionRisk.of(toolName: target.session.permissionRequest?.toolName)
+            let now = Date()
+            if VoiceApprovalGate.needsSecondSay(
+                risk: risk,
+                pending: voiceApprovalPending,
+                sessionID: target.session.id,
+                now: now
+            ) {
+                voiceApprovalPending = .init(sessionID: target.session.id, askedAt: now)
+                present(notice: voiceNeedsConfirmation(heard))
+                return
+            }
+            voiceApprovalPending = nil
             approvePermission(for: target.session.id, action: .allowOnce)
         case .deny:
+            // No second question on the way out. Refusing is the safe answer,
+            // and making it harder than approving would be the wrong shape.
+            voiceApprovalPending = nil
             approvePermission(for: target.session.id, action: .deny)
         case let .chooseOption(index):
             guard index < target.options.count else {
@@ -1603,6 +1625,10 @@ final class AppModel {
             // and that is the only way to find out.
             present(notice: voiceNotUnderstood(heard))
         }
+    }
+
+    private func voiceNeedsConfirmation(_ heard: String) -> String {
+        lang.t("voice.approve.confirmAgain").replacingOccurrences(of: "{heard}", with: heard)
     }
 
     private func voiceNotUnderstood(_ heard: String) -> String {

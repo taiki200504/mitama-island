@@ -676,6 +676,7 @@
 "voice.status.listening" = "Listening — yes, no, or the option";
 "voice.status.heardNothing" = "Heard nothing.";
 "voice.status.notUnderstood" = "Heard \"{heard}\" — not sure what that means, so nothing was done.";
+"voice.approve.confirmAgain" = "Heard “{heard}”. This one changes the machine — press ⌃⌥V and say yes again to run it.";
 "voice.status.unavailable" = "Speech recognition is unavailable on this Mac.";
 "settings.voice.section" = "Answer by voice";
 "settings.voice.section.footer" = "Press the key while a request or question is on the island, then say yes, no, or which option. The microphone opens only for those few seconds, and only when something is waiting. Speech is recognized on this Mac.";

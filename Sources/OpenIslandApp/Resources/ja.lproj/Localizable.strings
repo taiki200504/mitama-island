@@ -676,6 +676,7 @@
 "voice.status.listening" = "聞いています — はい / いいえ / 選択肢";
 "voice.status.heardNothing" = "何も聞き取れませんでした。";
 "voice.status.notUnderstood" = "「{heard}」と聞こえましたが、意味が取れないので何もしていません。";
+"voice.approve.confirmAgain" = "「{heard}」と聞こえました。これは機械を書き換える操作です。もう一度 ⌃⌥V を押して「はい」と言うと実行します。";
 "voice.status.unavailable" = "この Mac では音声認識が使えません。";
 "settings.voice.section" = "声で答える";
 "settings.voice.section.footer" = "承認や質問が島に出ているときにキーを押し、はい / いいえ / 選択肢を言ってください。マイクが開くのはその数秒だけで、待っているものが無ければ開きません。認識はこの Mac の中で行われます。";

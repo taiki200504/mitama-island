@@ -675,6 +675,7 @@
 "voice.status.listening" = "正在聆聽 — 是 / 否 / 選項";
 "voice.status.heardNothing" = "沒有聽到任何內容。";
 "voice.status.notUnderstood" = "聽到「{heard}」，但無法理解，因此未執行任何操作。";
+"voice.approve.confirmAgain" = "聽到「{heard}」。此操作會改動這台機器 —— 請再次按 ⌃⌥V 並說「是」以執行。";
 "voice.status.unavailable" = "此 Mac 無法使用語音辨識。";
 "settings.voice.section" = "用語音回答";
 "settings.voice.section.footer" = "當動態島上有請求或問題時按下快速鍵，然後說是、否或選項。麥克風僅在這幾秒內開啟，且只在有等待項時開啟。辨識在本機完成。";
