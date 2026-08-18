@@ -526,6 +526,12 @@ final class AppModel {
 
     private static let voiceLogger = Logger(subsystem: "com.mitama.island", category: "voice")
 
+    /// Reads the battery, the heat and the lid. Holds the camera to account.
+    @ObservationIgnored let power = PowerMonitor()
+    /// The last thing power said no to, so the sentence is said once rather
+    /// than on every card that arrives.
+    @ObservationIgnored private var lastPowerRefusal: CameraPowerPolicy.Refusal?
+
     /// The login sequence. Nothing exists until the key is pressed.
     @ObservationIgnored let linkstart = LinkstartOverlayController()
 
@@ -1281,6 +1287,9 @@ final class AppModel {
         }
         hasStarted = true
 
+        power.start()
+        power.onChange = { [weak self] in self?.refreshSustainedCamera() }
+
         // Typing in the island borrows application focus and gives it back when
         // the island closes. Leaving by any other route — the user switching
         // apps mid-reply — has to drop the record, or the next reply would send
@@ -1531,11 +1540,28 @@ final class AppModel {
     /// it. Called from every place either half can change.
     func refreshSustainedCamera() {
         let handWouldMeanSomething = overlay.notchStatus != .closed && voiceAnswerTarget != nil
-        if handWouldMeanSomething {
-            cameraActivation.beginSustained()
-        } else {
+        guard handWouldMeanSomething else {
+            lastPowerRefusal = nil
             cameraActivation.endSustained()
+            return
         }
+
+        // This is the one path that runs a capture session for minutes rather
+        // than seconds, so it asks the machine whether it can afford to.
+        power.refresh()
+        if let refusal = CameraPowerPolicy.refusal(for: power.conditions) {
+            cameraActivation.endSustained()
+            // Once per run of refusals. Saying it on every arriving card would
+            // turn a reasonable limit into nagging.
+            if lastPowerRefusal != refusal {
+                lastPowerRefusal = refusal
+                present(notice: lang.t(refusal.noticeKey))
+            }
+            return
+        }
+
+        lastPowerRefusal = nil
+        cameraActivation.beginSustained()
     }
 
     func beginVoiceAnswer() {

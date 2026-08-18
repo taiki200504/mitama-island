@@ -659,6 +659,10 @@
 "settings.linkstart.trigger.claimed" = "此組合已被 macOS 佔用。快速鍵能註冊但收不到按鍵。請在系統設定 → 鍵盤 → 鍵盤快速鍵中取消佔用。";
 "camera.status.denied" = "攝影機存取被拒絕。系統設定 → 隱私權與安全性 → 攝影機。";
 "camera.status.palmNeedsPermission" = "舉手作答需要攝影機權限。按一次 ⌃⌥space 並在彈出的對話框中允許。";
+"camera.power.lidClosed" = "闔蓋期間不會開啟攝影機。";
+"camera.power.tooHot" = "Mac 溫度過高，暫不開啟攝影機。可用 ⌃⌥V 語音作答。";
+"camera.power.batteryLow" = "電量偏低，暫不開啟攝影機。請接上電源，或使用 ⌃⌥V。";
+"camera.power.lowPowerMode" = "已開啟低電量模式，暫不開啟攝影機。可用 ⌃⌥V 語音作答。";
 "camera.status.requesting" = "正在等待攝影機權限 — 請回應對話框";
 "camera.status.timedOutOnGesture" = "未辨識到手勢。請立起兩指，由上往下滑動。";
 

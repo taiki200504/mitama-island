@@ -660,6 +660,10 @@
 "settings.linkstart.trigger.claimed" = "macOS has reserved this combination. The key registers but never arrives — change it in System Settings → Keyboard → Keyboard Shortcuts.";
 "camera.status.denied" = "Camera access is denied. System Settings → Privacy & Security → Camera.";
 "camera.status.palmNeedsPermission" = "Answering with a raised hand needs camera access. Press ⌃⌥space once and answer the dialog.";
+"camera.power.lidClosed" = "The camera stays shut while the lid is closed.";
+"camera.power.tooHot" = "The Mac is running hot, so the camera stays shut. Use ⌃⌥V to answer by voice.";
+"camera.power.batteryLow" = "The battery is low, so the camera stays shut. Plug in, or use ⌃⌥V.";
+"camera.power.lowPowerMode" = "Low Power Mode is on, so the camera stays shut. Use ⌃⌥V to answer by voice.";
 "camera.status.requesting" = "Waiting for camera permission — answer the dialog";
 "camera.status.timedOutOnGesture" = "No gesture seen. Two fingers, down the frame.";
 
