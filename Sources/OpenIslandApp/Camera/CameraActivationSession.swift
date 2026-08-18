@@ -34,6 +34,9 @@ final class CameraActivationSession {
     var onGesture: ((SwipeDirection) -> Void)?
     /// Fires when an open hand was held up. The camera stays on.
     var onPalmHeld: (() -> Void)?
+    /// Fires when thumb and index closed. "Pick the thing in front of me."
+    /// The camera stays on so a second pick can follow without re-summoning.
+    var onPinch: (() -> Void)?
     /// Progress the UI can show. Nil clears it.
     var onStatus: ((String?) -> Void)?
 
@@ -250,6 +253,12 @@ final class CameraActivationSession {
             // The camera stays on: the answer is spoken next, and the card may
             // still be there afterwards.
             onPalmHeld?()
+
+        case .pinched:
+            // Unlike a swipe, picking is repeatable: you take one thing, then
+            // the next. Stopping here would make the second pick cost another
+            // summon, which is slower than reaching for the keyboard.
+            onPinch?()
         }
     }
 
