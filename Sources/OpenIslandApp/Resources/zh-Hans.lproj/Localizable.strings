@@ -676,6 +676,7 @@
 "voice.status.listening" = "正在聆听 — 是 / 否 / 选项";
 "voice.status.heardNothing" = "没有听到任何内容。";
 "voice.status.notUnderstood" = "听到「{heard}」，但无法理解，因此未执行任何操作。";
+"voice.approve.confirmAgain" = "听到「{heard}」。此操作会改动这台机器 —— 请再次按 ⌃⌥V 并说「是」以执行。";
 "voice.status.unavailable" = "此 Mac 无法使用语音识别。";
 "settings.voice.section" = "用语音回答";
 "settings.voice.section.footer" = "当灵动岛上有请求或问题时按下快捷键，然后说是、否或选项。麦克风仅在这几秒内开启，且只在有等待项时开启。识别在本机完成。";
