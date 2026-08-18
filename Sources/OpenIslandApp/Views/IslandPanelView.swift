@@ -138,6 +138,8 @@ private struct ConditionalDrawingGroup: ViewModifier {
 // MARK: - Main island view
 
 struct IslandPanelView: View {
+    /// True while a drag is hovering the shelf, so it can open up to meet it.
+    @State private var isShelfTargeted = false
     private static let headerControlButtonSize: CGFloat = 22
     private static let headerControlSpacing: CGFloat = 8
     private static let headerHorizontalPadding: CGFloat = 18
@@ -507,6 +509,10 @@ struct IslandPanelView: View {
 
     private var openedContent: some View {
         VStack(spacing: 8) {
+            shelfStrip
+                .padding(.horizontal, 18)
+                .padding(.top, 8)
+
             if let notice = model.notice {
                 noticeBar(notice)
                     .padding(.horizontal, 18)
@@ -534,6 +540,108 @@ struct IslandPanelView: View {
             }
         }
         .padding(.bottom, 0)
+    }
+
+    /// A place to put a file down on the way somewhere else.
+    ///
+    /// Empty, it is a thin line that only says what it is when something is
+    /// over it — an always-visible drop zone would take room from the sessions,
+    /// which are what the island is for.
+    @ViewBuilder
+    private var shelfStrip: some View {
+        let theme = IslandThemes.current
+
+        if model.shelf.isEmpty {
+            HStack(spacing: 6) {
+                Image(systemName: "tray")
+                    .font(.islandText(size: 11))
+                Text(model.lang.t("shelf.empty"))
+                    .font(.islandText(size: 11))
+            }
+            .foregroundStyle(.white.opacity(isShelfTargeted ? 0.8 : 0.28))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, isShelfTargeted ? 14 : 6)
+            .background(shelfBackground(theme: theme))
+            .animation(theme.animationProfile.pop, value: isShelfTargeted)
+            .dropDestination(for: URL.self) { urls, _ in
+                model.putOnShelf(urls)
+                return true
+            } isTargeted: { isShelfTargeted = $0 }
+        } else {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 6) {
+                    Image(systemName: "tray.full")
+                        .font(.islandText(size: 11))
+                        .foregroundStyle(theme.accent)
+                    Text(model.lang.t("shelf.title"))
+                        .font(.islandText(size: 11, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.75))
+                    Spacer(minLength: 0)
+                    Button(model.lang.t("shelf.clear")) { model.shelf.removeAll() }
+                        .buttonStyle(.plain)
+                        .font(.islandText(size: 10))
+                        .foregroundStyle(.white.opacity(0.4))
+                }
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(model.shelf.items) { item in
+                            shelfChip(item, theme: theme)
+                        }
+                    }
+                }
+                .frame(height: 46)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(shelfBackground(theme: theme))
+            .dropDestination(for: URL.self) { urls, _ in
+                model.putOnShelf(urls)
+                return true
+            } isTargeted: { isShelfTargeted = $0 }
+        }
+    }
+
+    private func shelfBackground(theme: any IslandTheme) -> some View {
+        theme.shape(cornerRadius: 10)
+            .fill(.white.opacity(isShelfTargeted ? 0.10 : 0.04))
+            .overlay(
+                theme.shape(cornerRadius: 10)
+                    .strokeBorder(
+                        theme.accent.opacity(isShelfTargeted ? 0.55 : 0.14),
+                        style: StrokeStyle(lineWidth: 1, dash: model.shelf.isEmpty ? [4, 3] : [])
+                    )
+            )
+    }
+
+    /// One item. Dragging it hands over the copy's own URL, so it lands in
+    /// Finder as a real file rather than as text.
+    private func shelfChip(_ item: ShelfItem, theme: any IslandTheme) -> some View {
+        let url = model.shelf.fileURL(for: item)
+
+        return VStack(spacing: 2) {
+            Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
+                .resizable()
+                .frame(width: 22, height: 22)
+            Text(item.displayName)
+                .font(.islandText(size: 9))
+                .foregroundStyle(.white.opacity(0.7))
+                .lineLimit(1)
+                .truncationMode(.middle)
+        }
+        .frame(width: 62)
+        .padding(.vertical, 2)
+        .background(theme.shape(cornerRadius: 8).fill(.white.opacity(0.05)))
+        .draggable(url)
+        .contextMenu {
+            Button(model.lang.t("shelf.revealInFinder")) {
+                NSWorkspace.shared.activateFileViewerSelecting([url])
+            }
+            Button(model.lang.t("shelf.remove"), role: .destructive) {
+                model.shelf.remove(item)
+            }
+        }
+        .help(item.displayName)
     }
 
     /// What the camera and the microphone have to say for themselves.
