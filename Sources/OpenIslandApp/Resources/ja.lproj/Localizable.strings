@@ -660,6 +660,10 @@
 "settings.linkstart.trigger.claimed" = "この組み合わせは macOS が予約しています。登録はできてもキーは届きません。システム設定 → キーボード → キーボードショートカット で解除してください。";
 "camera.status.denied" = "カメラのアクセスが拒否されています。システム設定 → プライバシーとセキュリティ → カメラ で許可してください。";
 "camera.status.palmNeedsPermission" = "手をかざして答えるにはカメラの許可が要ります。⌃⌥space を一度押して、出てくるダイアログに答えてください。";
+"camera.power.lidClosed" = "ふたが閉じている間、カメラは開きません。";
+"camera.power.tooHot" = "Mac が熱いので、カメラは開きません。⌃⌥V で声で答えられます。";
+"camera.power.batteryLow" = "バッテリーが少ないので、カメラは開きません。電源に繋ぐか、⌃⌥V を使ってください。";
+"camera.power.lowPowerMode" = "低電力モードなので、カメラは開きません。⌃⌥V で声で答えられます。";
 "camera.status.requesting" = "カメラの許可を待っています — ダイアログに答えてください";
 "camera.status.timedOutOnGesture" = "ジェスチャを認識できませんでした。2本指を立てて、上から下へ。";
 

@@ -660,6 +660,10 @@
 "settings.linkstart.trigger.claimed" = "该组合已被 macOS 占用。快捷键能注册但收不到按键。请在系统设置 → 键盘 → 键盘快捷键中取消占用。";
 "camera.status.denied" = "摄像头访问被拒绝。系统设置 → 隐私与安全性 → 摄像头。";
 "camera.status.palmNeedsPermission" = "举手作答需要摄像头权限。按一次 ⌃⌥space 并在弹出的对话框中允许。";
+"camera.power.lidClosed" = "合盖期间不会开启摄像头。";
+"camera.power.tooHot" = "Mac 温度过高，暂不开启摄像头。可用 ⌃⌥V 语音作答。";
+"camera.power.batteryLow" = "电量偏低，暂不开启摄像头。请接通电源，或使用 ⌃⌥V。";
+"camera.power.lowPowerMode" = "已开启低电量模式，暂不开启摄像头。可用 ⌃⌥V 语音作答。";
 "camera.status.requesting" = "正在等待摄像头权限 — 请回应对话框";
 "camera.status.timedOutOnGesture" = "未识别到手势。请立起两指，从上向下滑动。";
 
