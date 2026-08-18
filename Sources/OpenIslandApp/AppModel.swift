@@ -526,6 +526,9 @@ final class AppModel {
 
     private static let voiceLogger = Logger(subsystem: "com.mitama.island", category: "voice")
 
+    /// What you put down in the island on the way somewhere else.
+    @ObservationIgnored let shelf = ShelfStore()
+
     /// Reads the battery, the heat and the lid. Holds the camera to account.
     @ObservationIgnored let power = PowerMonitor()
     /// The last thing power said no to, so the sentence is said once rather
@@ -1289,6 +1292,7 @@ final class AppModel {
         }
         hasStarted = true
 
+        shelf.load()
         power.start()
         power.onChange = { [weak self] in self?.refreshSustainedCamera() }
 
@@ -1496,6 +1500,20 @@ final class AppModel {
             return (asking, prompt.options)
         }
         return nil
+    }
+
+    /// Takes files onto the shelf, and says so when it cannot.
+    func putOnShelf(_ urls: [URL]) {
+        guard !urls.isEmpty else { return }
+        let before = shelf.items.count
+        let refusal = shelf.accept(urls)
+        let taken = shelf.items.count - before
+
+        if let refusal {
+            present(notice: lang.t(refusal.noticeKey))
+        } else if taken > 0 {
+            present(notice: lang.t("shelf.tookFiles").replacingOccurrences(of: "{count}", with: "\(taken)"))
+        }
     }
 
     /// Puts a sentence on the island for a few seconds.

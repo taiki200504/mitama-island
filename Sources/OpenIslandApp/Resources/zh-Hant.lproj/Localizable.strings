@@ -660,6 +660,15 @@
 "camera.status.denied" = "攝影機存取被拒絕。系統設定 → 隱私權與安全性 → 攝影機。";
 "camera.status.palmNeedsPermission" = "舉手作答需要攝影機權限。按一次 ⌃⌥space 並在彈出的對話框中允許。";
 "camera.power.lidClosed" = "闔蓋期間不會開啟攝影機。";
+"shelf.empty" = "把檔案拖到這裡暫存";
+"shelf.title" = "暫存";
+"shelf.clear" = "全部清空";
+"shelf.remove" = "移除";
+"shelf.revealInFinder" = "在 Finder 中顯示";
+"shelf.tookFiles" = "已暫存 {count} 個檔案。拖出即可移到任何地方。";
+"shelf.refusal.full" = "暫存區已滿，請先移出一些。";
+"shelf.refusal.tooMany" = "暫存數量已達上限，請先移出一些。";
+"shelf.refusal.tooLarge" = "這個檔案太大，無法暫存。";
 "camera.power.tooHot" = "Mac 溫度過高，暫不開啟攝影機。可用 ⌃⌥V 語音作答。";
 "camera.power.batteryLow" = "電量偏低，暫不開啟攝影機。請接上電源，或使用 ⌃⌥V。";
 "camera.power.lowPowerMode" = "已開啟低電量模式，暫不開啟攝影機。可用 ⌃⌥V 語音作答。";

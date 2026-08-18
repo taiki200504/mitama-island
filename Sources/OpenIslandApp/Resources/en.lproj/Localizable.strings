@@ -661,6 +661,15 @@
 "camera.status.denied" = "Camera access is denied. System Settings → Privacy & Security → Camera.";
 "camera.status.palmNeedsPermission" = "Answering with a raised hand needs camera access. Press ⌃⌥space once and answer the dialog.";
 "camera.power.lidClosed" = "The camera stays shut while the lid is closed.";
+"shelf.empty" = "Drop a file here to set it aside";
+"shelf.title" = "Set aside";
+"shelf.clear" = "Clear";
+"shelf.remove" = "Remove";
+"shelf.revealInFinder" = "Show in Finder";
+"shelf.tookFiles" = "Set aside {count} file(s). Drag one out to move it anywhere.";
+"shelf.refusal.full" = "The shelf is full. Take something off it first.";
+"shelf.refusal.tooMany" = "The shelf is holding as much as it will. Take something off it first.";
+"shelf.refusal.tooLarge" = "That one is too large for the shelf.";
 "camera.power.tooHot" = "The Mac is running hot, so the camera stays shut. Use ⌃⌥V to answer by voice.";
 "camera.power.batteryLow" = "The battery is low, so the camera stays shut. Plug in, or use ⌃⌥V.";
 "camera.power.lowPowerMode" = "Low Power Mode is on, so the camera stays shut. Use ⌃⌥V to answer by voice.";

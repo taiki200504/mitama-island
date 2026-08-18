@@ -661,6 +661,15 @@
 "camera.status.denied" = "摄像头访问被拒绝。系统设置 → 隐私与安全性 → 摄像头。";
 "camera.status.palmNeedsPermission" = "举手作答需要摄像头权限。按一次 ⌃⌥space 并在弹出的对话框中允许。";
 "camera.power.lidClosed" = "合盖期间不会开启摄像头。";
+"shelf.empty" = "把文件拖到这里暂存";
+"shelf.title" = "暂存";
+"shelf.clear" = "全部清空";
+"shelf.remove" = "移除";
+"shelf.revealInFinder" = "在访达中显示";
+"shelf.tookFiles" = "已暂存 {count} 个文件。拖出即可移到任何地方。";
+"shelf.refusal.full" = "暂存区已满，请先移出一些。";
+"shelf.refusal.tooMany" = "暂存数量已达上限，请先移出一些。";
+"shelf.refusal.tooLarge" = "这个文件太大，无法暂存。";
 "camera.power.tooHot" = "Mac 温度过高，暂不开启摄像头。可用 ⌃⌥V 语音作答。";
 "camera.power.batteryLow" = "电量偏低，暂不开启摄像头。请接通电源，或使用 ⌃⌥V。";
 "camera.power.lowPowerMode" = "已开启低电量模式，暂不开启摄像头。可用 ⌃⌥V 语音作答。";
