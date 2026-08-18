@@ -11,6 +11,8 @@ enum CameraFrameOutcome: Equatable, Sendable {
     case swiped(SwipeDirection)
     /// An open hand was held up long enough to mean it.
     case palmHeld
+    /// Thumb and index closed and stayed closed. The hands-free "pick this".
+    case pinched
 }
 
 /// Runs Vision over capture frames and turns them into outcomes.
@@ -32,6 +34,8 @@ final class CameraFrameAnalyzer: NSObject, AVCaptureVideoDataOutputSampleBufferD
     private var swipeDetector = SwipeDetector()
     private let palmDetector = OpenPalmDetector()
     private var palmHoldDetector = PoseHoldDetector()
+    private let cursorDetector = FingerCursorDetector()
+    private var pinchLatch = PinchLatch()
 
     init(onOutcome: @escaping @Sendable (CameraFrameOutcome) -> Void) {
         self.onOutcome = onOutcome
@@ -72,6 +76,15 @@ final class CameraFrameAnalyzer: NSObject, AVCaptureVideoDataOutputSampleBufferD
             onOutcome(.palmHeld)
         }
 
+        // Pinch is read before the swipe. Closing the thumb onto the index
+        // folds the hand out of the two-finger pose on its way, so letting the
+        // swipe detector see those frames first would spend the pinch as a
+        // half-finished swipe.
+        if let reading = cursorDetector.reading(from: landmarks),
+           pinchLatch.push(pinchRatio: reading.pinchRatio, timestamp: timestamp) == .began {
+            onOutcome(.pinched)
+        }
+
         guard let tip = poseDetector.representativeTipPosition(in: landmarks) else {
             _ = swipeDetector.push(
                 isTwoFingerPose: false,
@@ -98,6 +111,9 @@ final class CameraFrameAnalyzer: NSObject, AVCaptureVideoDataOutputSampleBufferD
             timestamp: timestamp
         )
         _ = palmHoldDetector.push(isPosed: false, timestamp: timestamp)
+        // A held pinch must not survive the hand leaving frame, or the next
+        // hand to appear inherits a pinch it never made.
+        pinchLatch.reset()
     }
 
     private static func landmarks(from observation: VNHumanHandPoseObservation) -> HandLandmarks? {

@@ -2252,6 +2252,16 @@ final class AppModel {
         cameraActivation.onPalmHeld = { [weak self] in
             self?.beginVoiceAnswer()
         }
+        // つまむ＝決定。島が閉じているときは、まず開いてから決める段にする
+        // （閉じたまま「決定」だけ起きても、何を決めたのか本人に見えない）。
+        cameraActivation.onPinch = { [weak self] in
+            guard let self else { return }
+            if overlay.isOverlayVisible {
+                jumpToFocusedSession()
+            } else {
+                notchOpen(reason: .handGesture)
+            }
+        }
         cameraActivation.onStatus = { [weak self] status in
             guard let status else { return }
             self?.present(notice: status)
