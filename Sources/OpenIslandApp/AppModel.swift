@@ -1539,12 +1539,29 @@ final class AppModel {
     }
 
     /// Takes the sentence away, and the island with it if it came for this.
+    /// How long to wait before asking again whether the island may fold away.
+    static let noticeCloseRetryDelay: TimeInterval = 0.5
+
     func clearNotice() {
         noticeExpiry?.cancel()
         noticeExpiry = nil
         notice = nil
 
         guard noticeOpenedTheIsland else { return }
+
+        // A voice or camera status opens the island, and when the words expire
+        // the island goes with them. If a file is being carried over it right
+        // now, that closes the panel out from under the drag. Wait for the file
+        // to land — the drag is seconds long, and this asks again shortly.
+        if overlay.isCarryingFilesOverIsland {
+            noticeExpiry = Task { [weak self] in
+                try? await Task.sleep(for: .seconds(Self.noticeCloseRetryDelay))
+                guard !Task.isCancelled else { return }
+                self?.clearNotice()
+            }
+            return
+        }
+
         noticeOpenedTheIsland = false
         // Something arrived while the notice was up — a card, the user opening
         // the list. That is now the reason the island is open, not this.
@@ -1673,6 +1690,12 @@ final class AppModel {
     var pointerExitCollapseGrace: TimeInterval {
         get { overlay.pointerExitCollapseGrace }
         set { overlay.pointerExitCollapseGrace = newValue }
+    }
+
+    /// Answers whether a file is being carried over the island. Tests replace it.
+    var carriedFileDragProbe: () -> Bool {
+        get { overlay.carriedFileDragProbe }
+        set { overlay.carriedFileDragProbe = newValue }
     }
 
     var shouldAutoCollapseOnMouseLeave: Bool { overlay.shouldAutoCollapseOnMouseLeave }

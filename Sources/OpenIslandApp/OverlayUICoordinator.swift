@@ -324,6 +324,21 @@ final class OverlayUICoordinator {
         return true
     }
 
+    /// True while a file is being carried over the opened island.
+    ///
+    /// Nothing timed may fold the panel away in that moment: the file is on its
+    /// way down, and taking the landing place out from under it loses the drop.
+    /// Replaceable so tests can say so without a pointer or a pasteboard.
+    @ObservationIgnored
+    var carriedFileDragProbe: () -> Bool = {
+        OverlayPanelController.draggedItemsAreFiles() && NSEvent.pressedMouseButtons & 1 != 0
+    }
+
+    var isCarryingFilesOverIsland: Bool {
+        guard notchStatus == .opened else { return false }
+        return carriedFileDragProbe()
+    }
+
     /// Set by `AppModel`, which is the one that knows about sessions.
     @ObservationIgnored var hasLiveSessionAccessor: (() -> Bool)?
 
@@ -573,6 +588,7 @@ final class OverlayUICoordinator {
 
     var shouldDeferTimedNotificationAutoCollapse: Bool {
         isPointerInsideIslandSurface
+            || isCarryingFilesOverIsland
             || overlayPanelController.isPointInExpandedArea(NSEvent.mouseLocation)
     }
 
