@@ -137,3 +137,30 @@ private func distance(_ a: HandLandmarks.Point, _ b: HandLandmarks.Point) -> Dou
     let dy = a.y - b.y
     return (dx * dx + dy * dy).squareRoot()
 }
+
+
+/// Turns "where the hand is" into "which row it means".
+///
+/// A hand in front of a laptop covers the middle of the camera's view and not
+/// much else — reaching the top and bottom of frame means standing up. So the
+/// list is spread across the band a seated hand can actually reach, and
+/// anything beyond it counts as the end of the list rather than as nothing.
+public enum FingerAim: Sendable {
+    /// Vision's y runs bottom-up, so this reads: from a little below centre to
+    /// a little above it.
+    public static let reachableBand: ClosedRange<Double> = 0.30...0.70
+
+    /// Row index from the top, or `nil` when there is nothing to aim at.
+    public static func rowIndex(normalizedY y: Double, rowCount: Int) -> Int? {
+        guard rowCount > 0 else { return nil }
+        guard rowCount > 1 else { return 0 }
+
+        let clamped = min(max(y, reachableBand.lowerBound), reachableBand.upperBound)
+        let span = reachableBand.upperBound - reachableBand.lowerBound
+        // A high hand means the top of the list, and the top of the list is
+        // index zero.
+        let fromTop = (reachableBand.upperBound - clamped) / span
+        let index = Int(fromTop * Double(rowCount))
+        return min(rowCount - 1, max(0, index))
+    }
+}

@@ -67,6 +67,17 @@ struct SwitcherState: Equatable, Sendable {
         return target
     }
 
+    /// Points straight at a session rather than stepping to the next one.
+    ///
+    /// A hand already knows which row it means; making it step through the list
+    /// one press at a time would be the keyboard's way of doing it, done worse.
+    mutating func point(at id: String, sessions: [String]) {
+        guard sessions.contains(id) else { return }
+        isActive = true
+        hasNavigated = true
+        highlightedID = id
+    }
+
     /// Arrow keys, once the list is up.
     mutating func moveSelection(sessions: [String], reversed: Bool) {
         advance(sessions: sessions, reversed: reversed)
