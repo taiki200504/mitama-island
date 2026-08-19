@@ -71,6 +71,22 @@ final class OverlayUICoordinator {
     @ObservationIgnored
     private var isPointerInsideIslandSurface = false
 
+    @ObservationIgnored
+    private var pointerExitCollapseTask: Task<Void, Never>?
+
+    /// How long the panel waits, after the pointer leaves it, before folding
+    /// back on its own.
+    ///
+    /// Reaching for a row at the edge, crossing the shadow inset, or a screen
+    /// with the island near a corner all take the pointer outside for a moment.
+    /// Closing on the first frame outside makes the panel feel like it is
+    /// running away from the cursor. Tests set this to zero to keep the
+    /// existing synchronous expectations.
+    static let defaultPointerExitCollapseGrace: TimeInterval = 0.6
+
+    @ObservationIgnored
+    var pointerExitCollapseGrace: TimeInterval = OverlayUICoordinator.defaultPointerExitCollapseGrace
+
     /// Kept for API compatibility; always false now that the window never
     /// resizes and close transitions are pure SwiftUI.
     var isCloseTransitionPending: Bool { false }
@@ -147,6 +163,7 @@ final class OverlayUICoordinator {
                 guard let self else { return }
                 self.autoCollapseSurfaceHasBeenEntered = false
                 self.isPointerInsideIslandSurface = false
+                self.cancelPointerExitCollapse()
                 self.updateNotificationAutoCollapse()
                 self.appModel?.panelHotkeys?.panelDidExpand()
                 self.appModel?.refreshSustainedCamera()
@@ -167,6 +184,7 @@ final class OverlayUICoordinator {
             beforeTransition: { [weak self] in
                 self?.notificationAutoCollapseTask?.cancel()
                 self?.notificationAutoCollapseTask = nil
+                self?.cancelPointerExitCollapse()
             },
             afterStateChange: { [weak self] in
                 self?.autoCollapseSurfaceHasBeenEntered = false
@@ -362,6 +380,7 @@ final class OverlayUICoordinator {
 
         isPointerInsideIslandSurface = true
         autoCollapseSurfaceHasBeenEntered = true
+        cancelPointerExitCollapse()
 
         if notchOpenReason == .notification {
             notificationAutoCollapseTask?.cancel()
@@ -385,7 +404,47 @@ final class OverlayUICoordinator {
             return
         }
 
-        notchClose()
+        schedulePointerExitCollapse()
+    }
+
+    /// Folds the panel back once the pointer has stayed away for the grace
+    /// period. Re-entering cancels it, so a pointer that slips off the edge and
+    /// comes straight back never sees the panel move.
+    private func schedulePointerExitCollapse() {
+        cancelPointerExitCollapse()
+
+        guard pointerExitCollapseGrace > 0 else {
+            notchClose()
+            return
+        }
+
+        let grace = pointerExitCollapseGrace
+        pointerExitCollapseTask = Task { @MainActor [weak self] in
+            do {
+                try await Task.sleep(for: .seconds(grace))
+            } catch {
+                // Cancelled by the pointer coming back, or by the panel closing
+                // for another reason. The replacement owns what happens next.
+                return
+            }
+
+            guard let self else { return }
+            self.pointerExitCollapseTask = nil
+
+            guard self.notchStatus == .opened,
+                  !self.isPointerInsideIslandSurface,
+                  self.shouldAutoCollapseOnMouseLeave,
+                  !self.overlayPanelController.isPointInExpandedArea(NSEvent.mouseLocation) else {
+                return
+            }
+
+            self.notchClose()
+        }
+    }
+
+    private func cancelPointerExitCollapse() {
+        pointerExitCollapseTask?.cancel()
+        pointerExitCollapseTask = nil
     }
 
     // MARK: - Notification surfaces

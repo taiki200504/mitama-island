@@ -708,6 +708,8 @@ struct AppModelSessionListTests {
     @Test
     func hoverOpenedSessionListAutoCollapsesOnPointerExit() {
         let model = AppModel()
+        // The collapse grace is what this test is not about.
+        model.pointerExitCollapseGrace = 0
         model.notchStatus = .opened
         model.notchOpenReason = .hover
         model.islandSurface = .sessionList()
@@ -719,6 +721,51 @@ struct AppModelSessionListTests {
         #expect(model.notchStatus == .closed)
         #expect(model.notchOpenReason == nil)
         #expect(model.islandSurface == .sessionList())
+    }
+
+    @Test
+    func hoverOpenedSessionListStaysOpenDuringTheExitGrace() {
+        let model = AppModel()
+        model.pointerExitCollapseGrace = 0.2
+        model.notchStatus = .opened
+        model.notchOpenReason = .hover
+        model.islandSurface = .sessionList()
+
+        model.handlePointerExitedIslandSurface()
+
+        // The pointer slipping off the edge is not a decision to close.
+        #expect(model.notchStatus == .opened)
+    }
+
+    @Test
+    func pointerReturningDuringTheExitGraceKeepsThePanelOpen() async throws {
+        let model = AppModel()
+        model.pointerExitCollapseGrace = 0.05
+        model.notchStatus = .opened
+        model.notchOpenReason = .hover
+        model.islandSurface = .sessionList()
+
+        model.handlePointerExitedIslandSurface()
+        model.notePointerInsideIslandSurface()
+        try await Task.sleep(for: .seconds(0.15))
+
+        #expect(model.notchStatus == .opened)
+        #expect(model.notchOpenReason == .hover)
+    }
+
+    @Test
+    func hoverOpenedSessionListCollapsesOncePointerStaysAway() async throws {
+        let model = AppModel()
+        model.pointerExitCollapseGrace = 0.05
+        model.notchStatus = .opened
+        model.notchOpenReason = .hover
+        model.islandSurface = .sessionList()
+
+        model.handlePointerExitedIslandSurface()
+        try await Task.sleep(for: .seconds(0.2))
+
+        #expect(model.notchStatus == .closed)
+        #expect(model.notchOpenReason == nil)
     }
 
     @Test
@@ -757,6 +804,8 @@ struct AppModelSessionListTests {
     @Test
     func completionNotificationRequiresSurfaceEntryBeforePointerExitCollapse() {
         let model = AppModel()
+        // The collapse grace is what this test is not about.
+        model.pointerExitCollapseGrace = 0
         // Add a completed session so autoDismissesWhenPresentedAsNotification can check phase
         model.applyTrackedEvent(
             .sessionStarted(SessionStarted(
@@ -797,6 +846,8 @@ struct AppModelSessionListTests {
     @Test
     func completionNotificationDefersTimedCollapseWhilePointerIsInside() {
         let model = AppModel()
+        // The collapse grace is what this test is not about.
+        model.pointerExitCollapseGrace = 0
         model.applyTrackedEvent(
             .sessionStarted(SessionStarted(
                 sessionID: "session-1",

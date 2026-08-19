@@ -1668,6 +1668,13 @@ final class AppModel {
     func dismissNotificationSurfaceIfPresent(for sessionID: String) { overlay.dismissNotificationSurfaceIfPresent(for: sessionID) }
     private func dismissOverlayForJump() { overlay.dismissOverlayForJump() }
 
+    /// Seconds the panel waits after the pointer leaves before folding back.
+    /// Tests set it to zero so the collapse stays synchronous.
+    var pointerExitCollapseGrace: TimeInterval {
+        get { overlay.pointerExitCollapseGrace }
+        set { overlay.pointerExitCollapseGrace = newValue }
+    }
+
     var shouldAutoCollapseOnMouseLeave: Bool { overlay.shouldAutoCollapseOnMouseLeave }
     var autoCollapseOnMouseLeaveRequiresPriorSurfaceEntry: Bool { overlay.autoCollapseOnMouseLeaveRequiresPriorSurfaceEntry }
 
