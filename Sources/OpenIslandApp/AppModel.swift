@@ -744,7 +744,11 @@ final class AppModel {
         self.cameraActivation = CameraActivationSession(settings: settings.cameraGesture)
         self.voiceAnswer = VoiceCommandSession(settings: settings.voiceCommand)
         UserDefaults.standard.register(defaults: [
-            Self.showDockIconDefaultsKey: true,
+            // Off. The island is the app; a Dock icon and an entry in the
+            // application switcher make the settings window read as a second
+            // application that opened alongside it. Anyone who wants the icon
+            // can turn it on in General.
+            Self.showDockIconDefaultsKey: false,
             Self.hapticFeedbackEnabledDefaultsKey: false,
             Self.completionReplyEnabledDefaultsKey: false,
         ])
