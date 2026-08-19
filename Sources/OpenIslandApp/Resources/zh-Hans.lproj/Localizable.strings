@@ -666,7 +666,6 @@
 "shelf.clear" = "全部清空";
 "shelf.remove" = "移除";
 "shelf.revealInFinder" = "在访达中显示";
-"shelf.tookFiles" = "已暂存 {count} 个文件。拖出即可移到任何地方。";
 "shelf.refusal.full" = "暂存区已满，请先移出一些。";
 "shelf.refusal.tooMany" = "暂存数量已达上限，请先移出一些。";
 "shelf.refusal.tooLarge" = "这个文件太大，无法暂存。";
