@@ -655,14 +655,23 @@ struct IslandPanelView: View {
         .frame(width: 62)
         .padding(.vertical, 2)
         .background(theme.shape(cornerRadius: 8).fill(.white.opacity(0.05)))
-        .draggable(url)
-        .contextMenu {
-            Button(model.lang.t("shelf.revealInFinder")) {
-                NSWorkspace.shared.activateFileViewerSelecting([url])
-            }
-            Button(model.lang.t("shelf.remove"), role: .destructive) {
-                model.shelf.remove(item)
-            }
+        .overlay {
+            // Dragging a chip out is a move, not a copy: what leaves the shelf
+            // has left it. AppKit is the only place that says so.
+            ShelfItemDragSource(
+                url: url,
+                onTakenAway: { model.shelf.remove(item) },
+                menuEntries: [
+                    .init(
+                        title: model.lang.t("shelf.revealInFinder"),
+                        action: { NSWorkspace.shared.activateFileViewerSelecting([url]) }
+                    ),
+                    .init(
+                        title: model.lang.t("shelf.remove"),
+                        action: { model.shelf.remove(item) }
+                    ),
+                ]
+            )
         }
         .help(item.displayName)
     }
