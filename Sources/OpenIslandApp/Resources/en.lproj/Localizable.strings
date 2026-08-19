@@ -666,7 +666,6 @@
 "shelf.clear" = "Clear";
 "shelf.remove" = "Remove";
 "shelf.revealInFinder" = "Show in Finder";
-"shelf.tookFiles" = "Set aside {count} file(s). Drag one out to move it anywhere.";
 "shelf.refusal.full" = "The shelf is full. Take something off it first.";
 "shelf.refusal.tooMany" = "The shelf is holding as much as it will. Take something off it first.";
 "shelf.refusal.tooLarge" = "That one is too large for the shelf.";

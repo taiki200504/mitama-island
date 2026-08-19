@@ -666,7 +666,6 @@
 "shelf.clear" = "全部どける";
 "shelf.remove" = "どける";
 "shelf.revealInFinder" = "Finder で表示";
-"shelf.tookFiles" = "{count} 件を置きました。引っぱり出せばどこへでも移せます。";
 "shelf.refusal.full" = "置き場がいっぱいです。先に何かどけてください。";
 "shelf.refusal.tooMany" = "置ける数の上限です。先に何かどけてください。";
 "shelf.refusal.tooLarge" = "これは大きすぎて置けません。";

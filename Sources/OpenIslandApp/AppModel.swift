@@ -1506,17 +1506,15 @@ final class AppModel {
         return nil
     }
 
-    /// Takes files onto the shelf, and says so when it cannot.
+    /// Takes files onto the shelf. Says something only when it cannot.
+    ///
+    /// A file that landed is already on screen — the chip is right there. A
+    /// sentence announcing what you just watched happen is one more thing to
+    /// read, and it opens the island to say it.
     func putOnShelf(_ urls: [URL]) {
         guard !urls.isEmpty else { return }
-        let before = shelf.items.count
-        let refusal = shelf.accept(urls)
-        let taken = shelf.items.count - before
-
-        if let refusal {
+        if let refusal = shelf.accept(urls) {
             present(notice: lang.t(refusal.noticeKey))
-        } else if taken > 0 {
-            present(notice: lang.t("shelf.tookFiles").replacingOccurrences(of: "{count}", with: "\(taken)"))
         }
     }
 

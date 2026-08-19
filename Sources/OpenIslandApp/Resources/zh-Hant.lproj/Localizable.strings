@@ -665,7 +665,6 @@
 "shelf.clear" = "全部清空";
 "shelf.remove" = "移除";
 "shelf.revealInFinder" = "在 Finder 中顯示";
-"shelf.tookFiles" = "已暫存 {count} 個檔案。拖出即可移到任何地方。";
 "shelf.refusal.full" = "暫存區已滿，請先移出一些。";
 "shelf.refusal.tooMany" = "暫存數量已達上限，請先移出一些。";
 "shelf.refusal.tooLarge" = "這個檔案太大，無法暫存。";
