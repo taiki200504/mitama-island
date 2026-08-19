@@ -1549,6 +1549,14 @@ final class AppModel {
     /// How long to wait before asking again whether the island may fold away.
     static let noticeCloseRetryDelay: TimeInterval = 0.5
 
+    /// True while the camera or the microphone is open for a hands-free answer.
+    ///
+    /// One open at the start and one fold at the end. What happens in between
+    /// is the same gesture still going on.
+    var isHandsFreeSessionRunning: Bool {
+        cameraActivation.isRunning || voiceAnswer.isRunning
+    }
+
     func clearNotice() {
         noticeExpiry?.cancel()
         noticeExpiry = nil
@@ -1557,10 +1565,13 @@ final class AppModel {
         guard noticeOpenedTheIsland else { return }
 
         // A voice or camera status opens the island, and when the words expire
-        // the island goes with them. If a file is being carried over it right
-        // now, that closes the panel out from under the drag. Wait for the file
-        // to land — the drag is seconds long, and this asks again shortly.
-        if overlay.isCarryingFilesOverIsland {
+        // the island goes with them. Two things must not have that happen
+        // underneath them: a file on its way down, and a hands-free answer in
+        // progress — the camera and the microphone say several things on their
+        // way through, and folding between each one is the island opening and
+        // closing three times for one gesture. Both are seconds long, so this
+        // asks again shortly rather than deciding now.
+        if overlay.isCarryingFilesOverIsland || isHandsFreeSessionRunning {
             noticeExpiry = Task { [weak self] in
                 try? await Task.sleep(for: .seconds(Self.noticeCloseRetryDelay))
                 guard !Task.isCancelled else { return }
