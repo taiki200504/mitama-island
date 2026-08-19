@@ -144,6 +144,8 @@ struct IslandPanelView: View {
     /// True while the pointer rests on the shelf badge, which is the only time
     /// what is on the shelf is worth the room it takes.
     @State private var isShelfBadgeHovered = false
+    /// True while a file is held over the closed pill.
+    @State private var isClosedPillTargeted = false
     private static let headerControlButtonSize: CGFloat = 22
     private static let headerControlSpacing: CGFloat = 8
     private static let headerHorizontalPadding: CGFloat = 18
@@ -272,20 +274,29 @@ struct IslandPanelView: View {
                     .allowsHitTesting(!usesOpenedVisualState)
                     // The pill sits against the physical notch, so it cannot
                     // grow a border to answer the cursor — a glow is the only
-                    // edge it has room for.
+                    // edge it has room for. A file held over it gets the same
+                    // glow, turned up: that glow is the whole answer to "can I
+                    // let go here".
                     .shadow(
-                        color: isHovering && !usesOpenedVisualState
-                            ? IslandThemes.current.accent.opacity(0.55)
-                            : .clear,
-                        radius: IslandThemes.current.glowRadius * 3
+                        color: closedPillGlow,
+                        radius: IslandThemes.current.glowRadius * (isClosedPillTargeted ? 4 : 3)
                     )
+                    // Dropping on the closed island, without opening it first.
+                    // The wait and the movement in between were the reason
+                    // putting a file down felt far away.
+                    .dropDestination(for: URL.self) { urls, _ in
+                        guard model.putOnShelf(urls) else { return false }
+                        model.notchPop()
+                        return true
+                    } isTargeted: { isClosedPillTargeted = $0 }
             }
             .frame(maxWidth: .infinity, alignment: .top)
         }
-        .scaleEffect(usesOpenedVisualState ? 1 : (isHovering ? IslandChromeMetrics.closedHoverScale : 1), anchor: .top)
+        .scaleEffect(closedSurfaceScale, anchor: .top)
         .padding(.horizontal, panelShadowHorizontalInset)
         .padding(.bottom, panelShadowBottomInset)
         .animation(notchTransitionAnimation, value: model.notchStatus)
+        .animation(IslandThemes.current.animationProfile.pop, value: isClosedPillTargeted)
         .contentShape(Rectangle())
         .onHover { hovering in
             withAnimation(.spring(response: 0.38, dampingFraction: 0.8)) {
@@ -297,6 +308,21 @@ struct IslandPanelView: View {
                 model.notchOpen(reason: .click)
             }
         }
+    }
+
+    /// The pill answers a held file the same way it answers the cursor, only
+    /// more so.
+    private var closedPillGlow: Color {
+        guard !usesOpenedVisualState else { return .clear }
+        let accent = IslandThemes.current.accent
+        if isClosedPillTargeted { return accent.opacity(0.9) }
+        return isHovering ? accent.opacity(0.55) : .clear
+    }
+
+    private var closedSurfaceScale: CGFloat {
+        guard !usesOpenedVisualState else { return 1 }
+        if isClosedPillTargeted { return IslandChromeMetrics.closedHoverScale * 1.06 }
+        return isHovering ? IslandChromeMetrics.closedHoverScale : 1
     }
 
     private func syncOpenedSurfaceMount(with status: NotchStatus, immediate: Bool = false) {

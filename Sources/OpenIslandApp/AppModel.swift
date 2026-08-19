@@ -1511,11 +1511,16 @@ final class AppModel {
     /// A file that landed is already on screen — the chip is right there. A
     /// sentence announcing what you just watched happen is one more thing to
     /// read, and it opens the island to say it.
-    func putOnShelf(_ urls: [URL]) {
-        guard !urls.isEmpty else { return }
+    /// Returns whether anything actually landed, so the caller can answer for
+    /// it — the closed island has no room to say so in words.
+    @discardableResult
+    func putOnShelf(_ urls: [URL]) -> Bool {
+        guard !urls.isEmpty else { return false }
+        let before = shelf.items.count
         if let refusal = shelf.accept(urls) {
             present(notice: lang.t(refusal.noticeKey))
         }
+        return shelf.items.count > before
     }
 
     /// Puts a sentence on the island for a few seconds.
