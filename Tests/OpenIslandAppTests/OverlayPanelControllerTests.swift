@@ -3,6 +3,23 @@ import Testing
 @testable import OpenIslandApp
 
 struct OverlayPanelControllerTests {
+    /// The island only opens itself for a drag that is carrying files — a
+    /// window being moved past the notch must not make it jump out.
+    @Test @MainActor
+    func onlyFileDragsCountAsSomethingToOpenFor() {
+        let pasteboard = NSPasteboard(name: .drag)
+
+        pasteboard.clearContents()
+        pasteboard.writeObjects(["not a file" as NSString])
+        #expect(!OverlayPanelController.draggedItemsAreFiles())
+
+        pasteboard.clearContents()
+        pasteboard.writeObjects([URL(fileURLWithPath: "/tmp/notes.md") as NSURL])
+        #expect(OverlayPanelController.draggedItemsAreFiles())
+
+        pasteboard.clearContents()
+    }
+
     @Test
     func closedSurfaceRectCentersOnNotch() {
         let notchRect = NSRect(x: 200, y: 900, width: 200, height: 38)
