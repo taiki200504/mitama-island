@@ -43,7 +43,13 @@ struct ShelfDragHoldTests {
         #expect(model.notchStatus == .opened)
 
         carrying = false
-        try await Task.sleep(for: .seconds(AppModel.noticeCloseRetryDelay + 0.3))
+
+        // Polled rather than slept through: the retry is on a timer, and a
+        // fixed wait turns a busy machine into a failing test.
+        let deadline = ContinuousClock.now.advanced(by: .seconds(5))
+        while model.notchStatus != .closed, ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(50))
+        }
 
         #expect(model.notchStatus == .closed)
     }
