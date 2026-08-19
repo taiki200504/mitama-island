@@ -37,6 +37,8 @@ final class CameraActivationSession {
     /// Fires when thumb and index closed. "Pick the thing in front of me."
     /// The camera stays on so a second pick can follow without re-summoning.
     var onPinch: (() -> Void)?
+    /// Where the hand is pointing, while it is up.
+    var onPointing: ((FingerCursorReading) -> Void)?
     /// Progress the UI can show. Nil clears it.
     var onStatus: ((String?) -> Void)?
 
@@ -253,6 +255,11 @@ final class CameraActivationSession {
             // The camera stays on: the answer is spoken next, and the card may
             // still be there afterwards.
             onPalmHeld?()
+
+        case let .pointing(reading):
+            // The camera stays on. Pointing is what happens on the way to
+            // picking, and stopping here would end the gesture before it began.
+            onPointing?(reading)
 
         case .pinched:
             // Unlike a swipe, picking is repeatable: you take one thing, then

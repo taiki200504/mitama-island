@@ -4,6 +4,28 @@ import Testing
 
 @Suite("Session switcher")
 struct SwitcherStateTests {
+    @Test
+    func pointingGoesStraightToARowRatherThanSteppingThroughThem() {
+        var state = SwitcherState()
+        let sessions = ["a", "b", "c"]
+
+        state.point(at: "c", sessions: sessions)
+
+        #expect(state.isActive)
+        #expect(state.highlightedID == "c")
+        // Confirming takes what the ring is around, not the next one along.
+        #expect(state.confirm() == "c")
+    }
+
+    @Test
+    func pointingAtSomethingThatIsNotThereChangesNothing() {
+        var state = SwitcherState()
+        state.point(at: "gone", sessions: ["a", "b"])
+
+        #expect(!state.isActive)
+        #expect(state.highlightedID == nil)
+    }
+
     private let sessions = ["a", "b", "c"]
     private let start = Date(timeIntervalSince1970: 1_000_000)
 

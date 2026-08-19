@@ -13,6 +13,9 @@ enum CameraFrameOutcome: Equatable, Sendable {
     case palmHeld
     /// Thumb and index closed and stayed closed. The hands-free "pick this".
     case pinched
+    /// The hand has moved to somewhere new. Half of pointing at a row and
+    /// picking it — without this the pinch has nothing to pick.
+    case pointing(FingerCursorReading)
 }
 
 /// Runs Vision over capture frames and turns them into outcomes.
@@ -35,6 +38,12 @@ final class CameraFrameAnalyzer: NSObject, AVCaptureVideoDataOutputSampleBufferD
     private let palmDetector = OpenPalmDetector()
     private var palmHoldDetector = PoseHoldDetector()
     private let cursorDetector = FingerCursorDetector()
+    /// Where the hand was when it was last worth telling anyone about.
+    private var lastReportedAim: Double?
+    /// A hand is never perfectly still. Reporting every frame would put a
+    /// tremor onto the list; this is smaller than the distance between two
+    /// rows and larger than a hand holding position.
+    private static let aimReportingStep = 0.012
     private var pinchLatch = PinchLatch()
 
     init(onOutcome: @escaping @Sendable (CameraFrameOutcome) -> Void) {
@@ -80,9 +89,11 @@ final class CameraFrameAnalyzer: NSObject, AVCaptureVideoDataOutputSampleBufferD
         // folds the hand out of the two-finger pose on its way, so letting the
         // swipe detector see those frames first would spend the pinch as a
         // half-finished swipe.
-        if let reading = cursorDetector.reading(from: landmarks),
-           pinchLatch.push(pinchRatio: reading.pinchRatio, timestamp: timestamp) == .began {
-            onOutcome(.pinched)
+        if let reading = cursorDetector.reading(from: landmarks) {
+            if pinchLatch.push(pinchRatio: reading.pinchRatio, timestamp: timestamp) == .began {
+                onOutcome(.pinched)
+            }
+            reportPointing(reading)
         }
 
         guard let tip = poseDetector.representativeTipPosition(in: landmarks) else {
@@ -114,6 +125,7 @@ final class CameraFrameAnalyzer: NSObject, AVCaptureVideoDataOutputSampleBufferD
         // A held pinch must not survive the hand leaving frame, or the next
         // hand to appear inherits a pinch it never made.
         pinchLatch.reset()
+        lastReportedAim = nil
     }
 
     private static func landmarks(from observation: VNHumanHandPoseObservation) -> HandLandmarks? {
@@ -174,4 +186,11 @@ final class CameraFrameAnalyzer: NSObject, AVCaptureVideoDataOutputSampleBufferD
         )
     }
 
+    private func reportPointing(_ reading: FingerCursorReading) {
+        if let lastReportedAim, abs(reading.position.y - lastReportedAim) < Self.aimReportingStep {
+            return
+        }
+        lastReportedAim = reading.position.y
+        onOutcome(.pointing(reading))
+    }
 }

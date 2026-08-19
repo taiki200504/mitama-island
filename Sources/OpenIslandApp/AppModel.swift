@@ -1799,6 +1799,25 @@ final class AppModel {
         )
     }
 
+    /// Moves the mark to whichever row the hand is pointing at.
+    ///
+    /// The switcher's ring is what a chosen row already looks like, so pointing
+    /// borrows it rather than inventing a second kind of highlight. Pinching
+    /// then confirms exactly what the ring is around.
+    func pointHand(at reading: FingerCursorReading) {
+        guard overlay.isOverlayVisible else { return }
+
+        let ids = islandListSessions.map(\.id)
+        guard ids.count > 1 else { return }
+        guard let index = FingerAim.rowIndex(normalizedY: reading.position.y, rowCount: ids.count) else {
+            return
+        }
+
+        let id = ids[index]
+        guard switcher.highlightedID != id else { return }
+        switcher.point(at: id, sessions: ids)
+    }
+
     func jumpToFocusedSession() {
         jump(to: focusedSession?.jumpTarget)
     }
@@ -2359,14 +2378,24 @@ final class AppModel {
         cameraActivation.onPalmHeld = { [weak self] in
             self?.beginVoiceAnswer()
         }
-        // つまむ＝決定。島が閉じているときは、まず開いてから決める段にする
-        // （閉じたまま「決定」だけ起きても、何を決めたのか本人に見えない）。
+        // 差した先の行に印を移す。指の縦位置だけを使う——一覧は1列で、
+        // 横に何かを選ぶものが無い。
+        cameraActivation.onPointing = { [weak self] reading in
+            self?.pointHand(at: reading)
+        }
+        // つまむ＝決定。差している行があればそれを、無ければ今の行を開く。
+        // 島が閉じているときは、まず開いてから決める段にする（閉じたまま
+        // 「決定」だけ起きても、何を決めたのか本人に見えない）。
         cameraActivation.onPinch = { [weak self] in
             guard let self else { return }
-            if overlay.isOverlayVisible {
-                jumpToFocusedSession()
-            } else {
+            guard overlay.isOverlayVisible else {
                 notchOpen(reason: .handGesture)
+                return
+            }
+            if switcher.isActive {
+                switcherConfirm()
+            } else {
+                jumpToFocusedSession()
             }
         }
         cameraActivation.onStatus = { [weak self] status in
