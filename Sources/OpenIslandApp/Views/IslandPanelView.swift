@@ -138,8 +138,12 @@ private struct ConditionalDrawingGroup: ViewModifier {
 // MARK: - Main island view
 
 struct IslandPanelView: View {
-    /// True while a drag is hovering the shelf, so it can open up to meet it.
+    /// True while a file drag is hovering the island, so the shelf can come out
+    /// to meet it.
     @State private var isShelfTargeted = false
+    /// True while the pointer rests on the shelf badge, which is the only time
+    /// what is on the shelf is worth the room it takes.
+    @State private var isShelfBadgeHovered = false
     private static let headerControlButtonSize: CGFloat = 22
     private static let headerControlSpacing: CGFloat = 8
     private static let headerHorizontalPadding: CGFloat = 18
@@ -509,9 +513,11 @@ struct IslandPanelView: View {
 
     private var openedContent: some View {
         VStack(spacing: 8) {
-            shelfStrip
-                .padding(.horizontal, 18)
-                .padding(.top, 8)
+            if !model.shelf.isEmpty {
+                shelfBadge
+                    .padding(.horizontal, 18)
+                    .padding(.top, 8)
+            }
 
             if let notice = model.notice {
                 noticeBar(notice)
@@ -540,49 +546,44 @@ struct IslandPanelView: View {
             }
         }
         .padding(.bottom, 0)
+        // The whole panel takes the drop, not a strip inside it. A target that
+        // sits in the layout moves whenever a notice or a card arrives — and a
+        // drop target that moves out from under a held file is not a target.
+        .overlay { shelfDropInvitation }
+        .dropDestination(for: URL.self) { urls, _ in
+            model.putOnShelf(urls)
+            return true
+        } isTargeted: { isShelfTargeted = $0 }
     }
 
-    /// A place to put a file down on the way somewhere else.
-    ///
-    /// Empty, it is a thin line that only says what it is when something is
-    /// over it — an always-visible drop zone would take room from the sessions,
-    /// which are what the island is for.
+    /// What is on the shelf, in one line. It opens up when the pointer rests on
+    /// it: the sessions are what the island is for, and a row of file icons
+    /// pushing them down all day is the wrong trade.
     @ViewBuilder
-    private var shelfStrip: some View {
+    private var shelfBadge: some View {
         let theme = IslandThemes.current
 
-        if model.shelf.isEmpty {
+        VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
-                Image(systemName: "tray")
+                Image(systemName: "tray.full")
                     .font(.islandText(size: 11))
-                Text(model.lang.t("shelf.empty"))
-                    .font(.islandText(size: 11))
-            }
-            .foregroundStyle(.white.opacity(isShelfTargeted ? 0.8 : 0.28))
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, isShelfTargeted ? 14 : 6)
-            .background(shelfBackground(theme: theme))
-            .animation(theme.animationProfile.pop, value: isShelfTargeted)
-            .dropDestination(for: URL.self) { urls, _ in
-                model.putOnShelf(urls)
-                return true
-            } isTargeted: { isShelfTargeted = $0 }
-        } else {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 6) {
-                    Image(systemName: "tray.full")
-                        .font(.islandText(size: 11))
-                        .foregroundStyle(theme.accent)
-                    Text(model.lang.t("shelf.title"))
-                        .font(.islandText(size: 11, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.75))
-                    Spacer(minLength: 0)
+                    .foregroundStyle(theme.accent)
+                Text(model.lang.t("shelf.title"))
+                    .font(.islandText(size: 11, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.75))
+                Text("\(model.shelf.items.count)")
+                    .font(.islandText(size: 10))
+                    .foregroundStyle(.white.opacity(0.45))
+                Spacer(minLength: 0)
+                if isShelfBadgeHovered {
                     Button(model.lang.t("shelf.clear")) { model.shelf.removeAll() }
                         .buttonStyle(.plain)
                         .font(.islandText(size: 10))
                         .foregroundStyle(.white.opacity(0.4))
                 }
+            }
 
+            if isShelfBadgeHovered {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(model.shelf.items) { item in
@@ -592,13 +593,35 @@ struct IslandPanelView: View {
                 }
                 .frame(height: 46)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(shelfBackground(theme: theme))
-            .dropDestination(for: URL.self) { urls, _ in
-                model.putOnShelf(urls)
-                return true
-            } isTargeted: { isShelfTargeted = $0 }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(shelfBackground(theme: theme))
+        .onHover { isShelfBadgeHovered = $0 }
+        .animation(theme.animationProfile.pop, value: isShelfBadgeHovered)
+    }
+
+    /// Only ever on screen while something is being carried over the island.
+    @ViewBuilder
+    private var shelfDropInvitation: some View {
+        if isShelfTargeted {
+            let theme = IslandThemes.current
+
+            VStack(spacing: 8) {
+                Image(systemName: "tray.and.arrow.down")
+                    .font(.islandText(size: 20))
+                Text(model.lang.t("shelf.empty"))
+                    .font(.islandText(size: 12))
+            }
+            .foregroundStyle(.white.opacity(0.85))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(V6Palette.ink.opacity(0.82))
+            .overlay(
+                theme.shape(cornerRadius: 12)
+                    .strokeBorder(theme.accent.opacity(0.55), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                    .padding(6)
+            )
+            .transition(.opacity)
         }
     }
 
