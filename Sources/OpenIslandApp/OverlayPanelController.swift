@@ -258,6 +258,8 @@ final class OverlayPanelController {
             self?.handleMouseMoved(location)
         } mouseDownHandler: { [weak self] location in
             self?.handleMouseDown(location)
+        } mouseDragHandler: { [weak self] location in
+            self?.handleMouseDragged(location)
         }
     }
 
@@ -285,6 +287,37 @@ final class OverlayPanelController {
                 model.handlePointerExitedIslandSurface()
             }
         }
+    }
+
+    /// Opens the island for a file being dragged towards it.
+    ///
+    /// The shelf lives inside the opened panel, so without this the only way to
+    /// put a file down was to open the island by hand first, let go of the
+    /// file, and start the drag again — which is not a thing anyone does.
+    ///
+    /// Only file drags count. Dragging a window or selecting text near the top
+    /// of the screen must not make the island jump out.
+    private func handleMouseDragged(_ screenLocation: NSPoint) {
+        guard let model, model.notchStatus == .closed else { return }
+        guard model.settings.behaviour.expandOnHover else { return }
+
+        guard isPointInClosedSurfaceArea(screenLocation) else {
+            cancelHoverOpen()
+            return
+        }
+
+        guard Self.draggedItemsAreFiles() else { return }
+
+        scheduleHoverOpen()
+    }
+
+    /// What the current drag is carrying, if anything. The drag pasteboard is
+    /// the only place a cross-application drag announces itself.
+    static func draggedItemsAreFiles() -> Bool {
+        NSPasteboard(name: .drag).canReadObject(
+            forClasses: [NSURL.self],
+            options: [.urlReadingFileURLsOnly: true]
+        )
     }
 
     private func handleMouseDown(_ screenLocation: NSPoint) {
@@ -852,13 +885,16 @@ final class NotchEventMonitors {
     private var localMoveMonitor: Any?
     private var globalClickMonitor: Any?
     private var localClickMonitor: Any?
+    private var globalDragMonitor: Any?
+    private var localDragMonitor: Any?
     private var lastMoveTime: TimeInterval = 0
 
     var isActive: Bool { globalMoveMonitor != nil }
 
     func start(
         mouseMoveHandler: @MainActor @escaping @Sendable (NSPoint) -> Void,
-        mouseDownHandler: @MainActor @escaping @Sendable (NSPoint) -> Void
+        mouseDownHandler: @MainActor @escaping @Sendable (NSPoint) -> Void,
+        mouseDragHandler: @MainActor @escaping @Sendable (NSPoint) -> Void
     ) {
         let throttleInterval: TimeInterval = 0.05
 
@@ -881,6 +917,28 @@ final class NotchEventMonitors {
             return event
         }
 
+        // A pointer with the button held down stops sending `.mouseMoved`
+        // entirely, which is why a file dragged towards a closed island never
+        // opened it: the shelf was unreachable without opening the panel first.
+        nonisolated(unsafe) var sharedLastDrag: TimeInterval = 0
+
+        globalDragMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDragged) { event in
+            let now = ProcessInfo.processInfo.systemUptime
+            guard now - sharedLastDrag >= throttleInterval else { return }
+            sharedLastDrag = now
+            let location = NSEvent.mouseLocation
+            Task { @MainActor in mouseDragHandler(location) }
+        }
+
+        localDragMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDragged) { event in
+            let now = ProcessInfo.processInfo.systemUptime
+            guard now - sharedLastDrag >= throttleInterval else { return event }
+            sharedLastDrag = now
+            let location = NSEvent.mouseLocation
+            Task { @MainActor in mouseDragHandler(location) }
+            return event
+        }
+
         globalClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown) { event in
             let location = NSEvent.mouseLocation
             Task { @MainActor in mouseDownHandler(location) }
@@ -898,10 +956,14 @@ final class NotchEventMonitors {
         if let m = localMoveMonitor { NSEvent.removeMonitor(m) }
         if let m = globalClickMonitor { NSEvent.removeMonitor(m) }
         if let m = localClickMonitor { NSEvent.removeMonitor(m) }
+        if let m = globalDragMonitor { NSEvent.removeMonitor(m) }
+        if let m = localDragMonitor { NSEvent.removeMonitor(m) }
         globalMoveMonitor = nil
         localMoveMonitor = nil
         globalClickMonitor = nil
         localClickMonitor = nil
+        globalDragMonitor = nil
+        localDragMonitor = nil
     }
 }
 
