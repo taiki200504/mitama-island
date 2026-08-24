@@ -691,3 +691,8 @@
 "settings.voice.enabled.help" = "預設關閉。開啟前不會要求麥克風權限。";
 "settings.voice.trigger" = "開啟麥克風";
 "settings.voice.trigger.claimed" = "此組合已被 macOS 佔用。快速鍵能註冊但收不到按鍵。請在系統設定 → 鍵盤 → 鍵盤快速鍵中取消佔用。";
+
+/* Closed-island peek band — kept short: it sits beside a physical notch. */
+"island.peek.justNow" = "剛剛";
+"island.peek.minutes" = "%d分";
+"island.peek.hours" = "%d小時";

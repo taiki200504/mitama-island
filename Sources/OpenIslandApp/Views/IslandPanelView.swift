@@ -359,15 +359,21 @@ struct IslandPanelView: View {
     private func v6ClosedSurface() -> some View {
         let layout: V6ClosedLayout = isExternalDisplayPlacement ? .external : .macbook
         let physicalNotchWidth: CGFloat = targetOverlayScreen?.notchSize.width ?? 180
-        V6ClosedPill(
-            mode: model.islandClosedMode,
-            label: layout == .external ? model.islandClosedLabel() : nil,
-            rightSlot: model.islandClosedRightSlotContent(),
-            layout: layout,
-            height: closedNotchHeight,
-            physicalNotchWidth: layout == .macbook ? physicalNotchWidth : 0,
-            minWidth: 70
-        )
+        // One tick a minute, which is the resolution the band shows. The pill
+        // has no other reason to redraw on a timer, and a waiting request is
+        // exactly the situation where nothing else is arriving to redraw it.
+        TimelineView(.periodic(from: .now, by: 60)) { context in
+            V6ClosedPill(
+                mode: model.islandClosedMode,
+                label: layout == .external ? model.islandClosedLabel() : nil,
+                rightSlot: model.islandClosedRightSlotContent(),
+                peek: model.islandPeekBand(now: context.date),
+                layout: layout,
+                height: closedNotchHeight,
+                physicalNotchWidth: layout == .macbook ? physicalNotchWidth : 0,
+                minWidth: 70
+            )
+        }
         .scaleEffect(isPopping ? 1.04 : 1, anchor: .top)
         .animation(IslandThemes.current.animationProfile.pop, value: isPopping)
     }

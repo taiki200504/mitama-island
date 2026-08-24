@@ -692,3 +692,8 @@
 "settings.voice.enabled.help" = "默认关闭。开启前不会请求麦克风权限。";
 "settings.voice.trigger" = "开启麦克风";
 "settings.voice.trigger.claimed" = "该组合已被 macOS 占用。快捷键能注册但收不到按键。请在系统设置 → 键盘 → 键盘快捷键中取消占用。";
+
+/* Closed-island peek band — kept short: it sits beside a physical notch. */
+"island.peek.justNow" = "刚刚";
+"island.peek.minutes" = "%d分";
+"island.peek.hours" = "%d小时";

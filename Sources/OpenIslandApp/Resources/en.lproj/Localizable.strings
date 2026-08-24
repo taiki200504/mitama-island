@@ -692,3 +692,8 @@
 "settings.voice.enabled.help" = "Off by default. Nothing asks for the microphone until this is on.";
 "settings.voice.trigger" = "Open the microphone";
 "settings.voice.trigger.claimed" = "macOS has reserved this combination. The key registers but never arrives — change it in System Settings → Keyboard → Keyboard Shortcuts.";
+
+/* Closed-island peek band — kept short: it sits beside a physical notch. */
+"island.peek.justNow" = "now";
+"island.peek.minutes" = "%dm";
+"island.peek.hours" = "%dh";

@@ -1106,6 +1106,34 @@ final class AppModel {
     /// Right-slot payload derived from the user's `islandRightSlot`
     /// preference and current live state. Returns nil when the preference
     /// is `.none` or there's nothing meaningful to show.
+    /// What the closed island says while something is waiting on you, already
+    /// localized. Nil when nothing is.
+    ///
+    /// The count in the right slot answers "how many sessions exist", which on
+    /// a busy machine is `×46` and tells you nothing. This answers the question
+    /// the island is actually for: is anyone waiting, who, and how long.
+    func islandPeekBand(now: Date = .now) -> V6PeekBandView.Content? {
+        guard let band = IslandPeekBand.content(for: surfacedSessions, now: now) else { return nil }
+
+        return V6PeekBandView.Content(
+            agent: band.agent,
+            tintHint: band.phase == .waitingForApproval ? .approval : .answer,
+            elapsed: peekElapsedText(band.elapsed),
+            othersWaiting: band.othersWaiting
+        )
+    }
+
+    private func peekElapsedText(_ elapsed: IslandPeekBand.Elapsed) -> String {
+        switch elapsed {
+        case .justNow:
+            lang.t("island.peek.justNow")
+        case .minutes(let minutes):
+            lang.t("island.peek.minutes", minutes)
+        case .hours(let hours):
+            lang.t("island.peek.hours", hours)
+        }
+    }
+
     func islandClosedRightSlotContent() -> IslandRightSlotContent? {
         let sessions = surfacedSessions
         switch islandRightSlot {

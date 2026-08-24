@@ -129,9 +129,15 @@ final class LanguageManager: @unchecked Sendable {
     }()
 
     /// Look up a localized format string and apply arguments.
+    ///
+    /// Goes through the same theme voice and `{app}` substitution as the
+    /// no-argument lookup. It used to skip both, which meant a themed wording
+    /// written for a key that takes arguments would be looked up, found, and
+    /// silently ignored — a failure with no error to notice.
     func t(_ key: String, _ args: any CVarArg...) -> String {
-        let format = bundle.localizedString(forKey: key, value: key, table: nil)
-        return String(format: format, arguments: args)
+        let value = themeVariant(of: key)
+            ?? bundle.localizedString(forKey: key, value: key, table: nil)
+        return String(format: Self.substitutingApplicationName(in: value), arguments: args)
     }
 
     // MARK: - Private
