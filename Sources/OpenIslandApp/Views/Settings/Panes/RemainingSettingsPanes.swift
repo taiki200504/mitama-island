@@ -268,7 +268,7 @@ struct MitamaSettingsPane: View {
                     } else if handoffState == .failed {
                         Label(lang.t("settings.mitama.handoff.failed"), systemImage: "exclamationmark.triangle.fill")
                             .font(.caption)
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(IslandDesignPalette.warning)
                     }
 
                     Spacer()

@@ -8,6 +8,17 @@ enum IslandDesignPalette {
     /// colour whether you look at the dot or the line.
     static var toolAccent: Color { IslandThemes.current.statusTints.running }
 
+    /// The settings window used to reach for `.orange`, `.red` and `.blue`
+    /// directly, so a theme switch left it looking like a different app bolted
+    /// onto the island. These three names are what the rest of the app means by
+    /// "something wants attention", "something is wrong" and "this is the one
+    /// you picked" — the same vocabulary the island already uses for sessions.
+    static var warning: Color { IslandThemes.current.statusTints.waitingForApproval }
+    static var critical: Color { IslandThemes.current.statusTints.critical }
+    static var selection: Color { IslandThemes.current.accent }
+    /// The window's own background, matching the island's panel.
+    static var surface: Color { IslandThemes.current.ink }
+
     @MainActor
     enum Status {
         static var waitingAggregate: Color { IslandThemes.current.statusTints.waitingAggregate }

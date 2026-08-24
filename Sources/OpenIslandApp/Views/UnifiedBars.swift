@@ -29,8 +29,14 @@ struct UnifiedBars: View {
 
     var mode: Mode
     var size: CGFloat = 24
-    /// Ink color for bars / tick. Defaults to the v6 paper ink.
-    var tint: Color = Color(red: 0xf1 / 255.0, green: 0xea / 255.0, blue: 0xd9 / 255.0)
+    /// Ink colour for bars / tick. `nil` means "whatever the current theme's
+    /// paper is", which is what every call site outside the theme picker wants.
+    ///
+    /// It cannot default to the palette directly: a default argument is
+    /// evaluated outside the main actor, and the palette is read from there.
+    /// Hardcoding one theme's paper here is what left the closed island's bars
+    /// drawing in the Classic cream after a theme switch.
+    var tint: Color?
 
     private static let box: CGFloat = 24
     private static let barWidth: CGFloat = 2.5
@@ -44,7 +50,7 @@ struct UnifiedBars: View {
 
     @ViewBuilder
     var body: some View {
-        LayerRepresentable(mode: mode, tint: tint)
+        LayerRepresentable(mode: mode, tint: tint ?? V6Palette.paper)
             .frame(width: size, height: size)
     }
 

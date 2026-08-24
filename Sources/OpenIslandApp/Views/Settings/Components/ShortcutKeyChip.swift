@@ -12,10 +12,10 @@ struct ShortcutKeyChip: View {
             .frame(minWidth: 26)
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
-            .background(background, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .background(background, in: IslandThemes.current.shape(cornerRadius: 6))
             .overlay {
                 if isRecording {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    IslandThemes.current.shape(cornerRadius: 6)
                         .strokeBorder(Color.accentColor, lineWidth: 1.5)
                 }
             }

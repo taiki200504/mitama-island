@@ -32,9 +32,9 @@ struct SettingsIconChip: View {
     }
 
     private func filledChip(cornerRadius: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        IslandThemes.current.shape(cornerRadius: cornerRadius)
             .fill(tint.gradient)
-            .overlay { glyph(.white) }
+            .overlay { glyph(V6Palette.paper) }
     }
 
     private func litChip(theme: any IslandTheme) -> some View {
