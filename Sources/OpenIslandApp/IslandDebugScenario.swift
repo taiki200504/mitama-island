@@ -18,6 +18,7 @@ struct IslandDebugSnapshot {
 
 enum IslandDebugScenario: String, CaseIterable, Identifiable {
     case closed
+    case peekBand
     case sessionList
     case approvalCard
     case questionCard
@@ -33,6 +34,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
         switch self {
         case .closed:
             "Closed Notch"
+        case .peekBand:
+            "Peek Band"
         case .sessionList:
             "Session List"
         case .approvalCard:
@@ -58,6 +61,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
         switch self {
         case .closed:
             "Collapsed idle/running notch with live count and attention affordance."
+        case .peekBand:
+            "Collapsed notch while a request waits: who is waiting, and for how long."
         case .sessionList:
             "Manual expanded list with running, active, and inactive session rows."
         case .approvalCard:
@@ -90,6 +95,21 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                 islandSurface: .sessionList(),
                 sessions: sessions,
                 selectedSessionID: sessions.first?.id
+            )
+
+        case .peekBand:
+            // Eight minutes back, so the band has a real elapsed time to show
+            // rather than the "just now" every freshly built fixture would give.
+            let waiting = DebugSessionFactory.approvalSession(now: now.addingTimeInterval(-8 * 60))
+            return IslandDebugSnapshot(
+                title: title,
+                summary: summary,
+                previewHeight: 78,
+                notchStatus: .closed,
+                notchOpenReason: nil,
+                islandSurface: .sessionList(),
+                sessions: DebugSessionFactory.notificationSessions(lead: waiting, now: now),
+                selectedSessionID: waiting.id
             )
 
         case .sessionList:

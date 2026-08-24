@@ -226,6 +226,23 @@ def main() -> None:
         if report.get("liveSessionCount") != 9 and not any("9" in value for value in text_values):
             fail("closed scenario is missing the live session count value")
 
+    elif scenario == "peekBand":
+        if notch_status != "closed":
+            fail(f"expected closed notch for peekBand, got {notch_status!r}")
+        require_frame_between(
+            overlay_frame,
+            width=(520, 780),
+            height=(35, 500),
+            context="peek band overlay frame",
+        )
+        # The band is the whole point of the scenario: the agent that is
+        # waiting, and how long it has been. Checked by the agent name and the
+        # number alone so the assertion survives a change of UI language.
+        if not any("CODEX" in value for value in text_values):
+            fail("peek band is missing the waiting agent")
+        if not any("8" in value for value in text_values):
+            fail("peek band is missing the elapsed time")
+
     elif scenario == "sessionList":
         if notch_status != "opened":
             fail(f"expected opened notch for sessionList, got {notch_status!r}")
