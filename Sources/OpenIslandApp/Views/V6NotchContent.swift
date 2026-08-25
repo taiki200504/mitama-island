@@ -212,6 +212,9 @@ struct V6ClosedPill: View {
     var mode: UnifiedBars.Mode
     var label: String?          // suppressed automatically in MacBook layout
     var rightSlot: IslandRightSlotContent?
+    /// Who is waiting on you, and for how long. Non-nil widens the pill; the
+    /// island is otherwise the same size it always was.
+    var peek: V6PeekBandView.Content?
     var layout: V6ClosedLayout
     var height: CGFloat = 32
 
@@ -242,12 +245,18 @@ struct V6ClosedPill: View {
 
     private var externalBody: some View {
         let glyphW: CGFloat = 24
-        let labelW = label.map { V6CenterLabelView.intrinsicWidth(of: $0) } ?? 0
+        let peekW = peek.map { V6PeekBandView.intrinsicWidth(of: $0) } ?? 0
+        // The band replaces the session-name label while something is waiting.
+        // Both would fit here, but reading a session title next to "who is
+        // waiting and for how long" buries the second in the first.
+        let showsLabel = label != nil && peek == nil
+        let labelW = showsLabel ? V6CenterLabelView.intrinsicWidth(of: label ?? "") : 0
         let rightW = rightSlot.map { V6RightSlotView.intrinsicWidth(of: $0) } ?? 0
 
-        let labelBlock = (label == nil ? 0 : 6 + labelW)
+        let labelBlock = (showsLabel ? 6 + labelW : 0)
+        let peekBlock = (peek == nil ? 0 : Self.innerGap + peekW)
         let rightBlock = (rightSlot == nil ? 0 : Self.innerGap + rightW)
-        let intrinsic = pad * 2 + glyphW + labelBlock + rightBlock
+        let intrinsic = pad * 2 + glyphW + labelBlock + peekBlock + rightBlock
         let width = max(minWidth, intrinsic)
 
         return ZStack {
@@ -258,7 +267,13 @@ struct V6ClosedPill: View {
                 UnifiedBars(mode: mode, size: 24)
                     .frame(width: glyphW, height: 24)
 
-                if let label {
+                if let peek {
+                    V6PeekBandView(content: peek)
+                        .padding(.leading, Self.innerGap)
+                        .transition(.opacity.combined(with: .move(edge: .leading)))
+                }
+
+                if showsLabel, let label {
                     V6CenterLabelView(text: label)
                         .padding(.leading, 6)
                         .transition(.opacity.combined(with: .move(edge: .leading)))
@@ -280,6 +295,7 @@ struct V6ClosedPill: View {
                 AnyHashable(label ?? ""),
                 AnyHashable(rightSlot.map(RightSlotKey.init) ?? .none),
                 AnyHashable(mode),
+                AnyHashable(peek),
             ])
         )
     }
@@ -287,7 +303,13 @@ struct V6ClosedPill: View {
     // MARK: MacBook (outer width locked)
 
     private var macbookBody: some View {
-        let halfReserve: CGFloat = 44
+        // The two sides stay the same width so the physical cutout keeps
+        // sitting in the middle of the pill. Widening only the side that needs
+        // the room would slide the hardware notch off-centre, which reads as a
+        // rendering bug rather than as new information.
+        let leftContent = 24 + (peek.map { Self.innerGap + V6PeekBandView.intrinsicWidth(of: $0) } ?? 0)
+        let rightContent = rightSlot.map { V6RightSlotView.intrinsicWidth(of: $0) } ?? 0
+        let halfReserve = max(44, pad + max(leftContent, rightContent) + Self.innerGap)
         let outer = halfReserve + physicalNotchWidth + halfReserve
 
         return ZStack {
@@ -298,6 +320,12 @@ struct V6ClosedPill: View {
                 UnifiedBars(mode: mode, size: 24)
                     .frame(width: 24, height: 24)
 
+                if let peek {
+                    V6PeekBandView(content: peek)
+                        .padding(.leading, Self.innerGap)
+                        .transition(.opacity.combined(with: .move(edge: .leading)))
+                }
+
                 Spacer(minLength: 0)
 
                 if let rightSlot {
@@ -307,6 +335,80 @@ struct V6ClosedPill: View {
             .padding(.horizontal, pad)
         }
         .frame(width: outer, height: height)
+        .animation(
+            IslandThemes.current.animationProfile.open,
+            value: AnyHashable([AnyHashable(peek), AnyHashable(mode)])
+        )
+    }
+}
+
+// MARK: - Peek band
+
+/// The closed island's answer to "is anything waiting on me".
+///
+/// Everything it needs is already decided by `IslandPeekBand`; this only draws
+/// it. The text arrives pre-localized because the band sits below the layer
+/// that knows about languages.
+struct V6PeekBandView: View {
+    struct Content: Equatable, Hashable {
+        let agent: String
+        /// Which of the waiting tints to use for the dot.
+        let tintHint: Tint
+        let elapsed: String
+        let othersWaiting: Int
+
+        enum Tint: Hashable {
+            case approval
+            case answer
+        }
+    }
+
+    let content: Content
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Circle()
+                .fill(dotColor)
+                .frame(width: 6, height: 6)
+                .shadow(color: dotColor.opacity(0.9), radius: IslandThemes.current.glowRadius)
+
+            Text(content.agent)
+                .font(.islandMono(size: 11, weight: .semibold))
+                .foregroundStyle(V6Palette.paper.opacity(0.92))
+
+            Text(content.elapsed)
+                .font(.islandMono(size: 11))
+                .foregroundStyle(V6Palette.paper.opacity(0.62))
+
+            if content.othersWaiting > 0 {
+                Text("+\(content.othersWaiting)")
+                    .font(.islandMono(size: 11))
+                    .foregroundStyle(dotColor.opacity(0.85))
+            }
+        }
+        .lineLimit(1)
+        .fixedSize(horizontal: true, vertical: false)
+    }
+
+    private var dotColor: Color {
+        switch content.tintHint {
+        case .approval: IslandThemes.current.statusTints.waitingForApproval
+        case .answer:   IslandThemes.current.statusTints.waitingForAnswer
+        }
+    }
+
+    /// Padded the same way the right slot's estimate is: the pill has to
+    /// reserve the room before the text lays itself out, and a band that gets
+    /// compressed wraps into a second line inside a 32pt pill.
+    static func intrinsicWidth(of content: Content) -> CGFloat {
+        let charWidth: CGFloat = 7.2   // Departure Mono at 11pt
+        let dot: CGFloat = 6 + 5
+        let agent = CGFloat(content.agent.count) * charWidth + 5
+        let elapsed = CGFloat(content.elapsed.count) * charWidth
+        let others = content.othersWaiting > 0
+            ? CGFloat("+\(content.othersWaiting)".count) * charWidth + 5
+            : 0
+        return dot + agent + elapsed + others
     }
 }
 

@@ -48,7 +48,7 @@ struct NotificationSettingsPane: View {
                     Button(lang.t("settings.autoResponse.remove")) {
                         autoResponse.removeRule(id: rule.id)
                     }
-                    .foregroundStyle(.red)
+                    .foregroundStyle(IslandDesignPalette.critical)
                 }
             }
 
@@ -157,7 +157,7 @@ struct NotificationSettingsPane: View {
                     Button(lang.t("settings.notifications.removeRule")) {
                         filters.removeRule(id: rule.id)
                     }
-                    .foregroundStyle(.red)
+                    .foregroundStyle(IslandDesignPalette.critical)
                 }
             }
 

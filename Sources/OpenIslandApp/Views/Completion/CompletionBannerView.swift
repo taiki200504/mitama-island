@@ -130,7 +130,7 @@ struct CompletionBannerView: View {
                 .font(.system(size: 9, weight: .bold))
                 .foregroundStyle(theme.paper.opacity(0.75))
                 .frame(width: 18, height: 18)
-                .background(Circle().fill(.white.opacity(0.1)))
+                .background(Circle().fill(V6Palette.paper.opacity(0.1)))
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)

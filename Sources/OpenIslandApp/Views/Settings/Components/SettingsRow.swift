@@ -42,7 +42,7 @@ struct SettingsRow<Control: View>: View {
                 if let reasonKey = availability.unsupportedReasonKey {
                     Text(LanguageManager.shared.t(reasonKey))
                         .font(.caption)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(IslandDesignPalette.warning)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }

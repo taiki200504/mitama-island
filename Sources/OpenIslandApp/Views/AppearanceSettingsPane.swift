@@ -36,7 +36,7 @@ struct AppearanceSettingsPane: View {
             .padding(24)
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
-        .background(Color(red: 0.055, green: 0.055, blue: 0.06))
+        .background(IslandDesignPalette.surface)
         .navigationTitle(lang.t("settings.tab.appearance"))
     }
 
@@ -83,7 +83,7 @@ struct AppearanceSettingsPane: View {
                     .frame(width: 34, height: 34)
                     .background(
                         IslandThemes.current.shape(cornerRadius: 8)
-                            .fill(Color.white.opacity(selected ? 0.11 : 0.05))
+                            .fill(V6Palette.paper.opacity(selected ? 0.11 : 0.05))
                     )
 
                 VStack(alignment: .leading, spacing: 4) {
@@ -108,11 +108,11 @@ struct AppearanceSettingsPane: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 IslandThemes.current.shape(cornerRadius: 12)
-                    .fill(Color.white.opacity(selected ? 0.075 : 0.025))
+                    .fill(V6Palette.paper.opacity(selected ? 0.075 : 0.025))
             )
             .overlay(
                 IslandThemes.current.shape(cornerRadius: 12)
-                    .stroke(selected ? V6Palette.paper.opacity(0.86) : Color.white.opacity(0.08), lineWidth: selected ? 1.5 : 1)
+                    .stroke(selected ? V6Palette.paper.opacity(0.86) : V6Palette.paper.opacity(0.08), lineWidth: selected ? 1.5 : 1)
             )
         }
         .buttonStyle(.plain)
@@ -283,25 +283,25 @@ struct AppearanceSettingsPane: View {
             VStack(spacing: 10) {
                 ZStack {
                     IslandThemes.current.shape(cornerRadius: 10)
-                        .fill(Color.white.opacity(0.04))
+                        .fill(V6Palette.paper.opacity(0.04))
                     icon()
                 }
                 .frame(height: 56)
 
                 Text(title)
                     .font(.system(size: 11.5, weight: .medium))
-                    .foregroundStyle(Color.white.opacity(0.85))
+                    .foregroundStyle(V6Palette.paper.opacity(0.85))
             }
             .padding(12)
             .frame(maxWidth: .infinity)
             .background(
                 IslandThemes.current.shape(cornerRadius: 12)
-                    .fill(Color.white.opacity(selected ? 0.07 : 0.02))
+                    .fill(V6Palette.paper.opacity(selected ? 0.07 : 0.02))
             )
             .overlay(
                 IslandThemes.current.shape(cornerRadius: 12)
                     .stroke(
-                        selected ? V6Palette.paper.opacity(0.9) : Color.white.opacity(0.08),
+                        selected ? V6Palette.paper.opacity(0.9) : V6Palette.paper.opacity(0.08),
                         lineWidth: selected ? 1.5 : 1
                     )
             )
@@ -338,7 +338,7 @@ struct AppearanceSettingsPane: View {
             VStack(spacing: 10) {
                 ZStack {
                     IslandThemes.current.shape(cornerRadius: 10)
-                        .fill(Color.white.opacity(0.04))
+                        .fill(V6Palette.paper.opacity(0.04))
                     Text(sample)
                         .font(.islandMono(size: 11.5, weight: .medium))
                         .foregroundStyle(V6Palette.paper.opacity(option == .off ? 0.4 : 0.9))
@@ -350,18 +350,18 @@ struct AppearanceSettingsPane: View {
 
                 Text(title)
                     .font(.system(size: 11.5, weight: .medium))
-                    .foregroundStyle(Color.white.opacity(0.85))
+                    .foregroundStyle(V6Palette.paper.opacity(0.85))
             }
             .padding(12)
             .frame(maxWidth: .infinity)
             .background(
                 IslandThemes.current.shape(cornerRadius: 12)
-                    .fill(Color.white.opacity(selected ? 0.07 : 0.02))
+                    .fill(V6Palette.paper.opacity(selected ? 0.07 : 0.02))
             )
             .overlay(
                 IslandThemes.current.shape(cornerRadius: 12)
                     .stroke(
-                        selected ? V6Palette.paper.opacity(0.9) : Color.white.opacity(0.08),
+                        selected ? V6Palette.paper.opacity(0.9) : V6Palette.paper.opacity(0.08),
                         lineWidth: selected ? 1.5 : 1
                     )
             )
@@ -526,7 +526,7 @@ struct AppearanceSettingsPane: View {
     private func partHeader(title: String) -> some View {
         Text(title)
             .font(.system(size: 15, weight: .semibold))
-            .foregroundStyle(.white.opacity(0.92))
+            .foregroundStyle(V6Palette.paper.opacity(0.92))
     }
 
     private func optionCard<Icon: View>(
@@ -539,14 +539,14 @@ struct AppearanceSettingsPane: View {
             VStack(spacing: 10) {
                 ZStack {
                     IslandThemes.current.shape(cornerRadius: 10)
-                        .fill(Color.white.opacity(0.04))
+                        .fill(V6Palette.paper.opacity(0.04))
                     icon()
                 }
                 .frame(height: 56)
 
                 Text(title)
                     .font(.system(size: 11.5, weight: .medium))
-                    .foregroundStyle(Color.white.opacity(0.85))
+                    .foregroundStyle(V6Palette.paper.opacity(0.85))
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
@@ -554,12 +554,12 @@ struct AppearanceSettingsPane: View {
             .frame(maxWidth: .infinity)
             .background(
                 IslandThemes.current.shape(cornerRadius: 12)
-                    .fill(Color.white.opacity(selected ? 0.07 : 0.02))
+                    .fill(V6Palette.paper.opacity(selected ? 0.07 : 0.02))
             )
             .overlay(
                 IslandThemes.current.shape(cornerRadius: 12)
                     .stroke(
-                        selected ? V6Palette.paper.opacity(0.9) : Color.white.opacity(0.08),
+                        selected ? V6Palette.paper.opacity(0.9) : V6Palette.paper.opacity(0.08),
                         lineWidth: selected ? 1.5 : 1
                     )
             )
@@ -572,11 +572,11 @@ struct AppearanceSettingsPane: View {
             Text(title.uppercased())
                 .font(.islandMono(size: 11, weight: .semibold))
                 .tracking(1.2)
-                .foregroundStyle(Color.white.opacity(0.55))
+                .foregroundStyle(V6Palette.paper.opacity(0.55))
             if let note {
                 Text(note)
                     .font(.system(size: 11.5))
-                    .foregroundStyle(Color.white.opacity(0.38))
+                    .foregroundStyle(V6Palette.paper.opacity(0.38))
             }
         }
     }
@@ -592,7 +592,7 @@ struct AppearanceSettingsPane: View {
                 .foregroundStyle(selected ? V6Palette.ink : V6Palette.paper.opacity(0.7))
                 .background(
                     Capsule().fill(
-                        selected ? V6Palette.paper : Color.white.opacity(0.06)
+                        selected ? V6Palette.paper : V6Palette.paper.opacity(0.06)
                     )
                 )
         }
@@ -652,7 +652,7 @@ struct AppearanceSettingsPane: View {
     private var previewAgentCells: [AgentGridCell] {
         // Three Claude sessions, with one waiting when the preview mode is
         // `waiting` so the breathing tile is visible in the live preview.
-        let claude = Color(hex: AgentTool.claudeCode.brandColorHex) ?? .white
+        let claude = Color(hex: AgentTool.claudeCode.brandColorHex) ?? V6Palette.paper
         let waitingIdx = previewMode == .waiting ? 1 : -1
         return (0..<3).map { idx in
             if idx == waitingIdx {
@@ -884,7 +884,7 @@ private struct SettingsPreviewStage<Content: View>: View {
         .clipShape(IslandThemes.current.shape(cornerRadius: 14))
         .overlay(
             IslandThemes.current.shape(cornerRadius: 14)
-                .stroke(.white.opacity(0.08), lineWidth: 1)
+                .stroke(V6Palette.paper.opacity(0.08), lineWidth: 1)
         )
     }
 }
@@ -1003,7 +1003,7 @@ private struct SessionListPanelPreview: View {
         .frame(height: 42)
         .overlay(alignment: .bottom) {
             Rectangle()
-                .fill(.white.opacity(0.05))
+                .fill(V6Palette.paper.opacity(0.05))
                 .frame(height: 1)
         }
     }
@@ -1011,9 +1011,9 @@ private struct SessionListPanelPreview: View {
     private func previewHeaderButton(systemName: String) -> some View {
         Image(systemName: systemName)
             .font(.system(size: 10, weight: .semibold))
-            .foregroundStyle(.white.opacity(0.62))
+            .foregroundStyle(V6Palette.paper.opacity(0.62))
             .frame(width: 22, height: 22)
-            .background(.white.opacity(0.08), in: Circle())
+            .background(V6Palette.paper.opacity(0.08), in: Circle())
     }
 
     private func previewSessionOverview(compact: Bool) -> some View {
@@ -1127,7 +1127,7 @@ private struct SessionListPanelPreview: View {
         .padding(.bottom, 6)
         .overlay(alignment: .top) {
             Rectangle()
-                .fill(.white.opacity(0.05))
+                .fill(V6Palette.paper.opacity(0.05))
                 .frame(height: 1)
         }
     }
@@ -1144,7 +1144,7 @@ private struct SessionListPanelPreview: View {
             .frame(height: 10)
         .overlay(alignment: .top) {
             Rectangle()
-                .fill(.white.opacity(0.05))
+                .fill(V6Palette.paper.opacity(0.05))
                 .frame(height: 1)
         }
     }
@@ -1190,7 +1190,7 @@ private struct SessionListLivePreviewRow: View {
                         .frame(width: 28, height: 28)
                         .background(
                             Circle()
-                                .fill(.white.opacity(item.phase == .idle ? 0.02 : 0.045))
+                                .fill(V6Palette.paper.opacity(item.phase == .idle ? 0.02 : 0.045))
                         )
                 }
             }
@@ -1204,7 +1204,7 @@ private struct SessionListLivePreviewRow: View {
         }
         .overlay(alignment: .top) {
             Rectangle()
-                .fill(.white.opacity(0.04))
+                .fill(V6Palette.paper.opacity(0.04))
                 .frame(height: 1)
         }
         .overlay(alignment: .leading) {
@@ -1253,7 +1253,7 @@ private struct SessionListLivePreviewRow: View {
             .foregroundStyle(V6Palette.paper.opacity(0.7))
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
-            .background(.white.opacity(0.06), in: Capsule())
+            .background(V6Palette.paper.opacity(0.06), in: Capsule())
     }
 
     private var detailPreview: some View {
@@ -1268,7 +1268,7 @@ private struct SessionListLivePreviewRow: View {
                     .foregroundStyle(V6Palette.paper.opacity(0.78))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
-                    .background(.white.opacity(0.045), in: IslandThemes.current.shape(cornerRadius: 7))
+                    .background(V6Palette.paper.opacity(0.045), in: IslandThemes.current.shape(cornerRadius: 7))
             case .answer:
                 Text(lang.t("settings.appearance.preview.pickOrTypeAnswer"))
                     .font(.system(size: 12.5, weight: .semibold))
@@ -1289,7 +1289,7 @@ private struct SessionListLivePreviewRow: View {
         .padding(.leading, detailLeadingPadding)
         .padding(.trailing, sideInset)
         .padding(.bottom, 12)
-        .background(.white.opacity(0.015))
+        .background(V6Palette.paper.opacity(0.015))
     }
 
     @ViewBuilder
@@ -1388,7 +1388,7 @@ private struct CountBadgePreview: View {
 
 private struct AgentsMiniGridPreview: View {
     var body: some View {
-        let claude = Color(hex: AgentTool.claudeCode.brandColorHex) ?? .white
+        let claude = Color(hex: AgentTool.claudeCode.brandColorHex) ?? V6Palette.paper
         HStack(spacing: 2) {
             ForEach(0..<3, id: \.self) { _ in
                 IslandThemes.current.shape(cornerRadius: 1.5)
@@ -1413,7 +1413,7 @@ private struct StateIndicatorPreview: View {
         .padding(.vertical, 8)
         .background(
             IslandThemes.current.shape(cornerRadius: 8)
-                .fill(option == .tint ? Color(hex: AgentTool.codex.brandColorHex)?.opacity(0.22) ?? Color.white.opacity(0.08) : Color.clear)
+                .fill(option == .tint ? Color(hex: AgentTool.codex.brandColorHex)?.opacity(0.22) ?? V6Palette.paper.opacity(0.08) : Color.clear)
         )
     }
 
@@ -1473,7 +1473,7 @@ private struct UsageDisplayPreview: View {
         }
         .padding(.horizontal, 6)
         .padding(.vertical, 3)
-        .background(.white.opacity(0.055), in: Capsule())
+        .background(V6Palette.paper.opacity(0.055), in: Capsule())
     }
 }
 
@@ -1491,8 +1491,8 @@ private struct SessionGroupPreview: View {
                 groupBlock(width: 52)
                 groupBlock(width: 70)
             case .agent:
-                agentBlock(color: Color(hex: AgentTool.claudeCode.brandColorHex) ?? .white)
-                agentBlock(color: Color(hex: AgentTool.codex.brandColorHex) ?? .white)
+                agentBlock(color: Color(hex: AgentTool.claudeCode.brandColorHex) ?? V6Palette.paper)
+                agentBlock(color: Color(hex: AgentTool.codex.brandColorHex) ?? V6Palette.paper)
             case .project:
                 groupBlock(width: 76)
                 groupBlock(width: 46)
@@ -1548,7 +1548,7 @@ private struct SessionSortPreview: View {
         switch option {
         case .attention:
             return [
-                ("!", 62, Color(hex: AgentTool.claudeCode.brandColorHex) ?? .white),
+                ("!", 62, Color(hex: AgentTool.claudeCode.brandColorHex) ?? V6Palette.paper),
                 ("2", 48, V6Palette.paper.opacity(0.28)),
                 ("3", 58, V6Palette.paper.opacity(0.2)),
             ]

@@ -131,7 +131,7 @@ struct AboutSettingsPane: View {
     var model: AppModel
 
     private var lang: LanguageManager { model.lang }
-    private let primaryInk = Color.white.opacity(0.94)
+    private let primaryInk = V6Palette.paper.opacity(0.94)
 
     var body: some View {
         VStack(spacing: 0) {
@@ -192,7 +192,7 @@ struct AboutSettingsPane: View {
                     aboutActionRow(
                         title: lang.t("settings.about.quitApp"),
                         systemImage: "rectangle.portrait.and.arrow.right",
-                        tint: Color(red: 1.0, green: 0.29, blue: 0.29),
+                        tint: IslandDesignPalette.critical,
                         action: {
                             model.quitApplication()
                         }
@@ -588,7 +588,7 @@ struct SetupSettingsPane: View {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: "arrow.clockwise.circle.fill")
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(IslandDesignPalette.warning)
                     .frame(width: 28)
 
                 VStack(alignment: .leading, spacing: 4) {
@@ -735,7 +735,7 @@ struct SetupSettingsPane: View {
                 Text(lang.t("setup.section.diagnostics"))
                 if hasErrors {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(IslandDesignPalette.warning)
                         .font(.caption2)
                 }
             }
@@ -782,7 +782,7 @@ struct SetupSettingsPane: View {
     private func issueColor(for issue: HookHealthReport.Issue) -> Color {
         switch issue.severity {
         case .info: .blue
-        case .error: issue.isAutoRepairable ? .orange : .red
+        case .error: issue.isAutoRepairable ? IslandDesignPalette.warning : IslandDesignPalette.critical
         }
     }
 
@@ -820,7 +820,7 @@ struct SetupSettingsPane: View {
                     Button(lang.t("settings.general.uninstall")) {
                         uninstallAction()
                     }
-                    .foregroundStyle(.red)
+                    .foregroundStyle(IslandDesignPalette.critical)
                     .font(.caption)
                 }
             } else if busy {
@@ -1068,9 +1068,9 @@ struct RemoteConnectionSection: View {
             HStack(spacing: 6) {
                 Text(number)
                     .font(.system(size: 9, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(V6Palette.paper)
                     .frame(width: 16, height: 16)
-                    .background(Circle().fill(.blue.opacity(0.7)))
+                    .background(Circle().fill(IslandDesignPalette.selection.opacity(0.7)))
                 Text(title)
                     .font(.system(size: 12, weight: .medium))
             }
@@ -1131,12 +1131,12 @@ struct UpdateBanner: View {
                 Image(systemName: "arrow.down.to.line")
                     .font(.system(size: 10, weight: .bold))
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(V6Palette.paper)
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
             .background(
                 Capsule()
-                    .fill(Color.blue)
+                    .fill(IslandDesignPalette.selection)
             )
         }
         .buttonStyle(.plain)
