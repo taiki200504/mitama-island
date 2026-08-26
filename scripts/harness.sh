@@ -27,6 +27,7 @@ run_step() {
             echo "==> lint"
             zsh "$repo_root/scripts/lint-strings.sh"
             zsh "$repo_root/scripts/check-capability-ledger.sh"
+            zsh "$repo_root/scripts/check-resource-bundle.sh"
             ;;
         build)
             echo "==> build"
