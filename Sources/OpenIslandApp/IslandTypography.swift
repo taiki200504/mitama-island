@@ -34,11 +34,11 @@ enum IslandTypography {
 
     @discardableResult
     private static func registerBundledFont() -> Bool {
-        guard let url = Bundle.module.url(
+        guard let url = Bundle.appResources.url(
             forResource: "DepartureMono-Regular",
             withExtension: "otf",
             subdirectory: "Fonts"
-        ) ?? Bundle.module.url(forResource: "DepartureMono-Regular", withExtension: "otf") else {
+        ) ?? Bundle.appResources.url(forResource: "DepartureMono-Regular", withExtension: "otf") else {
             return false
         }
 
