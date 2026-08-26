@@ -1113,14 +1113,28 @@ final class AppModel {
     /// a busy machine is `×46` and tells you nothing. This answers the question
     /// the island is actually for: is anyone waiting, who, and how long.
     func islandPeekBand(now: Date = .now) -> V6PeekBandView.Content? {
-        guard let band = IslandPeekBand.content(for: surfacedSessions, now: now) else { return nil }
+        let alerts = mitamaFeedEnabled ? mitamaFeed.notifications : []
+        guard let band = IslandPeekBand.content(
+            for: surfacedSessions,
+            mitamaAlerts: alerts,
+            now: now
+        ) else { return nil }
 
         return V6PeekBandView.Content(
             agent: band.agent,
-            tintHint: band.phase == .waitingForApproval ? .approval : .answer,
+            tintHint: peekTint(band.subject),
             elapsed: peekElapsedText(band.elapsed),
             othersWaiting: band.othersWaiting
         )
+    }
+
+    private func peekTint(_ subject: IslandPeekBand.Subject) -> V6PeekBandView.Content.Tint {
+        switch subject {
+        case .mitamaAlert:
+            .mitama
+        case .session(let phase):
+            phase == .waitingForApproval ? .approval : .answer
+        }
     }
 
     private func peekElapsedText(_ elapsed: IslandPeekBand.Elapsed) -> String {
