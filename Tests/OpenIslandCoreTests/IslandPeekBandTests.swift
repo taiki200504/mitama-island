@@ -44,7 +44,7 @@ struct IslandPeekBandTests {
         ]
         let content = IslandPeekBand.content(for: sessions, now: epoch)
         #expect(content?.agent == "CODEX")
-        #expect(content?.phase == .waitingForApproval)
+        #expect(content?.subject == .session(.waitingForApproval))
         #expect(content?.elapsed == .minutes(2))
         #expect(content?.othersWaiting == 0)
     }
@@ -72,6 +72,76 @@ struct IslandPeekBandTests {
             session("done", phase: .completed),
         ]
         #expect(IslandPeekBand.content(for: sessions, now: epoch)?.othersWaiting == 0)
+    }
+
+    private func alert(
+        _ id: Int,
+        level: MitamaNotification.Level = .urgent,
+        createdAgo seconds: TimeInterval = 0
+    ) -> MitamaNotification {
+        MitamaNotification(
+            id: id,
+            level: level,
+            title: "title \(id)",
+            body: "",
+            createdAt: epoch.addingTimeInterval(-seconds)
+        )
+    }
+
+    @Test("A mitama urgent takes the band even when an agent has waited longer")
+    func urgentOutranksAgents() {
+        let sessions = [session("asking", tool: .codex, phase: .waitingForApproval, waitingFor: 3_600)]
+        let content = IslandPeekBand.content(
+            for: sessions,
+            mitamaAlerts: [alert(1, createdAgo: 120)],
+            now: epoch
+        )
+        // The agent already announced itself with a card; the mitama row did not.
+        #expect(content?.agent == "MITAMA")
+        #expect(content?.subject == .mitamaAlert)
+        #expect(content?.elapsed == .minutes(2))
+        #expect(content?.othersWaiting == 1)
+    }
+
+    @Test("Homework is a list to work through, not an interruption")
+    func homeworkStaysOffTheBand() {
+        #expect(
+            IslandPeekBand.content(
+                for: [],
+                mitamaAlerts: [alert(1, level: .homework), alert(2, level: .digest), alert(3, level: .info)],
+                now: epoch
+            ) == nil
+        )
+    }
+
+    @Test("Homework never inflates the count of what is waiting")
+    func homeworkIsNotCounted() {
+        let sessions = [session("asking", phase: .waitingForApproval, waitingFor: 60)]
+        let content = IslandPeekBand.content(
+            for: sessions,
+            mitamaAlerts: [alert(1, level: .homework), alert(2, level: .homework)],
+            now: epoch
+        )
+        #expect(content?.subject == .session(.waitingForApproval))
+        #expect(content?.othersWaiting == 0)
+    }
+
+    @Test("The oldest urgent wins, and the rest are counted")
+    func oldestUrgentWins() {
+        let content = IslandPeekBand.content(
+            for: [],
+            mitamaAlerts: [alert(1, createdAgo: 60), alert(2, createdAgo: 7_200)],
+            now: epoch
+        )
+        #expect(content?.elapsed == .hours(2))
+        #expect(content?.othersWaiting == 1)
+    }
+
+    @Test("An urgent alone is enough for a band")
+    func urgentWithoutAnySession() {
+        let content = IslandPeekBand.content(for: [], mitamaAlerts: [alert(1, createdAgo: 300)], now: epoch)
+        #expect(content?.agent == "MITAMA")
+        #expect(content?.othersWaiting == 0)
     }
 
     @Test("Under a minute reads as just now, not as zero minutes")

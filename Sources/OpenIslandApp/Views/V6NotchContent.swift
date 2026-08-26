@@ -360,6 +360,7 @@ struct V6PeekBandView: View {
         enum Tint: Hashable {
             case approval
             case answer
+            case mitama
         }
     }
 
@@ -394,6 +395,7 @@ struct V6PeekBandView: View {
         switch content.tintHint {
         case .approval: IslandThemes.current.statusTints.waitingForApproval
         case .answer:   IslandThemes.current.statusTints.waitingForAnswer
+        case .mitama:   IslandThemes.current.statusTints.critical
         }
     }
 
