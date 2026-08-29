@@ -2464,9 +2464,15 @@ final class AppModel {
             guard let self else { return }
             // A fresh session each time: it lives for a few seconds and starting
             // from a clean one is cheaper than reasoning about a stale one.
-            // Nil when speaking is off, and then the key alone plays it.
+            // Nil unless the sequence was asked to wait for the phrase, and
+            // then the key alone plays it — which is the default. Building the
+            // session unconditionally would open the microphone on every press
+            // for a sequence that is not going to listen.
             self.linkstart.isMuted = { [weak self] in self?.settings.sound.isMuted ?? false }
-            self.linkstart.voice = self.settings.voiceCommand.isEnabled
+            let waitsForPhrase = self.settings.display.linkstartWaitsForPhrase
+                && self.settings.voiceCommand.isEnabled
+            self.linkstart.waitsForPhrase = waitsForPhrase
+            self.linkstart.voice = waitsForPhrase
                 ? VoiceCommandSession(settings: self.settings.voiceCommand)
                 : nil
             self.linkstart.toggle()

@@ -32,3 +32,4 @@ output/
 
 # Vendor logos fetched by scripts/fetch-agent-icons.sh — trademarks, never committed
 Assets/AgentIcons/
+.gstack/

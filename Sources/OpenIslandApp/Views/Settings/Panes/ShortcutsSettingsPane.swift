@@ -224,6 +224,15 @@ struct ShortcutsSettingsPane: View {
                 ) {
                     ShortcutKeyChip(label: LinkstartTrigger.displayLabel)
                 }
+
+                SettingsToggleRow(
+                    title: lang.t("settings.linkstart.waitsForPhrase"),
+                    help: lang.t("settings.linkstart.waitsForPhrase.help"),
+                    isOn: Binding(
+                        get: { model.settings.display.linkstartWaitsForPhrase },
+                        set: { model.settings.display.linkstartWaitsForPhrase = $0 }
+                    )
+                )
             }
         } header: {
             Text(lang.t("settings.linkstart.section"))

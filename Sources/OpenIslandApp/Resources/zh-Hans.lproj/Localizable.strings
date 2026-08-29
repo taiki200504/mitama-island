@@ -653,11 +653,13 @@
 "linkstart.welcome" = "欢迎，{name}";
 "linkstart.dismiss" = "按任意键返回";
 "settings.linkstart.section" = "Link Start";
-"settings.linkstart.section.footer" = "让所有屏幕变暗并等待你说出“link start”，随后播放登录动画。几秒即结束，按任意键或点击可提前退出。若关闭语音作答，按键即直接播放。";
+"settings.linkstart.section.footer" = "让所有屏幕变暗并播放登录动画。几秒即结束，按任意键或点击可提前退出。";
 "settings.linkstart.enabled" = "启用登录动画";
 "settings.linkstart.enabled.help" = "默认关闭。即使不使用，全局快捷键也会占用该组合。";
 "settings.linkstart.trigger" = "播放";
 "settings.linkstart.trigger.claimed" = "该组合已被 macOS 占用。快捷键能注册但收不到按键。请在系统设置 → 键盘 → 键盘快捷键中取消占用。";
+"settings.linkstart.waitsForPhrase" = "先说出“link start”再播放";
+"settings.linkstart.waitsForPhrase.help" = "默认关闭。开启后屏幕会保持变暗等待语音，听不到则在 9 秒后退出。它取决于麦克风权限、识别结果和环境是否安静——为一段动画承担三种失败方式并不划算。";
 "camera.status.denied" = "摄像头访问被拒绝。系统设置 → 隐私与安全性 → 摄像头。";
 "camera.status.palmNeedsPermission" = "举手作答需要摄像头权限。按一次 ⌃⌥space 并在弹出的对话框中允许。";
 "camera.power.lidClosed" = "合盖期间不会开启摄像头。";

@@ -652,11 +652,13 @@
 "linkstart.welcome" = "歡迎，{name}";
 "linkstart.dismiss" = "按任意鍵返回";
 "settings.linkstart.section" = "Link Start";
-"settings.linkstart.section.footer" = "讓所有螢幕變暗並等待你說出「link start」，隨後播放登入動畫。幾秒即結束，按任意鍵或點擊可提前退出。若關閉語音作答，按鍵即直接播放。";
+"settings.linkstart.section.footer" = "讓所有螢幕變暗並播放登入動畫。幾秒即結束，按任意鍵或點擊可提前退出。";
 "settings.linkstart.enabled" = "啟用登入動畫";
 "settings.linkstart.enabled.help" = "預設關閉。即使不使用，全域快速鍵也會佔用該組合。";
 "settings.linkstart.trigger" = "播放";
 "settings.linkstart.trigger.claimed" = "此組合已被 macOS 佔用。快速鍵能註冊但收不到按鍵。請在系統設定 → 鍵盤 → 鍵盤快速鍵中取消佔用。";
+"settings.linkstart.waitsForPhrase" = "先說出「link start」再播放";
+"settings.linkstart.waitsForPhrase.help" = "預設關閉。開啟後螢幕會保持變暗等待語音，聽不到則在 9 秒後退出。它取決於麥克風權限、辨識結果與環境是否安靜——為一段動畫承擔三種失敗方式並不划算。";
 "camera.status.denied" = "攝影機存取被拒絕。系統設定 → 隱私權與安全性 → 攝影機。";
 "camera.status.palmNeedsPermission" = "舉手作答需要攝影機權限。按一次 ⌃⌥space 並在彈出的對話框中允許。";
 "camera.power.lidClosed" = "闔蓋期間不會開啟攝影機。";

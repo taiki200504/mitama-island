@@ -32,6 +32,13 @@ final class LinkstartOverlayController {
     /// key alone plays the sequence.
     @ObservationIgnored var voice: VoiceCommandSession?
 
+    /// Whether the key stops at a dark screen and waits to be spoken into.
+    ///
+    /// Set by `AppModel` from the setting of the same name. Off means the key
+    /// is the whole trigger, which is the default: the phrase adds three ways
+    /// to fail to something that only plays an animation.
+    @ObservationIgnored var waitsForPhrase = false
+
     @ObservationIgnored private var panels: [NSPanel] = []
     /// Whoever was in front before the sequence took over.
     @ObservationIgnored private var returnFocusTo: NSRunningApplication?
@@ -62,11 +69,12 @@ final class LinkstartOverlayController {
 
         let mainScreen = NSScreen.main ?? screens[0]
         heard = nil
-        // Say the words if the microphone is available; otherwise the key that
-        // got here is enough on its own. Permission that has not been granted
-        // counts as unavailable: waiting nine seconds for a microphone that was
-        // never going to open is a dead screen with no way to know why.
-        let canListen = voice != nil && VoiceCommandSession.canListenWithoutAsking
+        // Say the words only if that was asked for and the microphone is
+        // available; otherwise the key that got here is enough on its own.
+        // Permission that has not been granted counts as unavailable: waiting
+        // nine seconds for a microphone that was never going to open is a dead
+        // screen with no way to know why.
+        let canListen = waitsForPhrase && voice != nil && VoiceCommandSession.canListenWithoutAsking
         stage = canListen ? .listening : .playing(startedAt: Date())
 
         panels = screens.map { screen in
