@@ -39,5 +39,13 @@
     -->
     <key>com.apple.security.device.audio-input</key>
     <true/>
+    <!--
+      Required to ask for the calendar at all, for the same reason the camera
+      key is: under the hardened runtime macOS refuses to show the dialog
+      without it and denies on the spot. The usage description in Info.plist is
+      necessary but not sufficient.
+    -->
+    <key>com.apple.security.personal-information.calendars</key>
+    <true/>
 </dict>
 </plist>

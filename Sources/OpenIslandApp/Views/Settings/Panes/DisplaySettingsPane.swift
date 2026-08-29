@@ -119,6 +119,29 @@ struct DisplaySettingsPane: View {
             )
 
             SettingsToggleRow(
+                title: lang.t("settings.display.showsNextEvent"),
+                help: lang.t(
+                    display.showsNextEvent && !model.calendar.hasAccess
+                        ? "settings.display.showsNextEvent.noAccess"
+                        : "settings.display.showsNextEvent.help"
+                ),
+                isOn: Binding(
+                    get: { display.showsNextEvent },
+                    set: { isOn in
+                        display.showsNextEvent = isOn
+                        guard isOn else {
+                            model.calendar.stop()
+                            return
+                        }
+                        // Asking here and nowhere else: the dialog arrives
+                        // because this switch was just turned on, which is the
+                        // only context that explains it.
+                        Task { await model.calendar.requestAccessAndStart() }
+                    }
+                )
+            )
+
+            SettingsToggleRow(
                 title: lang.t("settings.display.completionBanner"),
                 help: lang.t("settings.display.completionBanner.help"),
                 isOn: Binding(

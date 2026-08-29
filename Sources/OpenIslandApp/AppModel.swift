@@ -505,6 +505,8 @@ final class AppModel {
     /// that has none to spare. Eager construction is free here, so it is not
     /// worth understanding further.
     @ObservationIgnored let cameraActivation: CameraActivationSession
+    /// What is coming up, for the closed island's otherwise blank state.
+    let calendar = CalendarWatcher()
 
     /// Holds no microphone until the key is pressed with a card waiting.
     @ObservationIgnored let voiceAnswer: VoiceCommandSession
@@ -787,6 +789,12 @@ final class AppModel {
         watchNotificationEnabled = UserDefaults.standard.bool(forKey: Self.watchNotificationEnabledKey)
         if watchNotificationEnabled {
             startWatchRelay()
+        }
+
+        // Never prompts: if access was granted before, this picks it back up;
+        // if it was not, the setting is the only place that asks.
+        if settings.display.showsNextEvent {
+            calendar.start()
         }
 
         quietScenes.start()
@@ -1118,7 +1126,12 @@ final class AppModel {
             for: surfacedSessions,
             mitamaAlerts: alerts,
             now: now
-        ) else { return nil }
+        ) else {
+            // Nothing is waiting, which is most of the day. Say what is next
+            // instead of saying nothing — something waiting always outranks it,
+            // so this can never push an unanswered request off the band.
+            return nextEventPeekBand(now: now)
+        }
 
         return V6PeekBandView.Content(
             agent: band.agent,
@@ -1127,6 +1140,34 @@ final class AppModel {
             othersWaiting: band.othersWaiting
         )
     }
+
+    /// The next calendar entry, as the band already knows how to draw.
+    ///
+    /// Reuses the waiting band's shape rather than adding a second one: the
+    /// closed pill reserves its width from one measurement, and a second layout
+    /// would need its own.
+    private func nextEventPeekBand(now: Date) -> V6PeekBandView.Content? {
+        guard settings.display.showsNextEvent, let band = calendar.band else { return nil }
+
+        return V6PeekBandView.Content(
+            // The start time rather than the title. A title is arbitrary length
+            // and truncating it beside a physical notch leaves a fragment; the
+            // clock time is always five characters and says the same thing.
+            agent: Self.eventClockFormatter.string(from: band.startsAt),
+            tintHint: .upcoming,
+            elapsed: lang.t("island.peek.inMinutes", band.minutesUntil),
+            othersWaiting: band.othersAhead
+        )
+    }
+
+    /// Fixed 24-hour, so the band's width is the same all day. A locale that
+    /// formats 9am as "9:00 AM" would make the pill breathe on the hour.
+    private static let eventClockFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "HH:mm"
+        return formatter
+    }()
 
     private func peekTint(_ subject: IslandPeekBand.Subject) -> V6PeekBandView.Content.Tint {
         switch subject {

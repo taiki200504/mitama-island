@@ -705,4 +705,8 @@
 /* Closed-island peek band — kept short: it sits beside a physical notch. */
 "island.peek.justNow" = "今";
 "island.peek.minutes" = "%d分";
+"island.peek.inMinutes" = "あと%d分";
+"settings.display.showsNextEvent" = "次の予定を閉じた島に出す";
+"settings.display.showsNextEvent.help" = "待っているものが何も無いとき、8時間以内に始まる次の予定の開始時刻と残り時間を出します。カレンダーの読み取り許可が要ります。終日の予定は出しません。";
+"settings.display.showsNextEvent.noAccess" = "カレンダーへのアクセスがありません。システム設定 → プライバシーとセキュリティ → カレンダー で Mitama Island を許可してください。";
 "island.peek.hours" = "%d時間";

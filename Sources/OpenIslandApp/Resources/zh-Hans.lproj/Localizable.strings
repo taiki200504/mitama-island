@@ -705,4 +705,8 @@
 /* Closed-island peek band — kept short: it sits beside a physical notch. */
 "island.peek.justNow" = "刚刚";
 "island.peek.minutes" = "%d分";
+"island.peek.inMinutes" = "还有%d分钟";
+"settings.display.showsNextEvent" = "在收起的岛上显示下一个日程";
+"settings.display.showsNextEvent.help" = "当没有任何事情等待你时，显示 8 小时内下一个日程的开始时间与剩余时间。需要日历读取权限。全天日程不会显示。";
+"settings.display.showsNextEvent.noAccess" = "没有日历访问权限。请在系统设置 → 隐私与安全性 → 日历 中允许 Mitama Island。";
 "island.peek.hours" = "%d小时";

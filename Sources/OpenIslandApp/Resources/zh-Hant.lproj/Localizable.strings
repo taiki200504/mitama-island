@@ -704,4 +704,8 @@
 /* Closed-island peek band — kept short: it sits beside a physical notch. */
 "island.peek.justNow" = "剛剛";
 "island.peek.minutes" = "%d分";
+"island.peek.inMinutes" = "還有%d分鐘";
+"settings.display.showsNextEvent" = "在收合的島上顯示下一個行程";
+"settings.display.showsNextEvent.help" = "當沒有任何事情等待你時，顯示 8 小時內下一個行程的開始時間與剩餘時間。需要行事曆讀取權限。全天行程不會顯示。";
+"settings.display.showsNextEvent.noAccess" = "沒有行事曆存取權限。請在系統設定 → 隱私權與安全性 → 行事曆 中允許 Mitama Island。";
 "island.peek.hours" = "%d小時";

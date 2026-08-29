@@ -81,6 +81,17 @@ final class DisplaySettings: PreferenceGroup {
         set { write(\.linkstartWaitsForPhrase, Keys.linkstartWaitsForPhrase, newValue) }
     }
 
+    /// Put the next calendar entry on the closed island while nothing is
+    /// waiting on you.
+    ///
+    /// Off by default because it needs calendar access, and a permission
+    /// dialog that appears without the user having asked for anything is one
+    /// nobody can answer confidently.
+    var showsNextEvent: Bool {
+        get { read(\.showsNextEvent, Keys.showsNextEvent, false) }
+        set { write(\.showsNextEvent, Keys.showsNextEvent, newValue) }
+    }
+
     /// Announce a finished session in the middle of the screen.
     var completionBanner: Bool {
         get { read(\.completionBanner, Keys.completionBanner, true) }
@@ -180,6 +191,7 @@ extension DisplaySettings {
         static let completionBanner = "display.completionBanner"
         static let playsLinkstart = "display.playsLinkstart"
         static let linkstartWaitsForPhrase = "display.linkstartWaitsForPhrase"
+        static let showsNextEvent = "display.showsNextEvent"
         static let hideIdleSessions = "display.hideIdleSessions"
         static let sessionAutoNaming = "display.sessionAutoNaming"
         static let notchHeightOverride = "display.notchHeightOverride"
