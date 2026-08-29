@@ -356,6 +356,9 @@ struct V6PeekBandView: View {
         let tintHint: Tint
         let elapsed: String
         let othersWaiting: Int
+        /// The camera is open right now. macOS lights its own indicator for as
+        /// long as that is true, so the island has to be able to say why.
+        var cameraIsWatching: Bool = false
 
         enum Tint: Hashable {
             case approval
@@ -370,6 +373,12 @@ struct V6PeekBandView: View {
 
     var body: some View {
         HStack(spacing: 5) {
+            if content.cameraIsWatching {
+                Image(systemName: "hand.raised.fill")
+                    .font(.islandMono(size: 9, weight: .semibold))
+                    .foregroundStyle(IslandThemes.current.statusTints.waitingForAnswer.opacity(0.92))
+            }
+
             Circle()
                 .fill(dotColor)
                 .frame(width: 6, height: 6)
@@ -408,12 +417,13 @@ struct V6PeekBandView: View {
     static func intrinsicWidth(of content: Content) -> CGFloat {
         let charWidth: CGFloat = 7.2   // Departure Mono at 11pt
         let dot: CGFloat = 6 + 5
+        let hand: CGFloat = content.cameraIsWatching ? 11 + 5 : 0
         let agent = CGFloat(content.agent.count) * charWidth + 5
         let elapsed = CGFloat(content.elapsed.count) * charWidth
         let others = content.othersWaiting > 0
             ? CGFloat("+\(content.othersWaiting)".count) * charWidth + 5
             : 0
-        return dot + agent + elapsed + others
+        return hand + dot + agent + elapsed + others
     }
 }
 

@@ -34,6 +34,19 @@ final class CameraGestureSettings: PreferenceGroup {
         set { write(\.answersByPalm, Keys.answersByPalm, newValue) }
     }
 
+    /// Keeps the camera open even when nothing is waiting, so a raised hand is
+    /// a standing input rather than an answer to a question.
+    ///
+    /// Off by default and the most expensive switch here: macOS lights the
+    /// camera indicator for as long as the device runs and no app can turn that
+    /// off, so this is a green light all day. It only means anything alongside
+    /// `answersByPalm`, and the power guard still closes it for a shut lid, a
+    /// hot machine or a low battery.
+    var staysOpen: Bool {
+        get { read(\.staysOpen, Keys.staysOpen, false) }
+        set { write(\.staysOpen, Keys.staysOpen, newValue) }
+    }
+
     /// How hard a hand has to try. Stored raw so an unknown future value falls
     /// back to the middle setting rather than failing to decode.
     var sensitivityRawValue: String {
@@ -63,5 +76,6 @@ extension CameraGestureSettings {
         static let windowSeconds = "cameraGesture.windowSeconds"
         static let answersByPalm = "cameraGesture.answersByPalm"
         static let sensitivity = "cameraGesture.sensitivity"
+        static let staysOpen = "cameraGesture.staysOpen"
     }
 }

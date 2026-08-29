@@ -1125,6 +1125,25 @@ final class AppModel {
     /// The count in the right slot answers "how many sessions exist", which on
     /// a busy machine is `×46` and tells you nothing. This answers the question
     /// the island is actually for: is anyone waiting, who, and how long.
+    /// Plays the login sequence. Shared by the key and by the raised palm, so
+    /// the two cannot drift into behaving differently.
+    func playLinkstart() {
+        // A fresh session each time: it lives for a few seconds and starting
+        // from a clean one is cheaper than reasoning about a stale one. Nil
+        // unless the sequence was asked to wait for the phrase, and then the
+        // key alone plays it — which is the default. Building the session
+        // unconditionally would open the microphone on every press for a
+        // sequence that is not going to listen.
+        linkstart.isMuted = { [weak self] in self?.settings.sound.isMuted ?? false }
+        let waitsForPhrase = settings.display.linkstartWaitsForPhrase
+            && settings.voiceCommand.isEnabled
+        linkstart.waitsForPhrase = waitsForPhrase
+        linkstart.voice = waitsForPhrase
+            ? VoiceCommandSession(settings: settings.voiceCommand)
+            : nil
+        linkstart.toggle()
+    }
+
     // MARK: - Idle board
 
     /// Tells the board where to get what it draws. Always wired, whether or not
@@ -1183,7 +1202,12 @@ final class AppModel {
     }
 
     func islandPeekBand(now: Date = .now) -> V6PeekBandView.Content? {
+        // macOS lights the camera indicator for as long as the device runs, and
+        // the island is the only thing that can say why. Carried on whatever
+        // the band is already showing rather than replacing it.
+        let watching = cameraActivation.phase == .awaitingGesture
         let alerts = mitamaFeedEnabled ? mitamaFeed.notifications : []
+
         guard let band = IslandPeekBand.content(
             for: surfacedSessions,
             mitamaAlerts: alerts,
@@ -1192,14 +1216,27 @@ final class AppModel {
             // Nothing is waiting, which is most of the day. Say what is next
             // instead of saying nothing — something waiting always outranks it,
             // so this can never push an unanswered request off the band.
-            return nextEventPeekBand(now: now)
+            if let next = nextEventPeekBand(now: now, cameraIsWatching: watching) {
+                return next
+            }
+            // Nothing at all, but the light is on. Explaining it is the whole
+            // point of holding the camera open with nothing waiting.
+            guard watching else { return nil }
+            return V6PeekBandView.Content(
+                agent: lang.t("camera.watching.short"),
+                tintHint: .upcoming,
+                elapsed: "",
+                othersWaiting: 0,
+                cameraIsWatching: true
+            )
         }
 
         return V6PeekBandView.Content(
             agent: band.agent,
             tintHint: peekTint(band.subject),
             elapsed: peekElapsedText(band.elapsed),
-            othersWaiting: band.othersWaiting
+            othersWaiting: band.othersWaiting,
+            cameraIsWatching: watching
         )
     }
 
@@ -1208,7 +1245,7 @@ final class AppModel {
     /// Reuses the waiting band's shape rather than adding a second one: the
     /// closed pill reserves its width from one measurement, and a second layout
     /// would need its own.
-    private func nextEventPeekBand(now: Date) -> V6PeekBandView.Content? {
+    private func nextEventPeekBand(now: Date, cameraIsWatching: Bool) -> V6PeekBandView.Content? {
         guard settings.display.showsNextEvent, let band = calendar.band else { return nil }
 
         return V6PeekBandView.Content(
@@ -1218,7 +1255,8 @@ final class AppModel {
             agent: Self.eventClockFormatter.string(from: band.startsAt),
             tintHint: .upcoming,
             elapsed: lang.t("island.peek.inMinutes", band.minutesUntil),
-            othersWaiting: band.othersAhead
+            othersWaiting: band.othersAhead,
+            cameraIsWatching: cameraIsWatching
         )
     }
 
@@ -1739,7 +1777,11 @@ final class AppModel {
     /// so the camera light is never on without something on screen to explain
     /// it. Called from every place either half can change.
     func refreshSustainedCamera() {
-        let handWouldMeanSomething = overlay.notchStatus != .closed && voiceAnswerTarget != nil
+        // Standing input, or the narrow rule. The narrow one keeps the green
+        // light meaning exactly one thing — something is waiting on you — so
+        // widening it is a switch the user has to throw on purpose.
+        let handWouldMeanSomething = settings.cameraGesture.staysOpen
+            || (overlay.notchStatus != .closed && voiceAnswerTarget != nil)
         guard handWouldMeanSomething else {
             lastPowerRefusal = nil
             cameraActivation.endSustained()
@@ -2538,8 +2580,17 @@ final class AppModel {
             case .up: self?.notchClose()
             }
         }
+        // A held palm answers whatever is being asked. With nothing being
+        // asked it plays the login sequence instead — the one thing the hand
+        // can start on its own, and the reason the camera may be held open at
+        // all when no card is waiting.
         cameraActivation.onPalmHeld = { [weak self] in
-            self?.beginVoiceAnswer()
+            guard let self else { return }
+            if voiceAnswerTarget != nil {
+                beginVoiceAnswer()
+            } else if settings.display.playsLinkstart {
+                playLinkstart()
+            }
         }
         // 差した先の行に印を移す。指の縦位置だけを使う——一覧は1列で、
         // 横に何かを選ぶものが無い。
@@ -2570,23 +2621,8 @@ final class AppModel {
             self?.beginVoiceAnswer()
         }
         coordinator.linkstartEnabled = settings.display.playsLinkstart
-        coordinator.onLinkstart = { [weak self] in
-            guard let self else { return }
-            // A fresh session each time: it lives for a few seconds and starting
-            // from a clean one is cheaper than reasoning about a stale one.
-            // Nil unless the sequence was asked to wait for the phrase, and
-            // then the key alone plays it — which is the default. Building the
-            // session unconditionally would open the microphone on every press
-            // for a sequence that is not going to listen.
-            self.linkstart.isMuted = { [weak self] in self?.settings.sound.isMuted ?? false }
-            let waitsForPhrase = self.settings.display.linkstartWaitsForPhrase
-                && self.settings.voiceCommand.isEnabled
-            self.linkstart.waitsForPhrase = waitsForPhrase
-            self.linkstart.voice = waitsForPhrase
-                ? VoiceCommandSession(settings: self.settings.voiceCommand)
-                : nil
-            self.linkstart.toggle()
-        }
+        coordinator.onLinkstart = { [weak self] in self?.playLinkstart() }
+
         voiceAnswer.onIntent = { [weak self] intent, heard in
             self?.apply(intent, heard: heard)
         }

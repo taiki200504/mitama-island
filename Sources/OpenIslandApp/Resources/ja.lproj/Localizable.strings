@@ -677,6 +677,9 @@
 "camera.status.requesting" = "カメラの許可を待っています — ダイアログに答えてください";
 "camera.status.timedOutOnGesture" = "ジェスチャを認識できませんでした。2本指を立てて、上から下へ。";
 "camera.watching" = "カメラが見ています — 手をかざすと答えられます";
+"camera.watching.short" = "見てます";
+"settings.camera.staysOpen" = "何も待っていなくてもカメラを開けておく";
+"settings.camera.staysOpen.help" = "手をかざす操作を常時使えるようにします。待っているものが無いときは、手のひらでリンクスタートが再生されます。macOS は カメラが動いている間ずっと緑のランプを点けるので、既定はオフです（島の帯にも「見てます」が出ます）。ふた・熱・電池の制限は変わらず効きます。";
 "camera.status.inUseByAnotherApp" = "他のアプリがカメラを使っているので、手をかざす操作は止めています。";
 "settings.camera.sensitivity" = "反応のしやすさ";
 "settings.camera.sensitivity.help" = "誤って反応するなら「鈍い」、何度やっても通らないなら「敏感」。手のひらを保持する長さと、続けて反応するまでの間隔が変わります。";

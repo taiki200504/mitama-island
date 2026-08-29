@@ -73,6 +73,20 @@ struct ShortcutsSettingsPane: View {
                     )
                 )
 
+                if cameraGesture.answersByPalm {
+                    SettingsToggleRow(
+                        title: lang.t("settings.camera.staysOpen"),
+                        help: lang.t("settings.camera.staysOpen.help"),
+                        isOn: Binding(
+                            get: { cameraGesture.staysOpen },
+                            set: {
+                                cameraGesture.staysOpen = $0
+                                model.refreshSustainedCamera()
+                            }
+                        )
+                    )
+                }
+
                 SettingsRow(
                     title: lang.t("settings.camera.sensitivity"),
                     help: lang.t("settings.camera.sensitivity.help")
