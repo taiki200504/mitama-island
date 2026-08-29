@@ -361,6 +361,8 @@ struct V6PeekBandView: View {
             case approval
             case answer
             case mitama
+            /// Nothing is wrong and nothing is waiting — this is what is next.
+            case upcoming
         }
     }
 
@@ -396,6 +398,7 @@ struct V6PeekBandView: View {
         case .approval: IslandThemes.current.statusTints.waitingForApproval
         case .answer:   IslandThemes.current.statusTints.waitingForAnswer
         case .mitama:   IslandThemes.current.statusTints.critical
+        case .upcoming: IslandThemes.current.statusTints.running
         }
     }
 

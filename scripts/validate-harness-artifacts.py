@@ -389,6 +389,17 @@ def main() -> None:
             "completionBanner text values",
         )
 
+    elif scenario == "ambientBoard":
+        # The board is its own full-screen panel, so the island stays closed
+        # underneath it. Checked by the digits and the waiting agent rather than
+        # by wording, so the assertion survives a change of UI language.
+        if notch_status != "closed":
+            fail(f"expected closed notch under the idle board, got {notch_status!r}")
+        if not any(":" in value for value in text_values):
+            fail("idle board is missing the clock")
+        if not any("CODEX" in value or "CLAUDE" in value for value in text_values):
+            fail("idle board is missing the waiting agent")
+
     else:
         fail(f"unsupported scenario {scenario!r}")
 

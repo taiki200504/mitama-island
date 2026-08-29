@@ -81,6 +81,29 @@ final class DisplaySettings: PreferenceGroup {
         set { write(\.linkstartWaitsForPhrase, Keys.linkstartWaitsForPhrase, newValue) }
     }
 
+    /// Put the next calendar entry on the closed island while nothing is
+    /// waiting on you.
+    ///
+    /// Off by default because it needs calendar access, and a permission
+    /// dialog that appears without the user having asked for anything is one
+    /// nobody can answer confidently.
+    var showsNextEvent: Bool {
+        get { read(\.showsNextEvent, Keys.showsNextEvent, false) }
+        set { write(\.showsNextEvent, Keys.showsNextEvent, newValue) }
+    }
+
+    /// How many minutes of the machine being left alone before the idle board
+    /// takes the screen. Zero means never, which is the default.
+    ///
+    /// Off by default and staying that way: this is the one feature here that
+    /// covers every display without being asked to. A screen that goes dark on
+    /// its own during a call or a presentation is worse than no feature — the
+    /// gates in `AppModel.considerAmbientBoard` exist for that reason.
+    var ambientAfterMinutes: Int {
+        get { read(\.ambientAfterMinutes, Keys.ambientAfterMinutes, 0) }
+        set { write(\.ambientAfterMinutes, Keys.ambientAfterMinutes, newValue) }
+    }
+
     /// Announce a finished session in the middle of the screen.
     var completionBanner: Bool {
         get { read(\.completionBanner, Keys.completionBanner, true) }
@@ -180,6 +203,8 @@ extension DisplaySettings {
         static let completionBanner = "display.completionBanner"
         static let playsLinkstart = "display.playsLinkstart"
         static let linkstartWaitsForPhrase = "display.linkstartWaitsForPhrase"
+        static let showsNextEvent = "display.showsNextEvent"
+        static let ambientAfterMinutes = "display.ambientAfterMinutes"
         static let hideIdleSessions = "display.hideIdleSessions"
         static let sessionAutoNaming = "display.sessionAutoNaming"
         static let notchHeightOverride = "display.notchHeightOverride"

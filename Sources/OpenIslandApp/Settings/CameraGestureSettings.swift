@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import OpenIslandCore
 
 /// The opt-in controls for opening the island with a two-finger camera gesture.
 ///
@@ -33,6 +34,18 @@ final class CameraGestureSettings: PreferenceGroup {
         set { write(\.answersByPalm, Keys.answersByPalm, newValue) }
     }
 
+    /// How hard a hand has to try. Stored raw so an unknown future value falls
+    /// back to the middle setting rather than failing to decode.
+    var sensitivityRawValue: String {
+        get { read(\.sensitivityRawValue, Keys.sensitivity, GestureSensitivity.default.rawValue) }
+        set { write(\.sensitivityRawValue, Keys.sensitivity, newValue) }
+    }
+
+    var sensitivity: GestureSensitivity {
+        get { GestureSensitivity(rawValue: sensitivityRawValue) }
+        set { sensitivityRawValue = newValue.rawValue }
+    }
+
     private static func clampWindowSeconds(_ seconds: Double) -> Double {
         min(max(seconds, Defaults.minimumWindowSeconds), Defaults.maximumWindowSeconds)
     }
@@ -49,5 +62,6 @@ extension CameraGestureSettings {
         static let enabled = "cameraGesture.enabled"
         static let windowSeconds = "cameraGesture.windowSeconds"
         static let answersByPalm = "cameraGesture.answersByPalm"
+        static let sensitivity = "cameraGesture.sensitivity"
     }
 }

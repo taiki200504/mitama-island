@@ -53,6 +53,13 @@ final class CameraActivationSession {
     /// So the explanation is given once per run of refusals rather than on
     /// every card that arrives.
     private var hasSaidCameraIsNotAllowed = false
+    /// Same discipline, for the other reason the camera stays shut.
+    private var hasSaidCameraIsBusy = false
+
+    /// True while a call or a recording holds the built-in camera.
+    var cameraIsInUseByAnotherApp: Bool {
+        builtInCamera()?.isInUseByAnotherApplication ?? false
+    }
 
     init(settings: CameraGestureSettings) {
         self.settings = settings
@@ -134,6 +141,25 @@ final class CameraActivationSession {
             return
         }
         hasSaidCameraIsNotAllowed = false
+
+        // Somebody else is on the camera — a call, a recording. macOS lets two
+        // apps share the device, so this would work; it is refused because a
+        // gesture read off a video call is a gesture made at a person, not at
+        // this app. Measured 2026-08-29: a hand raised in a meeting is exactly
+        // the palm-hold pose.
+        guard !cameraIsInUseByAnotherApp else {
+            Self.logger.notice("Sustained camera refused: in use by another app")
+            if !hasSaidCameraIsBusy {
+                hasSaidCameraIsBusy = true
+                onStatus?(LanguageManager.shared.t("camera.status.inUseByAnotherApp"))
+            }
+            // Closes it too, for the call that starts while a card is already
+            // waiting. `refreshSustainedCamera` runs on every applied event, so
+            // this is checked again within seconds rather than once at the top.
+            endSustained()
+            return
+        }
+        hasSaidCameraIsBusy = false
 
         keepsCameraOpen = true
         guard !isRunning else {
@@ -230,7 +256,7 @@ final class CameraActivationSession {
         output.alwaysDiscardsLateVideoFrames = true
         output.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA]
 
-        let analyzer = CameraFrameAnalyzer { [weak self] outcome in
+        let analyzer = CameraFrameAnalyzer(sensitivity: settings.sensitivity) { [weak self] outcome in
             Task { @MainActor in self?.handle(outcome) }
         }
         self.analyzer = analyzer

@@ -676,6 +676,13 @@
 "camera.power.lowPowerMode" = "已开启低电量模式，暂不开启摄像头。可用 ⌃⌥V 语音作答。";
 "camera.status.requesting" = "正在等待摄像头权限 — 请回应对话框";
 "camera.status.timedOutOnGesture" = "未识别到手势。请立起两指，从上向下滑动。";
+"camera.watching" = "摄像头正在观察——举手即可作答";
+"camera.status.inUseByAnotherApp" = "其他应用正在使用摄像头，手势操作已暂停。";
+"settings.camera.sensitivity" = "反应灵敏度";
+"settings.camera.sensitivity.help" = "误触发就选“迟钝”，怎么做都不响应就选“灵敏”。它会改变手掌保持的时长和再次触发的间隔。";
+"settings.camera.sensitivity.low" = "迟钝";
+"settings.camera.sensitivity.medium" = "普通";
+"settings.camera.sensitivity.high" = "灵敏";
 
 "voice.status.nothingToAnswer" = "没有等待回答的内容";
 "voice.status.requesting" = "正在等待麦克风权限 — 请回应对话框";
@@ -698,4 +705,15 @@
 /* Closed-island peek band — kept short: it sits beside a physical notch. */
 "island.peek.justNow" = "刚刚";
 "island.peek.minutes" = "%d分";
+"island.peek.inMinutes" = "还有%d分钟";
+"ambient.dismiss" = "按任意键或点击即可返回";
+"ambient.waiting" = "正在等待你";
+"ambient.more" = "另有 %d 项";
+"settings.display.ambient" = "闲置时显示待机画面";
+"settings.display.ambient.help" = "离开 Mac 后，全屏显示时钟、下一个日程和正在等待你的对象。在专注模式、共享屏幕、其他应用正在使用摄像头（通话中）或岛已展开时不会出现。按任意键或点击即可返回。";
+"settings.display.ambient.never" = "不显示";
+"settings.display.ambient.minutes" = "%d 分钟后";
+"settings.display.showsNextEvent" = "在收起的岛上显示下一个日程";
+"settings.display.showsNextEvent.help" = "当没有任何事情等待你时，显示 8 小时内下一个日程的开始时间与剩余时间。需要日历读取权限。全天日程不会显示。";
+"settings.display.showsNextEvent.noAccess" = "没有日历访问权限。请在系统设置 → 隐私与安全性 → 日历 中允许 Mitama Island。";
 "island.peek.hours" = "%d小时";

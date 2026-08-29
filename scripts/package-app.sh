@@ -110,6 +110,10 @@ cat > "$bundle_dir/Contents/Info.plist" <<EOF
     <string>Open Island uses the microphone only while you hold its shortcut, to hear a spoken yes or no for a request an agent is waiting on. Speech is recognized on this Mac and is never saved or sent.</string>
     <key>NSSpeechRecognitionUsageDescription</key>
     <string>Speech is recognized on this Mac so a waiting request can be answered out loud. Nothing is saved or sent.</string>
+    <key>NSCalendarsFullAccessUsageDescription</key>
+    <string>Open Island reads your calendar so the closed island can say what is coming up next. Nothing is written, saved, or sent.</string>
+    <key>NSCalendarsUsageDescription</key>
+    <string>Open Island reads your calendar so the closed island can say what is coming up next. Nothing is written, saved, or sent.</string>
     <key>NSCameraUsageDescription</key>
     <string>Open Island uses the camera to see a hand gesture that opens the island. Video is never saved or sent.</string>
     <key>NSHighResolutionCapable</key>
