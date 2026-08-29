@@ -68,6 +68,19 @@ final class DisplaySettings: PreferenceGroup {
         set { write(\.playsLinkstart, Keys.playsLinkstart, newValue) }
     }
 
+    /// Whether the key only darkens the screen, and the sequence waits to be
+    /// spoken into.
+    ///
+    /// Off by default. Speaking adds three ways to fail — microphone
+    /// permission, what the recogniser writes down, and the room being quiet
+    /// enough — to something that only plays an animation. Measured on
+    /// 2026-08-29: one attempt in three got through, and the other two sat on a
+    /// dark screen for nine seconds. The key that got here is proof enough.
+    var linkstartWaitsForPhrase: Bool {
+        get { read(\.linkstartWaitsForPhrase, Keys.linkstartWaitsForPhrase, false) }
+        set { write(\.linkstartWaitsForPhrase, Keys.linkstartWaitsForPhrase, newValue) }
+    }
+
     /// Announce a finished session in the middle of the screen.
     var completionBanner: Bool {
         get { read(\.completionBanner, Keys.completionBanner, true) }
@@ -166,6 +179,7 @@ extension DisplaySettings {
         static let theme = "display.theme"
         static let completionBanner = "display.completionBanner"
         static let playsLinkstart = "display.playsLinkstart"
+        static let linkstartWaitsForPhrase = "display.linkstartWaitsForPhrase"
         static let hideIdleSessions = "display.hideIdleSessions"
         static let sessionAutoNaming = "display.sessionAutoNaming"
         static let notchHeightOverride = "display.notchHeightOverride"
