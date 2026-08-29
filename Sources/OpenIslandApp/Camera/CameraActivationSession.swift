@@ -57,7 +57,7 @@ final class CameraActivationSession {
     private var hasSaidCameraIsBusy = false
 
     /// True while a call or a recording holds the built-in camera.
-    private var cameraIsInUseByAnotherApp: Bool {
+    var cameraIsInUseByAnotherApp: Bool {
         builtInCamera()?.isInUseByAnotherApplication ?? false
     }
 

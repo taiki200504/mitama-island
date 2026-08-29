@@ -706,6 +706,13 @@
 "island.peek.justNow" = "now";
 "island.peek.minutes" = "%dm";
 "island.peek.inMinutes" = "in %d min";
+"ambient.dismiss" = "Any key or click brings you back";
+"ambient.waiting" = "Waiting on you";
+"ambient.more" = "%d more";
+"settings.display.ambient" = "Show the idle board when you step away";
+"settings.display.ambient.help" = "Fills the screen with the clock, what is next, and who is waiting. Never appears during a Focus mode, while the screen is shared, while another app is using the camera (a call), or while the island is open. Any key or click brings you back.";
+"settings.display.ambient.never" = "Never";
+"settings.display.ambient.minutes" = "After %d min";
 "settings.display.showsNextEvent" = "Show what is next on the closed island";
 "settings.display.showsNextEvent.help" = "While nothing is waiting on you, shows the start time of the next entry beginning within eight hours, and how long that is. Needs read access to your calendar. All-day entries are skipped.";
 "settings.display.showsNextEvent.noAccess" = "No calendar access. Allow Mitama Island in System Settings → Privacy & Security → Calendars.";

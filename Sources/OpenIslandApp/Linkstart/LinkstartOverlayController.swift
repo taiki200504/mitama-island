@@ -210,51 +210,10 @@ final class LinkstartOverlayController {
     // MARK: - Private
 
     private func makePanel(on screen: NSScreen, showsDetail: Bool) -> NSPanel {
-        let panel = LinkstartPanel(
-            contentRect: screen.frame,
-            styleMask: [.borderless, .nonactivatingPanel],
-            backing: .buffered,
-            defer: false,
-            screen: screen
+        FullScreenOverlayPanel.make(
+            on: screen,
+            rootView: LinkstartView(controller: self, showsDetail: showsDetail),
+            onDismiss: { [weak self] in self?.dismiss() }
         )
-        panel.onDismiss = { [weak self] in self?.dismiss() }
-        panel.isOpaque = false
-        panel.backgroundColor = .clear
-        panel.hasShadow = false
-        panel.isMovable = false
-        panel.ignoresMouseEvents = false
-        // Above the menu bar and the Dock: this is meant to cover the machine.
-        panel.level = .screenSaver
-        // `.stationary` for the same reason the island needs it — without it the
-        // panel is dragged off screen by the Sonoma wallpaper-reveal gesture.
-        panel.collectionBehavior = [.fullScreenAuxiliary, .canJoinAllSpaces, .ignoresCycle, .stationary]
-
-        let hosting = NSHostingView(
-            rootView: LinkstartView(controller: self, showsDetail: showsDetail)
-        )
-        hosting.frame = CGRect(origin: .zero, size: screen.frame.size)
-        panel.contentView = hosting
-        panel.setFrame(screen.frame, display: true)
-        panel.orderFrontRegardless()
-        return panel
-    }
-}
-
-/// A full-screen panel that anyone can get out of.
-///
-/// Something that covers every display has to be dismissable without knowing a
-/// shortcut, so any key and any click take it away — not just Escape.
-private final class LinkstartPanel: NSPanel {
-    var onDismiss: (() -> Void)?
-
-    override var canBecomeKey: Bool { true }
-    override var canBecomeMain: Bool { false }
-
-    override func keyDown(with event: NSEvent) {
-        onDismiss?()
-    }
-
-    override func mouseDown(with event: NSEvent) {
-        onDismiss?()
     }
 }

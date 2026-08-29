@@ -505,6 +505,9 @@ final class AppModel {
     /// that has none to spare. Eager construction is free here, so it is not
     /// worth understanding further.
     @ObservationIgnored let cameraActivation: CameraActivationSession
+    /// The idle screen and the clock that decides when to show it.
+    let ambient = AmbientOverlayController()
+    @ObservationIgnored let idle = UserIdleWatcher()
     /// What is coming up, for the closed island's otherwise blank state.
     let calendar = CalendarWatcher()
 
@@ -796,6 +799,8 @@ final class AppModel {
         if settings.display.showsNextEvent {
             calendar.start()
         }
+
+        startAmbientBoardIfEnabled()
 
         quietScenes.start()
         startIdleSessionCleanup()
@@ -1120,6 +1125,63 @@ final class AppModel {
     /// The count in the right slot answers "how many sessions exist", which on
     /// a busy machine is `×46` and tells you nothing. This answers the question
     /// the island is actually for: is anyone waiting, who, and how long.
+    // MARK: - Idle board
+
+    /// Tells the board where to get what it draws. Always wired, whether or not
+    /// the idle clock is running — the harness presents it directly.
+    private func configureAmbientBoard() {
+        ambient.lang = lang
+        ambient.board = { [weak self] in
+            guard let self else { return .make(for: []) }
+            return AmbientBoard.make(
+                for: surfacedSessions,
+                mitamaAlerts: mitamaFeedEnabled ? mitamaFeed.notifications : []
+            )
+        }
+        ambient.nextEvent = { [weak self] in self?.calendar.band }
+        ambient.onDismiss = { [weak self] in self?.idle.markActive() }
+        idle.onTick = { [weak self] seconds in self?.considerAmbientBoard(idleFor: seconds) }
+    }
+
+    /// Starts or stops the idle clock to match the setting.
+    func startAmbientBoardIfEnabled() {
+        configureAmbientBoard()
+        guard settings.display.ambientAfterMinutes > 0 else {
+            idle.stop()
+            ambient.dismiss()
+            return
+        }
+        idle.start()
+    }
+
+    /// Whether the machine being left alone should become a full screen.
+    ///
+    /// Every refusal here is a case where covering the display would be worse
+    /// than doing nothing. A screen that blanks during a call is not a feature:
+    /// on 2026-08-29 the login sequence did exactly that three times, into a
+    /// meeting, and it is the reason the camera check is in this list.
+    private func considerAmbientBoard(idleFor seconds: TimeInterval) {
+        let threshold = TimeInterval(settings.display.ambientAfterMinutes * 60)
+        guard threshold > 0 else { return }
+        guard !ambient.isPresenting else { return }
+        guard seconds >= threshold else { return }
+
+        // Focus, screen sharing, a video filling the screen. The same policy
+        // that decides whether a notification may interrupt.
+        guard !quietScenes.shouldStayQuiet(under: settings.behaviour) else { return }
+        // Somebody is on a call. The machine is not idle; the person is
+        // listening to it.
+        guard !cameraActivation.cameraIsInUseByAnotherApp else { return }
+        // The island is already saying something and has been opened on purpose.
+        guard overlay.notchStatus == .closed else { return }
+        // Nothing to say and no clock worth covering the screen for would be an
+        // odd trade, but an empty board is still the machine at rest — the
+        // clock is the point. Only the login sequence's own overlay blocks it.
+        guard !linkstart.isPresenting else { return }
+
+        ambient.present()
+    }
+
     func islandPeekBand(now: Date = .now) -> V6PeekBandView.Content? {
         let alerts = mitamaFeedEnabled ? mitamaFeed.notifications : []
         guard let band = IslandPeekBand.content(
@@ -1818,6 +1880,13 @@ final class AppModel {
         harnessRuntimeMonitor?.recordMilestone("scenarioLoaded", message: snapshot.title)
 
         overlay.applyOverlayState(from: snapshot, presentOverlay: presentOverlay, autoCollapseNotificationCards: autoCollapseNotificationCards)
+
+        if snapshot.presentsAmbientBoard {
+            // Its own full-screen panel, so a scenario has to ask for it — the
+            // same reason the completion banner does.
+            configureAmbientBoard()
+            ambient.present()
+        }
 
         if let banner = snapshot.completionBanner {
             // The same open handler production uses, so what the harness

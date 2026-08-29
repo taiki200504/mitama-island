@@ -706,6 +706,13 @@
 "island.peek.justNow" = "今";
 "island.peek.minutes" = "%d分";
 "island.peek.inMinutes" = "あと%d分";
+"ambient.dismiss" = "どれかキーを押すか、クリックすると戻ります";
+"ambient.waiting" = "待っているもの";
+"ambient.more" = "ほか %d 件";
+"settings.display.ambient" = "何もしていないとき待機画面を出す";
+"settings.display.ambient.help" = "Mac を放置すると、時計・次の予定・待たせている相手を全画面に出します。集中モード中・画面共有中・他のアプリがカメラを使っている間（通話中）・島を開いている間は出しません。どれかキーを押すかクリックすれば戻ります。";
+"settings.display.ambient.never" = "出さない";
+"settings.display.ambient.minutes" = "%d分後";
 "settings.display.showsNextEvent" = "次の予定を閉じた島に出す";
 "settings.display.showsNextEvent.help" = "待っているものが何も無いとき、8時間以内に始まる次の予定の開始時刻と残り時間を出します。カレンダーの読み取り許可が要ります。終日の予定は出しません。";
 "settings.display.showsNextEvent.noAccess" = "カレンダーへのアクセスがありません。システム設定 → プライバシーとセキュリティ → カレンダー で Mitama Island を許可してください。";

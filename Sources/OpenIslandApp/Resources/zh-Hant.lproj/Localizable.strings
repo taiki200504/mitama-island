@@ -705,6 +705,13 @@
 "island.peek.justNow" = "剛剛";
 "island.peek.minutes" = "%d分";
 "island.peek.inMinutes" = "還有%d分鐘";
+"ambient.dismiss" = "按任意鍵或點擊即可返回";
+"ambient.waiting" = "正在等待你";
+"ambient.more" = "另有 %d 項";
+"settings.display.ambient" = "閒置時顯示待機畫面";
+"settings.display.ambient.help" = "離開 Mac 後，全螢幕顯示時鐘、下一個行程與正在等待你的對象。在專注模式、共享螢幕、其他應用程式正在使用攝影機（通話中）或島已展開時不會出現。按任意鍵或點擊即可返回。";
+"settings.display.ambient.never" = "不顯示";
+"settings.display.ambient.minutes" = "%d 分鐘後";
 "settings.display.showsNextEvent" = "在收合的島上顯示下一個行程";
 "settings.display.showsNextEvent.help" = "當沒有任何事情等待你時，顯示 8 小時內下一個行程的開始時間與剩餘時間。需要行事曆讀取權限。全天行程不會顯示。";
 "settings.display.showsNextEvent.noAccess" = "沒有行事曆存取權限。請在系統設定 → 隱私權與安全性 → 行事曆 中允許 Mitama Island。";

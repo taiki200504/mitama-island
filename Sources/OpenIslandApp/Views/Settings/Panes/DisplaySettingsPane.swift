@@ -118,6 +118,26 @@ struct DisplaySettingsPane: View {
                 )
             )
 
+            SettingsRow(
+                title: lang.t("settings.display.ambient"),
+                help: lang.t("settings.display.ambient.help")
+            ) {
+                Picker("", selection: Binding(
+                    get: { display.ambientAfterMinutes },
+                    set: {
+                        display.ambientAfterMinutes = $0
+                        model.startAmbientBoardIfEnabled()
+                    }
+                )) {
+                    Text(lang.t("settings.display.ambient.never")).tag(0)
+                    ForEach([3, 5, 10, 20], id: \.self) { minutes in
+                        Text(lang.t("settings.display.ambient.minutes", minutes)).tag(minutes)
+                    }
+                }
+                .labelsHidden()
+                .fixedSize()
+            }
+
             SettingsToggleRow(
                 title: lang.t("settings.display.showsNextEvent"),
                 help: lang.t(

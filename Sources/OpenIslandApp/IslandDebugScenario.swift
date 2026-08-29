@@ -14,6 +14,9 @@ struct IslandDebugSnapshot {
     /// The banner is a window of its own, so a scenario has to ask for it —
     /// loading sessions alone would never bring it up.
     var completionBanner: CompletionBannerContent?
+    /// The idle board covers every screen, so a scenario has to ask for it the
+    /// same way the banner does.
+    var presentsAmbientBoard = false
 }
 
 enum IslandDebugScenario: String, CaseIterable, Identifiable {
@@ -27,6 +30,7 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
     case planApproval
     case completionBanner
     case longQuestionCard
+    case ambientBoard
 
     var id: String { rawValue }
 
@@ -54,6 +58,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Completion Banner"
         case .longQuestionCard:
             "Long Question Card"
+        case .ambientBoard:
+            "Idle Board"
         }
     }
 
@@ -79,6 +85,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "The announcement shown under the notch when a session finishes."
         case .longQuestionCard:
             "Many long options: the list scrolls and the submit button stays put."
+        case .ambientBoard:
+            "The screen the machine shows while it is being left alone."
         }
     }
 
@@ -220,6 +228,27 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                 islandSurface: .sessionList(actionableSessionID: session.id),
                 sessions: DebugSessionFactory.notificationSessions(lead: session, now: now),
                 selectedSessionID: session.id
+            )
+
+        case .ambientBoard:
+            // Two waiting agents eight and ninety minutes back, so the board
+            // has both a "minutes" and an "hours" row to draw rather than the
+            // "just now" every freshly built fixture would give.
+            let recent = DebugSessionFactory.approvalSession(now: now.addingTimeInterval(-8 * 60))
+            let stale = DebugSessionFactory.approvalSession(
+                now: now.addingTimeInterval(-92 * 60),
+                id: "session-approval-stale"
+            )
+            return IslandDebugSnapshot(
+                title: title,
+                summary: summary,
+                previewHeight: 78,
+                notchStatus: .closed,
+                notchOpenReason: nil,
+                islandSurface: .sessionList(),
+                sessions: [recent, stale],
+                selectedSessionID: recent.id,
+                presentsAmbientBoard: true
             )
         }
     }
@@ -430,9 +459,11 @@ private enum DebugSessionFactory {
         )
     }
 
-    static func approvalSession(now: Date) -> AgentSession {
+    /// The id is a parameter so a scenario can show two waiting rows: two
+    /// fixtures sharing one id make the session store trap on the duplicate.
+    static func approvalSession(now: Date, id: String = "session-approval") -> AgentSession {
         AgentSession(
-            id: "session-approval",
+            id: id,
             title: "Codex · open-island",
             tool: .codex,
             origin: .demo,
