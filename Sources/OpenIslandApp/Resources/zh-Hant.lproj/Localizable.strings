@@ -675,6 +675,13 @@
 "camera.power.lowPowerMode" = "已開啟低電量模式，暫不開啟攝影機。可用 ⌃⌥V 語音作答。";
 "camera.status.requesting" = "正在等待攝影機權限 — 請回應對話框";
 "camera.status.timedOutOnGesture" = "未辨識到手勢。請立起兩指，由上往下滑動。";
+"camera.watching" = "攝影機正在觀察——舉手即可作答";
+"camera.status.inUseByAnotherApp" = "其他應用程式正在使用攝影機，手勢操作已暫停。";
+"settings.camera.sensitivity" = "反應靈敏度";
+"settings.camera.sensitivity.help" = "誤觸發就選「遲鈍」，怎麼做都不回應就選「靈敏」。它會改變手掌保持的時長與再次觸發的間隔。";
+"settings.camera.sensitivity.low" = "遲鈍";
+"settings.camera.sensitivity.medium" = "普通";
+"settings.camera.sensitivity.high" = "靈敏";
 
 "voice.status.nothingToAnswer" = "沒有等待回答的內容";
 "voice.status.requesting" = "正在等待麥克風權限 — 請回應對話框";

@@ -36,7 +36,7 @@ final class CameraFrameAnalyzer: NSObject, AVCaptureVideoDataOutputSampleBufferD
     private let poseDetector = TwoFingerPoseDetector()
     private var swipeDetector = SwipeDetector()
     private let palmDetector = OpenPalmDetector()
-    private var palmHoldDetector = PoseHoldDetector()
+    private var palmHoldDetector: PoseHoldDetector
     private let cursorDetector = FingerCursorDetector()
     /// Where the hand was when it was last worth telling anyone about.
     private var lastReportedAim: Double?
@@ -46,8 +46,12 @@ final class CameraFrameAnalyzer: NSObject, AVCaptureVideoDataOutputSampleBufferD
     private static let aimReportingStep = 0.012
     private var pinchLatch = PinchLatch()
 
-    init(onOutcome: @escaping @Sendable (CameraFrameOutcome) -> Void) {
+    init(
+        sensitivity: GestureSensitivity = .default,
+        onOutcome: @escaping @Sendable (CameraFrameOutcome) -> Void
+    ) {
         self.onOutcome = onOutcome
+        self.palmHoldDetector = PoseHoldDetector(configuration: sensitivity.palmHold)
     }
 
     func captureOutput(

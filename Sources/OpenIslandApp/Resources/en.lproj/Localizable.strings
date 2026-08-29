@@ -676,6 +676,13 @@
 "camera.power.lowPowerMode" = "Low Power Mode is on, so the camera stays shut. Use ⌃⌥V to answer by voice.";
 "camera.status.requesting" = "Waiting for camera permission — answer the dialog";
 "camera.status.timedOutOnGesture" = "No gesture seen. Two fingers, down the frame.";
+"camera.watching" = "Camera is watching — raise a hand to answer";
+"camera.status.inUseByAnotherApp" = "Another app is using the camera, so hand gestures are paused.";
+"settings.camera.sensitivity" = "How readily it reacts";
+"settings.camera.sensitivity.help" = "Pick Deliberate if it fires when you did not mean it, Quick if it never fires. It changes how long a palm is held and how soon it may fire again.";
+"settings.camera.sensitivity.low" = "Deliberate";
+"settings.camera.sensitivity.medium" = "Normal";
+"settings.camera.sensitivity.high" = "Quick";
 
 "voice.status.nothingToAnswer" = "Nothing is waiting for an answer";
 "voice.status.requesting" = "Waiting for microphone permission — answer the dialog";

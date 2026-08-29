@@ -72,6 +72,22 @@ struct ShortcutsSettingsPane: View {
                         }
                     )
                 )
+
+                SettingsRow(
+                    title: lang.t("settings.camera.sensitivity"),
+                    help: lang.t("settings.camera.sensitivity.help")
+                ) {
+                    Picker("", selection: Binding(
+                        get: { cameraGesture.sensitivity },
+                        set: { cameraGesture.sensitivity = $0 }
+                    )) {
+                        ForEach(GestureSensitivity.allCases, id: \.self) { level in
+                            Text(lang.t(level.labelKey)).tag(level)
+                        }
+                    }
+                    .labelsHidden()
+                    .fixedSize()
+                }
             }
         } header: {
             Text(lang.t("settings.camera.section"))

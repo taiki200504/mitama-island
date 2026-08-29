@@ -212,8 +212,18 @@ struct IslandPanelView: View {
         return (targetOverlayScreen?.safeAreaInsets.top ?? 0) == 0
     }
 
+    /// True while the camera is open and watching for a hand.
+    private var cameraIsWatching: Bool {
+        model.cameraActivation.phase == .awaitingGesture
+    }
+
     private var openedHeaderButtonsWidth: CGFloat {
-        (Self.headerControlButtonSize * 3) + (Self.headerControlSpacing * 2)
+        // The watching mark occupies a control slot, so the lane has to reserve
+        // room for it. A fixed count here compresses the usage lane's neighbour
+        // instead of widening the lane.
+        let controls = cameraIsWatching ? 4 : 3
+        return (Self.headerControlButtonSize * CGFloat(controls))
+            + (Self.headerControlSpacing * CGFloat(controls - 1))
     }
 
     private var openedHeaderHorizontalPadding: CGFloat {
@@ -505,6 +515,10 @@ struct IslandPanelView: View {
 
     private var openedHeaderButtons: some View {
         HStack(spacing: Self.headerControlSpacing) {
+            if cameraIsWatching {
+                cameraWatchingMark
+            }
+
             headerIconButton(
                 systemName: model.isSoundMuted ? "speaker.slash.fill" : "speaker.wave.2.fill",
                 tint: model.isSoundMuted
@@ -526,6 +540,28 @@ struct IslandPanelView: View {
                 showingQuitConfirmation = true
             }
         }
+    }
+
+    /// Says the camera is open, for as long as it is open.
+    ///
+    /// The status notice used to be the only sign of this, and a notice expires
+    /// on its own timer: a card that had been sitting for a minute looked
+    /// exactly like one the camera had never opened for. Measured 2026-08-29 —
+    /// the camera opened four times and was invisible after the first seconds
+    /// of each, which is why the feature read as broken.
+    ///
+    /// Not a button. There is nothing to press: the camera is open because a
+    /// card is waiting, and it closes when the card is answered.
+    private var cameraWatchingMark: some View {
+        let tint = IslandThemes.current.statusTints.waitingForAnswer
+        return Image(systemName: "hand.raised.fill")
+            .font(.islandText(size: 10, weight: .semibold))
+            .foregroundStyle(tint)
+            .frame(width: Self.headerControlButtonSize, height: Self.headerControlButtonSize)
+            .background(tint.opacity(0.16), in: Circle())
+            .shadow(color: tint.opacity(0.6), radius: IslandThemes.current.glowRadius)
+            .accessibilityLabel(model.lang.t("camera.watching"))
+            .help(model.lang.t("camera.watching"))
     }
 
     private func headerIconButton(
