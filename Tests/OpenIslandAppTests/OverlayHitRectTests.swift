@@ -203,4 +203,38 @@ struct OverlayHitRectTests {
 
         #expect(afterReopen.height < tall.height)
     }
+
+    /// [P2] regression: `expandNotificationToSessionList(clearExpansion:
+    /// true)` and `reconcileIslandSurfaceAfterStateChange()` both assign
+    /// `islandSurface` directly, without going through `notchOpen`/
+    /// `notchClose` — a tall notification card collapsing straight into the
+    /// plain session list, while staying opened the whole time, used to
+    /// leave the hit rectangle sized for the card. `islandSurface`'s own
+    /// `didSet` (in `OverlayUICoordinator`) is the single choke point that
+    /// now catches every such assignment, not just the ones that happen to
+    /// go through `transitionOverlay`.
+    @Test
+    func switchingSurfaceWhileStillOpenedResetsTheHitRectToTheFloor() {
+        let model = makeModel()
+        let controller = model.overlay.overlayPanelController
+        controller.model = model
+        let bounds = NSRect(x: 0, y: 0, width: 648, height: 900)
+
+        model.notchStatus = .opened
+        model.islandSurface = .sessionList(actionableSessionID: "session-1")
+        model.openedSurfaceMeasuredHeight = 700
+        let tall = controller.interactiveRect(for: model, in: bounds)!
+        #expect(tall.height >= 700)
+
+        // The notification card collapses into the plain list without ever
+        // closing — exactly what `expandNotificationToSessionList` and
+        // `reconcileIslandSurfaceAfterStateChange` do.
+        model.islandSurface = .sessionList()
+
+        let afterSwitch = controller.interactiveRect(for: model, in: bounds)!
+        #expect(afterSwitch.height < tall.height)
+        // Falls all the way back to the floor — nothing measured yet for
+        // the new, shorter surface.
+        #expect(model.openedSurfaceMeasuredHeight == 0)
+    }
 }

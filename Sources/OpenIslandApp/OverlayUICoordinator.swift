@@ -15,7 +15,23 @@ final class OverlayUICoordinator {
 
     var notchStatus: NotchStatus = .closed
     var notchOpenReason: NotchOpenReason?
-    var islandSurface: IslandSurface = .sessionList()
+    var islandSurface: IslandSurface = .sessionList() {
+        didSet {
+            // Single choke point for "the opened surface changed under us":
+            // catches every assignment site (`transitionOverlay`,
+            // `expandNotificationToSessionList`,
+            // `reconcileIslandSurfaceAfterStateChange`, …), including ones
+            // that don't go through `notchOpen`/`notchClose` at all. Without
+            // this, a tall notification card collapsing straight into the
+            // (much shorter) session list left the hit rectangle sized for
+            // the card — clicks in the list's now-empty space landed on the
+            // island instead of falling through to whatever was behind it.
+            guard islandSurface != oldValue else { return }
+            appModel?.measuredNotificationContentHeight = 0
+            appModel?.openedSurfaceMeasuredHeight = 0
+            overlayPanelController.resetOpenedSurfaceMeasurement()
+        }
+    }
     var isOverlayVisible: Bool { notchStatus != .closed }
 
     var overlayDisplayOptions: [OverlayDisplayOption] = []
@@ -220,18 +236,9 @@ final class OverlayUICoordinator {
 
         overlayTransitionGeneration &+= 1
 
-        // Reset measured notification height when the surface changes so stale
-        // measurements from a previous notification don't mis-size the new one.
-        // Also resets the opened-surface hit-rect measurement: this is the one
-        // reset point that matters even while staying opened (a new card
-        // replacing the old one without a close in between), since the
-        // controller's own ratchet only decays automatically once closed.
-        if surface != islandSurface {
-            appModel?.measuredNotificationContentHeight = 0
-            appModel?.openedSurfaceMeasuredHeight = 0
-            overlayPanelController.resetOpenedSurfaceMeasurement()
-        }
-
+        // `islandSurface`'s own didSet resets the measured-height state
+        // (both notification and opened-surface) when the surface actually
+        // changes — see its declaration.
         islandSurface = surface
         notchOpenReason = reason
         notchStatus = status
