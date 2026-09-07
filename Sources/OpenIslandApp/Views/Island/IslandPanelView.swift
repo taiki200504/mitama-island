@@ -5,6 +5,19 @@ import OpenIslandCore
 // mid-shrink by the surface being torn down.
 private let openedSurfaceUnmountDelay: TimeInterval = 0.22
 
+/// Measures `openedContent`'s actual rendered height (below the notch header
+/// row, and already capped to whatever room the window has — see
+/// `openedSurface`). `OverlayPanelController` uses this for hit-testing, so
+/// the clickable area follows what's really on screen instead of only the
+/// height estimate. Mirrors the `ContentHeightKey`/`NotificationContentHeightKey`
+/// pattern already used for `AppModel.measuredNotificationContentHeight`.
+private struct OpenedSurfaceHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
 // MARK: - Main island view
 
 struct IslandPanelView: View {
@@ -285,11 +298,30 @@ struct IslandPanelView: View {
                     .frame(width: openedWidth)
                     .frame(maxHeight: max(0, openedHeight - closedNotchHeight), alignment: .top)
                     .clipped()
+                    // Measures the space this content actually occupies —
+                    // already capped by the `.frame(maxHeight:)` above, so
+                    // this reports at most what's really visible, never more.
+                    .background(
+                        GeometryReader { geometry in
+                            Color.clear.preference(
+                                key: OpenedSurfaceHeightKey.self,
+                                value: geometry.size.height
+                            )
+                        }
+                    )
             }
             .frame(width: openedWidth, height: openedHeight, alignment: .top)
             .padding(.horizontal, horizontalInset)
             .padding(.bottom, bottomInset)
             .clipShape(surfaceShape)
+            .onPreferenceChange(OpenedSurfaceHeightKey.self) { height in
+                // Same 2pt tolerance as `measuredNotificationContentHeight`,
+                // applied here instead of in a `didSet` — this property has
+                // no side effects, so the tolerance has to live at the
+                // write site.
+                guard height > 0, abs(height - model.openedSurfaceMeasuredHeight) >= 2 else { return }
+                model.openedSurfaceMeasuredHeight = height
+            }
             .overlay {
                 ZStack {
                     surfaceShape

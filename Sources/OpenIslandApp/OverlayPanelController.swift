@@ -443,11 +443,119 @@ final class OverlayPanelController {
 
     // MARK: - Hit testing geometry
 
+    /// The ratcheted content height behind the opened hit rectangle. See
+    /// `resolveOpenedContentHeight` and `resetOpenedSurfaceMeasurement`.
+    private var stableOpenedContentHeight: CGFloat = 0
+
+    /// Call whenever the opened surface's content is about to change from
+    /// under it — a new card taking over without a close in between, or the
+    /// panel actually closing — so a tall previous surface can't leave the
+    /// next, shorter one with a hit area sized for content that is no
+    /// longer there. `interactiveRect` also calls this on every transition
+    /// away from `.opened`, so closing always clears it on its own; this is
+    /// for the "still opened, but the surface underneath changed" case that
+    /// transition alone can't see.
+    func resetOpenedSurfaceMeasurement() {
+        stableOpenedContentHeight = 0
+    }
+
+    /// Resolves the content height behind the opened hit rectangle.
+    ///
+    /// The measurement wins once SwiftUI has reported one; the height
+    /// estimate is the floor before that, and whenever the measurement
+    /// momentarily reports something smaller. `previousStable` ratchets the
+    /// result up across calls so a layout pass that briefly reports a
+    /// smaller number — settling after a spring, or mid-transition — never
+    /// shrinks the clickable area below what is still visible on screen.
+    nonisolated static func resolveOpenedContentHeight(
+        measured: CGFloat,
+        estimatedFloor: CGFloat,
+        previousStable: CGFloat
+    ) -> CGFloat {
+        max(previousStable, max(measured, estimatedFloor))
+    }
+
+    /// The interactive rectangle for the opened panel: a top-anchored band
+    /// `notchHeight + contentHeight` tall, in the coordinate space of
+    /// `bounds`, clamped so it never claims more than the window actually
+    /// has (minus the shadow's bottom inset, which was never clickable).
+    nonisolated static func openedInteractiveRect(
+        in bounds: NSRect,
+        notchHeight: CGFloat,
+        contentHeight: CGFloat,
+        horizontalInset: CGFloat,
+        bottomInset: CGFloat
+    ) -> NSRect {
+        let availableHeight = max(0, bounds.height - bottomInset)
+        let height = min(max(0, notchHeight + contentHeight), availableHeight)
+        return NSRect(
+            x: bounds.minX + horizontalInset,
+            y: bounds.maxY - height,
+            width: max(0, bounds.width - (horizontalInset * 2)),
+            height: height
+        )
+    }
+
+    /// The interactive (clickable / hoverable) rectangle for the island's
+    /// current visual state, in the coordinate space of `bounds`.
+    ///
+    /// Single source of truth for both hit-testing paths: the closed pill
+    /// (the global mouse monitor — the window itself ignores mouse events
+    /// while closed, so `NotchHostingView.hitTest` never runs then) and the
+    /// opened panel (`NotchHostingView.hitTest`, AppKit's normal per-window
+    /// hit test). They used to compute their rectangles two different ways
+    /// — `closedSurfaceRect` from the notch geometry, the opened rect from
+    /// the panel's estimate-sized bounds — so a fix to one path never
+    /// reached the other.
+    ///
+    /// `bounds` is only used for the opened case; the closed pill's rect
+    /// comes from `notchRect` instead, since the window itself is always
+    /// kept at opened size regardless of the visual state.
+    func interactiveRect(for model: AppModel, in bounds: NSRect) -> NSRect? {
+        guard model.notchStatus == .opened else {
+            // Not opened (closed or popping): the ratchet has nothing left
+            // to protect, so let it decay immediately rather than carrying
+            // a stale height into the next open.
+            resetOpenedSurfaceMeasurement()
+            return closedSurfaceRect(for: model)
+        }
+
+        let insets = panelShadowInsets
+        let estimatedFloor = max(openedContentHeight(for: model), Self.openedEmptyStateHeight)
+        let contentHeight = Self.resolveOpenedContentHeight(
+            measured: model.openedSurfaceMeasuredHeight,
+            estimatedFloor: estimatedFloor,
+            previousStable: stableOpenedContentHeight
+        )
+        stableOpenedContentHeight = contentHeight
+
+        return Self.openedInteractiveRect(
+            in: bounds,
+            notchHeight: notchRect.height,
+            contentHeight: contentHeight,
+            horizontalInset: insets.horizontal,
+            bottomInset: insets.bottom
+        )
+    }
+
+    /// Whether `screenPoint` sits over the closed pill's hit area.
+    ///
+    /// Called on every mouse move regardless of the current visual state —
+    /// callers only act on the result while actually closed (`notchStatus
+    /// == .closed`), so `interactiveRect` reporting the opened rect while
+    /// opened is harmless here; nothing reads it in that case.
     func isPointInClosedSurfaceArea(_ screenPoint: NSPoint) -> Bool {
         guard let model else { return false }
 
-        if let closedSurfaceRect = closedSurfaceRect(for: model) {
-            return Self.rectContainsIncludingEdges(closedSurfaceRect, point: screenPoint)
+        guard model.notchStatus != .opened else {
+            // Called on every mouse move regardless of state, but nothing
+            // acts on this while opened (every caller gates on `.closed`)
+            // — skip computing the opened rect just to throw it away.
+            return false
+        }
+
+        if let rect = interactiveRect(for: model, in: panel?.frame ?? .zero) {
+            return Self.rectContainsIncludingEdges(rect, point: screenPoint)
         }
 
         let expandedNotch = notchRect.insetBy(dx: -20, dy: -10)
@@ -463,13 +571,11 @@ final class OverlayPanelController {
             return false
         }
 
-        // The window is always at opened size, but the visible content area
-        // is the inner content rect (excluding shadow insets).
-        guard let contentRect = contentRect(for: model, in: panel.frame) else {
+        guard let rect = interactiveRect(for: model, in: panel.frame) else {
             return false
         }
 
-        return Self.rectContainsIncludingEdges(contentRect, point: screenPoint)
+        return Self.rectContainsIncludingEdges(rect, point: screenPoint)
     }
 
     func openedPanelWidth(for screen: NSScreen?) -> CGFloat {
@@ -492,16 +598,6 @@ final class OverlayPanelController {
         }
 
         return min(Self.preferredNotificationPanelWidth, screen.visibleFrame.width - 32)
-    }
-
-    func contentRect(for model: AppModel, in bounds: NSRect) -> NSRect? {
-        let insets = panelShadowInsets
-        return NSRect(
-            x: bounds.minX + insets.horizontal,
-            y: bounds.minY + insets.bottom,
-            width: max(0, bounds.width - (insets.horizontal * 2)),
-            height: max(0, bounds.height - insets.bottom)
-        )
     }
 
     nonisolated static func closedSurfaceRect(
@@ -864,8 +960,8 @@ final class NotchHostingView<Content: View>: NSHostingView<Content> {
             return nil
         }
 
-        guard let contentRect = controller.contentRect(for: model, in: bounds),
-              contentRect.contains(point) else {
+        guard let interactiveRect = controller.interactiveRect(for: model, in: bounds),
+              interactiveRect.contains(point) else {
             return nil
         }
 

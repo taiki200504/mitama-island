@@ -190,6 +190,8 @@ final class OverlayUICoordinator {
                 self?.autoCollapseSurfaceHasBeenEntered = false
                 self?.isPointerInsideIslandSurface = false
                 self?.appModel?.measuredNotificationContentHeight = 0
+                self?.appModel?.openedSurfaceMeasuredHeight = 0
+                self?.overlayPanelController.resetOpenedSurfaceMeasurement()
                 self?.appModel?.panelHotkeys?.panelDidCollapse()
                 self?.appModel?.refreshSustainedCamera()
                 // Typing in a reply box brings the app forward so an input
@@ -220,8 +222,14 @@ final class OverlayUICoordinator {
 
         // Reset measured notification height when the surface changes so stale
         // measurements from a previous notification don't mis-size the new one.
+        // Also resets the opened-surface hit-rect measurement: this is the one
+        // reset point that matters even while staying opened (a new card
+        // replacing the old one without a close in between), since the
+        // controller's own ratchet only decays automatically once closed.
         if surface != islandSurface {
             appModel?.measuredNotificationContentHeight = 0
+            appModel?.openedSurfaceMeasuredHeight = 0
+            overlayPanelController.resetOpenedSurfaceMeasurement()
         }
 
         islandSurface = surface
@@ -474,6 +482,8 @@ final class OverlayUICoordinator {
         }
 
         appModel?.measuredNotificationContentHeight = 0
+        appModel?.openedSurfaceMeasuredHeight = 0
+        overlayPanelController.resetOpenedSurfaceMeasurement()
         if let event = notificationSoundEvent(for: surface) {
             NotificationSoundService.play(event, settings: settings.sound)
         }
