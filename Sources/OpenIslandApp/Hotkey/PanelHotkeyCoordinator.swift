@@ -183,6 +183,7 @@ final class PanelHotkeyCoordinator {
     /// Escape and the arrows are far too common to hold permanently — this is
     /// the same discipline the single-letter panel keys follow.
     func switcherDidActivate() {
+        guard settings.keyboardShortcutsEnabled else { return }
         registrar.setBindings(
             [
                 HotkeyBinding(id: Self.switcherNextBindingID, keyCode: Self.downArrowKeyCode, modifiers: [], scope: .switcherActive),
