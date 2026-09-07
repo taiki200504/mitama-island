@@ -116,6 +116,14 @@ struct IslandSessionRow: View {
                     )
                     .padding(.vertical, showsDetail ? 10 : 8)
                     .padding(.leading, 14)
+            } else if isHighlighted, presentation == .list {
+                // The hover/selection mark for the default (dot) indicator
+                // style: a thin accent bar rather than the state dot growing,
+                // since the dot already carries the session's own status.
+                Rectangle()
+                    .fill(SAOGrammar.Palette.accentOrange)
+                    .frame(width: 3)
+                    .padding(.vertical, showsDetail ? 10 : 8)
             }
         }
         .opacity(isStaleCompleted ? 0.7 : 1)
@@ -186,10 +194,7 @@ struct IslandSessionRow: View {
                     tool: session.tool,
                     terminalApp: session.jumpTarget?.terminalApp,
                     tint: statusTint(for: presence),
-                    iconStyle: agentIconStyle,
-                    // The SAO theme is the only one left, and it always draws
-                    // scanlines.
-                    usesScanlines: true
+                    iconStyle: agentIconStyle
                 )
                 .frame(width: 30, alignment: .leading)
                 .padding(.top, 4)

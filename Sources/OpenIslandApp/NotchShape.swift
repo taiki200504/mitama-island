@@ -68,7 +68,11 @@ extension NotchShape {
     /// state no longer uses this shape — it renders via `V6ClosedPillShape`
     /// instead.
     static let openedTopRadius: CGFloat = 22
-    static let openedBottomRadius: CGFloat = 22
+    /// The crystal-HUD grammar's standard corner radius — the bottom corners
+    /// pick up a diagonal chamfer on top of this in
+    /// `OpenedIslandSurfaceShape`, replacing the wide 22pt round this used
+    /// before that grammar existed.
+    static let openedBottomRadius: CGFloat = SAOGrammar.Metric.cornerRadius
 
     static var opened: NotchShape {
         NotchShape(topCornerRadius: openedTopRadius, bottomCornerRadius: openedBottomRadius)

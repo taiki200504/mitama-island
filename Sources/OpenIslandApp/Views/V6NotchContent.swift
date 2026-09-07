@@ -385,7 +385,10 @@ struct V6PeekBandView: View {
                 .shadow(color: dotColor.opacity(0.9), radius: IslandThemes.current.glowRadius)
 
             Text(content.agent)
-                .font(.islandMono(size: 11, weight: .semibold))
+                // Always a fixed English tool name (claude, codex, gemini…),
+                // never translated, so the Latin-only display face is safe
+                // here without checking the text first.
+                .saoCaps(size: 11)
                 .foregroundStyle(V6Palette.paper.opacity(0.92))
 
             Text(content.elapsed)

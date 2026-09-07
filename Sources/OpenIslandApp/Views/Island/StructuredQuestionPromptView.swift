@@ -15,8 +15,8 @@ struct StructuredQuestionPromptView: View {
         VStack(alignment: .leading, spacing: 10) {
             if showsPromptTitle {
                 Text(promptTitle)
-                    .font(.islandText(size: 13, weight: .semibold))
-                    .foregroundStyle(IslandDesignPalette.Status.waitingForAnswer)
+                    .saoCaps(size: 13, text: promptTitle)
+                    .foregroundStyle(SAOGrammar.Palette.accentAmber)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
@@ -33,7 +33,7 @@ struct StructuredQuestionPromptView: View {
                         String(structuredQuestions.count)
                     ))
                     .font(.islandMono(size: 10, weight: .medium))
-                    .foregroundStyle(V6Palette.paper.opacity(0.5))
+                    .foregroundStyle(SAOGrammar.Palette.ink.opacity(0.5))
                 }
 
                 // Only the questions scroll. The submit button below stays put:
@@ -68,14 +68,7 @@ struct StructuredQuestionPromptView: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            IslandThemes.current.shape(cornerRadius: 10)
-                .fill(V6Palette.paper.opacity(0.03))
-        )
-        .overlay(
-            IslandThemes.current.shape(cornerRadius: 10)
-                .strokeBorder(V6Palette.paper.opacity(0.05))
-        )
+        .saoCard()
     }
 
     // MARK: - Per-question row
@@ -87,12 +80,12 @@ struct StructuredQuestionPromptView: View {
             if structuredQuestions.count > 1 {
                 Text(question.header)
                     .font(.islandText(size: 10, weight: .bold))
-                    .foregroundStyle(V6Palette.paper.opacity(0.5))
+                    .foregroundStyle(SAOGrammar.Palette.ink.opacity(0.5))
             }
 
             Text(question.question)
                 .font(.islandText(size: 12, weight: .medium))
-                .foregroundStyle(V6Palette.paper.opacity(0.88))
+                .foregroundStyle(SAOGrammar.Palette.ink.opacity(0.88))
                 .fixedSize(horizontal: false, vertical: true)
 
             VStack(alignment: .leading, spacing: 4) {
@@ -122,26 +115,26 @@ struct StructuredQuestionPromptView: View {
                 HStack(spacing: 10) {
                     Text("\(optionIndex + 1)")
                         .font(.islandMono(size: 10.5, weight: .semibold))
-                        .foregroundStyle(isSelected ? .black.opacity(0.82) : V6Palette.paper.opacity(0.42))
+                        .foregroundStyle(isSelected ? SAOGrammar.Palette.panelWhite : SAOGrammar.Palette.ink.opacity(0.42))
                         .frame(width: 22, height: 20)
                         .background(
                             IslandThemes.current.shape(cornerRadius: 5)
-                                .fill(isSelected ? V6Palette.paper.opacity(0.88) : V6Palette.paper.opacity(0.045))
+                                .fill(isSelected ? AnyShapeStyle(SAOGrammar.selectionGradient) : AnyShapeStyle(SAOGrammar.Palette.ink.opacity(0.045)))
                         )
                         .overlay(
                             IslandThemes.current.shape(cornerRadius: 5)
-                                .strokeBorder(V6Palette.paper.opacity(isSelected ? 0 : 0.08))
+                                .strokeBorder(SAOGrammar.Palette.ink.opacity(isSelected ? 0 : 0.08))
                         )
 
                     VStack(alignment: .leading, spacing: 1) {
                         Text(option.label)
                             .font(.islandText(size: 12.2, weight: .medium))
-                            .foregroundStyle(V6Palette.paper.opacity(isSelected ? 1 : 0.78))
+                            .foregroundStyle(SAOGrammar.Palette.ink.opacity(isSelected ? 1 : 0.78))
 
                         if !option.description.isEmpty {
                             Text(option.description)
                                 .font(.islandText(size: 10.5))
-                                .foregroundStyle(V6Palette.paper.opacity(isHovered || isSelected ? 0.48 : 0.38))
+                                .foregroundStyle(SAOGrammar.Palette.ink.opacity(isHovered || isSelected ? 0.48 : 0.38))
                                 .lineLimit(1)
                         }
                     }
@@ -162,7 +155,7 @@ struct StructuredQuestionPromptView: View {
 
             if showsFreeform {
                 Divider()
-                    .overlay(V6Palette.paper.opacity(0.08))
+                    .overlay(SAOGrammar.Palette.ink.opacity(0.08))
                 freeformField(for: option, question: question)
             }
         }
@@ -232,11 +225,11 @@ struct StructuredQuestionPromptView: View {
             .padding(.vertical, 4)
             .background(
                 IslandThemes.current.shape(cornerRadius: 10)
-                    .fill(V6Palette.paper.opacity(0.035))
+                    .fill(SAOGrammar.Palette.ink.opacity(0.035))
             )
             .overlay(
                 IslandThemes.current.shape(cornerRadius: 10)
-                    .strokeBorder(V6Palette.paper.opacity(0.055))
+                    .strokeBorder(SAOGrammar.Palette.ink.opacity(0.055))
             )
         }
     }
@@ -405,22 +398,22 @@ struct StructuredQuestionPromptView: View {
 
     private func optionFillColor(isSelected: Bool, isHovered: Bool) -> Color {
         if isSelected {
-            return V6Palette.paper.opacity(0.10)
+            return SAOGrammar.Palette.ink.opacity(0.10)
         }
         if isHovered {
-            return V6Palette.paper.opacity(0.065)
+            return SAOGrammar.Palette.ink.opacity(0.065)
         }
-        return V6Palette.paper.opacity(0.028)
+        return SAOGrammar.Palette.ink.opacity(0.028)
     }
 
     private func optionStrokeColor(isSelected: Bool, isHovered: Bool) -> Color {
         if isSelected {
-            return V6Palette.paper.opacity(0.36)
+            return SAOGrammar.Palette.ink.opacity(0.36)
         }
         if isHovered {
-            return V6Palette.paper.opacity(0.13)
+            return SAOGrammar.Palette.ink.opacity(0.13)
         }
-        return V6Palette.paper.opacity(0.045)
+        return SAOGrammar.Palette.ink.opacity(0.045)
     }
 
     private func trimmedFreeform(for question: QuestionPromptItem, option: QuestionOption) -> String {

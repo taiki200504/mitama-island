@@ -282,11 +282,11 @@ struct IslandPanelView: View {
         let surfaceShape = OpenedIslandSurfaceShape(
             topProfile: usesNotchAwareOpenedHeader ? .notch : .topBar
         )
-        // The SAO theme's double-border look. No longer read from a theme
-        // value now that there is only one theme to draw.
+        // The crystal-HUD shell border. A single fine line — the tri-line
+        // outline from `saoOutline` is for the white cards floating over this
+        // shell, not for the shell itself, which stays a plain dark panel.
         let borderWidth: CGFloat = 1
-        let borderOpacity = 0.22
-        let scanlineIntensity = IslandThemes.current.scanlineIntensity
+        let borderOpacity = 0.10
 
         ZStack(alignment: .top) {
             surfaceShape
@@ -326,41 +326,8 @@ struct IslandPanelView: View {
                 model.openedSurfaceMeasuredHeight = height
             }
             .overlay {
-                ZStack {
-                    surfaceShape
-                        .stroke(V6Palette.paper.opacity(borderOpacity), lineWidth: borderWidth)
-                    // Scaled rather than padded. `OpenedIslandSurfaceShape` is
-                    // not insettable, and laying it out in a smaller rect
-                    // redraws the notch cut-out at the new size — the second
-                    // line then crosses the first near the top instead of
-                    // running parallel to it. Scaling is not a true parallel
-                    // offset either, but it keeps the profile's proportions.
-                    surfaceShape
-                        .stroke(V6Palette.paper.opacity(borderOpacity * 0.6), lineWidth: borderWidth)
-                        .scaleEffect(
-                            x: (surfaceWidth - 4) / surfaceWidth,
-                            y: (surfaceHeight - 4) / surfaceHeight
-                        )
-                }
-            }
-
-            if scanlineIntensity > 0 {
-                // Rebuilt on every frame of the open and close springs, and only
-                // then — the panel holds its size while it is open, so this is a
-                // third of a second of path building, not a standing cost.
-                Canvas { context, size in
-                    var scanlines = Path()
-                    for y in stride(from: 0, through: size.height, by: 3) {
-                        scanlines.move(to: CGPoint(x: 0, y: y))
-                        scanlines.addLine(to: CGPoint(x: size.width, y: y))
-                    }
-                    context.stroke(scanlines, with: .color(V6Palette.paper.opacity(scanlineIntensity)), lineWidth: 1)
-                }
-                .frame(width: openedWidth, height: openedHeight)
-                .padding(.horizontal, horizontalInset)
-                .padding(.bottom, bottomInset)
-                .clipShape(surfaceShape)
-                .allowsHitTesting(false)
+                surfaceShape
+                    .stroke(V6Palette.paper.opacity(borderOpacity), lineWidth: borderWidth)
             }
         }
         .frame(width: surfaceWidth, height: surfaceHeight, alignment: .top)

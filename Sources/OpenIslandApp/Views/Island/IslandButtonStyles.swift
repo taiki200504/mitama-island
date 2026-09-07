@@ -63,7 +63,14 @@ private struct IslandActionButtonBody: View {
             .frame(maxWidth: expands ? .infinity : nil)
             .padding(.horizontal, 13)
             .padding(.vertical, 8)
-            .background(theme.shape(cornerRadius: 10).fill(backgroundColor))
+            .background {
+                if kind == .primary, isEnabled {
+                    theme.shape(cornerRadius: 10).fill(SAOGrammar.selectionGradient)
+                        .opacity(isPressed ? 0.78 : 1)
+                } else {
+                    theme.shape(cornerRadius: 10).fill(backgroundColor)
+                }
+            }
             .overlay(theme.shape(cornerRadius: 10).stroke(strokeColor, lineWidth: 1))
             .overlay(alignment: .bottomLeading) { hoverUnderline }
             .clipShape(theme.shape(cornerRadius: 10))
@@ -87,10 +94,13 @@ private struct IslandActionButtonBody: View {
             .opacity(isLit ? 1 : 0)
     }
 
+    /// These buttons only ever sit on the white cards `saoCard` draws
+    /// (approval and question), never on the dark shell directly, so every
+    /// colour below is chosen against a white ground rather than `ink`.
     private var accentLine: Color {
         switch kind {
-        case .primary: theme.ink.opacity(0.55)
-        case .warning: V6Palette.paper.opacity(0.7)
+        case .primary: SAOGrammar.Palette.ink.opacity(0.55)
+        case .warning: SAOGrammar.Palette.ink.opacity(0.7)
         case .secondary: theme.accent
         }
     }
@@ -101,41 +111,47 @@ private struct IslandActionButtonBody: View {
     }
 
     private var foregroundColor: Color {
-        guard isEnabled else { return theme.paper.opacity(0.42) }
+        guard isEnabled else { return SAOGrammar.Palette.ink.opacity(0.32) }
 
         switch kind {
-        case .primary: return theme.ink.opacity(0.9)
-        case .warning: return theme.paper
-        case .secondary: return theme.paper.opacity(isLit ? 1 : 0.78)
+        case .primary: return SAOGrammar.Palette.ink.opacity(0.9)
+        // The warning fill is a saturated yellow — it needs dark text for
+        // contrast, not the pale text that reads fine on `ink`.
+        case .warning: return SAOGrammar.Palette.ink.opacity(0.92)
+        case .secondary: return SAOGrammar.Palette.ink.opacity(isLit ? 0.92 : 0.72)
         }
     }
 
     private var strokeColor: Color {
-        guard isEnabled else { return V6Palette.paper.opacity(0.07) }
+        guard isEnabled else { return SAOGrammar.Palette.ink.opacity(0.08) }
 
         switch kind {
         case .primary:
-            return theme.paper.opacity(0.86)
+            return SAOGrammar.Palette.ink.opacity(0.3)
         case .warning:
-            return theme.statusTints.waitingForApproval.opacity(isLit ? 0.85 : 0.42)
+            return theme.statusTints.waitingForApproval.opacity(isLit ? 0.9 : 0.55)
         case .secondary:
-            return isLit ? theme.accent.opacity(0.55) : V6Palette.paper.opacity(0.07)
+            return isLit ? theme.accent.opacity(0.55) : SAOGrammar.Palette.ink.opacity(0.12)
         }
     }
 
     private var backgroundColor: Color {
-        guard isEnabled else { return V6Palette.paper.opacity(0.055) }
+        guard isEnabled else { return SAOGrammar.Palette.ink.opacity(0.05) }
 
         let pressedFactor: Double = isPressed ? 0.78 : 1
         switch kind {
         case .primary:
-            return theme.paper.opacity(pressedFactor)
+            // Unreachable while enabled: the view body draws the primary
+            // fill itself (`SAOGrammar.selectionGradient`), since a gradient
+            // isn't a `Color`. The `isEnabled` guard above already covers the
+            // disabled case, so this only exists to keep the switch exhaustive.
+            return .clear
         case .warning:
             return theme.statusTints.waitingForApproval
                 .opacity(pressedFactor * (isLit ? 1 : 0.88))
         case .secondary:
-            if isPressed { return V6Palette.paper.opacity(0.14) }
-            return isLit ? theme.accent.opacity(0.14) : V6Palette.paper.opacity(0.065)
+            if isPressed { return SAOGrammar.Palette.ink.opacity(0.12) }
+            return isLit ? theme.accent.opacity(0.14) : SAOGrammar.Palette.ink.opacity(0.045)
         }
     }
 }

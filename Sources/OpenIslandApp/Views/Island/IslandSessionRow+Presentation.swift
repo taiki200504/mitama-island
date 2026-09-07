@@ -315,7 +315,7 @@ extension IslandSessionRow {
         // list read as a static picture. A coloured wash at the same weight is
         // visible without being loud.
         let base = isHighlighted
-            ? IslandThemes.current.accent.opacity(isActionable ? 0.13 : 0.09)
+            ? SAOGrammar.Palette.accentOrange.opacity(0.18)
             : Color.clear
         guard stateIndicator == .tint else { return base }
 

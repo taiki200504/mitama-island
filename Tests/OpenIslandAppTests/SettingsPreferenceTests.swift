@@ -368,6 +368,45 @@ struct IslandTypographyTests {
         ) ?? Bundle.module.url(forResource: "DepartureMono-LICENSE", withExtension: "txt")
         #expect(licence != nil)
     }
+
+    @Test("Rajdhani SemiBold registers as a usable NSFont")
+    func rajdhaniRegisters() {
+        IslandTypography.registerBundledFonts()
+        #expect(NSFont(name: "Rajdhani-SemiBold", size: 12) != nil)
+    }
+
+    @Test("Departure Mono still registers alongside Rajdhani")
+    func departureMonoStillRegistersAlongsideRajdhani() {
+        IslandTypography.registerBundledFonts()
+        #expect(NSFont(name: IslandTypography.departureMonoName, size: 12) != nil)
+    }
+
+    /// `display(size:)` has no introspectable font-name API of its own, so
+    /// the registration check is the load-bearing assertion here: `display`
+    /// only falls back to the system font when the name fails to resolve,
+    /// which this proves it does not.
+    @Test("display(size:) does not fall back to the system font once registered")
+    func displayDoesNotFallBack() {
+        IslandTypography.registerBundledFonts()
+        #expect(NSFont(name: IslandTypography.displayFontName, size: 12) != nil)
+    }
+
+    @Test("Latin text is recognised as Latin script")
+    func latinTextIsLatin() {
+        #expect(IslandTypography.isLatinScript("Claude Code"))
+        #expect(IslandTypography.isLatinScript("Plan Ready"))
+    }
+
+    @Test("CJK text is not recognised as Latin script")
+    func cjkTextIsNotLatin() {
+        #expect(!IslandTypography.isLatinScript("実行中"))
+        #expect(!IslandTypography.isLatinScript("待機中の質問"))
+    }
+
+    @Test("Mixed Latin and CJK text is not pure Latin")
+    func mixedTextIsNotLatin() {
+        #expect(!IslandTypography.isLatinScript("Claude 実行中"))
+    }
 }
 
 @MainActor
