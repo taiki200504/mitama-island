@@ -42,6 +42,16 @@ struct SoundSettingsPane: View {
                 "\(Int((value * 100).rounded()))%"
             }
             .disabled(sound.isMuted)
+
+            SettingsToggleRow(
+                title: lang.t("settings.sound.ui.enabled"),
+                help: lang.t("settings.sound.ui.enabled.help"),
+                isOn: Binding(
+                    get: { sound.uiSoundsEnabled },
+                    set: { sound.uiSoundsEnabled = $0 }
+                )
+            )
+            .disabled(sound.isMuted)
         }
     }
 
@@ -79,7 +89,7 @@ struct SoundSettingsPane: View {
 
     private var raisedEventsSection: some View {
         Section(lang.t("settings.sound.section.events")) {
-            ForEach(NotificationSoundEvent.raisedEvents, id: \.self) { event in
+            ForEach(NotificationSoundEvent.assignableEvents, id: \.self) { event in
                 eventRow(event)
             }
         }
@@ -97,7 +107,7 @@ struct SoundSettingsPane: View {
                     set: { sound.setSoundName($0, for: event) }
                 )) {
                     ForEach(availableSounds, id: \.self) { name in
-                        Text(name).tag(name)
+                        Text(NotificationSoundService.displayLabel(for: name)).tag(name)
                     }
                 }
                 .labelsHidden()

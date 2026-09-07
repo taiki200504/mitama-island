@@ -169,6 +169,16 @@ final class OverlayUICoordinator {
     }
 
     func notchOpen(reason: NotchOpenReason, surface: IslandSurface = .sessionList()) {
+        // The gesture already gets its own distinct cue at the call site in
+        // `AppModel.notchOpen`; playing this one too would double up on a
+        // single pull of the hand. A notification already played its own
+        // event-specific chime in `presentNotificationSurface` right before
+        // calling this — an open cue on top of it is the same double-up. Boot
+        // is silent too: the app has only just launched, and there is no
+        // "before" for an open sound to distinguish itself from.
+        let wasClosed = notchStatus != .opened
+        let shouldPlayOpenCue = wasClosed && reason != .handGesture && reason != .notification && reason != .boot
+
         transitionOverlay(
             to: .opened,
             reason: reason,
@@ -189,9 +199,15 @@ final class OverlayUICoordinator {
                 self.onStatusMessage?("Overlay showing on \(overlayPlacementDiagnostics.targetScreenName) as \(overlayPlacementDiagnostics.modeDescription.lowercased()).")
             }
         )
+
+        if shouldPlayOpenCue {
+            NotificationSoundService.play(.islandOpened, settings: settings.sound)
+        }
     }
 
     func notchClose() {
+        let wasOpen = notchStatus == .opened
+
         transitionOverlay(
             to: .closed,
             reason: nil,
@@ -215,6 +231,10 @@ final class OverlayUICoordinator {
                 TextInputFocusHandoff.giveBack()
             }
         )
+
+        if wasOpen {
+            NotificationSoundService.play(.islandClosed, settings: settings.sound)
+        }
     }
 
     /// Coordinates overlay transitions.
@@ -637,6 +657,14 @@ final class OverlayUICoordinator {
 
         guard presentOverlay, let appModel else {
             return
+        }
+
+        // The harness loads a snapshot directly rather than living through a
+        // real notification arriving, so the sound that would have announced
+        // it has to be fired here instead — otherwise `approvalCard` and its
+        // siblings would be the one path that never exercises this cue.
+        if let event = notificationSoundEvent(for: snapshot.islandSurface) {
+            NotificationSoundService.play(event, settings: settings.sound)
         }
 
         // Immediate interactivity update.

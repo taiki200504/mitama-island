@@ -182,6 +182,10 @@ struct AboutSettingsPane: View {
                         lang.t("settings.about.font"),
                         value: lang.t("settings.about.font.value")
                     )
+                    LabeledContent(
+                        lang.t("settings.about.sound"),
+                        value: lang.t("settings.about.sound.value")
+                    )
                     Link(
                         lang.t("settings.about.source"),
                         destination: URL(string: "https://github.com/Octane0411/open-vibe-island")!

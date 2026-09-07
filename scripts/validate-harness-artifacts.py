@@ -88,7 +88,7 @@ def selected_session_phase(report: dict):
     return phase if isinstance(phase, str) else None
 
 
-def validate_runtime(report_path: pathlib.Path, report: dict) -> None:
+def validate_runtime(report_path: pathlib.Path, report: dict) -> pathlib.Path:
     runtime = report.get("runtime")
     if not isinstance(runtime, dict):
         fail("report is missing runtime observability artifacts")
@@ -172,6 +172,8 @@ def validate_runtime(report_path: pathlib.Path, report: dict) -> None:
     if not isinstance(runtime.get("latestMessage"), str) or not runtime.get("latestMessage"):
         fail("runtime latestMessage is missing")
 
+    return log_path
+
 
 def main() -> None:
     if len(sys.argv) != 2:
@@ -179,7 +181,7 @@ def main() -> None:
 
     report_path = pathlib.Path(sys.argv[1])
     report = load_json(report_path)
-    validate_runtime(report_path, report)
+    log_path = validate_runtime(report_path, report)
     overlay = find_overlay_window(report)
 
     accessibility_path = overlay.get("accessibilityPath")
@@ -276,6 +278,11 @@ def main() -> None:
             fail("missing required approval button label 'Deny'")
         if not ({"Allow", "Allow Once"} & button_labels) and selected_session_phase(report) != "waitingForApproval":
             fail("missing allow-style approval button label")
+        # The harness diverts sound playback into this log line instead of
+        # making noise (see NotificationSoundService.harnessSink) — this is
+        # how a headless run confirms the approval chime actually fired.
+        if "sound.cue=ui-notify" not in log_path.read_text():
+            fail("approvalCard runtime log is missing the notification sound cue")
 
     elif scenario == "questionCard":
         if notch_status != "opened":

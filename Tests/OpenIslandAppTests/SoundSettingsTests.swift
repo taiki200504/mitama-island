@@ -155,11 +155,52 @@ struct SoundSettingsTests {
         #expect(sound.soundName(for: .taskComplete) == IslandSoundProfile.sao.soundName(for: .taskComplete))
     }
 
+    /// Only the events the settings pane actually lists a row for need a
+    /// visible label — UI feedback (open/close/select/confirm/approve/reject)
+    /// is controlled by the single "Interface sounds" toggle instead and
+    /// carries no localized string.
     @Test
-    func everyEventHasAVisibleLabel() {
-        for event in NotificationSoundEvent.allCases {
+    func everyAssignableEventHasAVisibleLabel() {
+        for event in NotificationSoundEvent.assignableEvents {
             #expect(LanguageManager.shared.t(event.labelKey) != event.labelKey)
         }
+    }
+
+    // MARK: Interface sounds toggle
+
+    @Test
+    func uiSoundsAreOnByDefault() {
+        #expect(makeSettings().sound.uiSoundsEnabled)
+    }
+
+    @Test
+    func turningOffInterfaceSoundsSilencesOnlyUIFeedback() {
+        let sound = makeSettings().sound
+        sound.uiSoundsEnabled = false
+
+        for event in NotificationSoundEvent.allCases where event.isUIFeedback {
+            #expect(!sound.shouldPlay(event, at: date(hour: 12)), "\(event) should be silenced")
+        }
+        for event in NotificationSoundEvent.allCases where !event.isUIFeedback {
+            #expect(sound.shouldPlay(event, at: date(hour: 12)), "\(event) should be unaffected")
+        }
+    }
+
+    @Test
+    func mutingStillSilencesUIFeedbackRegardlessOfTheToggle() {
+        let sound = makeSettings().sound
+        sound.uiSoundsEnabled = true
+        sound.isMuted = true
+
+        #expect(!sound.shouldPlay(.selection, at: date(hour: 12)))
+    }
+
+    @Test
+    func quietHoursStillSilenceUIFeedback() {
+        let sound = makeSettings().sound
+        sound.quietHoursEnabled = true
+
+        #expect(!sound.shouldPlay(.confirm, at: date(hour: 2)))
     }
 
     @Test

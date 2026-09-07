@@ -12,6 +12,16 @@ public enum LinkstartSense: String, CaseIterable, Equatable, Sendable {
     public var labelKey: String { "linkstart.sense.\(rawValue)" }
 }
 
+/// One of the sounds the boot sequence makes along the way.
+public enum LinkstartCue: Equatable, Sendable {
+    /// The light arriving, at the very start.
+    case rise
+    /// One per sense confirmed.
+    case tick
+    /// Everything passed; the checklist gives way to identity.
+    case resolve
+}
+
 /// Where the boot sequence is at a given moment.
 public enum LinkstartPhase: Equatable, Sendable {
     /// The light is arriving. Nothing has been checked yet.
@@ -71,6 +81,19 @@ public enum LinkstartSequence: Sendable {
 
     /// How many senses are lit, at any phase — the view draws the same list the
     /// whole way through, so it needs an answer even after the checks are done.
+    /// When each sound plays, derived from the same durations the view draws
+    /// from so the soundtrack can never drift out of step with the checklist:
+    /// the rise as the light arrives, a tick as each sense starts confirming,
+    /// and the resolve as the checklist gives way to identity.
+    public static var cueSchedule: [(at: TimeInterval, cue: LinkstartCue)] {
+        var schedule: [(at: TimeInterval, cue: LinkstartCue)] = [(0, .rise)]
+        for index in senses.indices {
+            schedule.append((awakeningDuration + Double(index) * perSenseDuration, .tick))
+        }
+        schedule.append((awakeningDuration + sensesDuration + languageDuration, .resolve))
+        return schedule
+    }
+
     public static func confirmedSenseCount(at elapsed: TimeInterval) -> Int {
         switch phase(at: elapsed) {
         case .awakening: 0

@@ -351,6 +351,8 @@
 "settings.sound.enabled" = "Play sounds";
 "settings.sound.enabled.help" = "The speaker button on the island toggles this too.";
 "settings.sound.volume" = "Volume";
+"settings.sound.ui.enabled" = "Interface sounds";
+"settings.sound.ui.enabled.help" = "Sounds the island makes while you operate it — opening, closing, selecting, confirming, approving, rejecting.";
 "settings.sound.theme" = "Theme";
 "settings.sound.theme.system" = "Apple system sounds";
 "settings.sound.import" = "Import a sound pack";
@@ -366,6 +368,11 @@
 "settings.sound.event.contextLimit" = "Context limit reached";
 "settings.sound.event.usageAlmostFull" = "Usage nearly spent";
 "settings.sound.event.islandOpenedByGesture" = "Island opened by gesture";
+"settings.sound.event.warning" = "Warning";
+"settings.sound.event.timerFinished" = "Timer finished";
+"settings.sound.event.eventStarting" = "Event starting";
+"settings.sound.event.lockScan" = "Lock scan";
+"settings.sound.event.unlock" = "Unlock";
 
 /* Notifications pane */
 "settings.notifications.section.completion" = "Completion";
@@ -445,6 +452,8 @@
 "settings.about.credits.value" = "Open Island (GPL v3)";
 "settings.about.font" = "Monospace font";
 "settings.about.font.value" = "Departure Mono (SIL OFL 1.1)";
+"settings.about.sound" = "Sound effects";
+"settings.about.sound.value" = "Original, synthesised in-house";
 
 /* mitama credentials */
 "settings.mitama.section.credentials" = "Credentials";

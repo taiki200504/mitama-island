@@ -350,6 +350,8 @@
 "settings.sound.enabled" = "播放音效";
 "settings.sound.enabled.help" = "島上的喇叭按鈕也可切換。";
 "settings.sound.volume" = "音量";
+"settings.sound.ui.enabled" = "介面音效";
+"settings.sound.ui.enabled.help" = "開啟、關閉、選取、確認、核准、拒絕等操作動態島時發出的聲音。";
 "settings.sound.theme" = "主題";
 "settings.sound.theme.system" = "Apple 系統音效";
 "settings.sound.import" = "匯入音效包";
@@ -365,6 +367,11 @@
 "settings.sound.event.contextLimit" = "達到上下文上限時";
 "settings.sound.event.usageAlmostFull" = "用量即將耗盡時";
 "settings.sound.event.islandOpenedByGesture" = "手勢開啟動態島時";
+"settings.sound.event.warning" = "出現警告時";
+"settings.sound.event.timerFinished" = "計時結束時";
+"settings.sound.event.eventStarting" = "行程即將開始時";
+"settings.sound.event.lockScan" = "掃描解鎖時";
+"settings.sound.event.unlock" = "解鎖時";
 
 /* Notifications pane */
 "settings.notifications.section.completion" = "完成通知";
@@ -444,6 +451,8 @@
 "settings.about.credits.value" = "Open Island（GPL v3）";
 "settings.about.font" = "等寬字型";
 "settings.about.font.value" = "Departure Mono（SIL OFL 1.1）";
+"settings.about.sound" = "音效";
+"settings.about.sound.value" = "原創，程序合成製作";
 
 /* mitama credentials */
 "settings.mitama.section.credentials" = "憑證";

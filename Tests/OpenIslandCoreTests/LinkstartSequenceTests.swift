@@ -61,4 +61,29 @@ struct LinkstartSequenceTests {
         let keys = Set(LinkstartSequence.senses.map(\.labelKey))
         #expect(keys.count == LinkstartSequence.senses.count)
     }
+
+    /// One rise, one tick per sense, one resolve — and each lands exactly
+    /// where the phase it announces begins, so the sound and the checklist
+    /// can never drift apart.
+    @Test("The cue schedule follows the rise, one tick per sense, then resolve")
+    func cueScheduleMatchesThePhases() {
+        let schedule = LinkstartSequence.cueSchedule
+
+        #expect(schedule.count == LinkstartSequence.senses.count + 2)
+        #expect(schedule.first?.at == 0)
+        #expect(schedule.first?.cue == .rise)
+
+        let ticks = schedule.filter { $0.cue == .tick }
+        #expect(ticks.count == LinkstartSequence.senses.count)
+        for (index, tick) in ticks.enumerated() {
+            let expected = LinkstartSequence.awakeningDuration + Double(index) * LinkstartSequence.perSenseDuration
+            #expect(tick.at == expected)
+        }
+
+        #expect(schedule.last?.cue == .resolve)
+        #expect(
+            schedule.last?.at
+                == LinkstartSequence.awakeningDuration + LinkstartSequence.sensesDuration + LinkstartSequence.languageDuration
+        )
+    }
 }
