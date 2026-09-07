@@ -921,6 +921,21 @@ final class AppModel {
         }
     }
 
+    /// Measured by SwiftUI GeometryReader on the opened surface's content
+    /// area (below the notch header row), covering every opened surface —
+    /// not just notification mode. `OverlayPanelController` uses it to size
+    /// the hit-test rectangle to what is actually on screen instead of the
+    /// height estimate alone.
+    ///
+    /// Deliberately has no side effects: unlike
+    /// `measuredNotificationContentHeight`, writing this must never move the
+    /// panel frame, or the window would jump mid-spring. The panel's actual
+    /// size still comes from the height estimates (see `IslandChromeMetrics`
+    /// and `OverlayPanelController`'s `...Height`/`...ContentHeight` helpers).
+    /// The 2pt write tolerance lives at the call site in `IslandPanelView`,
+    /// mirroring `measuredNotificationContentHeight`'s tolerance above.
+    var openedSurfaceMeasuredHeight: CGFloat = 0
+
     var surfacedSessions: [AgentSession] {
         sessionBuckets.primary
     }

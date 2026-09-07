@@ -9,10 +9,15 @@ enum IslandChromeMetrics {
 
     /// How tall the scrolling list of question options may grow.
     ///
-    /// Shared with `OverlayPanelController` on purpose: the panel sizes itself
-    /// from an estimate, and if the estimate and the scroll cap disagree the
-    /// submit button ends up outside the panel — which is exactly the bug that
-    /// made a long question unanswerable from the island.
+    /// Shared with `OverlayPanelController` on purpose: the panel's *size*
+    /// still comes from the estimate below, and the panel's *hit rectangle*
+    /// (see `OverlayPanelController.interactiveRect`) comes from whichever is
+    /// larger of that same estimate and the SwiftUI-measured content height
+    /// (`AppModel.openedSurfaceMeasuredHeight`) — the estimate is the floor
+    /// for both, the measurement is the source of truth for hit-testing once
+    /// it exists. If the estimate and the scroll cap disagree, the submit
+    /// button ends up outside the panel — which is exactly the bug that made
+    /// a long question unanswerable from the island.
     ///
     static let questionOptionListMaxHeight: CGFloat = 260
 

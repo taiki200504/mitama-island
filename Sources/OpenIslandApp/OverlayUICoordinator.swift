@@ -15,7 +15,23 @@ final class OverlayUICoordinator {
 
     var notchStatus: NotchStatus = .closed
     var notchOpenReason: NotchOpenReason?
-    var islandSurface: IslandSurface = .sessionList()
+    var islandSurface: IslandSurface = .sessionList() {
+        didSet {
+            // Single choke point for "the opened surface changed under us":
+            // catches every assignment site (`transitionOverlay`,
+            // `expandNotificationToSessionList`,
+            // `reconcileIslandSurfaceAfterStateChange`, …), including ones
+            // that don't go through `notchOpen`/`notchClose` at all. Without
+            // this, a tall notification card collapsing straight into the
+            // (much shorter) session list left the hit rectangle sized for
+            // the card — clicks in the list's now-empty space landed on the
+            // island instead of falling through to whatever was behind it.
+            guard islandSurface != oldValue else { return }
+            appModel?.measuredNotificationContentHeight = 0
+            appModel?.openedSurfaceMeasuredHeight = 0
+            overlayPanelController.resetOpenedSurfaceMeasurement()
+        }
+    }
     var isOverlayVisible: Bool { notchStatus != .closed }
 
     var overlayDisplayOptions: [OverlayDisplayOption] = []
@@ -190,6 +206,8 @@ final class OverlayUICoordinator {
                 self?.autoCollapseSurfaceHasBeenEntered = false
                 self?.isPointerInsideIslandSurface = false
                 self?.appModel?.measuredNotificationContentHeight = 0
+                self?.appModel?.openedSurfaceMeasuredHeight = 0
+                self?.overlayPanelController.resetOpenedSurfaceMeasurement()
                 self?.appModel?.panelHotkeys?.panelDidCollapse()
                 self?.appModel?.refreshSustainedCamera()
                 // Typing in a reply box brings the app forward so an input
@@ -218,12 +236,9 @@ final class OverlayUICoordinator {
 
         overlayTransitionGeneration &+= 1
 
-        // Reset measured notification height when the surface changes so stale
-        // measurements from a previous notification don't mis-size the new one.
-        if surface != islandSurface {
-            appModel?.measuredNotificationContentHeight = 0
-        }
-
+        // `islandSurface`'s own didSet resets the measured-height state
+        // (both notification and opened-surface) when the surface actually
+        // changes — see its declaration.
         islandSurface = surface
         notchOpenReason = reason
         notchStatus = status
@@ -474,6 +489,8 @@ final class OverlayUICoordinator {
         }
 
         appModel?.measuredNotificationContentHeight = 0
+        appModel?.openedSurfaceMeasuredHeight = 0
+        overlayPanelController.resetOpenedSurfaceMeasurement()
         if let event = notificationSoundEvent(for: surface) {
             NotificationSoundService.play(event, settings: settings.sound)
         }
