@@ -153,6 +153,12 @@ final class OverlayUICoordinator {
     }
 
     func notchOpen(reason: NotchOpenReason, surface: IslandSurface = .sessionList()) {
+        // The gesture already gets its own distinct cue at the call site in
+        // `AppModel.notchOpen`; playing this one too would double up on a
+        // single pull of the hand.
+        let wasClosed = notchStatus != .opened
+        let shouldPlayOpenCue = wasClosed && reason != .handGesture
+
         transitionOverlay(
             to: .opened,
             reason: reason,
@@ -173,9 +179,15 @@ final class OverlayUICoordinator {
                 self.onStatusMessage?("Overlay showing on \(overlayPlacementDiagnostics.targetScreenName) as \(overlayPlacementDiagnostics.modeDescription.lowercased()).")
             }
         )
+
+        if shouldPlayOpenCue {
+            NotificationSoundService.play(.islandOpened, settings: settings.sound)
+        }
     }
 
     func notchClose() {
+        let wasOpen = notchStatus == .opened
+
         transitionOverlay(
             to: .closed,
             reason: nil,
@@ -197,6 +209,10 @@ final class OverlayUICoordinator {
                 TextInputFocusHandoff.giveBack()
             }
         )
+
+        if wasOpen {
+            NotificationSoundService.play(.islandClosed, settings: settings.sound)
+        }
     }
 
     /// Coordinates overlay transitions.
@@ -620,6 +636,14 @@ final class OverlayUICoordinator {
 
         guard presentOverlay, let appModel else {
             return
+        }
+
+        // The harness loads a snapshot directly rather than living through a
+        // real notification arriving, so the sound that would have announced
+        // it has to be fired here instead — otherwise `approvalCard` and its
+        // siblings would be the one path that never exercises this cue.
+        if let event = notificationSoundEvent(for: snapshot.islandSurface) {
+            NotificationSoundService.play(event, settings: settings.sound)
         }
 
         // Immediate interactivity update.

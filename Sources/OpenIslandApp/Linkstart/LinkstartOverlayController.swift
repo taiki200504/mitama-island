@@ -146,29 +146,33 @@ final class LinkstartOverlayController {
 
     /// Follows the choreography rather than the frames.
     ///
-    /// Timed from the same durations the view draws from, so the sound and the
-    /// picture cannot drift apart. The real thing's audio is someone else's
-    /// work and cannot ship here — these are the nearest sounds already on the
-    /// machine, which is the same compromise the SAO theme makes for
-    /// notifications.
+    /// Timed from `LinkstartSequence.cueSchedule`, which is derived from the
+    /// same durations the view draws from, so the sound and the picture cannot
+    /// drift apart. These are cues synthesised for this app (see
+    /// `docs/sound-design.md`), played directly by name rather than through
+    /// `NotificationSoundEvent`: the sequence is not a notification and its
+    /// three sounds are a fixed triad, not something anyone reassigns.
     private func playSoundtrack() {
         soundtrack?.cancel()
         guard !isMuted() else { return }
 
         soundtrack = Task { [weak self] in
-            // The light arriving: low and sustained, not a notification chime.
-            NotificationSoundService.play("Submarine", volume: 0.5)
-            try? await Task.sleep(for: .seconds(LinkstartSequence.awakeningDuration))
-
-            for _ in LinkstartSequence.senses {
+            var previousAt: TimeInterval = 0
+            for step in LinkstartSequence.cueSchedule {
                 guard !Task.isCancelled, self != nil else { return }
-                NotificationSoundService.play("Tink", volume: 0.35)
-                try? await Task.sleep(for: .seconds(LinkstartSequence.perSenseDuration))
+                try? await Task.sleep(for: .seconds(step.at - previousAt))
+                previousAt = step.at
+                guard !Task.isCancelled, self != nil else { return }
+                NotificationSoundService.play(Self.soundName(for: step.cue), volume: 0.5)
             }
+        }
+    }
 
-            try? await Task.sleep(for: .seconds(LinkstartSequence.languageDuration))
-            guard !Task.isCancelled, self != nil else { return }
-            NotificationSoundService.play("Hero", volume: 0.5)
+    private static func soundName(for cue: LinkstartCue) -> String {
+        switch cue {
+        case .rise: "ui-linkstart-rise"
+        case .tick: "ui-linkstart-tick"
+        case .resolve: "ui-linkstart-resolve"
         }
     }
 

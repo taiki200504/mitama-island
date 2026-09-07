@@ -32,15 +32,26 @@ enum IslandSoundProfile: Sendable {
     case sao
 
     func soundName(for event: NotificationSoundEvent) -> String {
-        // Crystalline over percussive. Glass for the two moments that ask
-        // something of you, Tink for the ones that only report, and a low
-        // sustained note for the gesture — it answers a deliberate pull of
-        // the hand, so it should not sound like another notification.
+        // The macOS system chimes (Glass, Hero, Tink, Submarine) that this
+        // switch used to return are replaced by cues synthesised for this app
+        // — see docs/sound-design.md. `islandOpened` and the gesture-driven
+        // open share one file: they are the same moment, just reached two
+        // different ways, and a user who wants the gesture to stand out can
+        // still give it its own sound from the settings pane.
         switch event {
-        case .approvalNeeded, .answerNeeded: return "Glass"
-        case .taskComplete: return "Hero"
-        case .islandOpenedByGesture: return "Submarine"
-        case .sessionStart, .contextLimit, .usageAlmostFull: return "Tink"
+        case .approvalNeeded, .answerNeeded, .eventStarting: return "ui-notify"
+        case .taskComplete: return "ui-complete"
+        case .sessionStart: return "ui-link"
+        case .contextLimit, .usageAlmostFull, .warning: return "ui-warning"
+        case .islandOpenedByGesture, .islandOpened: return "ui-open"
+        case .islandClosed: return "ui-close"
+        case .selection: return "ui-select"
+        case .confirm: return "ui-confirm"
+        case .approve: return "ui-approve"
+        case .reject: return "ui-reject"
+        case .timerFinished: return "ui-timer-end"
+        case .lockScan: return "ui-lock-scan"
+        case .unlock: return "ui-unlock"
         }
     }
 }

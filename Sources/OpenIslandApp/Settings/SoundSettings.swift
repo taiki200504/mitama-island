@@ -17,6 +17,23 @@ enum NotificationSoundEvent: String, CaseIterable, Sendable {
     case contextLimit
     case usageAlmostFull
     case islandOpenedByGesture
+    case islandOpened
+    case islandClosed
+    case selection
+    case confirm
+    case approve
+    case reject
+    /// Available for assignment, like `timerFinished` and `eventStarting`
+    /// below — nothing in this app raises it yet.
+    case warning
+    /// Not raised in this PR; reserved for a countdown feature.
+    case timerFinished
+    /// Not raised in this PR; reserved for a calendar feature.
+    case eventStarting
+    /// Not raised in this PR; reserved for a lock-screen feature.
+    case lockScan
+    /// Not raised in this PR; reserved for a lock-screen feature.
+    case unlock
 
     var labelKey: String { "settings.sound.event.\(rawValue)" }
 
@@ -26,7 +43,27 @@ enum NotificationSoundEvent: String, CaseIterable, Sendable {
     /// "would this ever be heard". Everything left is raised.
     var isRaised: Bool { true }
 
+    /// Chrome the island itself makes while being operated — open, close,
+    /// moving the selection, confirming, approving, rejecting. These share one
+    /// "Interface sounds" toggle rather than a settings row each: nobody wants
+    /// to individually configure the sound a switcher row makes when the
+    /// pointer moves over it.
+    var isUIFeedback: Bool {
+        switch self {
+        case .islandOpened, .islandClosed, .selection, .confirm, .approve, .reject:
+            true
+        default:
+            false
+        }
+    }
+
+    /// Whether this gets its own row in the sound settings pane. UI feedback
+    /// (see `isUIFeedback`) is deliberately excluded from that list.
+    var isUserAssignable: Bool { !isUIFeedback }
+
     static var raisedEvents: [NotificationSoundEvent] { allCases }
+
+    static var assignableEvents: [NotificationSoundEvent] { allCases.filter(\.isUserAssignable) }
 }
 
 /// Whether sound plays, how loud, which sound per event, and when to stay quiet.
@@ -49,6 +86,14 @@ final class SoundSettings: PreferenceGroup {
     var volume: Double {
         get { read(\.volume, Keys.volume, Defaults.volume) }
         set { write(\.volume, Keys.volume, min(max(newValue, 0), 1)) }
+    }
+
+    /// Whether the island's own chrome — open, close, select, confirm,
+    /// approve, reject — makes noise. On by default, matching how the app
+    /// always sounded before this became separable from notification sounds.
+    var uiSoundsEnabled: Bool {
+        get { read(\.uiSoundsEnabled, Keys.uiSoundsEnabled, true) }
+        set { write(\.uiSoundsEnabled, Keys.uiSoundsEnabled, newValue) }
     }
 
     // MARK: Quiet hours
@@ -101,6 +146,7 @@ final class SoundSettings: PreferenceGroup {
     /// Whether a sound should be heard for this event right now.
     func shouldPlay(_ event: NotificationSoundEvent, at date: Date, calendar: Calendar = .current) -> Bool {
         guard !isMuted, event.isRaised else { return false }
+        guard !event.isUIFeedback || uiSoundsEnabled else { return false }
         return !isWithinQuietHours(date, calendar: calendar)
     }
 
@@ -140,5 +186,6 @@ extension SoundSettings {
         static let quietHoursStart = "sound.quietHours.start"
         static let quietHoursEnd = "sound.quietHours.end"
         static let revision = "sound.assignmentsRevision"
+        static let uiSoundsEnabled = "sound.ui.enabled"
     }
 }

@@ -651,6 +651,19 @@ final class AppModel {
     var ignoresPointerExitDuringHarness = false
     var disablesOverlayEventMonitoringDuringHarness = false
 
+    /// When the switcher's selection sound last played. A finger reading or a
+    /// held arrow key can move the selection far faster than 80ms per row —
+    /// this keeps the chime from turning into a buzz.
+    @ObservationIgnored
+    private var lastSelectionSoundAt = Date.distantPast
+
+    private func playSelectionSound() {
+        let now = Date()
+        guard now.timeIntervalSince(lastSelectionSoundAt) >= 0.08 else { return }
+        lastSelectionSoundAt = now
+        NotificationSoundService.play(.selection, settings: settings.sound)
+    }
+
     @ObservationIgnored
     private var bridgeTask: Task<Void, Never>?
 
@@ -2021,6 +2034,7 @@ final class AppModel {
         let id = ids[index]
         guard switcher.highlightedID != id else { return }
         switcher.point(at: id, sessions: ids)
+        playSelectionSound()
     }
 
     func jumpToFocusedSession() {
@@ -2124,12 +2138,15 @@ final class AppModel {
         case .deny:
             resolution = .deny(message: "Permission denied in Open Island.", interrupt: false)
             message = "Denying permission for \(session.title)."
+            NotificationSoundService.play(.reject, settings: settings.sound)
         case .allowOnce:
             resolution = .allowOnce()
             message = "Approving permission for \(session.title)."
+            NotificationSoundService.play(.approve, settings: settings.sound)
         case let .allowWithUpdates(updates):
             resolution = .allowOnce(updatedPermissions: updates)
             message = "Always allowing for \(session.title)."
+            NotificationSoundService.play(.approve, settings: settings.sound)
         }
 
         dismissNotificationSurfaceIfPresent(for: sessionID)
@@ -2156,6 +2173,7 @@ final class AppModel {
             return
         }
 
+        NotificationSoundService.play(.confirm, settings: settings.sound)
         dismissNotificationSurfaceIfPresent(for: sessionID)
         state.answerQuestion(sessionID: session.id, response: answer)
         synchronizeSelection()
@@ -2169,6 +2187,7 @@ final class AppModel {
     }
 
     func replyToSession(_ session: AgentSession, text: String) {
+        NotificationSoundService.play(.confirm, settings: settings.sound)
         dismissNotificationSurfaceIfPresent(for: session.id)
         synchronizeSelection()
         refreshOverlayPlacementIfVisible()
@@ -2523,6 +2542,7 @@ final class AppModel {
 
     func switcherMoveSelection(reversed: Bool) {
         switcher.moveSelection(sessions: switcherSessionIDs, reversed: reversed)
+        playSelectionSound()
     }
 
     func switcherConfirm() {
