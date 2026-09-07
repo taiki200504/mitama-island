@@ -11,6 +11,7 @@ final class OpenIslandAppDelegate: NSObject, NSApplicationDelegate {
     /// that would sit in every screenshot the capture scripts take.
     private var statusItemController: StatusItemController?
 
+    @MainActor
     func applicationDidFinishLaunching(_ notification: Notification) {
         ProcessInfo.processInfo.disableAutomaticTermination(
             "Open Island should remain active while monitoring local agent sessions."

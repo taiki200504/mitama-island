@@ -8,7 +8,6 @@ import Foundation
 public struct StatusMenuInputs: Sendable {
     public var isMuted: Bool
     public var cameraIsWatching: Bool
-    public var cameraStaysOpen: Bool
     public var shelfItemNames: [String]
     /// Sessions waiting on an approval or an answer right now.
     public var waitingCount: Int
@@ -16,13 +15,11 @@ public struct StatusMenuInputs: Sendable {
     public init(
         isMuted: Bool,
         cameraIsWatching: Bool,
-        cameraStaysOpen: Bool,
         shelfItemNames: [String],
         waitingCount: Int
     ) {
         self.isMuted = isMuted
         self.cameraIsWatching = cameraIsWatching
-        self.cameraStaysOpen = cameraStaysOpen
         self.shelfItemNames = shelfItemNames
         self.waitingCount = waitingCount
     }

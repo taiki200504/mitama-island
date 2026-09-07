@@ -298,7 +298,7 @@ final class AppModel {
     /// this model can stay ignorant of `NSStatusItem` and stay testable
     /// without one.
     @ObservationIgnored
-    var onShowsMenuBarIconChanged: ((Bool) -> Void)?
+    var onShowsMenuBarIconChanged: (@MainActor (Bool) -> Void)?
     var showCodexUsage: Bool = false {
         didSet {
             guard hasFinishedInit, showCodexUsage != oldValue else { return }
@@ -1259,7 +1259,6 @@ final class AppModel {
         StatusMenuInputs(
             isMuted: isSoundMuted,
             cameraIsWatching: cameraActivation.isRunning,
-            cameraStaysOpen: settings.cameraGesture.staysOpen,
             shelfItemNames: shelf.items.map(\.displayName),
             waitingCount: liveAttentionCount
         )

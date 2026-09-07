@@ -6,14 +6,12 @@ struct StatusMenuLayoutTests {
     private func inputs(
         isMuted: Bool = false,
         cameraIsWatching: Bool = false,
-        cameraStaysOpen: Bool = false,
         shelfItemNames: [String] = [],
         waitingCount: Int = 0
     ) -> StatusMenuInputs {
         StatusMenuInputs(
             isMuted: isMuted,
             cameraIsWatching: cameraIsWatching,
-            cameraStaysOpen: cameraStaysOpen,
             shelfItemNames: shelfItemNames,
             waitingCount: waitingCount
         )
@@ -104,7 +102,6 @@ struct StatusMenuLayoutTests {
         let entries = StatusMenuLayout.entries(for: inputs(
             isMuted: true,
             cameraIsWatching: true,
-            cameraStaysOpen: true,
             shelfItemNames: ["only.txt"],
             waitingCount: 1
         ))

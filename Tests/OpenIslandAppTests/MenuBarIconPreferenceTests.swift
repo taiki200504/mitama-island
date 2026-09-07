@@ -34,12 +34,14 @@ struct MenuBarIconPreferenceTests {
 
     @Test("Defaults to on, so a first launch is always reachable")
     func defaultsToOn() {
+        defer { UserDefaults.standard.removeObject(forKey: Self.defaultsKey) }
         let model = makeModel()
         #expect(model.showsMenuBarIcon == true)
     }
 
     @Test("Turning it off notifies the controller closure with false")
     func turningItOffNotifiesTheController() {
+        defer { UserDefaults.standard.removeObject(forKey: Self.defaultsKey) }
         let model = makeModel()
         var received: [Bool] = []
         model.onShowsMenuBarIconChanged = { received.append($0) }
@@ -51,6 +53,7 @@ struct MenuBarIconPreferenceTests {
 
     @Test("Turning it back on notifies the controller closure with true")
     func turningItBackOnNotifiesTheController() {
+        defer { UserDefaults.standard.removeObject(forKey: Self.defaultsKey) }
         let model = makeModel()
         model.showsMenuBarIcon = false
         var received: [Bool] = []
@@ -63,6 +66,7 @@ struct MenuBarIconPreferenceTests {
 
     @Test("Setting it to its current value is a no-op — no redundant call")
     func settingSameValueDoesNothing() {
+        defer { UserDefaults.standard.removeObject(forKey: Self.defaultsKey) }
         let model = makeModel()
         var callCount = 0
         model.onShowsMenuBarIconChanged = { _ in callCount += 1 }
@@ -74,6 +78,7 @@ struct MenuBarIconPreferenceTests {
 
     @Test("Persists to UserDefaults under its own key, independent of the Dock toggle")
     func persistsUnderItsOwnKey() {
+        defer { UserDefaults.standard.removeObject(forKey: Self.defaultsKey) }
         let model = makeModel()
         // `register(defaults:)` in `AppModel.init()` always populates this key
         // with its own default, so the interesting assertion is that toggling
@@ -89,6 +94,7 @@ struct MenuBarIconPreferenceTests {
 
     @Test("statusMenuInputs mirrors the model's own mute, camera and shelf state")
     func statusMenuInputsMirrorsModelState() {
+        defer { UserDefaults.standard.removeObject(forKey: Self.defaultsKey) }
         let model = makeModel()
         model.isSoundMuted = true
 
