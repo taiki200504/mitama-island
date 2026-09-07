@@ -202,6 +202,13 @@ struct SwitcherHotkeyTests {
         #expect((registrar.bindingsByScope[.switcherActive] ?? []).isEmpty)
     }
 
+    @Test("An inactive master switch keeps the switcher from claiming arrows")
+    func switcherRespectsMasterSwitch() {
+        let (coordinator, registrar) = makeCoordinator { $0.keyboardShortcutsEnabled = false }
+        coordinator.switcherDidActivate()
+        #expect((registrar.bindingsByScope[.switcherActive] ?? []).isEmpty)
+    }
+
     @Test("The switcher key is the one always-live shortcut")
     func switcherIsPersistent() {
         let (coordinator, registrar) = makeCoordinator()
