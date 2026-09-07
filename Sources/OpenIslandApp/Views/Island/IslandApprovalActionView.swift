@@ -46,11 +46,14 @@ extension IslandSessionRow {
                 Button(shortcutHinted(session.permissionRequest?.secondaryActionTitle ?? lang.t("approval.deny"), .deny)) {
                     onApprove?(.deny)
                 }
-                .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true))
+                .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .lightCard))
                 Button(shortcutHinted(session.permissionRequest?.primaryActionTitle ?? lang.t("approval.allowOnce"), .approve)) {
                     onApprove?(.allowOnce)
                 }
-                .buttonStyle(IslandActionButtonStyle(kind: .warning, expands: true))
+                // The card's own primary action, not a warning — the
+                // selection gradient carries "this is the one you want" the
+                // way it does everywhere else in this grammar.
+                .buttonStyle(IslandActionButtonStyle(kind: .primary, expands: true, surface: .lightCard))
             }
 
             // Whatever else the agent offered — "bypass permissions",
@@ -61,21 +64,21 @@ extension IslandSessionRow {
                 Button(update.displayLabel) {
                     onApprove?(.allowWithUpdates([update]))
                 }
-                .buttonStyle(IslandActionButtonStyle(kind: .primary, expands: true))
+                .buttonStyle(IslandActionButtonStyle(kind: .primary, expands: true, surface: .lightCard))
             }
 
             // Only worth offering when there is more than one thing queued.
             if pendingApprovalCount > 1 {
                 HStack(spacing: 8) {
                     Button(lang.t("approval.denyAll")) { onResolveAll?(.deny) }
-                        .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true))
+                        .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .lightCard))
                     Button(lang.t("approval.allowAll")) { onResolveAll?(.allowOnce) }
-                        .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true))
+                        .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .lightCard))
                 }
             }
 
             Button(shortcutHinted(lang.t("approval.goToTerminal"), .jumpToTerminal)) { onJump() }
-                .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true))
+                .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .lightCard))
         }
         .padding(10)
         .saoCard()

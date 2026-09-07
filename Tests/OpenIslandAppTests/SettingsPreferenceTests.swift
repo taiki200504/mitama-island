@@ -369,6 +369,20 @@ struct IslandTypographyTests {
         #expect(licence != nil)
     }
 
+    /// Registration reads through `Bundle.appResources`, not `Bundle.module` —
+    /// a lookup that only works from `.module` would pass in tests and still
+    /// fail in the signed .app, silently.
+    @Test("Every bundled font resolves a URL from Bundle.appResources", arguments: [
+        ("DepartureMono-Regular", "otf"),
+        ("Rajdhani-SemiBold", "ttf"),
+        ("Rajdhani-Medium", "ttf"),
+    ])
+    func bundledFontResolvesFromAppResources(resource: String, ext: String) {
+        let url = Bundle.appResources.url(forResource: resource, withExtension: ext, subdirectory: "Fonts")
+            ?? Bundle.appResources.url(forResource: resource, withExtension: ext)
+        #expect(url != nil)
+    }
+
     @Test("Rajdhani SemiBold registers as a usable NSFont")
     func rajdhaniRegisters() {
         IslandTypography.registerBundledFonts()

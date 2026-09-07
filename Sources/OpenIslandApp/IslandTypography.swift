@@ -1,6 +1,9 @@
 import AppKit
 import CoreText
+import OSLog
 import SwiftUI
+
+private let fontRegistrationLog = Logger(subsystem: "com.mitama.island", category: "typography")
 
 /// The island's monospaced and display typefaces.
 ///
@@ -25,16 +28,29 @@ enum IslandTypography {
     ]
 
     /// The resource names that registered successfully. Lazily computed once,
-    /// on first access, the way any static stored property is.
-    private static let registeredResources: Set<String> = Set(
-        bundledFonts.compactMap { registerBundledFont(resource: $0.resource, ext: $0.ext) ? $0.resource : nil }
-    )
+    /// on first access, the way any static stored property is. A failure here
+    /// is silent to callers — they just get the system-font fallback — so it
+    /// is logged instead, or a missing font in a shipped build has no trace.
+    private static let registeredResources: Set<String> = {
+        var succeeded: Set<String> = []
+        for font in bundledFonts {
+            if registerBundledFont(resource: font.resource, ext: font.ext) {
+                succeeded.insert(font.resource)
+            } else {
+                fontRegistrationLog.error("Failed to register bundled font \(font.resource, privacy: .public).\(font.ext, privacy: .public)")
+            }
+        }
+        return succeeded
+    }()
 
     /// Registers every bundled font. Callers don't need the result — reading
     /// it is enough to trigger registration — but it is useful in tests.
+    /// `true` only when every bundled font registered; a partial failure
+    /// still logs which one, but callers asking "did this fully work" should
+    /// not be told yes when only some fonts are actually usable.
     @discardableResult
     static func registerBundledFonts() -> Bool {
-        !registeredResources.isEmpty
+        registeredResources.count == bundledFonts.count
     }
 
     /// A monospaced font at the given size, preferring the bundled face.

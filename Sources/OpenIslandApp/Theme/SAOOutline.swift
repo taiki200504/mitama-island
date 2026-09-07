@@ -11,19 +11,24 @@ extension View {
     ) -> some View {
         let metrics = SAOGrammar.Metric.outline
         return self
+            // The glow is the one line meant to bleed outward past the fill —
+            // a plain `stroke` straddles the edge on purpose here.
             .overlay(
                 shape
                     .stroke(SAOGrammar.Palette.outlineGlow, lineWidth: metrics.outer * scale)
                     .blur(radius: metrics.blur * scale)
             )
+            // The rest sit inside the fill's own edge (`strokeBorder`), so
+            // they read as banding within the card rather than a second halo
+            // bleeding past it alongside the glow.
             .overlay(
-                shape.stroke(Color.white, lineWidth: metrics.mid * scale)
+                shape.strokeBorder(Color.white, lineWidth: metrics.mid * scale)
             )
             .overlay(
-                shape.stroke(SAOGrammar.Palette.outlineDark, lineWidth: metrics.inner * scale)
+                shape.strokeBorder(SAOGrammar.Palette.outlineDark, lineWidth: metrics.inner * scale)
             )
             .overlay(
-                shape.stroke(SAOGrammar.Palette.hairline, lineWidth: 1)
+                shape.strokeBorder(SAOGrammar.Palette.hairline, lineWidth: 1)
             )
     }
 
@@ -32,7 +37,7 @@ extension View {
     /// sheen gradient, forced to light colour scheme so `Color.primary` /
     /// `.secondary` and system controls resolve dark against it even though
     /// the panel around the card always forces `.preferredColorScheme(.dark)`.
-    func saoCard(cornerRadius: CGFloat = 10, cutDepth: CGFloat = 8) -> some View {
+    func saoCard(cornerRadius: CGFloat = 10, cutDepth: CGFloat = 14) -> some View {
         let shape = SAOPanelShape(cornerRadius: cornerRadius, cutDepth: cutDepth)
         return self
             .background(

@@ -61,7 +61,7 @@ struct StructuredQuestionPromptView: View {
                 Button(submitButtonTitle) {
                     submitAnswer()
                 }
-                .buttonStyle(IslandActionButtonStyle(kind: canSubmit ? .primary : .secondary, expands: true))
+                .buttonStyle(IslandActionButtonStyle(kind: canSubmit ? .primary : .secondary, expands: true, surface: .lightCard))
                 .disabled(!canSubmit)
             }
         }
@@ -201,7 +201,7 @@ struct StructuredQuestionPromptView: View {
             Button(lang.t("question.submit")) {
                 submitAnswer()
             }
-            .buttonStyle(IslandActionButtonStyle(kind: canSubmit ? .primary : .secondary, expands: true))
+            .buttonStyle(IslandActionButtonStyle(kind: canSubmit ? .primary : .secondary, expands: true, surface: .lightCard))
             .disabled(!canSubmit)
         }
     }
