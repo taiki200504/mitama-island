@@ -24,6 +24,8 @@
 "settings.general.autoHideNoSessions" = "セッションが無いときは隠す";
 "settings.general.autoCollapse" = "カーソルが離れたら閉じる";
 "settings.general.showDockIcon" = "Dock にアイコンを表示";
+"settings.general.showsMenuBarIcon" = "メニューバーにアイコンを表示";
+"settings.general.showsMenuBarIcon.help" = "島が隠れていてもメニューバーから設定に戻れます。";
 "settings.general.hapticFeedback" = "ホバー時に触覚フィードバック";
 "settings.general.suppressFrontmostNotifications" = "前面のセッションは通知しない";
 "settings.general.showCodexUsage" = "Codex の使用量を表示";
@@ -705,3 +707,12 @@
 "settings.display.showsNextEvent.help" = "待っているものが何も無いとき、8時間以内に始まる次の予定の開始時刻と残り時間を出します。カレンダーの読み取り許可が要ります。終日の予定は出しません。";
 "settings.display.showsNextEvent.noAccess" = "カレンダーへのアクセスがありません。システム設定 → プライバシーとセキュリティ → カレンダー で Mitama Island を許可してください。";
 "island.peek.hours" = "%d時間";
+
+/* Status Item (Menu Bar) */
+"statusItem.openIsland" = "島を開く";
+"statusItem.openIsland.waiting" = "島を開く（%d件待ち）";
+"statusItem.unmute" = "ミュート解除";
+"statusItem.cameraOn" = "カメラを起こす";
+"statusItem.cameraOff" = "カメラを閉じる";
+"statusItem.shelf.header" = "置いてあるもの（%d）";
+"statusItem.settings" = "設定…";

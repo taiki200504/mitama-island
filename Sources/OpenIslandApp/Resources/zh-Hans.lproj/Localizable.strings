@@ -24,6 +24,8 @@
 "settings.general.autoHideNoSessions" = "无活跃会话时自动隐藏";
 "settings.general.autoCollapse" = "鼠标离开时自动收起";
 "settings.general.showDockIcon" = "在 Dock 中显示图标";
+"settings.general.showsMenuBarIcon" = "在菜单栏中显示图标";
+"settings.general.showsMenuBarIcon.help" = "即使岛隐藏，也能从菜单栏返回设置。";
 "settings.general.hapticFeedback" = "悬停时震动反馈";
 "settings.general.suppressFrontmostNotifications" = "前台会话不弹出通知";
 "settings.general.showCodexUsage" = "显示 Codex 用量";
@@ -705,3 +707,12 @@
 "settings.display.showsNextEvent.help" = "当没有任何事情等待你时，显示 8 小时内下一个日程的开始时间与剩余时间。需要日历读取权限。全天日程不会显示。";
 "settings.display.showsNextEvent.noAccess" = "没有日历访问权限。请在系统设置 → 隐私与安全性 → 日历 中允许 Mitama Island。";
 "island.peek.hours" = "%d小时";
+
+/* Status Item (Menu Bar) */
+"statusItem.openIsland" = "打开岛";
+"statusItem.openIsland.waiting" = "打开岛（%d 项等待）";
+"statusItem.unmute" = "取消静音";
+"statusItem.cameraOn" = "唤醒摄像头";
+"statusItem.cameraOff" = "关闭摄像头";
+"statusItem.shelf.header" = "暂存（%d）";
+"statusItem.settings" = "设置…";

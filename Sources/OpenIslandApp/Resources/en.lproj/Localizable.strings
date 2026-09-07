@@ -24,6 +24,8 @@
 "settings.general.autoHideNoSessions" = "Auto-hide without active sessions";
 "settings.general.autoCollapse" = "Auto-collapse on mouse exit";
 "settings.general.showDockIcon" = "Show icon in Dock";
+"settings.general.showsMenuBarIcon" = "Show icon in menu bar";
+"settings.general.showsMenuBarIcon.help" = "Keeps the app reachable from the menu bar even when the island is hidden.";
 "settings.general.hapticFeedback" = "Haptic feedback on hover";
 "settings.general.suppressFrontmostNotifications" = "Suppress notifications for focused sessions";
 "settings.general.showCodexUsage" = "Show Codex usage";
@@ -705,3 +707,12 @@
 "settings.display.showsNextEvent.help" = "While nothing is waiting on you, shows the start time of the next entry beginning within eight hours, and how long that is. Needs read access to your calendar. All-day entries are skipped.";
 "settings.display.showsNextEvent.noAccess" = "No calendar access. Allow Mitama Island in System Settings → Privacy & Security → Calendars.";
 "island.peek.hours" = "%dh";
+
+/* Status Item (Menu Bar) */
+"statusItem.openIsland" = "Open the Island";
+"statusItem.openIsland.waiting" = "Open the Island (%d waiting)";
+"statusItem.unmute" = "Unmute";
+"statusItem.cameraOn" = "Wake the Camera";
+"statusItem.cameraOff" = "Close the Camera";
+"statusItem.shelf.header" = "Set Aside (%d)";
+"statusItem.settings" = "Settings…";

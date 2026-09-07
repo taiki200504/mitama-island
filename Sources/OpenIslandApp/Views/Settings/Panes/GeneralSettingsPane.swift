@@ -192,6 +192,11 @@ struct GeneralSettingsPane: View {
                 isOn: Binding(get: { model.showDockIcon }, set: { model.showDockIcon = $0 })
             )
             SettingsToggleRow(
+                title: lang.t("settings.general.showsMenuBarIcon"),
+                help: lang.t("settings.general.showsMenuBarIcon.help"),
+                isOn: Binding(get: { model.showsMenuBarIcon }, set: { model.showsMenuBarIcon = $0 })
+            )
+            SettingsToggleRow(
                 title: lang.t("settings.general.hapticFeedback"),
                 isOn: Binding(
                     get: { model.hapticFeedbackEnabled },

@@ -24,6 +24,8 @@
 "settings.general.autoHideNoSessions" = "無活躍工作階段時自動隱藏";
 "settings.general.autoCollapse" = "滑鼠離開時自動收起";
 "settings.general.showDockIcon" = "在 Dock 中顯示圖示";
+"settings.general.showsMenuBarIcon" = "在選單列中顯示圖示";
+"settings.general.showsMenuBarIcon.help" = "即使島隱藏，也能從選單列返回設定。";
 "settings.general.hapticFeedback" = "懸停時震動回饋";
 "settings.general.suppressFrontmostNotifications" = "前台工作階段不彈出通知";
 "settings.general.showCodexUsage" = "顯示 Codex 用量";
@@ -704,3 +706,12 @@
 "settings.display.showsNextEvent.help" = "當沒有任何事情等待你時，顯示 8 小時內下一個行程的開始時間與剩餘時間。需要行事曆讀取權限。全天行程不會顯示。";
 "settings.display.showsNextEvent.noAccess" = "沒有行事曆存取權限。請在系統設定 → 隱私權與安全性 → 行事曆 中允許 Mitama Island。";
 "island.peek.hours" = "%d小時";
+
+/* Status Item (Menu Bar) */
+"statusItem.openIsland" = "開啟島";
+"statusItem.openIsland.waiting" = "開啟島（%d 項等待）";
+"statusItem.unmute" = "取消靜音";
+"statusItem.cameraOn" = "喚醒攝影機";
+"statusItem.cameraOff" = "關閉攝影機";
+"statusItem.shelf.header" = "暫存（%d）";
+"statusItem.settings" = "設定…";

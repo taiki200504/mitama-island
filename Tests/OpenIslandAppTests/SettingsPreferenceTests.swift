@@ -224,6 +224,7 @@ struct PreferenceGroupTests {
         let appModelOwned: Set<String> = [
             "overlay.sound.muted",
             "app.showDockIcon",
+            "general.showsMenuBarIcon",
             "app.hapticFeedbackEnabled",
             "app.showCodexUsage",
             "app.suppressFrontmostNotifications",
