@@ -6,30 +6,30 @@ extension IslandSessionRow {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
                 Text(lang.t(isPlanApproval ? "approval.planReady" : "approval.toolPermissionRequested"))
-                    .font(.islandText(size: 12.5, weight: .semibold))
-                    .foregroundStyle(V6Palette.paper.opacity(0.86))
+                    .saoCaps(size: 12.5, text: lang.t(isPlanApproval ? "approval.planReady" : "approval.toolPermissionRequested"))
+                    .foregroundStyle(SAOGrammar.Palette.ink.opacity(0.86))
 
                 if pendingApprovalCount > 1 {
                     Text(lang.t("approval.pendingCount", String(pendingApprovalCount)))
                         .font(.islandMono(size: 10, weight: .medium))
                         .padding(.horizontal, 6)
                         .padding(.vertical, 1.5)
-                        .background(V6Palette.paper.opacity(0.1), in: Capsule())
-                        .foregroundStyle(V6Palette.paper.opacity(0.6))
+                        .background(SAOGrammar.Palette.ink.opacity(0.1), in: Capsule())
+                        .foregroundStyle(SAOGrammar.Palette.ink.opacity(0.6))
                 }
             }
 
             VStack(alignment: .leading, spacing: 8) {
                 Text(commandPreviewText)
                     .font(.islandMono(size: 11.5, weight: .semibold))
-                    .foregroundStyle(V6Palette.paper.opacity(0.78))
+                    .foregroundStyle(SAOGrammar.Palette.ink.opacity(0.78))
                     .fixedSize(horizontal: false, vertical: true)
 
                 if let path = session.permissionRequest?.affectedPath.trimmedForNotificationCard,
                    !path.isEmpty {
                     Text(path)
                         .font(.islandText(size: 10.5, weight: .medium))
-                        .foregroundStyle(V6Palette.paper.opacity(0.42))
+                        .foregroundStyle(SAOGrammar.Palette.ink.opacity(0.42))
                         .lineLimit(1)
                 }
             }
@@ -39,18 +39,21 @@ extension IslandSessionRow {
             .fixedSize(horizontal: false, vertical: true)
             .background(
                 IslandThemes.current.shape(cornerRadius: 7)
-                    .fill(V6Palette.paper.opacity(0.045))
+                    .fill(SAOGrammar.Palette.ink.opacity(0.06))
             )
 
             HStack(spacing: 8) {
                 Button(shortcutHinted(session.permissionRequest?.secondaryActionTitle ?? lang.t("approval.deny"), .deny)) {
                     onApprove?(.deny)
                 }
-                .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true))
+                .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .lightCard))
                 Button(shortcutHinted(session.permissionRequest?.primaryActionTitle ?? lang.t("approval.allowOnce"), .approve)) {
                     onApprove?(.allowOnce)
                 }
-                .buttonStyle(IslandActionButtonStyle(kind: .warning, expands: true))
+                // The card's own primary action, not a warning — the
+                // selection gradient carries "this is the one you want" the
+                // way it does everywhere else in this grammar.
+                .buttonStyle(IslandActionButtonStyle(kind: .primary, expands: true, surface: .lightCard))
             }
 
             // Whatever else the agent offered — "bypass permissions",
@@ -61,22 +64,24 @@ extension IslandSessionRow {
                 Button(update.displayLabel) {
                     onApprove?(.allowWithUpdates([update]))
                 }
-                .buttonStyle(IslandActionButtonStyle(kind: .primary, expands: true))
+                .buttonStyle(IslandActionButtonStyle(kind: .primary, expands: true, surface: .lightCard))
             }
 
             // Only worth offering when there is more than one thing queued.
             if pendingApprovalCount > 1 {
                 HStack(spacing: 8) {
                     Button(lang.t("approval.denyAll")) { onResolveAll?(.deny) }
-                        .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true))
+                        .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .lightCard))
                     Button(lang.t("approval.allowAll")) { onResolveAll?(.allowOnce) }
-                        .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true))
+                        .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .lightCard))
                 }
             }
 
             Button(shortcutHinted(lang.t("approval.goToTerminal"), .jumpToTerminal)) { onJump() }
-                .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true))
+                .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .lightCard))
         }
+        .padding(10)
+        .saoCard()
     }
 
     /// Appends the key that also triggers this button, but only while the

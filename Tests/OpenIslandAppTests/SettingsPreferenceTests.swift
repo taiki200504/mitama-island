@@ -368,6 +368,59 @@ struct IslandTypographyTests {
         ) ?? Bundle.module.url(forResource: "DepartureMono-LICENSE", withExtension: "txt")
         #expect(licence != nil)
     }
+
+    /// Registration reads through `Bundle.appResources`, not `Bundle.module` —
+    /// a lookup that only works from `.module` would pass in tests and still
+    /// fail in the signed .app, silently.
+    @Test("Every bundled font resolves a URL from Bundle.appResources", arguments: [
+        ("DepartureMono-Regular", "otf"),
+        ("Rajdhani-SemiBold", "ttf"),
+        ("Rajdhani-Medium", "ttf"),
+    ])
+    func bundledFontResolvesFromAppResources(resource: String, ext: String) {
+        let url = Bundle.appResources.url(forResource: resource, withExtension: ext, subdirectory: "Fonts")
+            ?? Bundle.appResources.url(forResource: resource, withExtension: ext)
+        #expect(url != nil)
+    }
+
+    @Test("Rajdhani SemiBold registers as a usable NSFont")
+    func rajdhaniRegisters() {
+        IslandTypography.registerBundledFonts()
+        #expect(NSFont(name: "Rajdhani-SemiBold", size: 12) != nil)
+    }
+
+    @Test("Departure Mono still registers alongside Rajdhani")
+    func departureMonoStillRegistersAlongsideRajdhani() {
+        IslandTypography.registerBundledFonts()
+        #expect(NSFont(name: IslandTypography.departureMonoName, size: 12) != nil)
+    }
+
+    /// `display(size:)` has no introspectable font-name API of its own, so
+    /// the registration check is the load-bearing assertion here: `display`
+    /// only falls back to the system font when the name fails to resolve,
+    /// which this proves it does not.
+    @Test("display(size:) does not fall back to the system font once registered")
+    func displayDoesNotFallBack() {
+        IslandTypography.registerBundledFonts()
+        #expect(NSFont(name: IslandTypography.displayFontName, size: 12) != nil)
+    }
+
+    @Test("Latin text is recognised as Latin script")
+    func latinTextIsLatin() {
+        #expect(IslandTypography.isLatinScript("Claude Code"))
+        #expect(IslandTypography.isLatinScript("Plan Ready"))
+    }
+
+    @Test("CJK text is not recognised as Latin script")
+    func cjkTextIsNotLatin() {
+        #expect(!IslandTypography.isLatinScript("実行中"))
+        #expect(!IslandTypography.isLatinScript("待機中の質問"))
+    }
+
+    @Test("Mixed Latin and CJK text is not pure Latin")
+    func mixedTextIsNotLatin() {
+        #expect(!IslandTypography.isLatinScript("Claude 実行中"))
+    }
 }
 
 @MainActor

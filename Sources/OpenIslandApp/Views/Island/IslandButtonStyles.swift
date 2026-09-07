@@ -33,17 +33,28 @@ struct IslandActionButtonStyle: ButtonStyle {
         case warning
     }
 
+    /// Which ground this button sits on. Every current call site is inside a
+    /// `saoCard` white card, but the dark-shell palette (this style's
+    /// original colours) stays the default so a future call site on the ink
+    /// shell directly doesn't have to know to opt out of the light-card look.
+    enum Surface {
+        case darkShell
+        case lightCard
+    }
+
     let kind: Kind
     var expands = false
+    var surface: Surface = .darkShell
 
     func makeBody(configuration: Configuration) -> some View {
-        IslandActionButtonBody(kind: kind, expands: expands, configuration: configuration)
+        IslandActionButtonBody(kind: kind, expands: expands, surface: surface, configuration: configuration)
     }
 }
 
 private struct IslandActionButtonBody: View {
     let kind: IslandActionButtonStyle.Kind
     let expands: Bool
+    let surface: IslandActionButtonStyle.Surface
     let configuration: ButtonStyle.Configuration
 
     @Environment(\.isEnabled) private var isEnabled
@@ -54,6 +65,11 @@ private struct IslandActionButtonBody: View {
     /// A disabled button must not light up under the cursor — that would
     /// promise something it cannot do.
     private var isLit: Bool { isHovering && isEnabled }
+    /// Every button shares the crystal-HUD's own cut depth (shallower than a
+    /// card's) rather than the compat wrapper's size-derived one.
+    private var shape: SAOPanelShape {
+        SAOPanelShape(cornerRadius: SAOGrammar.Metric.cornerRadius, cutDepth: 8)
+    }
 
     var body: some View {
         configuration.label
@@ -63,10 +79,17 @@ private struct IslandActionButtonBody: View {
             .frame(maxWidth: expands ? .infinity : nil)
             .padding(.horizontal, 13)
             .padding(.vertical, 8)
-            .background(theme.shape(cornerRadius: 10).fill(backgroundColor))
-            .overlay(theme.shape(cornerRadius: 10).stroke(strokeColor, lineWidth: 1))
+            .background {
+                if surface == .lightCard, kind == .primary, isEnabled {
+                    shape.fill(SAOGrammar.selectionGradient)
+                        .opacity(isPressed ? 0.78 : 1)
+                } else {
+                    shape.fill(backgroundColor)
+                }
+            }
+            .overlay(shape.stroke(strokeColor, lineWidth: 1))
             .overlay(alignment: .bottomLeading) { hoverUnderline }
-            .clipShape(theme.shape(cornerRadius: 10))
+            .clipShape(shape)
             // A press has to feel like the button moved, not merely faded.
             .scaleEffect(isPressed ? 0.97 : 1)
             .shadow(color: glowColor, radius: isLit ? theme.glowRadius * 2 : 0)
@@ -88,10 +111,12 @@ private struct IslandActionButtonBody: View {
     }
 
     private var accentLine: Color {
-        switch kind {
-        case .primary: theme.ink.opacity(0.55)
-        case .warning: V6Palette.paper.opacity(0.7)
-        case .secondary: theme.accent
+        switch (surface, kind) {
+        case (.lightCard, .primary): SAOGrammar.Palette.ink.opacity(0.55)
+        case (.darkShell, .primary): theme.ink.opacity(0.55)
+        case (.lightCard, .warning): SAOGrammar.Palette.ink.opacity(0.7)
+        case (.darkShell, .warning): V6Palette.paper.opacity(0.7)
+        case (_, .secondary): theme.accent
         }
     }
 
@@ -101,41 +126,82 @@ private struct IslandActionButtonBody: View {
     }
 
     private var foregroundColor: Color {
-        guard isEnabled else { return theme.paper.opacity(0.42) }
-
-        switch kind {
-        case .primary: return theme.ink.opacity(0.9)
-        case .warning: return theme.paper
-        case .secondary: return theme.paper.opacity(isLit ? 1 : 0.78)
+        switch surface {
+        case .lightCard:
+            guard isEnabled else { return SAOGrammar.Palette.ink.opacity(0.32) }
+            switch kind {
+            case .primary: return SAOGrammar.Palette.ink.opacity(0.9)
+            // The warning fill is a saturated yellow — it needs dark text for
+            // contrast, not the pale text that reads fine on `ink`.
+            case .warning: return SAOGrammar.Palette.ink.opacity(0.92)
+            case .secondary: return SAOGrammar.Palette.ink.opacity(isLit ? 0.92 : 0.72)
+            }
+        case .darkShell:
+            guard isEnabled else { return theme.paper.opacity(0.42) }
+            switch kind {
+            case .primary: return theme.ink.opacity(0.9)
+            case .warning: return theme.paper
+            case .secondary: return theme.paper.opacity(isLit ? 1 : 0.78)
+            }
         }
     }
 
     private var strokeColor: Color {
-        guard isEnabled else { return V6Palette.paper.opacity(0.07) }
-
-        switch kind {
-        case .primary:
-            return theme.paper.opacity(0.86)
-        case .warning:
-            return theme.statusTints.waitingForApproval.opacity(isLit ? 0.85 : 0.42)
-        case .secondary:
-            return isLit ? theme.accent.opacity(0.55) : V6Palette.paper.opacity(0.07)
+        switch surface {
+        case .lightCard:
+            guard isEnabled else { return SAOGrammar.Palette.ink.opacity(0.08) }
+            switch kind {
+            case .primary:
+                return SAOGrammar.Palette.ink.opacity(0.3)
+            case .warning:
+                return theme.statusTints.waitingForApproval.opacity(isLit ? 0.9 : 0.55)
+            case .secondary:
+                return isLit ? theme.accent.opacity(0.55) : SAOGrammar.Palette.ink.opacity(0.12)
+            }
+        case .darkShell:
+            guard isEnabled else { return V6Palette.paper.opacity(0.07) }
+            switch kind {
+            case .primary:
+                return theme.paper.opacity(0.86)
+            case .warning:
+                return theme.statusTints.waitingForApproval.opacity(isLit ? 0.85 : 0.42)
+            case .secondary:
+                return isLit ? theme.accent.opacity(0.55) : V6Palette.paper.opacity(0.07)
+            }
         }
     }
 
     private var backgroundColor: Color {
-        guard isEnabled else { return V6Palette.paper.opacity(0.055) }
-
         let pressedFactor: Double = isPressed ? 0.78 : 1
-        switch kind {
-        case .primary:
-            return theme.paper.opacity(pressedFactor)
-        case .warning:
-            return theme.statusTints.waitingForApproval
-                .opacity(pressedFactor * (isLit ? 1 : 0.88))
-        case .secondary:
-            if isPressed { return V6Palette.paper.opacity(0.14) }
-            return isLit ? theme.accent.opacity(0.14) : V6Palette.paper.opacity(0.065)
+        switch surface {
+        case .lightCard:
+            guard isEnabled else { return SAOGrammar.Palette.ink.opacity(0.05) }
+            switch kind {
+            case .primary:
+                // Unreachable while enabled: the view body draws the primary
+                // fill itself (`SAOGrammar.selectionGradient`), since a
+                // gradient isn't a `Color`. This only keeps the switch
+                // exhaustive for the disabled case above.
+                return .clear
+            case .warning:
+                return theme.statusTints.waitingForApproval
+                    .opacity(pressedFactor * (isLit ? 1 : 0.88))
+            case .secondary:
+                if isPressed { return SAOGrammar.Palette.ink.opacity(0.12) }
+                return isLit ? theme.accent.opacity(0.14) : SAOGrammar.Palette.ink.opacity(0.045)
+            }
+        case .darkShell:
+            guard isEnabled else { return V6Palette.paper.opacity(0.055) }
+            switch kind {
+            case .primary:
+                return theme.paper.opacity(pressedFactor)
+            case .warning:
+                return theme.statusTints.waitingForApproval
+                    .opacity(pressedFactor * (isLit ? 1 : 0.88))
+            case .secondary:
+                if isPressed { return V6Palette.paper.opacity(0.14) }
+                return isLit ? theme.accent.opacity(0.14) : V6Palette.paper.opacity(0.065)
+            }
         }
     }
 }

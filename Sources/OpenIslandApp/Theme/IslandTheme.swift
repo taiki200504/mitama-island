@@ -65,22 +65,22 @@ enum IslandSoundProfile: Sendable {
 /// far larger change than this indirection.
 struct SAOTheme: Sendable {
     /// The panel's own background. A bluer black preserves contrast against the
-    /// physical notch while the icy paper and cyan give the panel its edge.
-    let ink = Color(hex: 0x06101E)
+    /// physical notch while the icy paper and orange give the panel its edge.
+    let ink = SAOGrammar.Palette.ink
     /// Text and anything drawn on top of `ink`.
-    let paper = Color(hex: 0xE8F7FF)
+    let paper = SAOGrammar.Palette.paper
     /// The one colour that means "this is the app talking".
-    let accent = Color(hex: 0x54C8F2)
+    let accent = SAOGrammar.Palette.accentOrange
 
     let statusTints = IslandStatusTints(
-        running: Color(hex: 0x54C8F2),
+        running: SAOGrammar.Palette.systemCyan,
         // Warm waiting colours remain visually distinct for people who cannot
         // rely on the cold running tint alone.
-        waitingForApproval: Color(hex: 0xFF9A58),
+        waitingForApproval: SAOGrammar.Palette.statusYellow,
         waitingForAnswer: Color(hex: 0xFFD35A),
-        completed: Color(hex: 0x63E6C4),
-        waitingAggregate: Color(hex: 0xFFB86B),
-        critical: Color(hex: 0xFF5275)
+        completed: SAOGrammar.Palette.hpLimeEnd,
+        waitingAggregate: SAOGrammar.Palette.accentAmber,
+        critical: SAOGrammar.Palette.danger
     )
 
     /// How far a glow bleeds past its shape.
@@ -90,8 +90,6 @@ struct SAOTheme: Sendable {
         close: .smooth(duration: 0.15),
         pop: .spring(response: 0.36, dampingFraction: 0.76)
     )
-    /// Opacity of horizontal scanlines spaced three points apart.
-    let scanlineIntensity = 0.06
     let soundProfile = IslandSoundProfile.sao
 
     /// The shape a card, button or badge should use at this corner size.

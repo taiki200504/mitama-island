@@ -19,20 +19,13 @@ extension IslandSessionRow {
 
             if onReply != nil {
                 Rectangle()
-                    .fill(V6Palette.paper.opacity(completionDividerOpacity))
+                    .fill(SAOGrammar.Palette.ink.opacity(completionDividerOpacity))
                     .frame(height: 1)
 
                 completionReplyInput
             }
         }
-        .background(
-            IslandThemes.current.shape(cornerRadius: 10)
-                .fill(V6Palette.paper.opacity(completionCardFillOpacity))
-        )
-        .overlay(
-            IslandThemes.current.shape(cornerRadius: 10)
-                .strokeBorder(V6Palette.paper.opacity(completionCardStrokeOpacity))
-        )
+        .saoCard()
     }
 
     private var completionDoneOpacity: Double {
@@ -40,21 +33,13 @@ extension IslandSessionRow {
     }
 
     private var completionDividerOpacity: Double {
-        presentation == .notification ? 0.035 : 0.04
-    }
-
-    private var completionCardFillOpacity: Double {
-        presentation == .notification ? 0.035 : 0.045
-    }
-
-    private var completionCardStrokeOpacity: Double {
-        presentation == .notification ? 0.06 : 0.08
+        presentation == .notification ? 0.08 : 0.10
     }
 
     private var completionEmptyState: some View {
         HStack {
             Text(lang.t("completion.done"))
-                .font(.islandText(size: 11.5, weight: .bold))
+                .saoCaps(size: 11.5, text: lang.t("completion.done"))
                 .foregroundStyle(IslandDesignPalette.Status.completed.opacity(completionDoneOpacity))
 
             Spacer(minLength: 0)
@@ -79,7 +64,7 @@ extension IslandSessionRow {
                 Image(systemName: "arrow.up.circle.fill")
                     .font(.islandText(size: 24))
                     .foregroundColor(replyText.trimmingCharacters(in: .whitespaces).isEmpty
-                        ? V6Palette.paper.opacity(0.2) : V6Palette.paper.opacity(0.9))
+                        ? SAOGrammar.Palette.ink.opacity(0.2) : SAOGrammar.Palette.ink.opacity(0.9))
             }
             .buttonStyle(.plain)
             .disabled(replyText.trimmingCharacters(in: .whitespaces).isEmpty)
@@ -110,9 +95,9 @@ extension IslandSessionRow {
 extension MarkdownUI.Theme {
     @MainActor static let completionCard = Theme()
         .text {
-            // Read at a glance from a metre away, on a dark panel, often while
-            // the user is mid-thought in another window.
-            ForegroundColor(V6Palette.paper.opacity(0.96))
+            // Read at a glance from a metre away, on the card's white ground,
+            // often while the user is mid-thought in another window.
+            ForegroundColor(SAOGrammar.Palette.ink.opacity(0.96))
             FontSize(14)
             FontWeight(.medium)
         }
@@ -125,18 +110,18 @@ extension MarkdownUI.Theme {
         .code {
             FontFamilyVariant(.monospaced)
             FontSize(12.5)
-            ForegroundColor(V6Palette.paper.opacity(0.88))
-            BackgroundColor(V6Palette.paper.opacity(0.08))
+            ForegroundColor(SAOGrammar.Palette.ink.opacity(0.88))
+            BackgroundColor(SAOGrammar.Palette.ink.opacity(0.08))
         }
         .codeBlock { configuration in
             configuration.label
                 .markdownTextStyle {
                     FontFamilyVariant(.monospaced)
                     FontSize(12.5)
-                    ForegroundColor(V6Palette.paper.opacity(0.88))
+                    ForegroundColor(SAOGrammar.Palette.ink.opacity(0.88))
                 }
                 .padding(10)
-                .background(V6Palette.paper.opacity(0.08))
+                .background(SAOGrammar.Palette.ink.opacity(0.08))
                 .clipShape(IslandThemes.current.shape(cornerRadius: 6))
         }
         .heading1 { configuration in
@@ -144,7 +129,7 @@ extension MarkdownUI.Theme {
                 .markdownTextStyle {
                     FontSize(16)
                     FontWeight(.bold)
-                    ForegroundColor(V6Palette.paper.opacity(0.88))
+                    ForegroundColor(SAOGrammar.Palette.ink.opacity(0.88))
                 }
                 .markdownMargin(top: 8, bottom: 4)
         }
@@ -153,7 +138,7 @@ extension MarkdownUI.Theme {
                 .markdownTextStyle {
                     FontSize(15)
                     FontWeight(.bold)
-                    ForegroundColor(V6Palette.paper.opacity(0.88))
+                    ForegroundColor(SAOGrammar.Palette.ink.opacity(0.88))
                 }
                 .markdownMargin(top: 8, bottom: 4)
         }
@@ -162,20 +147,20 @@ extension MarkdownUI.Theme {
                 .markdownTextStyle {
                     FontSize(14)
                     FontWeight(.semibold)
-                    ForegroundColor(V6Palette.paper.opacity(0.88))
+                    ForegroundColor(SAOGrammar.Palette.ink.opacity(0.88))
                 }
                 .markdownMargin(top: 6, bottom: 2)
         }
         .blockquote { configuration in
             configuration.label
                 .markdownTextStyle {
-                    ForegroundColor(V6Palette.paper.opacity(0.6))
+                    ForegroundColor(SAOGrammar.Palette.ink.opacity(0.6))
                     FontSize(13.5)
                 }
                 .padding(.leading, 12)
                 .overlay(alignment: .leading) {
                     Rectangle()
-                        .fill(V6Palette.paper.opacity(0.2))
+                        .fill(SAOGrammar.Palette.ink.opacity(0.2))
                         .frame(width: 3)
                 }
         }
@@ -186,9 +171,9 @@ extension MarkdownUI.Theme {
         .table { configuration in
             configuration.label
                 .fixedSize(horizontal: false, vertical: true)
-                .markdownTableBorderStyle(.init(.allBorders, color: V6Palette.paper.opacity(0.15), strokeStyle: .init(lineWidth: 1)))
+                .markdownTableBorderStyle(.init(.allBorders, color: SAOGrammar.Palette.ink.opacity(0.15), strokeStyle: .init(lineWidth: 1)))
                 .markdownTableBackgroundStyle(
-                    .alternatingRows(V6Palette.paper.opacity(0.04), V6Palette.paper.opacity(0.08))
+                    .alternatingRows(SAOGrammar.Palette.ink.opacity(0.04), SAOGrammar.Palette.ink.opacity(0.08))
                 )
                 .markdownMargin(top: 4, bottom: 8)
         }

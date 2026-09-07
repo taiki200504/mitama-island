@@ -36,13 +36,24 @@ struct ChamferedRectangle: Shape {
 /// Insettable rather than `AnyShape` so `strokeBorder` keeps working: a plain
 /// `stroke` straddles the edge and bleeds half a line width outside the fill,
 /// which shows up as a fuzzy halo on every panel.
+///
+/// A compatibility wrapper around ``SAOPanelShape`` rather than its own
+/// geometry: the crystal-HUD grammar's cut is asymmetric (Δx = Δy × slope,
+/// not a 45° diagonal), and routing every one of the 20+
+/// `theme.shape(cornerRadius:)` call sites onto that new shape directly would
+/// have been a far larger change than this indirection.
 struct IslandPanelShape: InsettableShape {
     var cornerRadius: CGFloat
     var inset: CGFloat = 0
 
     func path(in rect: CGRect) -> Path {
-        let rect = rect.insetBy(dx: inset, dy: inset)
-        return ChamferedRectangle(cut: max(0, cornerRadius - inset)).path(in: rect)
+        let insetRect = rect.insetBy(dx: inset, dy: inset)
+        let effectiveRadius = max(0, cornerRadius - inset)
+        return SAOPanelShape(
+            cornerRadius: min(effectiveRadius, SAOGrammar.Metric.cornerRadius),
+            cuts: [.topLeading, .bottomTrailing],
+            cutDepth: max(SAOGrammar.Metric.cornerRadius, effectiveRadius)
+        ).path(in: insetRect)
     }
 
     func inset(by amount: CGFloat) -> IslandPanelShape {

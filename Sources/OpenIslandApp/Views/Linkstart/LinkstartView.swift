@@ -1,6 +1,13 @@
 import OpenIslandCore
 import SwiftUI
 
+/// Opacity of the link-start sequence's own horizontal scanlines.
+///
+/// Was `SAOTheme.scanlineIntensity` before the crystal-HUD grammar removed
+/// scanlines from the island's chrome; this sequence keeps its sweep, so the
+/// value moved here rather than disappearing with the theme property.
+private let linkstartScanlineIntensity = 0.06
+
 /// The login sequence, drawn over everything.
 ///
 /// Draws from elapsed time rather than from a chain of animations: the
@@ -70,10 +77,11 @@ struct LinkstartView: View {
                     .padding(60)
                 }
 
-                if theme.scanlineIntensity > 0 {
-                    Scanlines(intensity: theme.scanlineIntensity)
-                        .allowsHitTesting(false)
-                }
+                // The link-start sequence keeps its own scanline sweep — a
+                // separate animation from the island's chrome, unaffected by
+                // the crystal-HUD grammar removing scanlines from the panel.
+                Scanlines(intensity: linkstartScanlineIntensity)
+                    .allowsHitTesting(false)
             }
             .background(.black.opacity(0.62))
             .ignoresSafeArea()

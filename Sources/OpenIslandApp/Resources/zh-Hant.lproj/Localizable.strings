@@ -450,7 +450,7 @@
 "settings.about.credits" = "基於";
 "settings.about.credits.value" = "Open Island（GPL v3）";
 "settings.about.font" = "等寬字型";
-"settings.about.font.value" = "Departure Mono（SIL OFL 1.1）";
+"settings.about.font.value" = "Departure Mono, Rajdhani (SIL OFL 1.1)";
 "settings.about.sound" = "音效";
 "settings.about.sound.value" = "原創，程序合成製作";
 
