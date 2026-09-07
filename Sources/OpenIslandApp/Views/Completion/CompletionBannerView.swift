@@ -49,7 +49,7 @@ struct CompletionBannerView: View {
     @State private var isRevealed = false
     @State private var isHovering = false
 
-    private var theme: any IslandTheme { IslandThemes.current }
+    private var theme: SAOTheme { IslandThemes.current }
     private var accent: Color { theme.statusTints.completed }
 
     var body: some View {

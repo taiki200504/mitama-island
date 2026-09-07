@@ -584,51 +584,27 @@
 "banner.completed" = "完成";
 "settings.display.completionBanner" = "在刘海下方显示完成";
 "settings.display.completionBanner.help" = "会话结束时在刘海下方显示小横幅。点击可查看内容。在通知中设置的安静场景下不显示。";
-"settings.appearance.theme.hud" = "HUD";
-"settings.appearance.theme.sao" = "SAO";
-"settings.appearance.theme.classic" = "标准";
-"settings.appearance.theme.title" = "主题";
-"settings.appearance.theme.note" = "HUD 为冷色调的棱角发光风格；标准为此前的暖色外观。";
 "banner.dismiss" = "关闭";
 
-/* HUD theme wording. English uppercase in every locale on purpose: a
-   translated heads-up display reads as an ordinary label again. Only labels and
-   headings — the approval buttons stay in plain language, because a permission
-   prompt is the wrong place to make someone parse a second vocabulary. */
-"banner.completed.hud" = "QUEST COMPLETE";
+/* SAO theme wording. English uppercase in every locale on purpose: a
+   translated heads-up display reads as an ordinary label again. */
 "banner.completed.sao" = "CONGRATULATIONS";
-"island.sessionList.title.hud" = "PARTY";
 "island.sessionList.title.sao" = "LINKS";
-"island.sessionOverview.running.hud" = "ACTIVE";
 "island.sessionOverview.running.sao" = "DIVING";
-"island.sessionOverview.runningCompact.hud" = "ACT";
 "island.sessionOverview.runningCompact.sao" = "DIVE";
-"island.sessionOverview.waiting.hud" = "ALERT";
 "island.sessionOverview.waiting.sao" = "SYSTEM CALL";
-"island.sessionOverview.waitingCompact.hud" = "ALT";
 "island.sessionOverview.waitingCompact.sao" = "CALL";
-"island.sessionOverview.done.hud" = "CLEAR";
 "island.sessionOverview.done.sao" = "CLEARED";
-"island.sessionOverview.idle.hud" = "IDLE";
 "island.sessionOverview.idle.sao" = "STANDBY";
-"island.sessionOverview.total.hud" = "UNITS";
 "island.sessionOverview.total.sao" = "LINKED";
 "banner.openHint" = "打开可查看内容";
-"approval.allowOnce.hud" = "ACCEPT";
 "approval.allowOnce.sao" = "YES";
-"approval.deny.hud" = "REJECT";
 "approval.deny.sao" = "NO";
-"approval.allowAll.hud" = "ACCEPT ALL";
 "approval.allowAll.sao" = "YES TO ALL";
-"approval.denyAll.hud" = "REJECT ALL";
 "approval.denyAll.sao" = "NO TO ALL";
-"approval.goToTerminal.hud" = "JUMP TO TERMINAL";
 "approval.goToTerminal.sao" = "TELEPORT";
-"question.submit.hud" = "TRANSMIT";
 "question.submit.sao" = "CONFIRM";
-"question.answerAllFirst.hud" = "ALL FIELDS REQUIRED";
 "question.answerAllFirst.sao" = "INCOMPLETE — ALL ENTRIES REQUIRED";
-"setup.banner.noHooks.title.hud" = "LINK YOUR AGENTS";
 "setup.banner.noHooks.title.sao" = "LINK START";
 "settings.display.hideIdleSessions" = "隐藏已停止活动的会话";
 "settings.display.hideIdleSessions.help" = "不在列表中显示已变灰的条目。始终保留最后一行，以免看起来像丢失了。";

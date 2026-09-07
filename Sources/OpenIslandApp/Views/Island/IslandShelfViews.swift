@@ -71,7 +71,7 @@ extension IslandPanelView {
         }
     }
 
-    private func shelfBackground(theme: any IslandTheme) -> some View {
+    private func shelfBackground(theme: SAOTheme) -> some View {
         theme.shape(cornerRadius: 10)
             .fill(V6Palette.paper.opacity(isShelfTargeted ? 0.10 : 0.04))
             .overlay(
@@ -85,7 +85,7 @@ extension IslandPanelView {
 
     /// One item. Dragging it hands over the copy's own URL, so it lands in
     /// Finder as a real file rather than as text.
-    private func shelfChip(_ item: ShelfItem, theme: any IslandTheme) -> some View {
+    private func shelfChip(_ item: ShelfItem, theme: SAOTheme) -> some View {
         let url = model.shelf.fileURL(for: item)
 
         return VStack(spacing: 2) {

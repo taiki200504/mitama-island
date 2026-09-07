@@ -2,14 +2,14 @@ import SwiftUI
 import Testing
 @testable import OpenIslandApp
 
-@Suite("Island themes")
+@Suite("Island theme")
 @MainActor
 struct IslandThemeTests {
     /// A theme missing one status colour would leave a session row drawing
-    /// nothing where its state should be. Both themes must be complete.
-    @Test("Every theme fills in every status colour", arguments: IslandThemeID.allCases)
-    func everyStatusIsCovered(_ id: IslandThemeID) {
-        let tints = id.theme.statusTints
+    /// nothing where its state should be.
+    @Test("Every status colour is filled in")
+    func everyStatusIsCovered() {
+        let tints = SAOTheme().statusTints
         let colours = [
             tints.running, tints.waitingForApproval, tints.waitingForAnswer,
             tints.completed, tints.waitingAggregate, tints.critical
@@ -19,49 +19,27 @@ struct IslandThemeTests {
         #expect(Set(colours.map { "\($0)" }).count >= 5)
     }
 
-    @Test("The two themes are visually distinct")
-    func themesDiffer() {
-        #expect("\(IslandThemeID.hud.theme.ink)" != "\(IslandThemeID.classic.theme.ink)")
-        #expect(IslandThemeID.hud.theme.cornerStyle != IslandThemeID.classic.theme.cornerStyle)
-    }
-
-    /// Themes are allowed to add their own motion, but the two existing looks
-    /// must preserve the panel timing and frame that people already know.
-    @Test("HUD and Classic preserve the legacy motion and frame")
-    func legacyThemesPreserveVisualProfile() {
-        let expectedOpen = "\(Animation.spring(response: 0.3, dampingFraction: 0.9, blendDuration: 0))"
-        let expectedClose = "\(Animation.smooth(duration: 0.15))"
-        let expectedPop = "\(Animation.spring(response: 0.3, dampingFraction: 0.5))"
-
-        for theme in [IslandThemeID.hud.theme, IslandThemeID.classic.theme] {
-            #expect("\(theme.animationProfile.open)" == expectedOpen)
-            #expect("\(theme.animationProfile.close)" == expectedClose)
-            #expect("\(theme.animationProfile.pop)" == expectedPop)
-            #expect(theme.borderStyle.width == 1)
-            #expect(theme.borderStyle.opacity == 0.07)
-            #expect(!theme.borderStyle.isDouble)
-            #expect(theme.scanlineIntensity == 0)
-        }
-    }
-
-    @Test("SAO is available and uses its themed scanlines")
-    func saoThemeIsAvailable() {
-        #expect(IslandThemeID.allCases.contains(.sao))
-        #expect(IslandThemeID.sao.theme is SAOTheme)
-        #expect(IslandThemeID.sao.theme.scanlineIntensity > 0)
-        #expect(IslandThemeID.hud.theme.scanlineIntensity == 0)
-    }
-
     /// The panel is drawn over the physical notch, which is pure black. A panel
     /// that is also pure black has no edge against the hardware.
-    @Test("The HUD panel is not pure black")
-    func hudInkIsNotBlack() {
-        #expect("\(IslandThemeID.hud.theme.ink)" != "\(Color.black)")
+    @Test("The panel is not pure black")
+    func inkIsNotBlack() {
+        #expect("\(SAOTheme().ink)" != "\(Color.black)")
     }
 
-    @Test("An unknown stored value falls back rather than failing")
-    func unknownThemeFallsBack() {
-        #expect(IslandThemeID(rawValue: "aincrad") == nil)
+    /// A value written by an older build that still had a theme switcher must
+    /// not linger in defaults forever.
+    @Test("A legacy stored theme value is migrated away")
+    func legacyThemeValueIsMigrated() {
+        let suiteName = "IslandThemeTests.legacyThemeValueIsMigrated"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        defaults.set("hud", forKey: DisplaySettings.Keys.theme)
+        #expect(defaults.string(forKey: DisplaySettings.Keys.theme) != nil)
+
+        _ = SettingsStore(store: PreferenceStore(suite: defaults))
+
+        #expect(defaults.string(forKey: DisplaySettings.Keys.theme) == nil)
     }
 
     @Test("Hex initialisation maps to the right channels")
@@ -108,22 +86,20 @@ struct ChamferedRectangleTests {
 struct IslandPanelShapeTests {
     private let rect = CGRect(x: 0, y: 0, width: 100, height: 40)
 
-    @Test("The corner style decides the shape")
-    func styleDecidesTheShape() {
-        let chamfered = IslandPanelShape(cornerRadius: 8, style: .chamfered).path(in: rect)
-        let rounded = IslandPanelShape(cornerRadius: 8, style: .rounded).path(in: rect)
+    @Test("The shape is chamfered")
+    func isChamfered() {
+        let shape = IslandPanelShape(cornerRadius: 8).path(in: rect)
         // The chamfer cuts the top-left corner off the diagonal a rounded
         // corner would curve through.
-        #expect(!chamfered.contains(CGPoint(x: 2, y: 2)))
-        #expect(chamfered.boundingRect == rounded.boundingRect)
+        #expect(!shape.contains(CGPoint(x: 2, y: 2)))
     }
 
     /// `strokeBorder` insets the shape before stroking. If insetting were
     /// ignored, every border would bleed half a line width outside its fill.
     @Test("Insetting shrinks the shape")
     func insettingShrinks() {
-        let full = IslandPanelShape(cornerRadius: 8, style: .chamfered).path(in: rect)
-        let inset = IslandPanelShape(cornerRadius: 8, style: .chamfered).inset(by: 4).path(in: rect)
+        let full = IslandPanelShape(cornerRadius: 8).path(in: rect)
+        let inset = IslandPanelShape(cornerRadius: 8).inset(by: 4).path(in: rect)
         #expect(inset.boundingRect.width < full.boundingRect.width)
         #expect(inset.boundingRect.height < full.boundingRect.height)
     }
@@ -131,7 +107,7 @@ struct IslandPanelShapeTests {
     /// Insetting past the corner size must not produce a negative radius.
     @Test("A deep inset stays a valid shape")
     func deepInsetIsValid() {
-        let path = IslandPanelShape(cornerRadius: 4, style: .chamfered).inset(by: 10).path(in: rect)
+        let path = IslandPanelShape(cornerRadius: 4).inset(by: 10).path(in: rect)
         #expect(!path.isEmpty)
         #expect(path.boundingRect.width > 0)
     }

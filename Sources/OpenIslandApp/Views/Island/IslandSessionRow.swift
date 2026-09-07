@@ -187,7 +187,9 @@ struct IslandSessionRow: View {
                     terminalApp: session.jumpTarget?.terminalApp,
                     tint: statusTint(for: presence),
                     iconStyle: agentIconStyle,
-                    usesScanlines: IslandThemes.current.cornerStyle == .chamfered
+                    // The SAO theme is the only one left, and it always draws
+                    // scanlines.
+                    usesScanlines: true
                 )
                 .frame(width: 30, alignment: .leading)
                 .padding(.top, 4)

@@ -83,7 +83,7 @@ struct LinkstartView: View {
     // MARK: - Pieces
 
     /// The light that arrives from above before anything is asked of you.
-    private func backdrop(elapsed: TimeInterval, theme: any IslandTheme) -> some View {
+    private func backdrop(elapsed: TimeInterval, theme: SAOTheme) -> some View {
         Canvas { context, size in
             let descent = min(1, max(0, elapsed / LinkstartSequence.awakeningDuration))
             let headY = size.height * descent
@@ -133,7 +133,7 @@ struct LinkstartView: View {
         }
     }
 
-    private func title(elapsed: TimeInterval, theme: any IslandTheme) -> some View {
+    private func title(elapsed: TimeInterval, theme: SAOTheme) -> some View {
         Text(LanguageManager.shared.t("linkstart.title"))
             .font(IslandTypography.mono(size: 44, weight: .bold))
             .foregroundStyle(theme.paper)
@@ -142,7 +142,7 @@ struct LinkstartView: View {
             .opacity(min(1, max(0, elapsed / 0.6)))
     }
 
-    private func checklist(elapsed: TimeInterval, theme: any IslandTheme) -> some View {
+    private func checklist(elapsed: TimeInterval, theme: SAOTheme) -> some View {
         let confirmed = LinkstartSequence.confirmedSenseCount(at: elapsed)
 
         return VStack(alignment: .leading, spacing: 12) {
@@ -174,7 +174,7 @@ struct LinkstartView: View {
 
     /// What the sequence says about you once the body checks out.
     @ViewBuilder
-    private func trailer(phase: LinkstartPhase, theme: any IslandTheme) -> some View {
+    private func trailer(phase: LinkstartPhase, theme: SAOTheme) -> some View {
         VStack(spacing: 10) {
             switch phase {
             case .awakening, .senses:

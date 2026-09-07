@@ -51,13 +51,6 @@ final class DisplaySettings: PreferenceGroup {
         set { write(\.sessionAutoNaming, Keys.sessionAutoNaming, newValue) }
     }
 
-    /// Which visual language the island speaks. Stored raw so an unknown value
-    /// from a future version falls back rather than failing to decode.
-    var themeRawValue: String {
-        get { read(\.themeRawValue, Keys.theme, IslandThemeID.hud.rawValue) }
-        set { write(\.themeRawValue, Keys.theme, newValue) }
-    }
-
     /// Whether ⌃⌥L plays the login sequence.
     ///
     /// Off by default for the same reason every other global key here is: an
@@ -199,6 +192,8 @@ extension DisplaySettings {
         // that clips the card.
         static let completionCardMaxHeight = "display.completionCardMaxHeight"
         static let agentIconStyle = "display.agentIconStyle"
+        /// No longer read — kept only so `migrateLegacyTheme` can clear a
+        /// value an older build may have written.
         static let theme = "display.theme"
         static let completionBanner = "display.completionBanner"
         static let playsLinkstart = "display.playsLinkstart"
@@ -216,5 +211,16 @@ extension DisplaySettings {
         static let showReasoningEffort = "display.sessionCard.showReasoningEffort"
         static let showWorktree = "display.sessionCard.showWorktree"
         static let showProjectName = "display.sessionCard.showProjectName"
+    }
+}
+
+extension DisplaySettings {
+    /// One-time cleanup for the theme switcher this app used to have.
+    ///
+    /// The app now speaks only the SAO theme, so nothing reads `Keys.theme`
+    /// any more — but a value written by an older build would otherwise sit
+    /// in defaults forever. Called once from `SettingsStore.init`.
+    static func migrateLegacyTheme(in store: PreferenceStore) {
+        store.removeValue(forKey: Keys.theme)
     }
 }

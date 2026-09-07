@@ -127,9 +127,6 @@ extension SoundSettings {
     enum Defaults {
         /// Full volume, matching how the app played before this became adjustable.
         static let volume: Double = 1.0
-        /// Mirrors `NotificationSoundService.defaultSoundName`, which is main-actor
-        /// isolated and so cannot be referenced from here.
-        static let soundName = "Bottle"
         /// 22:00 to 08:00.
         static let quietHoursStart = 22 * 60
         static let quietHoursEnd = 8 * 60

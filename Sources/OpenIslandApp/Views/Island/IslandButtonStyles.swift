@@ -49,7 +49,7 @@ private struct IslandActionButtonBody: View {
     @Environment(\.isEnabled) private var isEnabled
     @State private var isHovering = false
 
-    private var theme: any IslandTheme { IslandThemes.current }
+    private var theme: SAOTheme { IslandThemes.current }
     private var isPressed: Bool { configuration.isPressed }
     /// A disabled button must not light up under the cursor — that would
     /// promise something it cannot do.

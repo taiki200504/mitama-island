@@ -150,7 +150,9 @@ struct SoundSettingsTests {
         sound.setSoundName("Glass", for: .approvalNeeded)
 
         #expect(sound.soundName(for: .approvalNeeded) == "Glass")
-        #expect(sound.soundName(for: .taskComplete) == SoundSettings.Defaults.soundName)
+        // An event with no override falls back to the theme's own default,
+        // which the SAO theme varies per event rather than using one constant.
+        #expect(sound.soundName(for: .taskComplete) == IslandSoundProfile.sao.soundName(for: .taskComplete))
     }
 
     @Test

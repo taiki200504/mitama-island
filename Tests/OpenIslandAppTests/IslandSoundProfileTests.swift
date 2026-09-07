@@ -1,21 +1,24 @@
 import Testing
 @testable import OpenIslandApp
 
-/// Gesture feedback is distinct in the SAO theme, so the physical pull-down
-/// action remains recognizable even when other notifications arrive nearby.
+/// Gesture feedback is distinct, so the physical pull-down action remains
+/// recognizable even when other notifications arrive nearby.
 struct IslandSoundProfileTests {
     @Test
-    func gestureSoundIsThemeSpecificAndUniqueInSAO() {
-        let standard = IslandSoundProfile.standard.soundName(for: .islandOpenedByGesture)
-        let sao = IslandSoundProfile.sao.soundName(for: .islandOpenedByGesture)
+    func everyEventHasADefaultSoundName() {
+        for event in NotificationSoundEvent.allCases {
+            #expect(!IslandSoundProfile.sao.soundName(for: event).isEmpty)
+        }
+    }
 
-        #expect(standard == "Bottle")
-        #expect(sao == "Submarine")
-        #expect(standard != sao)
+    @Test
+    func gestureSoundIsUniqueAmongEvents() {
+        let gesture = IslandSoundProfile.sao.soundName(for: .islandOpenedByGesture)
+        #expect(gesture == "Submarine")
         #expect(
             NotificationSoundEvent.allCases
                 .filter { $0 != .islandOpenedByGesture }
-                .allSatisfy { IslandSoundProfile.sao.soundName(for: $0) != sao }
+                .allSatisfy { IslandSoundProfile.sao.soundName(for: $0) != gesture }
         )
     }
 }
