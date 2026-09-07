@@ -53,4 +53,53 @@ struct NotificationSoundServiceTests {
             #expect(NotificationSoundService.resolvedSoundURL(named: name, customLibrary: library) != nil)
         }
     }
+
+    // MARK: - availableSounds de-duplication
+
+    /// A user importing a file with the same stem as a bundled cue used to
+    /// leave that name in the list twice, which is what broke
+    /// `ForEach(id: \.self)` in the sound picker.
+    @Test
+    func aNameInBothTheBundleAndImportsAppearsOnlyOnce() throws {
+        let library = makeTempLibrary()
+        try FileManager.default.createDirectory(at: library.directory, withIntermediateDirectories: true)
+        try Data([0x00]).write(to: library.directory.appendingPathComponent("ui-open.wav"))
+
+        let names = NotificationSoundService.availableSounds(customLibrary: library)
+        #expect(names.filter { $0 == "ui-open" }.count == 1)
+        #expect(Set(names).count == names.count)
+    }
+
+    // MARK: - Fire points
+
+    /// A notification card already plays its own event chime
+    /// (`presentNotificationSurface`) right before opening the notch. This
+    /// confirms the open itself stays silent so the two do not stack into a
+    /// double chime.
+    @Test
+    func aNotificationOpenDoesNotAlsoPlayTheOpenCue() {
+        let model = AppModel()
+        model.state = SessionState(sessions: [
+            AgentSession(
+                id: "s1",
+                title: "Claude · demo",
+                tool: .claudeCode,
+                origin: .live,
+                attachmentState: .attached,
+                phase: .waitingForApproval,
+                summary: "waiting",
+                updatedAt: Date()
+            ),
+        ])
+        model.notchStatus = .closed
+        model.notchOpenReason = nil
+
+        var played: [String] = []
+        NotificationSoundService.harnessSink = { played.append($0) }
+        defer { NotificationSoundService.harnessSink = nil }
+
+        model.overlay.presentNotificationSurface(.sessionList(actionableSessionID: "s1"))
+
+        #expect(played == ["sound.cue=ui-notify"])
+    }
 }

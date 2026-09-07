@@ -28,9 +28,24 @@ struct NotificationSoundService {
     /// right cue fired.
     @MainActor static var harnessSink: ((String) -> Void)?
 
-    /// Bundled cues first, then the system sounds and anything imported.
-    static func availableSounds() -> [String] {
-        bundledCueNames + (systemSounds() + customLibrary.soundNames())
+    /// Bundled cues first, then the system sounds and anything imported, with
+    /// each name listed once. An imported name wins its slot over a bundled
+    /// cue or system sound sharing it — that is what would actually play, per
+    /// `resolvedSoundURL`'s precedence — rather than appearing twice: the same
+    /// string appearing twice in this array is what breaks `ForEach(id: \.self)`
+    /// in the picker.
+    ///
+    /// `customLibrary` defaults to the real one; a test substitutes its own so
+    /// this can be exercised without touching the developer's actual imported
+    /// sounds on disk.
+    static func availableSounds(customLibrary: CustomSoundLibrary = customLibrary) -> [String] {
+        let imported = customLibrary.soundNames()
+        let importedNames = Set(imported)
+
+        let bundled = bundledCueNames.filter { !importedNames.contains($0) }
+        let system = systemSounds().filter { !importedNames.contains($0) }
+
+        return bundled + (system + imported)
             .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
     }
 

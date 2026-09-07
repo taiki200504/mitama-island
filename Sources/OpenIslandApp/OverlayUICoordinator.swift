@@ -155,9 +155,13 @@ final class OverlayUICoordinator {
     func notchOpen(reason: NotchOpenReason, surface: IslandSurface = .sessionList()) {
         // The gesture already gets its own distinct cue at the call site in
         // `AppModel.notchOpen`; playing this one too would double up on a
-        // single pull of the hand.
+        // single pull of the hand. A notification already played its own
+        // event-specific chime in `presentNotificationSurface` right before
+        // calling this — an open cue on top of it is the same double-up. Boot
+        // is silent too: the app has only just launched, and there is no
+        // "before" for an open sound to distinguish itself from.
         let wasClosed = notchStatus != .opened
-        let shouldPlayOpenCue = wasClosed && reason != .handGesture
+        let shouldPlayOpenCue = wasClosed && reason != .handGesture && reason != .notification && reason != .boot
 
         transitionOverlay(
             to: .opened,

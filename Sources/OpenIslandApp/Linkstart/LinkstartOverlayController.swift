@@ -43,9 +43,13 @@ final class LinkstartOverlayController {
     /// Whoever was in front before the sequence took over.
     @ObservationIgnored private var returnFocusTo: NSRunningApplication?
     @ObservationIgnored private var soundtrack: Task<Void, Never>?
-    /// Set by `AppModel`. The sequence is not a notification, but the mute
-    /// switch is about the machine making noise, and it means that here too.
-    @ObservationIgnored var isMuted: () -> Bool = { false }
+    /// Set by `AppModel`. The sequence is not a notification, but it should
+    /// stay just as quiet — muted, or inside quiet hours — as anything else
+    /// the app would have made noise about. Checked fresh before every cue in
+    /// `playSoundtrack`, not only once at the start: the sequence runs for
+    /// several seconds, long enough for a setting flipped partway through to
+    /// matter.
+    @ObservationIgnored var soundsAreSuppressed: () -> Bool = { false }
     @ObservationIgnored private var dismissal: Task<Void, Never>?
 
     var isPresenting: Bool { !panels.isEmpty }
@@ -154,7 +158,7 @@ final class LinkstartOverlayController {
     /// three sounds are a fixed triad, not something anyone reassigns.
     private func playSoundtrack() {
         soundtrack?.cancel()
-        guard !isMuted() else { return }
+        guard !soundsAreSuppressed() else { return }
 
         soundtrack = Task { [weak self] in
             var previousAt: TimeInterval = 0
@@ -162,7 +166,13 @@ final class LinkstartOverlayController {
                 guard !Task.isCancelled, self != nil else { return }
                 try? await Task.sleep(for: .seconds(step.at - previousAt))
                 previousAt = step.at
-                guard !Task.isCancelled, self != nil else { return }
+                guard !Task.isCancelled, let self else { return }
+                // Re-checked here rather than trusting the guard above: quiet
+                // hours starting, or the speaker button being hit, partway
+                // through the sequence should silence the very next cue —
+                // muting once and then still hearing four more chimes reads
+                // as the mute button not working.
+                guard !self.soundsAreSuppressed() else { continue }
                 NotificationSoundService.play(Self.soundName(for: step.cue), volume: 0.5)
             }
         }

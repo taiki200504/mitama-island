@@ -1147,7 +1147,10 @@ final class AppModel {
         // key alone plays it — which is the default. Building the session
         // unconditionally would open the microphone on every press for a
         // sequence that is not going to listen.
-        linkstart.isMuted = { [weak self] in self?.settings.sound.isMuted ?? false }
+        linkstart.soundsAreSuppressed = { [weak self] in
+            guard let sound = self?.settings.sound else { return false }
+            return !sound.shouldPlayAnything(at: Date())
+        }
         let waitsForPhrase = settings.display.linkstartWaitsForPhrase
             && settings.voiceCommand.isEnabled
         linkstart.waitsForPhrase = waitsForPhrase
@@ -2119,14 +2122,27 @@ final class AppModel {
     /// Answers every blocked session the same way.
     ///
     /// Each one still goes through `approvePermission`, so the resolution and
-    /// the message the agent receives are identical to answering them one by one.
+    /// the message the agent receives are identical to answering them one by
+    /// one — only the sound is different: one chime for the whole batch,
+    /// not one per session, which is what "Allow All" on nine sessions would
+    /// otherwise sound like.
     func resolveAllPendingApprovals(_ action: ApprovalAction) {
-        for session in pendingApprovalSessions {
-            approvePermission(for: session.id, action: action)
+        let sessions = pendingApprovalSessions
+        for session in sessions {
+            approvePermission(for: session.id, action: action, playsSound: false)
+        }
+        guard !sessions.isEmpty else { return }
+        switch action {
+        case .deny:
+            NotificationSoundService.play(.reject, settings: settings.sound)
+        case .allowOnce, .allowWithUpdates:
+            NotificationSoundService.play(.approve, settings: settings.sound)
         }
     }
 
-    func approvePermission(for sessionID: String, action: ApprovalAction) {
+    /// - Parameter playsSound: False when called from `resolveAllPendingApprovals`,
+    ///   which plays one sound for the whole batch instead of one per session.
+    func approvePermission(for sessionID: String, action: ApprovalAction, playsSound: Bool = true) {
         guard let session = state.session(id: sessionID) else {
             return
         }
@@ -2138,15 +2154,21 @@ final class AppModel {
         case .deny:
             resolution = .deny(message: "Permission denied in Open Island.", interrupt: false)
             message = "Denying permission for \(session.title)."
-            NotificationSoundService.play(.reject, settings: settings.sound)
+            if playsSound {
+                NotificationSoundService.play(.reject, settings: settings.sound)
+            }
         case .allowOnce:
             resolution = .allowOnce()
             message = "Approving permission for \(session.title)."
-            NotificationSoundService.play(.approve, settings: settings.sound)
+            if playsSound {
+                NotificationSoundService.play(.approve, settings: settings.sound)
+            }
         case let .allowWithUpdates(updates):
             resolution = .allowOnce(updatedPermissions: updates)
             message = "Always allowing for \(session.title)."
-            NotificationSoundService.play(.approve, settings: settings.sound)
+            if playsSound {
+                NotificationSoundService.play(.approve, settings: settings.sound)
+            }
         }
 
         dismissNotificationSurfaceIfPresent(for: sessionID)

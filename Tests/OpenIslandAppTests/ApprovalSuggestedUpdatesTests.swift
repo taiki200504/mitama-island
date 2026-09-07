@@ -197,6 +197,39 @@ struct BatchApprovalTests {
         #expect(model.pendingApprovalSessions.isEmpty)
     }
 
+    /// "Allow All" on three sessions used to play the approve chime three
+    /// times, one per session — a burst of overlapping sound rather than one
+    /// clear answer to a single action.
+    @Test
+    func resolvingAllPlaysExactlyOneSound() {
+        let model = makeModel()
+        model.state = SessionState(sessions: [waiting("a"), waiting("b"), waiting("c")])
+
+        var played: [String] = []
+        NotificationSoundService.harnessSink = { played.append($0) }
+        defer { NotificationSoundService.harnessSink = nil }
+
+        model.resolveAllPendingApprovals(.allowOnce)
+
+        #expect(played == ["sound.cue=ui-approve"])
+    }
+
+    /// An empty batch (nothing pending) plays nothing at all — there is no
+    /// action to confirm.
+    @Test
+    func resolvingAnEmptyBatchPlaysNothing() {
+        let model = makeModel()
+        model.state = SessionState(sessions: [])
+
+        var played: [String] = []
+        NotificationSoundService.harnessSink = { played.append($0) }
+        defer { NotificationSoundService.harnessSink = nil }
+
+        model.resolveAllPendingApprovals(.allowOnce)
+
+        #expect(played.isEmpty)
+    }
+
     /// A session hidden by a notification filter is not the user's to answer.
     @Test
     func filteredOutSessionsAreNotBatchAnswered() {

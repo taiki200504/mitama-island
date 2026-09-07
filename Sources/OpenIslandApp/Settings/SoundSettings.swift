@@ -143,11 +143,19 @@ final class SoundSettings: PreferenceGroup {
 
     // MARK: Decisions
 
+    /// Whether anything should be heard right now, independent of which
+    /// event is asking — mute and quiet hours apply the same way to every
+    /// sound, including the login sequence's cues, which carry no
+    /// `NotificationSoundEvent` of their own to gate through `shouldPlay`.
+    func shouldPlayAnything(at date: Date, calendar: Calendar = .current) -> Bool {
+        !isMuted && !isWithinQuietHours(date, calendar: calendar)
+    }
+
     /// Whether a sound should be heard for this event right now.
     func shouldPlay(_ event: NotificationSoundEvent, at date: Date, calendar: Calendar = .current) -> Bool {
-        guard !isMuted, event.isRaised else { return false }
+        guard event.isRaised else { return false }
         guard !event.isUIFeedback || uiSoundsEnabled else { return false }
-        return !isWithinQuietHours(date, calendar: calendar)
+        return shouldPlayAnything(at: date, calendar: calendar)
     }
 
     /// Handles ranges that wrap past midnight, which is the common case for a
