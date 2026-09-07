@@ -22,6 +22,7 @@ extension Notification.Name {
 final class AppModel {
     private static let soundMutedDefaultsKey = "overlay.sound.muted"
     private static let showDockIconDefaultsKey = "app.showDockIcon"
+    private static let showsMenuBarIconDefaultsKey = "general.showsMenuBarIcon"
     private static let hapticFeedbackEnabledDefaultsKey = "app.hapticFeedbackEnabled"
     private static let islandRightSlotDefaultsKey = "appearance.island.v6.rightSlot"
     private static let islandCenterLabelDefaultsKey = "appearance.island.v6.centerLabel"
@@ -283,6 +284,21 @@ final class AppModel {
             UserDefaults.standard.set(hapticFeedbackEnabled, forKey: Self.hapticFeedbackEnabledDefaultsKey)
         }
     }
+    /// On by default: with the island hidden and no Dock icon, this is the
+    /// only way back to Settings. Turning it off is a choice someone has to
+    /// make, not a starting condition they can end up in by accident.
+    var showsMenuBarIcon: Bool = true {
+        didSet {
+            guard hasFinishedInit, showsMenuBarIcon != oldValue else { return }
+            UserDefaults.standard.set(showsMenuBarIcon, forKey: Self.showsMenuBarIconDefaultsKey)
+            onShowsMenuBarIconChanged?(showsMenuBarIcon)
+        }
+    }
+    /// Set by the app delegate once the status item controller exists, so
+    /// this model can stay ignorant of `NSStatusItem` and stay testable
+    /// without one.
+    @ObservationIgnored
+    var onShowsMenuBarIconChanged: ((Bool) -> Void)?
     var showCodexUsage: Bool = false {
         didSet {
             guard hasFinishedInit, showCodexUsage != oldValue else { return }
@@ -769,10 +785,12 @@ final class AppModel {
             Self.showDockIconDefaultsKey: false,
             Self.hapticFeedbackEnabledDefaultsKey: false,
             Self.completionReplyEnabledDefaultsKey: false,
+            Self.showsMenuBarIconDefaultsKey: true,
         ])
         selectedSoundName = NotificationSoundService.selectedSoundName
         showDockIcon = UserDefaults.standard.bool(forKey: Self.showDockIconDefaultsKey)
         hapticFeedbackEnabled = UserDefaults.standard.bool(forKey: Self.hapticFeedbackEnabledDefaultsKey)
+        showsMenuBarIcon = UserDefaults.standard.bool(forKey: Self.showsMenuBarIconDefaultsKey)
         if UserDefaults.standard.object(forKey: Self.showCodexUsageDefaultsKey) != nil {
             showCodexUsage = UserDefaults.standard.bool(forKey: Self.showCodexUsageDefaultsKey)
         } else {
@@ -1230,6 +1248,21 @@ final class AppModel {
         guard !linkstart.isPresenting else { return }
 
         ambient.present()
+    }
+
+    // MARK: - Menu bar status item
+
+    /// What the status item's menu draws. A snapshot rather than a live
+    /// reference, so `StatusMenuLayout` stays testable without a real
+    /// `NSStatusItem` — see its doc comment.
+    var statusMenuInputs: StatusMenuInputs {
+        StatusMenuInputs(
+            isMuted: isSoundMuted,
+            cameraIsWatching: cameraActivation.isRunning,
+            cameraStaysOpen: settings.cameraGesture.staysOpen,
+            shelfItemNames: shelf.items.map(\.displayName),
+            waitingCount: liveAttentionCount
+        )
     }
 
     func islandPeekBand(now: Date = .now) -> V6PeekBandView.Content? {

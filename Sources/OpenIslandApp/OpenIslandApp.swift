@@ -7,6 +7,9 @@ final class OpenIslandAppDelegate: NSObject, NSApplicationDelegate {
     private let harnessLaunchConfiguration = HarnessLaunchConfiguration()
     private let launchedAt = Date()
     private lazy var harnessRuntimeMonitor = HarnessRuntimeMonitor(launchedAt: launchedAt)
+    /// Never created during a harness run: a status item is one more thing
+    /// that would sit in every screenshot the capture scripts take.
+    private var statusItemController: StatusItemController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         ProcessInfo.processInfo.disableAutomaticTermination(
@@ -34,6 +37,21 @@ final class OpenIslandAppDelegate: NSObject, NSApplicationDelegate {
                 loadRuntimeState: harnessLaunchConfiguration.scenario == nil
             )
             harnessRuntimeMonitor.recordMilestone("modelStarted")
+
+            if harnessLaunchConfiguration.scenario == nil {
+                let controller = StatusItemController(model: model)
+                statusItemController = controller
+                model.onShowsMenuBarIconChanged = { [weak controller] isOn in
+                    if isOn {
+                        controller?.show()
+                    } else {
+                        controller?.hide()
+                    }
+                }
+                if model.showsMenuBarIcon {
+                    controller.show()
+                }
+            }
 
             // Hide all windows on launch — settings opens on demand only.
             // Before the scenario loads, not after: a scenario that puts up a
