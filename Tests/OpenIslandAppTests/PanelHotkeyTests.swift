@@ -174,6 +174,34 @@ struct SwitcherHotkeyTests {
         )
     }
 
+    @Test("Turning the master switch off releases every scope")
+    func masterSwitchOffReleasesEverything() {
+        let (coordinator, registrar) = makeCoordinator()
+        coordinator.startPersistentBindings()
+        coordinator.panelDidExpand()
+        coordinator.switcherDidActivate()
+
+        coordinator.setEnabled(false, panelIsExpanded: true)
+
+        #expect(registrar.bindingsByScope[.persistent]?.isEmpty == true)
+        #expect(registrar.bindingsByScope[.panelExpanded]?.isEmpty == true)
+        #expect(registrar.bindingsByScope[.switcherActive]?.isEmpty == true)
+        #expect(Set(registrar.removals) == [.persistent, .panelExpanded, .switcherActive])
+    }
+
+    @Test("Turning the master switch back on restores the live scopes")
+    func masterSwitchOnRestoresBindings() {
+        let (coordinator, registrar) = makeCoordinator()
+        coordinator.setEnabled(false, panelIsExpanded: false)
+
+        coordinator.setEnabled(true, panelIsExpanded: true)
+
+        let persistent = (registrar.bindingsByScope[.persistent] ?? []).map(\.id)
+        #expect(persistent.contains(PanelHotkeyCoordinator.switcherBindingID))
+        #expect((registrar.bindingsByScope[.panelExpanded] ?? []).isEmpty == false)
+        #expect((registrar.bindingsByScope[.switcherActive] ?? []).isEmpty)
+    }
+
     @Test("The switcher key is the one always-live shortcut")
     func switcherIsPersistent() {
         let (coordinator, registrar) = makeCoordinator()

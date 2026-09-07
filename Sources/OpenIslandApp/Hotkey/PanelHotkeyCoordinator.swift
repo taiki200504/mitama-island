@@ -163,6 +163,21 @@ final class PanelHotkeyCoordinator {
         registrar.setBindings(bindings, for: .persistent)
     }
 
+    /// The master switch. Off has to release every scope, not merely stop
+    /// registering new ones: `startPersistentBindings()` guards on the flag, so
+    /// without this the ⌃` and feature keys stayed claimed until relaunch, and
+    /// toggling a feature while off silently kept the stale table.
+    func setEnabled(_ enabled: Bool, panelIsExpanded: Bool) {
+        if enabled {
+            startPersistentBindings()
+            if panelIsExpanded { panelDidExpand() }
+        } else {
+            registrar.removeBindings(for: .persistent)
+            registrar.removeBindings(for: .panelExpanded)
+            registrar.removeBindings(for: .switcherActive)
+        }
+    }
+
     /// Arrow keys, return and escape, live only while the switcher is up.
     ///
     /// Escape and the arrows are far too common to hold permanently — this is
