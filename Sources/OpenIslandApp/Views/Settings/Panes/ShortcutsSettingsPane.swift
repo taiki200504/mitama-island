@@ -119,7 +119,10 @@ struct ShortcutsSettingsPane: View {
                 help: lang.t("settings.shortcuts.enabled.help"),
                 isOn: Binding(
                     get: { shortcuts.keyboardShortcutsEnabled },
-                    set: { shortcuts.keyboardShortcutsEnabled = $0 }
+                    set: {
+                        shortcuts.keyboardShortcutsEnabled = $0
+                        model.panelHotkeys?.setEnabled($0, panelIsExpanded: model.notchStatus == .opened)
+                    }
                 )
             )
 
