@@ -14,30 +14,16 @@ struct SettingsIconChip: View {
     private var glyphSize: CGFloat { size * 0.58 }
 
     var body: some View {
-        let theme = IslandThemes.current
-        Group {
-            switch theme.cornerStyle {
-            case .rounded:
-                filledChip(cornerRadius: cornerRadius)
-            case .chamfered:
-                // Inverted for the heads-up display: a dark chip with a lit
-                // glyph and a hairline edge, rather than a solid colour block.
-                // Each tab keeps its own hue, so the sidebar stays as easy to
-                // scan — only the way the colour is applied changes.
-                litChip(theme: theme)
-            }
-        }
-        .frame(width: size, height: size)
-        .accessibilityHidden(true)
+        // Inverted for the heads-up display: a dark chip with a lit glyph and
+        // a hairline edge, rather than a solid colour block. Each tab keeps
+        // its own hue, so the sidebar stays as easy to scan — only the way
+        // the colour is applied changes.
+        litChip(theme: IslandThemes.current)
+            .frame(width: size, height: size)
+            .accessibilityHidden(true)
     }
 
-    private func filledChip(cornerRadius: CGFloat) -> some View {
-        IslandThemes.current.shape(cornerRadius: cornerRadius)
-            .fill(tint.gradient)
-            .overlay { glyph(V6Palette.paper) }
-    }
-
-    private func litChip(theme: any IslandTheme) -> some View {
+    private func litChip(theme: SAOTheme) -> some View {
         let shape = theme.shape(cornerRadius: cornerRadius * 1.4)
         return shape
             .fill(tint.opacity(0.16))

@@ -2700,11 +2700,6 @@ final class AppModel {
         return .allowWithUpdates([update])
     }
 
-    var islandTheme: IslandThemeID {
-        get { IslandThemeID(rawValue: settings.display.themeRawValue) ?? .hud }
-        set { settings.display.themeRawValue = newValue.rawValue }
-    }
-
     var agentIconStyle: AgentIconStyle {
         get { AgentIconStyle(rawValue: settings.display.agentIconStyleRawValue) ?? .pixel }
         set { settings.display.agentIconStyleRawValue = newValue.rawValue }

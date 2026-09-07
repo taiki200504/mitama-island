@@ -99,17 +99,11 @@ final class LanguageManager: @unchecked Sendable {
         return value == themedKey ? nil : value
     }
 
-    /// Read straight from defaults rather than through `DisplaySettings`, which
-    /// is main-actor isolated while this is not.
-    ///
-    /// Nil for `classic`, which is what the app looked like before themes
-    /// existed — its words should be the plain ones for the same reason.
-    private static var voiceSuffix: String? {
-        let raw = UserDefaults.standard.string(forKey: DisplaySettings.Keys.theme)
-        let theme = IslandThemeID(rawValue: raw ?? "") ?? .hud
-        guard theme != .classic else { return nil }
-        return theme.rawValue
-    }
+    /// The only visual language the app speaks now, so this is fixed rather
+    /// than read from defaults. Kept as an optional constant rather than
+    /// inlining `"sao"` into `themeVariant` so a future second theme only has
+    /// to change this one line.
+    private static let voiceSuffix: String? = "sao"
 
     /// The name the app is actually installed under.
     ///

@@ -269,7 +269,10 @@ struct IslandPanelView: View {
         let surfaceShape = OpenedIslandSurfaceShape(
             topProfile: usesNotchAwareOpenedHeader ? .notch : .topBar
         )
-        let borderStyle = IslandThemes.current.borderStyle
+        // The SAO theme's double-border look. No longer read from a theme
+        // value now that there is only one theme to draw.
+        let borderWidth: CGFloat = 1
+        let borderOpacity = 0.22
         let scanlineIntensity = IslandThemes.current.scanlineIntensity
 
         ZStack(alignment: .top) {
@@ -293,21 +296,19 @@ struct IslandPanelView: View {
             .overlay {
                 ZStack {
                     surfaceShape
-                        .stroke(V6Palette.paper.opacity(borderStyle.opacity), lineWidth: borderStyle.width)
-                    if borderStyle.isDouble {
-                        // Scaled rather than padded. `OpenedIslandSurfaceShape`
-                        // is not insettable, and laying it out in a smaller rect
-                        // redraws the notch cut-out at the new size — the second
-                        // line then crosses the first near the top instead of
-                        // running parallel to it. Scaling is not a true parallel
-                        // offset either, but it keeps the profile's proportions.
-                        surfaceShape
-                            .stroke(V6Palette.paper.opacity(borderStyle.opacity * 0.6), lineWidth: borderStyle.width)
-                            .scaleEffect(
-                                x: (surfaceWidth - 4) / surfaceWidth,
-                                y: (surfaceHeight - 4) / surfaceHeight
-                            )
-                    }
+                        .stroke(V6Palette.paper.opacity(borderOpacity), lineWidth: borderWidth)
+                    // Scaled rather than padded. `OpenedIslandSurfaceShape` is
+                    // not insettable, and laying it out in a smaller rect
+                    // redraws the notch cut-out at the new size — the second
+                    // line then crosses the first near the top instead of
+                    // running parallel to it. Scaling is not a true parallel
+                    // offset either, but it keeps the profile's proportions.
+                    surfaceShape
+                        .stroke(V6Palette.paper.opacity(borderOpacity * 0.6), lineWidth: borderWidth)
+                        .scaleEffect(
+                            x: (surfaceWidth - 4) / surfaceWidth,
+                            y: (surfaceHeight - 4) / surfaceHeight
+                        )
                 }
             }
 

@@ -584,51 +584,27 @@
 "banner.completed" = "Done";
 "settings.display.completionBanner" = "Announce completion under the notch";
 "settings.display.completionBanner.help" = "A small banner under the notch when a session finishes. Click it to see what it did. It stays away during the quiet scenes set under Notifications.";
-"settings.appearance.theme.hud" = "HUD";
-"settings.appearance.theme.sao" = "SAO";
-"settings.appearance.theme.classic" = "Classic";
-"settings.appearance.theme.title" = "Theme";
-"settings.appearance.theme.note" = "HUD is cool and angular, lit from within. Classic is the warmer look the app had before.";
 "banner.dismiss" = "Dismiss";
 
-/* HUD theme wording. English uppercase in every locale on purpose: a
-   translated heads-up display reads as an ordinary label again. Only labels and
-   headings — the approval buttons stay in plain language, because a permission
-   prompt is the wrong place to make someone parse a second vocabulary. */
-"banner.completed.hud" = "QUEST COMPLETE";
+/* SAO theme wording. English uppercase in every locale on purpose: a
+   translated heads-up display reads as an ordinary label again. */
 "banner.completed.sao" = "CONGRATULATIONS";
-"island.sessionList.title.hud" = "PARTY";
 "island.sessionList.title.sao" = "LINKS";
-"island.sessionOverview.running.hud" = "ACTIVE";
 "island.sessionOverview.running.sao" = "DIVING";
-"island.sessionOverview.runningCompact.hud" = "ACT";
 "island.sessionOverview.runningCompact.sao" = "DIVE";
-"island.sessionOverview.waiting.hud" = "ALERT";
 "island.sessionOverview.waiting.sao" = "SYSTEM CALL";
-"island.sessionOverview.waitingCompact.hud" = "ALT";
 "island.sessionOverview.waitingCompact.sao" = "CALL";
-"island.sessionOverview.done.hud" = "CLEAR";
 "island.sessionOverview.done.sao" = "CLEARED";
-"island.sessionOverview.idle.hud" = "IDLE";
 "island.sessionOverview.idle.sao" = "STANDBY";
-"island.sessionOverview.total.hud" = "UNITS";
 "island.sessionOverview.total.sao" = "LINKED";
 "banner.openHint" = "Open the summary";
-"approval.allowOnce.hud" = "ACCEPT";
 "approval.allowOnce.sao" = "YES";
-"approval.deny.hud" = "REJECT";
 "approval.deny.sao" = "NO";
-"approval.allowAll.hud" = "ACCEPT ALL";
 "approval.allowAll.sao" = "YES TO ALL";
-"approval.denyAll.hud" = "REJECT ALL";
 "approval.denyAll.sao" = "NO TO ALL";
-"approval.goToTerminal.hud" = "JUMP TO TERMINAL";
 "approval.goToTerminal.sao" = "TELEPORT";
-"question.submit.hud" = "TRANSMIT";
 "question.submit.sao" = "CONFIRM";
-"question.answerAllFirst.hud" = "ALL FIELDS REQUIRED";
 "question.answerAllFirst.sao" = "INCOMPLETE — ALL ENTRIES REQUIRED";
-"setup.banner.noHooks.title.hud" = "LINK YOUR AGENTS";
 "setup.banner.noHooks.title.sao" = "LINK START";
 "settings.display.hideIdleSessions" = "Hide sessions that have gone quiet";
 "settings.display.hideIdleSessions.help" = "Keeps greyed-out rows out of the list. The last row is always kept, so the list never looks empty by mistake.";

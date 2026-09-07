@@ -358,8 +358,8 @@ def main() -> None:
         if button_labels:
             assert_contains_any(
                 button_labels,
-                # Both vocabularies: the HUD theme renames this button.
-                ["Send", "送信", "Submit", "回答", "TRANSMIT"],
+                # Plain wording and the SAO theme's renamed button.
+                ["Send", "送信", "Submit", "回答", "CONFIRM"],
                 "longQuestionCard keeps its submit button reachable",
             )
         else:
@@ -385,7 +385,7 @@ def main() -> None:
         # rather than the overlay's.
         assert_contains_any(
             set(banner.get("accessibilitySummary", {}).get("textValues") or []),
-            ["完了", "Done", "QUEST COMPLETE"],
+            ["完了", "Done", "CONGRATULATIONS"],
             "completionBanner text values",
         )
 

@@ -30,23 +30,19 @@ struct ChamferedRectangle: Shape {
 
 /// The one shape every card, button and badge in the island uses.
 ///
+/// Always chamfered — the two opposite diagonal cuts are the SAO theme's
+/// signature shape, and there is only one theme to draw now.
+///
 /// Insettable rather than `AnyShape` so `strokeBorder` keeps working: a plain
 /// `stroke` straddles the edge and bleeds half a line width outside the fill,
 /// which shows up as a fuzzy halo on every panel.
 struct IslandPanelShape: InsettableShape {
     var cornerRadius: CGFloat
-    var style: IslandCornerStyle
     var inset: CGFloat = 0
 
     func path(in rect: CGRect) -> Path {
         let rect = rect.insetBy(dx: inset, dy: inset)
-        switch style {
-        case .rounded:
-            return RoundedRectangle(cornerRadius: max(0, cornerRadius - inset), style: .continuous)
-                .path(in: rect)
-        case .chamfered:
-            return ChamferedRectangle(cut: max(0, cornerRadius - inset)).path(in: rect)
-        }
+        return ChamferedRectangle(cut: max(0, cornerRadius - inset)).path(in: rect)
     }
 
     func inset(by amount: CGFloat) -> IslandPanelShape {

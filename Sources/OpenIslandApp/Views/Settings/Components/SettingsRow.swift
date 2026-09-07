@@ -128,22 +128,16 @@ struct SettingsPickerRow<Value: Hashable, Content: View>: View {
 struct SettingsRowGround: ViewModifier {
     func body(content: Content) -> some View {
         let theme = IslandThemes.current
-        switch theme.cornerStyle {
-        case .rounded:
-            // The system's own slab, unchanged.
-            content
-        case .chamfered:
-            content
-                .listRowBackground(
-                    theme.shape(cornerRadius: 7)
-                        .fill(theme.paper.opacity(0.045))
-                        .overlay(
-                            theme.shape(cornerRadius: 7)
-                                .strokeBorder(theme.accent.opacity(0.12), lineWidth: 1)
-                        )
-                        .padding(.vertical, 1)
-                )
-        }
+        content
+            .listRowBackground(
+                theme.shape(cornerRadius: 7)
+                    .fill(theme.paper.opacity(0.045))
+                    .overlay(
+                        theme.shape(cornerRadius: 7)
+                            .strokeBorder(theme.accent.opacity(0.12), lineWidth: 1)
+                    )
+                    .padding(.vertical, 1)
+            )
     }
 }
 

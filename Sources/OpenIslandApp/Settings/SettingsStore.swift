@@ -33,5 +33,7 @@ final class SettingsStore: Sendable {
         cameraGesture = CameraGestureSettings(store: store)
         voiceCommand = VoiceCommandSettings(store: store)
         usage = UsageSettings(store: store)
+
+        DisplaySettings.migrateLegacyTheme(in: store)
     }
 }
