@@ -945,7 +945,7 @@ private struct SessionListPanelPreview: View {
     }
 
     private var surfaceShape: OpenedIslandSurfaceShape {
-        OpenedIslandSurfaceShape(topProfile: profile == .notch ? .notch : .topBar)
+        OpenedIslandSurfaceShape(topProfile: profile == .notch ? .notch : .floatingPill)
     }
 
     private var sideInset: CGFloat {

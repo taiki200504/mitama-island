@@ -10,7 +10,10 @@ struct OverlayDisplayOption: Identifiable, Equatable {
 
 enum OverlayPlacementMode: String, Equatable {
     case notch = "Notch area"
-    case topBar = "Top bar fallback"
+    /// A display with no physical notch: the closed island renders as a
+    /// floating capsule below the menu bar instead of a pseudo-notch glued
+    /// to the physical top edge.
+    case floatingPill = "Floating pill fallback"
 }
 
 struct OverlayPlacementDiagnostics {
@@ -90,19 +93,60 @@ enum OverlayDisplayResolver {
     }
 
     private static func frame(for screen: NSScreen, panelSize: NSSize) -> NSRect {
-        let width = min(panelSize.width, screen.visibleFrame.width - 64)
-        let height = panelSize.height
-        let x = screen.frame.midX - (width / 2)
+        pureFrame(
+            visibleFrame: screen.visibleFrame,
+            screenFrame: screen.frame,
+            notchSize: screen.safeAreaInsets.top > 0 ? screen.notchSize : nil,
+            panelSize: panelSize,
+            mode: placementMode(for: screen)
+        )
+    }
 
-        let y: CGFloat
-        switch placementMode(for: screen) {
-        case .notch:
-            y = screen.frame.maxY - height
-        case .topBar:
-            y = screen.visibleFrame.maxY - height - 18
-        }
+    /// The overlay placement geometry, with every input passed in rather
+    /// than read from `NSScreen` — so a test can exercise both modes without
+    /// real display hardware.
+    ///
+    /// `notchSize` is accepted for parity with the per-mode inputs
+    /// `placementMode` already distinguishes on, even though neither branch
+    /// below reads it yet — width and the notch-mode height both come from
+    /// `panelSize` and `screenFrame` alone.
+    static func pureFrame(
+        visibleFrame: NSRect,
+        screenFrame: NSRect,
+        notchSize: NSSize?,
+        panelSize: NSSize,
+        mode: OverlayPlacementMode
+    ) -> NSRect {
+        let width = min(panelSize.width, visibleFrame.width - 64)
+        let height = panelSize.height
+        let x = screenFrame.midX - (width / 2)
+        let y = topAnchoredY(screenFrame: screenFrame, visibleFrame: visibleFrame, height: height, mode: mode)
 
         return NSRect(x: x, y: y, width: width, height: height)
+    }
+
+    /// Where a top-anchored overlay's own top edge should sit, in screen
+    /// coordinates: flush with the physical top edge for a notched display
+    /// (the notch is part of the bezel), or flush with the menu bar's
+    /// bottom edge otherwise.
+    ///
+    /// The single place both `pureFrame` above and the real window frame
+    /// (`OverlayPanelController.panelFrame`) get this number from — so a
+    /// display with an auto-hidden menu bar (where `visibleFrame.maxY ==
+    /// screenFrame.maxY`) can't give the two callers a different answer
+    /// than a display with a normal, always-visible one.
+    static func topAnchoredY(
+        screenFrame: NSRect,
+        visibleFrame: NSRect,
+        height: CGFloat,
+        mode: OverlayPlacementMode
+    ) -> CGFloat {
+        switch mode {
+        case .notch:
+            screenFrame.maxY - height
+        case .floatingPill:
+            visibleFrame.maxY - height
+        }
     }
 
     private static func resolveScreen(preferredScreenID: String?) -> (screen: NSScreen, selectionSummary: String)? {
@@ -140,7 +184,7 @@ enum OverlayDisplayResolver {
     }
 
     private static func placementMode(for screen: NSScreen) -> OverlayPlacementMode {
-        isNotched(screen) ? .notch : .topBar
+        isNotched(screen) ? .notch : .floatingPill
     }
 
     private static func isNotched(_ screen: NSScreen) -> Bool {
@@ -150,7 +194,7 @@ enum OverlayDisplayResolver {
     }
 
     private static func screenKindDescription(for screen: NSScreen) -> String {
-        placementMode(for: screen) == .notch ? "Built-in notch" : "Top-bar fallback"
+        placementMode(for: screen) == .notch ? "Built-in notch" : "Floating pill fallback"
     }
 
     /// Returns a string that identifies the physical display backing `screen`

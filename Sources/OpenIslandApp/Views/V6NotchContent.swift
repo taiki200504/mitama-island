@@ -189,13 +189,27 @@ private struct AgentsGridWaitingTile: View {
 
 struct V6CenterLabelView: View {
     let text: String
+    /// Caps how wide the label may render. `nil` leaves it at its natural
+    /// width (via `.fixedSize`) the way it always has — passing a value
+    /// trades that for `.lineLimit`'s own truncation once the label doesn't
+    /// fit in `maxWidth`, which is what lets `V6ClosedPill.externalBody`
+    /// shrink an arbitrarily long session title down to a capped pill
+    /// instead of letting it overflow the capsule.
+    var maxWidth: CGFloat?
 
     var body: some View {
-        Text(text)
+        let styledText = Text(text)
             .font(.islandMono(size: 11.5, weight: .medium))
             .lineLimit(1)
-            .fixedSize(horizontal: true, vertical: false)
             .foregroundStyle(V6Palette.paper)
+
+        if let maxWidth {
+            styledText
+                .truncationMode(.tail)
+                .frame(maxWidth: maxWidth, alignment: .leading)
+        } else {
+            styledText.fixedSize(horizontal: true, vertical: false)
+        }
     }
 
     static func intrinsicWidth(of text: String) -> CGFloat {
@@ -227,8 +241,16 @@ struct V6ClosedPill: View {
     var physicalNotchWidth: CGFloat = 0
 
     /// External mode only — minimum pill width (locked). Defaults to the
-    /// width that fits just the glyph.
-    var minWidth: CGFloat = 70
+    /// floating capsule's minimum width.
+    var minWidth: CGFloat = IslandChromeMetrics.floatingPillMinWidth
+
+    /// External mode only — the pill never grows past this, however long
+    /// the label or waiting-agent body gets. `nil` leaves it unbounded
+    /// (used by the settings-tab preview, which never renders live,
+    /// arbitrary-length content). The center label truncates instead of
+    /// overflowing once its own share of the pill is squeezed below what it
+    /// would otherwise want.
+    var maxWidth: CGFloat?
 
     /// Bumped by `AppModel` when Reduce Motion is toggled, so the band
     /// animation below re-evaluates immediately instead of waiting for
@@ -306,6 +328,56 @@ struct V6ClosedPill: View {
         return (resolvedAccessory, accessoryFits ? outerWithAccessory : outerWithoutAccessory)
     }
 
+    /// The external (non-notched) layout's intrinsic content width, before
+    /// `minWidth` is applied. Pure and static for the same reason
+    /// `macbookLayout` is: `externalBody` and `OverlayPanelController`'s
+    /// hit-area width both need this exact number, so it can't live only
+    /// inline in the view body.
+    @MainActor
+    static func externalIntrinsicWidth(
+        label: String?,
+        rightSlot: IslandRightSlotContent?,
+        content: IslandClosedContent?,
+        sneakPeek: IslandSneakPeek?,
+        height: CGFloat
+    ) -> CGFloat {
+        let pad = height / 2
+        let glyphW: CGFloat = 24
+        let showsSneakPeek = sneakPeek.map { !$0.text.isEmpty } ?? false
+        let hasBody = content?.body != nil
+        // External layout has room to show the event title next to the HUD
+        // readout — the MacBook layout never does (see `macbookLayout`).
+        let peekW = showsSneakPeek
+            ? (sneakPeek?.intrinsicWidth() ?? 0)
+            : (hasBody ? (content?.bodyWidth(showsEventTitle: true) ?? 0) : 0)
+        let showsPeekArea = showsSneakPeek || hasBody
+        let showsLabel = label != nil && !showsPeekArea
+        let labelW = showsLabel ? V6CenterLabelView.intrinsicWidth(of: label ?? "") : 0
+        let rightW = rightSlot.map { V6RightSlotView.intrinsicWidth(of: $0) } ?? 0
+        let accessory = showsSneakPeek ? nil : content?.accessory
+        let accessoryW = accessory.map { IslandClosedAccessoryView.intrinsicWidth(of: $0) } ?? 0
+
+        let labelBlock = showsLabel ? 6 + labelW : 0
+        let peekBlock = showsPeekArea ? Self.innerGap + peekW : 0
+        let accessoryBlock = accessory == nil ? 0 : Self.innerGap + accessoryW
+        let rightBlock = rightSlot == nil ? 0 : Self.innerGap + rightW
+        return pad * 2 + glyphW + labelBlock + peekBlock + accessoryBlock + rightBlock
+    }
+
+    /// Caps the floating capsule's width so a pathologically long session
+    /// title or waiting-agent name can't grow it past a sane fraction of
+    /// the screen. `configuredMaxPanelWidth` is `display.maxPanelWidth`
+    /// (the *opened* panel's own cap, 480–900pt) — reused here rather than
+    /// adding a second setting, but scaled down to 60% of the visible
+    /// width besides: the closed pill is meant to read as a glance, not
+    /// grow into a second panel.
+    nonisolated static func externalMaxWidth(
+        configuredMaxPanelWidth: CGFloat,
+        visibleWidth: CGFloat
+    ) -> CGFloat {
+        min(configuredMaxPanelWidth, visibleWidth * 0.6)
+    }
+
     var body: some View {
         switch layout {
         case .external: externalBody
@@ -327,32 +399,41 @@ struct V6ClosedPill: View {
     private var externalBody: some View {
         let glyphW: CGFloat = 24
         let hasBody = content?.body != nil
-        // External layout has room to show the event title next to the HUD
-        // readout — the MacBook layout never does (see `macbookLayout`).
-        let peekW = showsSneakPeek
-            ? (sneakPeek?.intrinsicWidth() ?? 0)
-            : (hasBody ? (content?.bodyWidth(showsEventTitle: true) ?? 0) : 0)
         let showsPeekArea = showsSneakPeek || hasBody
         // The peek area replaces the session-name label while something is
         // showing. Both would fit here, but reading a session title next to
         // "who is waiting and for how long" buries the second in the first.
         let showsLabel = label != nil && !showsPeekArea
-        let labelW = showsLabel ? V6CenterLabelView.intrinsicWidth(of: label ?? "") : 0
-        let rightW = rightSlot.map { V6RightSlotView.intrinsicWidth(of: $0) } ?? 0
         // No physical notch to overflow here — the pill is fluid and just
         // grows to fit, so the accessory is never dropped on this layout.
         let accessory = showsSneakPeek ? nil : content?.accessory
-        let accessoryW = accessory.map { IslandClosedAccessoryView.intrinsicWidth(of: $0) } ?? 0
 
-        let labelBlock = (showsLabel ? 6 + labelW : 0)
-        let peekBlock = (showsPeekArea ? Self.innerGap + peekW : 0)
-        let accessoryBlock = (accessory == nil ? 0 : Self.innerGap + accessoryW)
-        let rightBlock = (rightSlot == nil ? 0 : Self.innerGap + rightW)
-        let intrinsic = pad * 2 + glyphW + labelBlock + peekBlock + accessoryBlock + rightBlock
-        let width = max(minWidth, intrinsic)
+        let intrinsic = Self.externalIntrinsicWidth(
+            label: label,
+            rightSlot: rightSlot,
+            content: content,
+            sneakPeek: sneakPeek,
+            height: height
+        )
+        let uncappedWidth = max(minWidth, intrinsic)
+        let width = maxWidth.map { min(uncappedWidth, $0) } ?? uncappedWidth
+
+        // Everything else in the pill is a fixed-size icon or a short,
+        // fixed-vocabulary string (the glyph, the waiting-agent gauge, the
+        // accessory, the right slot) — the center label is the one thing
+        // carrying arbitrary-length text, so it's the one that gives way
+        // once `maxWidth` has squeezed the pill below what `intrinsic`
+        // wanted.
+        let labelW = showsLabel ? V6CenterLabelView.intrinsicWidth(of: label ?? "") : 0
+        let nonLabelWidth = intrinsic - (showsLabel ? 6 + labelW : 0)
+        let labelMaxWidth: CGFloat? = showsLabel ? max(0, width - nonLabelWidth - 6) : nil
 
         return ZStack {
-            V6ClosedPillShape()
+            // A full capsule rather than `V6ClosedPillShape`'s flat-top
+            // silhouette — this pill floats below the menu bar instead of
+            // sitting flush against the physical top edge, so both ends
+            // round the same way.
+            Capsule()
                 .fill(V6Palette.ink)
 
             HStack(spacing: 0) {
@@ -370,7 +451,7 @@ struct V6ClosedPill: View {
                 }
 
                 if showsLabel, let label {
-                    V6CenterLabelView(text: label)
+                    V6CenterLabelView(text: label, maxWidth: labelMaxWidth)
                         .padding(.leading, 6)
                         .transition(.opacity.combined(with: .move(edge: .leading)))
                 }

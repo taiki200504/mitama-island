@@ -76,6 +76,16 @@ struct HarnessArtifactReport: Codable {
         let summary: String
     }
 
+    struct SizeSnapshot: Codable {
+        let width: Double
+        let height: Double
+
+        init(_ size: CGSize) {
+            width = size.width
+            height = size.height
+        }
+    }
+
     let scenario: String?
     let presentOverlay: Bool
     let startedBridge: Bool
@@ -90,6 +100,11 @@ struct HarnessArtifactReport: Codable {
     let selectedSessionID: String?
     let islandSurface: String
     let notchStatus: String
+    /// The closed pill's own last-rendered size (see `AppModel.debugClosedPillSize`).
+    /// The window itself is always kept at its opened size, so this is the
+    /// only way to verify the floating capsule's real dimensions on a
+    /// non-notched display — `windows[].frame` never shrinks to it.
+    let closedPillSize: SizeSnapshot?
     let runtime: HarnessRuntimeArtifacts?
     let sessions: [SessionSnapshot]
 }
@@ -166,6 +181,9 @@ enum HarnessArtifactRecorder {
             selectedSessionID: model.selectedSessionID,
             islandSurface: surfaceDescription(model.islandSurface),
             notchStatus: notchStatusDescription(model.notchStatus),
+            closedPillSize: model.debugClosedPillSize == .zero
+                ? nil
+                : HarnessArtifactReport.SizeSnapshot(model.debugClosedPillSize),
             runtime: runtimeArtifacts,
             sessions: model.sessions.map {
                 HarnessArtifactReport.SessionSnapshot(

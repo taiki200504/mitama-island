@@ -18,6 +18,20 @@ private struct OpenedSurfaceHeightKey: PreferenceKey {
     }
 }
 
+/// Measures the closed pill's own rendered size, independent of the
+/// window's fixed (always-opened) frame — the harness needs this to verify
+/// the floating capsule's real dimensions on a non-notched display, which
+/// `window.frame` never reflects.
+private struct ClosedPillSizeKey: PreferenceKey {
+    static let defaultValue: CGSize = .zero
+    static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
+        let next = nextValue()
+        if next != .zero {
+            value = next
+        }
+    }
+}
+
 // MARK: - Main island view
 
 struct IslandPanelView: View {
@@ -91,8 +105,14 @@ struct IslandPanelView: View {
     /// The central black rectangle is otherwise aligned with the physical
     /// notch, so center content is only useful here.
     private var isExternalDisplayPlacement: Bool {
+        // A harness scenario forces this directly so a screenshot can
+        // exercise the floating-capsule layout on a machine that may or may
+        // not actually have a physical notch.
+        if model.debugForcesExternalLayout {
+            return true
+        }
         if let mode = model.overlayPlacementDiagnostics?.mode {
-            return mode == .topBar
+            return mode == .floatingPill
         }
         // Fallback when diagnostics haven't been populated yet.
         return (targetOverlayScreen?.safeAreaInsets.top ?? 0) == 0
@@ -263,6 +283,18 @@ struct IslandPanelView: View {
     private func v6ClosedSurface() -> some View {
         let layout: V6ClosedLayout = isExternalDisplayPlacement ? .external : .macbook
         let physicalNotchWidth: CGFloat = targetOverlayScreen?.notchSize.width ?? 180
+        // The floating capsule is a fixed height, independent of
+        // `closedNotchHeight` (which mirrors the menu bar's reserved
+        // height) — it no longer sits flush against the physical top edge,
+        // so nothing ties its height to that measurement anymore.
+        let pillHeight = layout == .external ? IslandChromeMetrics.floatingPillHeight : closedNotchHeight
+        let topOffset = layout == .external ? floatingPillTopOffset : 0
+        // A pathologically long session title must not grow the pill past
+        // a sane fraction of the screen — see `V6ClosedPill.externalMaxWidth`.
+        let externalMaxWidth = V6ClosedPill.externalMaxWidth(
+            configuredMaxPanelWidth: CGFloat(model.settings.display.maxPanelWidth),
+            visibleWidth: targetOverlayScreen?.visibleFrame.width ?? 1_200
+        )
         // One tick a minute, which is the resolution the band shows. The pill
         // has no other reason to redraw on a timer, and a waiting request is
         // exactly the situation where nothing else is arriving to redraw it.
@@ -274,14 +306,37 @@ struct IslandPanelView: View {
                 content: model.islandClosedContent(now: context.date),
                 sneakPeek: model.overlay.sneakPeek,
                 layout: layout,
-                height: closedNotchHeight,
+                height: pillHeight,
                 physicalNotchWidth: layout == .macbook ? physicalNotchWidth : 0,
-                minWidth: 70,
+                minWidth: IslandChromeMetrics.floatingPillMinWidth,
+                maxWidth: layout == .external ? externalMaxWidth : nil,
                 motionRevision: model.motionRevision
             )
+            .background(
+                GeometryReader { geometry in
+                    Color.clear.preference(key: ClosedPillSizeKey.self, value: geometry.size)
+                }
+            )
         }
+        .padding(.top, topOffset)
         .scaleEffect(isPopping ? 1.04 : 1, anchor: .top)
         .animation(IslandThemes.current.animationProfile.pop, value: isPopping)
+        .onPreferenceChange(ClosedPillSizeKey.self) { size in
+            model.debugClosedPillSize = size
+        }
+    }
+
+    /// How far below the window's own top edge the floating capsule sits.
+    /// Only meaningful on non-notched displays — the physical notch case
+    /// wants the pill flush with the top edge instead, and never reads this.
+    ///
+    /// The window's top edge is *already* the menu bar's bottom edge on
+    /// these displays (see `OverlayPanelController.panelFrame`, which
+    /// anchors it there via `OverlayDisplayResolver.topAnchoredY`) — so all
+    /// that's left for the pill itself to add is its own small floating
+    /// gap, not a second copy of the menu bar's height.
+    private var floatingPillTopOffset: CGFloat {
+        IslandChromeMetrics.floatingPillGap
     }
 
     // MARK: - Opened surface
@@ -293,7 +348,7 @@ struct IslandPanelView: View {
         let surfaceWidth = openedWidth + (horizontalInset * 2)
         let surfaceHeight = openedHeight + bottomInset
         let surfaceShape = OpenedIslandSurfaceShape(
-            topProfile: usesNotchAwareOpenedHeader ? .notch : .topBar
+            topProfile: usesNotchAwareOpenedHeader ? .notch : .floatingPill
         )
         // The crystal-HUD shell border. A single fine line — the tri-line
         // outline from `saoOutline` is for the white cards floating over this

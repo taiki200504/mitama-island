@@ -572,6 +572,15 @@ final class AppModel {
     /// Debug/harness only: shows the shelf's chips without needing a real
     /// hover, so a scenario can put items on screen for a screenshot.
     var debugShelfBadgeForcedExpanded = false
+    /// Debug/harness only: forces the closed island into the non-notched
+    /// (floating capsule) layout regardless of what the real display
+    /// reports, so a scenario can capture that layout on any machine.
+    var debugForcesExternalLayout = false
+    /// Debug/harness only: the closed pill's own last-rendered size, measured
+    /// from SwiftUI rather than read off the window frame — the window is
+    /// always kept at its opened size, so `NSWindow.frame` never reflects the
+    /// closed capsule's real dimensions. `IslandPanelView` writes this.
+    var debugClosedPillSize: CGSize = .zero
     @ObservationIgnored private let shelfExpiryTimerBox = RepeatingTimerBox()
 
     /// Reads the battery, the heat and the lid. Holds the camera to account.
@@ -2137,6 +2146,9 @@ final class AppModel {
         // accessory without a real timer running. Always set, never left
         // over from whatever scenario loaded before this one.
         debugClosedAccessoryTimer = snapshot.debugAccessoryTimer
+        // Always reset, whether or not this scenario forces the layout, so a
+        // previous scenario's override never bleeds into this one's capture.
+        debugForcesExternalLayout = snapshot.forcesExternalLayout
         // Same reasoning for the timer itself: always reset, whether or not
         // this scenario poses one, so a previous scenario's timer never
         // bleeds into this one's screenshot.

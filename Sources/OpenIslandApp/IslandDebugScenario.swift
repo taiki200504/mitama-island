@@ -49,10 +49,15 @@ struct IslandDebugSnapshot {
     /// `clipboardSurface` scenario — never through `record(_:)`, the same
     /// reasoning `shelfItems` gives for its own fixture loading.
     var debugClipboardItems: [ClipboardItem] = []
+    /// Forces the closed island into the non-notched (floating capsule)
+    /// layout regardless of the real display, so a harness scenario can
+    /// capture that layout on any machine — see `closedFloating`.
+    var forcesExternalLayout = false
 }
 
 enum IslandDebugScenario: String, CaseIterable, Identifiable {
     case closed
+    case closedFloating
     case peekBand
     case sessionList
     case approvalCard
@@ -78,6 +83,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
         switch self {
         case .closed:
             "Closed Notch"
+        case .closedFloating:
+            "Closed (Floating Pill)"
         case .peekBand:
             "Peek Band"
         case .sessionList:
@@ -123,6 +130,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
         switch self {
         case .closed:
             "Collapsed idle/running notch with live count and attention affordance."
+        case .closedFloating:
+            "Closed island forced onto the non-notched layout: a floating capsule below the menu bar with a waiting agent body."
         case .peekBand:
             "Collapsed notch while a request waits: who is waiting, and for how long."
         case .sessionList:
@@ -175,6 +184,24 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                 islandSurface: .sessionList(),
                 sessions: sessions,
                 selectedSessionID: sessions.first?.id
+            )
+
+        case .closedFloating:
+            // Same waiting fixture as `peekBand` — the point here isn't the
+            // band content, it's that the closed island renders as the
+            // floating capsule (forced via `forcesExternalLayout`) instead
+            // of whatever the real display would pick.
+            let waiting = DebugSessionFactory.approvalSession(now: now.addingTimeInterval(-8 * 60))
+            return IslandDebugSnapshot(
+                title: title,
+                summary: summary,
+                previewHeight: 78,
+                notchStatus: .closed,
+                notchOpenReason: nil,
+                islandSurface: .sessionList(),
+                sessions: DebugSessionFactory.notificationSessions(lead: waiting, now: now),
+                selectedSessionID: waiting.id,
+                forcesExternalLayout: true
             )
 
         case .peekBand:

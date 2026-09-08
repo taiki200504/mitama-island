@@ -613,6 +613,27 @@ final class OverlayPanelController {
         )
     }
 
+    /// The floating capsule's hit rectangle on a non-notched display:
+    /// centered on the screen horizontally, floating `gap` below the menu
+    /// bar's bottom edge — the same placement `IslandPanelView.v6ClosedSurface()`
+    /// renders with (see `IslandPanelView.floatingPillTopOffset`), kept as a
+    /// pure function of the two screen frames so it's testable without real
+    /// display hardware.
+    nonisolated static func floatingClosedSurfaceRect(
+        screenFrame: NSRect,
+        visibleFrame: NSRect,
+        width: CGFloat,
+        height: CGFloat,
+        gap: CGFloat = IslandChromeMetrics.floatingPillGap
+    ) -> NSRect {
+        NSRect(
+            x: screenFrame.midX - width / 2,
+            y: visibleFrame.maxY - gap - height,
+            width: width,
+            height: height
+        )
+    }
+
     nonisolated static func rectContainsIncludingEdges(_ rect: NSRect, point: NSPoint) -> Bool {
         point.x >= rect.minX
             && point.x <= rect.maxX
@@ -630,19 +651,30 @@ final class OverlayPanelController {
     ///
     /// - On a MacBook (physical notch present) the pill is locked to
     ///   `bleed + notchWidth + bleed`.
-    /// - On an external display the width is content-driven; we return a
-    ///   generous fixed hit-area so hover / click detection works without
-    ///   the controller having to introspect live session state.
+    /// - On a non-notched display the floating capsule is content-driven, so
+    ///   the hit area follows `intrinsicContentWidth` (the same width math
+    ///   `V6ClosedPill.externalIntrinsicWidth` renders with) plus a little
+    ///   slop per side, floored at the capsule's own minimum width and
+    ///   capped at `maxWidth` — the same ceiling `V6ClosedPill.externalBody`
+    ///   renders with (see `V6ClosedPill.externalMaxWidth`), so a
+    ///   pathologically long session title can't make the hit area outgrow
+    ///   what's actually drawn any more than it can the pill itself.
     nonisolated static func closedPanelWidth(
         notchWidth: CGFloat,
         isNotchedDisplay: Bool,
+        intrinsicContentWidth: CGFloat = 0,
+        maxWidth: CGFloat = .infinity,
         notchStatus: NotchStatus
     ) -> CGFloat {
         let popBonus: CGFloat = notchStatus == .popping ? 18 : 0
         if isNotchedDisplay {
             return notchWidth + (closedPillSideBleed * 2) + popBonus
         }
-        return 360 + popBonus
+        let hitWidth = max(
+            IslandChromeMetrics.floatingPillMinWidth,
+            intrinsicContentWidth + (IslandChromeMetrics.floatingPillHitPadding * 2)
+        )
+        return min(hitWidth, maxWidth) + popBonus
     }
 
     private func closedSurfaceRect(for model: AppModel) -> NSRect? {
@@ -651,6 +683,20 @@ final class OverlayPanelController {
         }
 
         let closedWidth = closedPanelWidth(for: model, on: screen)
+
+        guard screen.safeAreaInsets.top > 0 else {
+            // No physical notch to anchor to — the floating capsule sits on
+            // its own, below the menu bar, rather than centered on the
+            // pseudo-notch band `notchRect` still represents for width
+            // calibration purposes elsewhere.
+            return Self.floatingClosedSurfaceRect(
+                screenFrame: screen.frame,
+                visibleFrame: screen.visibleFrame,
+                width: closedWidth,
+                height: IslandChromeMetrics.floatingPillHeight
+            )
+        }
+
         return Self.closedSurfaceRect(
             notchRect: notchRect,
             closedWidth: closedWidth
@@ -659,9 +705,22 @@ final class OverlayPanelController {
 
     private func panelFrame(for model: AppModel?, on screen: NSScreen) -> NSRect {
         let size = panelSize(for: model, on: screen)
+        // Same top-anchoring rule the diagnostics-only `pureFrame` uses —
+        // on a non-notched display the window's own top edge now sits at
+        // the menu bar's bottom edge instead of the screen's physical top,
+        // so the opened surface drawn inside it no longer sinks under the
+        // menu bar. Sharing `topAnchoredY` is what keeps this window's real
+        // position and the diagnostics panel's reported position from
+        // disagreeing on a display with an auto-hidden menu bar.
+        let y = OverlayDisplayResolver.topAnchoredY(
+            screenFrame: screen.frame,
+            visibleFrame: screen.visibleFrame,
+            height: size.height,
+            mode: screen.safeAreaInsets.top > 0 ? .notch : .floatingPill
+        )
         return NSRect(
             x: screen.frame.midX - size.width / 2,
-            y: screen.frame.maxY - size.height,
+            y: y,
             width: size.width,
             height: size.height
         )
@@ -703,10 +762,32 @@ final class OverlayPanelController {
     private func closedPanelWidth(for model: AppModel, on screen: NSScreen) -> CGFloat {
         let notchWidth = screen.notchSize.width
         let isNotched = screen.safeAreaInsets.top > 0
+        let intrinsicContentWidth = isNotched ? 0 : closedFloatingIntrinsicWidth(for: model)
+        let maxWidth = isNotched
+            ? .infinity
+            : V6ClosedPill.externalMaxWidth(
+                configuredMaxPanelWidth: CGFloat(model.settings.display.maxPanelWidth),
+                visibleWidth: screen.visibleFrame.width
+            )
         return Self.closedPanelWidth(
             notchWidth: notchWidth,
             isNotchedDisplay: isNotched,
+            intrinsicContentWidth: intrinsicContentWidth,
+            maxWidth: maxWidth,
             notchStatus: model.notchStatus
+        )
+    }
+
+    /// The floating capsule's own content width, computed with the exact
+    /// same inputs `IslandPanelView.v6ClosedSurface()` renders with — so the
+    /// hit area this drives can never disagree with what's actually drawn.
+    private func closedFloatingIntrinsicWidth(for model: AppModel) -> CGFloat {
+        V6ClosedPill.externalIntrinsicWidth(
+            label: model.islandClosedLabel(),
+            rightSlot: model.islandClosedRightSlotContent(),
+            content: model.islandClosedContent(),
+            sneakPeek: model.overlay.sneakPeek,
+            height: IslandChromeMetrics.floatingPillHeight
         )
     }
 
@@ -979,8 +1060,21 @@ final class NotchHostingView<Content: View>: NSHostingView<Content> {
             return nil
         }
 
-        guard let interactiveRect = controller.interactiveRect(for: model, in: bounds),
-              interactiveRect.contains(point) else {
+        guard let interactiveRect = controller.interactiveRect(for: model, in: bounds) else {
+            return nil
+        }
+
+        // `interactiveRect` answers in two different coordinate spaces
+        // depending on state: view-local while opened (`openedInteractiveRect`,
+        // anchored to `bounds`), but screen coordinates while closed
+        // (`closedSurfaceRect`, anchored to the physical notch or the
+        // floating capsule). `point` from AppKit is always view-local, so
+        // the closed case has to convert before comparing — this only
+        // matters while a file drag is in flight (`beginClosedDropTargeting`
+        // is the one thing that makes the closed panel stop ignoring mouse
+        // events, so `hitTest` runs at all while `notchStatus == .closed`).
+        let testPoint = model.notchStatus == .opened ? point : convertToScreen(point)
+        guard interactiveRect.contains(testPoint) else {
             return nil
         }
 

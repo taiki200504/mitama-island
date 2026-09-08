@@ -427,7 +427,7 @@ struct AppModelSessionListTests {
         #expect(model.islandSessionStateIndicator == .bar)
         #expect(model.completedStaleThreshold == .twoMinutes)
 
-        model.overlayPlacementDiagnostics = placementDiagnostics(mode: .topBar)
+        model.overlayPlacementDiagnostics = placementDiagnostics(mode: .floatingPill)
         #expect(model.islandUsageDisplay == .compact)
         #expect(model.islandSessionGroup == .project)
         #expect(model.islandSessionStateIndicator == .tint)
@@ -438,7 +438,7 @@ struct AppModelSessionListTests {
         #expect(reloaded.islandUsageDisplay == .hidden)
         #expect(reloaded.islandSessionGroup == .state)
         #expect(reloaded.islandSessionStateIndicator == .bar)
-        reloaded.overlayPlacementDiagnostics = placementDiagnostics(mode: .topBar)
+        reloaded.overlayPlacementDiagnostics = placementDiagnostics(mode: .floatingPill)
         #expect(reloaded.islandUsageDisplay == .compact)
         #expect(reloaded.islandSessionGroup == .project)
         #expect(reloaded.islandSessionStateIndicator == .tint)
