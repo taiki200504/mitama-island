@@ -446,6 +446,15 @@ def main() -> None:
         if not any("CODEX" in value or "CLAUDE" in value for value in text_values):
             fail("idle board is missing the waiting agent")
 
+    elif scenario == "ambientBoardNight":
+        # Same full-screen idle board, pinned to a fixed hour so the backdrop
+        # is deterministic — checked by the clock rather than the gradient
+        # itself, since colour isn't something the accessibility tree carries.
+        if notch_status != "closed":
+            fail(f"expected closed notch under the idle board, got {notch_status!r}")
+        if not any(":" in value for value in text_values):
+            fail("idle board is missing the clock")
+
     elif scenario == "linkstart":
         # The whole point of this scenario: a full-screen window, pinned
         # partway through, with at least one sense already confirmed and the

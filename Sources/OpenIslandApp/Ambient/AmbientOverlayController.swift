@@ -32,6 +32,11 @@ final class AmbientOverlayController {
     /// keep recomputing the readout against its own once-a-second clock for
     /// as long as it stays up.
     @ObservationIgnored var timer: () -> FocusTimerState = { .idle }
+    /// What the primary screen's backdrop should be right now. Evaluated
+    /// once per presentation rather than continuously — the idle board stays
+    /// up for hours, but the gradient only needs to catch up with the clock
+    /// the next time it's shown, not while it's already showing.
+    @ObservationIgnored var backdrop: () -> AmbientBackdrop = { .gradient(.night) }
     @ObservationIgnored var lang: LanguageManager = .shared
     /// Called when the board goes away, so the idle count restarts from zero
     /// instead of re-presenting on the next tick.
@@ -46,6 +51,15 @@ final class AmbientOverlayController {
         guard !screens.isEmpty else { return }
         Self.logger.notice("Presenting across \(screens.count) screen(s)")
 
+        // A video is worth its decode cost on the one screen actually being
+        // stepped away from; every other display gets the gradient outright
+        // rather than a second copy of the same loop nobody is watching.
+        let primaryBackdrop = backdrop()
+        let secondaryBackdrop: AmbientBackdrop = {
+            if case .video = primaryBackdrop { return .gradient(TimeOfDay.phase(for: .now)) }
+            return primaryBackdrop
+        }()
+
         panels = screens.map { screen in
             FullScreenOverlayPanel.make(
                 on: screen,
@@ -54,6 +68,7 @@ final class AmbientOverlayController {
                     nextEvent: nextEvent(),
                     currentEvent: currentEvent(),
                     timer: timer(),
+                    backdrop: screen == screens.first ? primaryBackdrop : secondaryBackdrop,
                     lang: lang
                 ),
                 onDismiss: { [weak self] in self?.dismiss() }
