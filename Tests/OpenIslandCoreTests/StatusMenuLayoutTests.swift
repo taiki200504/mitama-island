@@ -9,7 +9,8 @@ struct StatusMenuLayoutTests {
         shelfItemNames: [String] = [],
         waitingCount: Int = 0,
         timerRunningLabel: String? = nil,
-        clipboardIsEnabled: Bool = false
+        clipboardIsEnabled: Bool = false,
+        nowPlayingTrack: StatusMenuInputs.NowPlayingTrack? = nil
     ) -> StatusMenuInputs {
         StatusMenuInputs(
             isMuted: isMuted,
@@ -17,7 +18,8 @@ struct StatusMenuLayoutTests {
             shelfItemNames: shelfItemNames,
             waitingCount: waitingCount,
             timerRunningLabel: timerRunningLabel,
-            clipboardIsEnabled: clipboardIsEnabled
+            clipboardIsEnabled: clipboardIsEnabled,
+            nowPlayingTrack: nowPlayingTrack
         )
     }
 
@@ -166,5 +168,25 @@ struct StatusMenuLayoutTests {
             .settings,
             .quit,
         ])
+    }
+
+    // MARK: - Now playing
+
+    @Test("Nothing playing means no now-playing row at all")
+    func noTrackMeansNoRow() {
+        let entries = StatusMenuLayout.entries(for: inputs())
+        #expect(!entries.contains { if case .nowPlayingTrack = $0 { true } else { false } })
+    }
+
+    @Test("A track adds its row right after the timer section")
+    func trackAddsRowAfterTimer() {
+        let entries = StatusMenuLayout.entries(
+            for: inputs(nowPlayingTrack: .init(title: "Song", isPlaying: true))
+        )
+        #expect(entries.contains(.nowPlayingTrack(title: "Song", isPlaying: true)))
+
+        let timerIndex = entries.firstIndex { if case .startTimer = $0 { true } else { false } }
+        let trackIndex = entries.firstIndex { if case .nowPlayingTrack = $0 { true } else { false } }
+        #expect(timerIndex != nil && trackIndex != nil && timerIndex! < trackIndex!)
     }
 }
