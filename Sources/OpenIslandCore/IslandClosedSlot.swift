@@ -164,21 +164,3 @@ public enum IslandClosedArbiter {
         return nil
     }
 }
-
-/// What tapping the closed pill should do, given whatever body it is
-/// currently showing.
-///
-/// A meeting that just started and carries a join link is the one body worth
-/// a shortcut: everything else already opens the island the way it always
-/// has, because there's nowhere more useful for the tap to go.
-public enum IslandClosedClickAction: Equatable, Sendable {
-    case open(URL)
-    case expand
-
-    public static func decide(body: IslandClosedBody?) -> IslandClosedClickAction {
-        if case .eventStarted(_, _, _, let url?) = body {
-            return .open(url)
-        }
-        return .expand
-    }
-}

@@ -1255,7 +1255,7 @@ final class AppModel {
             )
         }
         ambient.nextEvent = { [weak self] in self?.calendar.band }
-        ambient.currentEvent = { [weak self] in self?.calendar.current }
+        ambient.currentEvent = { [weak self] in self?.calendar.current() }
         ambient.timer = { [weak self] in self?.focusTimer.state ?? .idle }
         ambient.onDismiss = { [weak self] in self?.idle.markActive() }
         idle.onTick = { [weak self] seconds in self?.considerAmbientBoard(idleFor: seconds) }
@@ -1349,13 +1349,17 @@ final class AppModel {
     /// The calendar entry happening right now, if the setting that watches
     /// for one is on. Read by the opened island's join bar and the ambient
     /// board — both want the same fact `islandClosedContent` already has.
-    var currentCalendarEvent: UpcomingCalendarEvent.Current? { calendar.current }
+    var currentCalendarEvent: UpcomingCalendarEvent.Current? { calendar.current() }
 
     /// A calendar entry just starting, turned into the plain value the
     /// arbiter needs — nil when the alert setting is off, even if the
-    /// watcher itself still has a `current` entry in hand.
-    private var liveClosedEventStarted: IslandClosedInputs.EventStarted? {
-        guard settings.display.alertsWhenEventStarts, let current = calendar.current else { return nil }
+    /// watcher itself still has a `current` entry in hand for some other
+    /// `now`. Takes `now` rather than defaulting it so it agrees with
+    /// whatever moment `islandClosedContent(now:)` was asked about — an
+    /// ended meeting has to disappear from the body the instant `now`
+    /// passes its `endsAt`, not only at the next five-minute refresh.
+    private func liveClosedEventStarted(at now: Date) -> IslandClosedInputs.EventStarted? {
+        guard settings.display.alertsWhenEventStarts, let current = calendar.current(at: now) else { return nil }
         return IslandClosedInputs.EventStarted(
             title: current.title,
             startedAt: current.startsAt,
@@ -1381,12 +1385,6 @@ final class AppModel {
         )
     }
 
-    /// What tapping the closed pill should do right now — expand, the same as
-    /// always, unless the body is a just-started meeting with a join link.
-    func closedPillTapAction(now: Date = .now) -> IslandClosedClickAction {
-        IslandClosedClickAction.decide(body: islandClosedContent(now: now).body)
-    }
-
     /// The closed island's one body slot and one trailing accessory, decided
     /// fresh from whatever is true right now. `IslandClosedArbiter` owns the
     /// priority order; this only turns live state into the plain values it
@@ -1403,7 +1401,7 @@ final class AppModel {
         let inputs = IslandClosedInputs(
             mitamaUrgent: urgent,
             waiting: waiting,
-            eventStarted: liveClosedEventStarted,
+            eventStarted: liveClosedEventStarted(at: now),
             nextEvent: calendar.band,
             showsNextEvent: settings.display.showsNextEvent,
             timer: focusTimerAccessoryInput(now: now),

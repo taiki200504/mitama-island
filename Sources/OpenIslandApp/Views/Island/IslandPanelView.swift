@@ -207,15 +207,10 @@ struct IslandPanelView: View {
         }
         .onTapGesture {
             guard model.notchStatus != .opened else { return }
-            switch model.closedPillTapAction() {
-            case .open(let url):
-                // A meeting that just started and carries a join link is the
-                // one body worth a shortcut — everywhere else, tapping the
-                // closed pill still just opens the island.
-                NSWorkspace.shared.open(url)
-            case .expand:
-                model.notchOpen(reason: .click)
-            }
+            // A just-started meeting's join link is only ever offered from
+            // the opened island's join bar — the closed pill always just
+            // opens, the same as every other body it can show.
+            model.notchOpen(reason: .click)
         }
     }
 

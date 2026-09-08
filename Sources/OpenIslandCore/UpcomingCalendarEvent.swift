@@ -116,12 +116,14 @@ public enum UpcomingCalendarEvent: Sendable {
     /// entry with no real start time isn't "in progress" in a way worth
     /// interrupting the closed island for. Two overlapping entries pick
     /// whichever started first — the one that has had the longer claim on
-    /// the moment.
+    /// the moment. Two that started at the same instant fall back to title
+    /// order, so the pick is deterministic rather than following whatever
+    /// order EventKit happened to hand back.
     public static func current(for events: [Event], now: Date = .now) -> Current? {
         let inProgress = events
             .filter { !$0.isAllDay }
             .filter { $0.startsAt <= now && now < $0.endsAt }
-            .sorted { $0.startsAt < $1.startsAt }
+            .sorted { ($0.startsAt, $0.title) < ($1.startsAt, $1.title) }
 
         guard let first = inProgress.first else { return nil }
         return Current(title: first.title, startsAt: first.startsAt, endsAt: first.endsAt, url: first.url)

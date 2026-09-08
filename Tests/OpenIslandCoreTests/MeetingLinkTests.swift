@@ -9,6 +9,7 @@ import Testing
             "https://us02web.zoom.us/j/123456789",
             "https://meet.google.com/abc-defg-hij",
             "https://teams.microsoft.com/l/meetup-join/abc",
+            "https://teams.live.com/meet/abc",
             "https://company.webex.com/meet/room",
         ]
     )
@@ -46,5 +47,29 @@ import Testing
     func firstMatchWins() {
         let url = MeetingLink.find(in: ["https://meet.google.com/aaa-bbbb-ccc", "https://zoom.us/j/111"])
         #expect(url?.host == "meet.google.com")
+    }
+
+    // MARK: - Negatives
+
+    @Test("A trusted name sitting in the path of an untrusted host doesn't count as that host")
+    func spoofedHostIsRejected() {
+        #expect(MeetingLink.find(in: ["https://evil.com/path/zoom.us/join"]) == nil)
+    }
+
+    @Test("Plain http is never trusted, even for a real host")
+    func httpSchemeIsRejected() {
+        #expect(MeetingLink.find(in: ["http://zoom.us/j/123"]) == nil)
+    }
+
+    @Test("Trailing sentence punctuation is stripped before the URL is parsed")
+    func trailingPunctuationIsStripped() {
+        let url = MeetingLink.find(in: ["Join here: https://zoom.us/j/123."])
+        #expect(url?.absoluteString == "https://zoom.us/j/123")
+    }
+
+    @Test("HTML-escaped noise stuck to the tail doesn't fool the host check")
+    func htmlEntityNoiseDoesNotFoolTheHostCheck() {
+        let url = MeetingLink.find(in: ["実施場所: &lt;https://zoom.us/j/999&gt; でお願いします"])
+        #expect(url?.host == "zoom.us")
     }
 }

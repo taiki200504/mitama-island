@@ -100,6 +100,18 @@ import Testing
         #expect(current?.title == "先に始まった")
     }
 
+    @Test("Two entries starting at the exact same instant break the tie by title")
+    func sameStartOverlapBreaksTieByTitle() {
+        let current = UpcomingCalendarEvent.current(
+            for: [
+                event("Zebra", inMinutes: -10, durationMinutes: 60),
+                event("Apple", inMinutes: -10, durationMinutes: 60),
+            ],
+            now: now
+        )
+        #expect(current?.title == "Apple")
+    }
+
     @Test("Nothing in progress means nil, even with something upcoming")
     func nothingInProgressYetIsNil() {
         #expect(UpcomingCalendarEvent.current(for: [event("これから", inMinutes: 5)], now: now) == nil)
