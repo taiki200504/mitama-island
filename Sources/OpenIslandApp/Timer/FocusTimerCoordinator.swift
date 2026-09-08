@@ -37,11 +37,9 @@ final class FocusTimerCoordinator {
         }
     }
 
-    deinit {
-        if let wakeObserver {
-            NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver)
-        }
-    }
+    // No deinit: the coordinator lives as long as the app (owned by AppModel),
+    // and touching the observer token from a nonisolated deinit is rejected
+    // under strict concurrency. The block observer is removed by the process.
 
     // MARK: - Controls
 
