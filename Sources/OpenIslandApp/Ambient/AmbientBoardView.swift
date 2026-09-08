@@ -1,4 +1,3 @@
-import AppKit
 import OpenIslandCore
 import SwiftUI
 
@@ -15,10 +14,7 @@ struct AmbientBoardView: View {
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
-            // ponytail: `IslandMotion` (a shared reduced-motion helper) hasn't
-            // landed on this branch yet — read the system flag directly until
-            // it does, then switch this one line over to it.
-            let reducesMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+            let reducesMotion = IslandMotion.reducesMotion
 
             ZStack {
                 // Dark enough to read white type over any wallpaper, light

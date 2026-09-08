@@ -1,4 +1,3 @@
-import AppKit
 import OpenIslandCore
 import SwiftUI
 
@@ -58,10 +57,7 @@ struct LinkstartView: View {
             let elapsed = context.date.timeIntervalSince(startedAt)
             let phase = LinkstartSequence.phase(at: elapsed)
             let theme = IslandThemes.current
-            // ponytail: `IslandMotion` (a shared reduced-motion helper) hasn't
-            // landed on this branch yet — read the system flag directly until
-            // it does, then switch this one line over to it.
-            let reducesMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+            let reducesMotion = IslandMotion.reducesMotion
 
             ZStack {
                 backdrop(elapsed: elapsed, reducesMotion: reducesMotion)
