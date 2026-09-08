@@ -253,6 +253,8 @@ enum HarnessArtifactRecorder {
         switch recognizedWindowKind(for: window) ?? "window" {
         case "overlay":
             baseName = "overlay"
+        case "linkstart":
+            baseName = "linkstart"
         default:
             baseName = "window-\(ordinal)"
         }
@@ -265,6 +267,8 @@ enum HarnessArtifactRecorder {
         switch recognizedWindowKind(for: window) ?? "window" {
         case "overlay":
             baseName = "overlay"
+        case "linkstart":
+            baseName = "linkstart"
         default:
             baseName = "window-\(ordinal)"
         }
@@ -283,6 +287,11 @@ enum HarnessArtifactRecorder {
             // instead of one overwriting the other.
             if window.contentView is NSHostingView<CompletionBannerView> {
                 return "completion-banner"
+            }
+            // The login sequence is also a full-screen borderless panel, told
+            // apart from the plain island overlay the same way.
+            if window.contentView is NSHostingView<LinkstartView> {
+                return "linkstart"
             }
             return window.frame.width >= 120 ? "overlay" : nil
         }

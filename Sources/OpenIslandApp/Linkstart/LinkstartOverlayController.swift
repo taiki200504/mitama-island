@@ -19,6 +19,11 @@ final class LinkstartOverlayController {
         case listening
         /// Running, from this moment.
         case playing(startedAt: Date)
+        /// Harness-only: frozen at this elapsed time rather than advancing
+        /// with the clock, so a screenshot always lands on the exact frame it
+        /// asked for instead of whatever the wall clock produced by the time
+        /// the capture callback happened to run.
+        case pinned(elapsed: TimeInterval)
     }
 
     private static let logger = Logger(subsystem: "com.mitama.island", category: "linkstart")
@@ -71,7 +76,6 @@ final class LinkstartOverlayController {
         guard !screens.isEmpty else { return }
         Self.logger.notice("Presenting across \(screens.count) screen(s)")
 
-        let mainScreen = NSScreen.main ?? screens[0]
         heard = nil
         // Say the words only if that was asked for and the microphone is
         // available; otherwise the key that got here is enough on its own.
@@ -81,6 +85,43 @@ final class LinkstartOverlayController {
         let canListen = waitsForPhrase && voice != nil && VoiceCommandSession.canListenWithoutAsking
         stage = canListen ? .listening : .playing(startedAt: Date())
 
+        presentPanels()
+
+        if case .listening = stage {
+            listenForPhrase()
+        } else {
+            scheduleDismissalAfterSequence()
+            playSoundtrack()
+        }
+    }
+
+    /// Presents the sequence already partway through, for the harness only:
+    /// skips the phrase-listening step entirely and pins the picture — and
+    /// fast-forwards any cue that would already have played — to
+    /// `elapsedOverride` seconds in, so a screenshot doesn't have to wait out
+    /// several real seconds of animation to find something worth capturing.
+    func presentForHarness(elapsedOverride: TimeInterval) {
+        dismiss()
+
+        let screens = NSScreen.screens
+        guard !screens.isEmpty else { return }
+        Self.logger.notice("Presenting (harness) across \(screens.count) screen(s), pinned at \(elapsedOverride)s")
+
+        heard = nil
+        stage = .pinned(elapsed: elapsedOverride)
+        presentPanels()
+
+        scheduleDismissalAfterSequence()
+        playSoundtrack(elapsedAtStart: elapsedOverride)
+    }
+
+    /// Builds and shows one panel per screen, and brings the app forward if
+    /// it needs to be in order to receive the keystroke that dismisses them.
+    /// Shared by `present()` and `presentForHarness(elapsedOverride:)`, which
+    /// differ only in how `stage` gets set before this runs.
+    private func presentPanels() {
+        let screens = NSScreen.screens
+        let mainScreen = NSScreen.main ?? screens[0]
         panels = screens.map { screen in
             makePanel(
                 on: screen,
@@ -101,13 +142,6 @@ final class LinkstartOverlayController {
         if !NSApp.isActive {
             returnFocusTo = NSWorkspace.shared.frontmostApplication
             NSApp.activate()
-        }
-
-        if case .listening = stage {
-            listenForPhrase()
-        } else {
-            scheduleDismissalAfterSequence()
-            playSoundtrack()
         }
     }
 
@@ -156,16 +190,24 @@ final class LinkstartOverlayController {
     /// `docs/sound-design.md`), played directly by name rather than through
     /// `NotificationSoundEvent`: the sequence is not a notification and its
     /// three sounds are a fixed triad, not something anyone reassigns.
-    private func playSoundtrack() {
+    ///
+    /// `elapsedAtStart` is 0 for a normal play — every cue is still ahead, so
+    /// this behaves exactly as before. `presentForHarness` passes the pinned
+    /// elapsed time instead: any cue at or before that point fires at once,
+    /// so a screenshot taken moments later still finds the log it needs,
+    /// rather than waiting out several real seconds it does not have.
+    private func playSoundtrack(elapsedAtStart: TimeInterval = 0) {
         soundtrack?.cancel()
         guard !soundsAreSuppressed() else { return }
 
         soundtrack = Task { [weak self] in
-            var previousAt: TimeInterval = 0
+            var previousAt: TimeInterval = elapsedAtStart
             for step in LinkstartSequence.cueSchedule {
                 guard !Task.isCancelled, self != nil else { return }
-                try? await Task.sleep(for: .seconds(step.at - previousAt))
-                previousAt = step.at
+                if step.at > previousAt {
+                    try? await Task.sleep(for: .seconds(step.at - previousAt))
+                }
+                previousAt = max(previousAt, step.at)
                 guard !Task.isCancelled, let self else { return }
                 // Re-checked here rather than trusting the guard above: quiet
                 // hours starting, or the speaker button being hit, partway

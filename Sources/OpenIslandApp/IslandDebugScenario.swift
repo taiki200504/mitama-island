@@ -17,6 +17,11 @@ struct IslandDebugSnapshot {
     /// The idle board covers every screen, so a scenario has to ask for it the
     /// same way the banner does.
     var presentsAmbientBoard = false
+    /// The login sequence is its own full-screen panel too, pinned partway
+    /// through so the harness has something stable to capture rather than
+    /// waiting out several real seconds of animation.
+    var presentsLinkstart = false
+    var linkstartElapsedOverride: TimeInterval = 0
 }
 
 enum IslandDebugScenario: String, CaseIterable, Identifiable {
@@ -31,6 +36,7 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
     case completionBanner
     case longQuestionCard
     case ambientBoard
+    case linkstart
 
     var id: String { rawValue }
 
@@ -60,6 +66,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Long Question Card"
         case .ambientBoard:
             "Idle Board"
+        case .linkstart:
+            "Login Sequence"
         }
     }
 
@@ -87,6 +95,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Many long options: the list scrolls and the submit button stays put."
         case .ambientBoard:
             "The screen the machine shows while it is being left alone."
+        case .linkstart:
+            "The full-screen sequence that runs before the island lets you in, paused partway through."
         }
     }
 
@@ -249,6 +259,24 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                 sessions: [recent, stale],
                 selectedSessionID: recent.id,
                 presentsAmbientBoard: true
+            )
+
+        case .linkstart:
+            let sessions = DebugSessionFactory.listSessions(now: now)
+            return IslandDebugSnapshot(
+                title: title,
+                summary: summary,
+                previewHeight: 78,
+                notchStatus: .closed,
+                notchOpenReason: nil,
+                islandSurface: .sessionList(),
+                sessions: sessions,
+                selectedSessionID: sessions.first?.id,
+                presentsLinkstart: true,
+                // Into the first sense's confirmation window: enough of the
+                // opening burst and calibration flash have already passed
+                // that there is something worth a screenshot.
+                linkstartElapsedOverride: 3.5
             )
         }
     }

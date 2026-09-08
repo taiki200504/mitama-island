@@ -2010,6 +2010,14 @@ final class AppModel {
             ambient.present()
         }
 
+        if snapshot.presentsLinkstart {
+            // Also its own full-screen panel. Pinned partway through rather
+            // than started fresh, so a screenshot doesn't have to wait out
+            // several real seconds of animation to find something worth
+            // capturing.
+            linkstart.presentForHarness(elapsedOverride: snapshot.linkstartElapsedOverride)
+        }
+
         if let banner = snapshot.completionBanner {
             // The same open handler production uses, so what the harness
             // captures is what ships — including the affordance that says the
