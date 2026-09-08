@@ -220,7 +220,12 @@ final class CameraActivationSession {
         faceCheckSession = session
         queue.async { session.startRunning() }
 
-        faceCheckTimeout = Task { [weak self] in
+        // Explicitly `@MainActor`, matching the Vision callback in
+        // `makeFaceCheckSession` below, so every mutation of
+        // `faceCheckSession`/`faceDetector`/`faceCheckTimeout` — from the
+        // timeout, the callback, and `endFaceCheck` itself — happens on the
+        // same actor with no ambiguity for the strict-concurrency checker.
+        faceCheckTimeout = Task { @MainActor [weak self] in
             try? await Task.sleep(for: .seconds(maxDuration))
             guard !Task.isCancelled else { return }
             self?.endFaceCheck()
@@ -256,11 +261,14 @@ final class CameraActivationSession {
                 self?.endFaceCheck()
             }
         }
-        faceDetector = detector
         output.setSampleBufferDelegate(detector, queue: queue)
 
+        // Only retained once the output actually joins the session — holding
+        // it on a failed attempt would leave `faceDetector` pointing at a
+        // detector wired to nothing, wrongly implying a face check is live.
         guard session.canAddOutput(output) else { return nil }
         session.addOutput(output)
+        faceDetector = detector
         return session
     }
 

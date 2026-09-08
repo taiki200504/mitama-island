@@ -1912,15 +1912,14 @@ final class AppModel {
         // glyph, and only if the answer arrives before the ring has landed.
         cameraActivation.beginFaceCheck(maxDuration: 2) { [weak self] in
             guard let self, Date.now.timeIntervalSince(startedAt) < LockScanSequence.confirmedAt else { return }
-            self.overlay.presentSneakPeek(
-                IslandSneakPeek(
-                    kind: .lockScan,
-                    text: name,
-                    icon: "face.smiling",
-                    gauge: nil,
-                    until: until
-                )
-            )
+            // Swaps the glyph on the peek already showing rather than
+            // re-presenting a new one — `presentSneakPeek` treats every call
+            // as a fresh candidate under `IslandSneakPeekPolicy`, which has
+            // no reason to exist for changing one field of what is already
+            // on screen.
+            self.overlay.updateSneakPeek(where: .lockScan) { peek in
+                IslandSneakPeek(kind: peek.kind, text: peek.text, icon: "face.smiling", gauge: peek.gauge, until: peek.until)
+            }
         }
     }
 

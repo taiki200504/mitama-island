@@ -360,6 +360,20 @@ final class OverlayUICoordinator {
         }
     }
 
+    /// Mutates the currently showing sneak peek in place, keeping `until`
+    /// (and the expiry task already scheduled for it) untouched — unlike
+    /// `presentSneakPeek`, which treats every call as a fresh candidate
+    /// competing under `IslandSneakPeekPolicy`. Re-offering a `.lockScan`
+    /// peek a second time just to swap its icon competes at equal priority
+    /// against itself and depends on state (`notchStatus`, quiet scenes)
+    /// that has nothing to do with an icon swap; this bypasses all of that.
+    ///
+    /// No-op unless a peek of `kind` is currently showing.
+    func updateSneakPeek(where kind: IslandSneakPeekKind, _ transform: (IslandSneakPeek) -> IslandSneakPeek) {
+        guard let current = sneakPeek, current.kind == kind else { return }
+        sneakPeek = transform(current)
+    }
+
     private func showSneakPeek(_ peek: IslandSneakPeek, now: Date) {
         sneakPeek = peek
         sneakPeekExpiryTask?.cancel()
@@ -367,7 +381,15 @@ final class OverlayUICoordinator {
         let delay = max(0, peek.until.timeIntervalSince(now))
         sneakPeekExpiryTask = Task { @MainActor [weak self] in
             try? await Task.sleep(for: .seconds(delay))
-            guard let self, !Task.isCancelled, self.sneakPeek == peek else { return }
+            // Compares by `kind` + `until` rather than full equality so that
+            // `updateSneakPeek` swapping the icon or text mid-flight (the
+            // lock-scan face glyph) doesn't make this guard fail forever and
+            // leave a peek that never expires — `kind`/`until` are exactly
+            // the two fields that identify "the same showing", and neither
+            // one changes across an in-place update.
+            guard let self, !Task.isCancelled,
+                  let showing = self.sneakPeek, showing.kind == peek.kind, showing.until == peek.until
+            else { return }
             self.sneakPeek = nil
             if let pending = self.pendingSneakPeek {
                 self.pendingSneakPeek = nil

@@ -96,4 +96,58 @@ struct OverlayUICoordinatorSneakPeekTests {
 
         #expect(coordinator.sneakPeek == nil)
     }
+
+    @Test("updateSneakPeek mutates the showing peek in place, leaving `until` untouched")
+    func updateSneakPeekMutatesInPlace() {
+        let coordinator = OverlayUICoordinator()
+        let until = Date.now.addingTimeInterval(5)
+        coordinator.presentSneakPeek(peek(.lockScan, text: "Taiki", until: until))
+
+        coordinator.updateSneakPeek(where: .lockScan) { current in
+            IslandSneakPeek(kind: current.kind, text: current.text, icon: "face.smiling", gauge: current.gauge, until: current.until)
+        }
+
+        #expect(coordinator.sneakPeek?.icon == "face.smiling")
+        #expect(coordinator.sneakPeek?.text == "Taiki")
+        #expect(coordinator.sneakPeek?.until == until)
+    }
+
+    @Test("updateSneakPeek does nothing when the showing peek is a different kind")
+    func updateSneakPeekIsNoOpForWrongKind() {
+        let coordinator = OverlayUICoordinator()
+        let showing = peek(.hudGauge, until: Date.now.addingTimeInterval(5))
+        coordinator.presentSneakPeek(showing)
+
+        coordinator.updateSneakPeek(where: .lockScan) { current in
+            IslandSneakPeek(kind: current.kind, text: current.text, icon: "face.smiling", gauge: current.gauge, until: current.until)
+        }
+
+        #expect(coordinator.sneakPeek == showing)
+    }
+
+    @Test("updateSneakPeek does nothing when nothing is showing")
+    func updateSneakPeekIsNoOpWhenNothingShowing() {
+        let coordinator = OverlayUICoordinator()
+
+        coordinator.updateSneakPeek(where: .lockScan) { current in
+            IslandSneakPeek(kind: current.kind, text: current.text, icon: "face.smiling", gauge: current.gauge, until: current.until)
+        }
+
+        #expect(coordinator.sneakPeek == nil)
+    }
+
+    @Test("A peek updated in place still expires on schedule despite its content changing")
+    func updatedSneakPeekStillExpires() async throws {
+        let coordinator = OverlayUICoordinator()
+        let until = Date.now.addingTimeInterval(0.3)
+        coordinator.presentSneakPeek(peek(.lockScan, text: "Taiki", until: until))
+
+        coordinator.updateSneakPeek(where: .lockScan) { current in
+            IslandSneakPeek(kind: current.kind, text: current.text, icon: "face.smiling", gauge: current.gauge, until: current.until)
+        }
+
+        try await poll(timeout: .seconds(2)) { coordinator.sneakPeek == nil }
+
+        #expect(coordinator.sneakPeek == nil)
+    }
 }

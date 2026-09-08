@@ -16,11 +16,14 @@ import Observation
 /// swapped for a plain, private one in tests rather than posting onto the
 /// real system-wide center.
 ///
-/// No `queue:` is given to `addObserver` — both distributed notifications and
-/// a plain center's synchronous default deliver on the thread that is
-/// already pumping the run loop that registered for them, which for an
-/// AppKit app is the main thread. `MainActor.assumeIsolated` below is only
-/// bridging that fact across to the type system, not asking for a hop.
+/// `queue: .main` asks the center to deliver on the main queue rather than
+/// whatever thread happens to be pumping distributed notifications — that is
+/// usually, but not guaranteed to be, the main thread, and `MainActor
+/// .assumeIsolated` on an unguaranteed thread is a crash waiting for the one
+/// time it lands elsewhere. The block still isn't statically MainActor code
+/// (`addObserver`'s handler is a plain, non-isolated closure), so it hops
+/// explicitly with `Task { @MainActor in … }` rather than asserting isolation
+/// it cannot prove.
 @MainActor
 @Observable
 final class ScreenLockWatcher {
@@ -44,14 +47,14 @@ final class ScreenLockWatcher {
     func start() {
         guard observers.isEmpty else { return }
         observers = [
-            center.addObserver(forName: Self.lockedName, object: nil, queue: nil) { [weak self] _ in
-                MainActor.assumeIsolated {
+            center.addObserver(forName: Self.lockedName, object: nil, queue: .main) { [weak self] _ in
+                Task { @MainActor in
                     self?.isLocked = true
                     self?.onLocked?()
                 }
             },
-            center.addObserver(forName: Self.unlockedName, object: nil, queue: nil) { [weak self] _ in
-                MainActor.assumeIsolated {
+            center.addObserver(forName: Self.unlockedName, object: nil, queue: .main) { [weak self] _ in
+                Task { @MainActor in
                     // Guards against a duplicate unlock notification firing the
                     // greeting twice for one actual unlock — macOS is not
                     // guaranteed to post these two names in strict alternation.
