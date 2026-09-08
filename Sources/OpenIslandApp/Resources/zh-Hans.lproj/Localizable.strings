@@ -185,6 +185,7 @@
 "island.hint.installHooks" = "尚未安装任何代理 hook，会话不会触发事件 · 点击配置";
 "island.header.timer" = "计时器";
 "island.header.clipboard" = "剪贴板";
+"island.header.nowPlaying" = "正在播放";
 
 /* Island Panel - Session List */
 "island.sessionList.title" = "会话";
@@ -329,6 +330,12 @@
 "settings.clipboard.pastesOnSelect" = "选中时自动粘贴";
 "settings.clipboard.pastesOnSelect.help" = "默认关闭。开启后选中一项会向当前最前面的应用发送 ⌘V。";
 "settings.clipboard.pastesOnSelect.needsAccessibility" = "需要辅助功能权限。系统设置 → 隐私与安全性 → 辅助功能。";
+"settings.display.section.nowPlaying" = "正在播放";
+"settings.nowPlaying.enabled" = "显示正在播放的内容";
+"settings.nowPlaying.enabled.help" = "通过一个小型 Perl 辅助程序读取正在播放的曲目，没有遥测，没有网络请求。详见 docs/references/mediaremote-adapter.md。";
+"settings.nowPlaying.showsInClosedIsland" = "在灵动岛显示";
+"settings.nowPlaying.sneakPeekOnTrackChange" = "曲目变化时提醒";
+"settings.nowPlaying.adapterUnavailable" = "此 Mac 上 macOS 未授予正在播放信息的访问权限。";
 "settings.pending.completionCardSizing" = "完成卡片目前会根据内容自动确定高度。";
 "settings.pending.notchCalibration" = "需要刘海尺寸支持覆盖设置。";
 "settings.points.format" = "%@pt";
@@ -770,6 +777,7 @@
 "timer.sneakPeek.done" = "完成";
 "timer.sneakPeek.breakTime" = "休息";
 "timer.sneakPeek.restSeconds" = "休息 %d 秒";
+"nowPlaying.empty" = "没有正在播放的内容";
 
 "clipboard.title" = "剪贴板";
 "clipboard.empty" = "还没有复制过任何内容";
@@ -788,5 +796,7 @@
 "statusItem.timer.running" = "计时器：%@";
 "statusItem.timer.stop" = "停止计时器";
 "statusItem.clipboard.open" = "剪贴板…";
+"statusItem.nowPlaying.playing" = "正在播放：%@";
+"statusItem.nowPlaying.paused" = "已暂停：%@";
 "statusItem.shelf.header" = "暂存（%d）";
 "statusItem.settings" = "设置…";

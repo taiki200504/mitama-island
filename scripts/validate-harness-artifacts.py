@@ -559,6 +559,36 @@ def main() -> None:
             "clipboardSurface text values (file item)",
         )
 
+    elif scenario == "nowPlayingClosed":
+        # Same shape as closedAccessoryTimer: a waiting body and the
+        # now-playing accessory both visible at once.
+        if notch_status != "closed":
+            fail(f"expected closed notch for nowPlayingClosed, got {notch_status!r}")
+        require_frame_between(
+            overlay_frame,
+            width=(520, 780),
+            height=(35, 500),
+            context="nowPlayingClosed overlay frame",
+        )
+        if not any("CODEX" in value for value in text_values):
+            fail("nowPlayingClosed is missing the waiting agent")
+
+    elif scenario == "nowPlayingSurface":
+        if notch_status != "opened":
+            fail(f"expected opened notch for nowPlayingSurface, got {notch_status!r}")
+        if island_surface != "nowPlaying":
+            fail(f"expected the nowPlaying surface, got {island_surface!r}")
+        require_frame_between(
+            overlay_frame,
+            width=(520, 780),
+            height=(180, 460),
+            context="nowPlayingSurface overlay frame",
+        )
+        assert_contains_any(text_values, ["Demo Track"], "nowPlayingSurface text values")
+        assert_contains_any(text_values, ["Demo Artist"], "nowPlayingSurface text values")
+        if not any(re.fullmatch(r"\d:\d{2}", value) for value in text_values):
+            fail("nowPlayingSurface is missing its M:SS elapsed/duration readout")
+
     else:
         fail(f"unsupported scenario {scenario!r}")
 

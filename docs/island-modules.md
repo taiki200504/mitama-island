@@ -118,8 +118,10 @@ where they land.
 
 - **Timer** — `IslandClosedInputs.timer` (remaining minutes + label) for the
   accessory; a `timerDone` sneak peek when it finishes.
-- **Now playing** — `IslandClosedInputs.nowPlayingIsPlaying` for the
-  accessory; a `trackChanged` sneak peek when the track changes.
+- **Now playing** — `IslandClosedInputs.nowPlaying` (`isPlaying` +
+  `artworkThumbnailPNG`) for the accessory; a `trackChanged` sneak peek when
+  the track changes. Implemented via `MediaRemoteAdapterProcess` — see
+  `docs/references/mediaremote-adapter.md`.
 - **Calendar (event started)** — `IslandClosedInputs.eventStarted` for the
   body; an `eventStarting` sneak peek at the moment it begins.
 - **Lock scan** — a `lockScan` sneak peek only; it has no accessory or body
@@ -172,10 +174,14 @@ store itself performed is never re-recorded as a new external one.
 
 ## What this PR does not do
 
-- No real now-playing or lock-scan feature exists yet. `AppModel` exposes
-  `debugClosedAccessoryTimer` and the `IslandDebugScenario.closedAccessoryTimer`
-  / `.sneakPeekPop` harness fixtures purely to exercise the accessory and the
-  sneak-peek override ahead of those modules landing.
-- `IslandSurface.nowPlaying` still exists as an opened-content placeholder (a
-  bare `saoCaps` title) so the surface is reachable; its real content is a
-  later PR.
+- No real lock-scan feature exists yet. `AppModel` exposes the
+  `IslandDebugScenario.sneakPeekPop` harness fixture purely to exercise the
+  sneak-peek override ahead of that module landing.
+- Timer, clipboard, and now-playing all have real implementations now —
+  `FocusTimerCoordinator`, `ClipboardStore`, and `NowPlayingCoordinator` —
+  each still keeping its own `debugClosedAccessoryTimer` /
+  `debugClosedAccessoryNowPlaying` fixture for harness scenarios that pose
+  the accessory without the real thing running. Every `IslandSurface` case
+  (`.timer`, `.clipboard`, `.nowPlaying`) now has real opened content — none
+  of them are the bare `saoCaps` placeholder this section originally
+  described.

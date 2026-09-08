@@ -69,6 +69,18 @@ else
     echo "WARNING: SPM resource bundle not found at $spm_resource_bundle — app may crash on launch." >&2
 fi
 
+# Copy MediaRemoteAdapter.framework for Now Playing, if it has been fetched
+# and built (`zsh scripts/fetch-mediaremote-adapter.sh`). Optional: without
+# it the app still runs, Now Playing just reports itself unavailable. See
+# docs/references/mediaremote-adapter.md for why this can't be a pinned
+# binary download like Sparkle is.
+mediaremote_framework="$repo_root/vendor/mediaremote-adapter/build/MediaRemoteAdapter.framework"
+if [[ -d "$mediaremote_framework" ]]; then
+    cp -R "$mediaremote_framework" "$bundle_dir/Contents/Frameworks/"
+else
+    echo "NOTE: MediaRemoteAdapter.framework not found — run 'zsh scripts/fetch-mediaremote-adapter.sh' for Now Playing. Packaging continues without it." >&2
+fi
+
 chmod +x \
     "$bundle_dir/Contents/MacOS/OpenIslandApp" \
     "$bundle_dir/Contents/Helpers/OpenIslandHooks" \
@@ -183,6 +195,7 @@ else
 fi
 
 sparkle_fw="$bundle_dir/Contents/Frameworks/Sparkle.framework"
+mediaremote_fw="$bundle_dir/Contents/Frameworks/MediaRemoteAdapter.framework"
 
 timestamp_flag=(--timestamp)
 if [[ "${OPEN_ISLAND_SIGN_TIMESTAMP:-true}" != "true" ]]; then
@@ -205,6 +218,8 @@ if [[ -n "$signing_identity" ]]; then
             codesign --force --options runtime "${timestamp_flag[@]}" --sign "$signing_identity" "$sparkle_fw/Versions/B/Updater.app"
         codesign --force --options runtime "${timestamp_flag[@]}" --sign "$signing_identity" "$sparkle_fw"
     fi
+    [[ -d "$mediaremote_fw" ]] && \
+        codesign --force --options runtime "${timestamp_flag[@]}" --sign "$signing_identity" "$mediaremote_fw"
 
     codesign --force --options runtime "${timestamp_flag[@]}" --sign "$signing_identity" \
         "$bundle_dir/Contents/Helpers/OpenIslandHooks"
@@ -228,6 +243,7 @@ else
         done
         codesign --force --sign - "$sparkle_fw" 2>/dev/null || true
     fi
+    [[ -d "$mediaremote_fw" ]] && codesign --force --sign - "$mediaremote_fw" 2>/dev/null || true
     codesign --force --sign - "$bundle_dir/Contents/Helpers/OpenIslandHooks" 2>/dev/null || true
     codesign --force --sign - "$bundle_dir/Contents/Helpers/OpenIslandSetup" 2>/dev/null || true
     codesign --force --sign - "$bundle_dir" 2>/dev/null || true

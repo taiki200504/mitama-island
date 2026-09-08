@@ -15,6 +15,8 @@ struct AmbientBoardView: View {
     /// readout from this against the board's own once-a-second clock, the
     /// same way `nextEventRow` does from `event.startsAt`.
     var timer: FocusTimerState = .idle
+    /// `(title, artist)`, captured once at presentation like `timer` above.
+    var nowPlaying: (title: String, artist: String?)?
     let lang: LanguageManager
 
     var body: some View {
@@ -58,6 +60,11 @@ struct AmbientBoardView: View {
 
                     if let snapshot = timer.snapshot(at: context.date) {
                         timerRow(snapshot)
+                            .padding(.top, 8)
+                    }
+
+                    if let nowPlaying {
+                        nowPlayingRow(nowPlaying)
                             .padding(.top, 8)
                     }
 
@@ -153,6 +160,25 @@ struct AmbientBoardView: View {
             Text(lang.t("island.peek.inMinutes", snapshot.remainingMinutes))
                 .font(.islandMono(size: 14, weight: .medium))
                 .foregroundStyle(SAOGrammar.Palette.accentOrange.opacity(0.9))
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 11)
+        .background(V6Palette.paper.opacity(0.05), in: Capsule())
+    }
+
+    // MARK: - Now playing
+
+    private func nowPlayingRow(_ track: (title: String, artist: String?)) -> some View {
+        let text = track.artist.map { "\(track.title) — \($0)" } ?? track.title
+        return HStack(spacing: 10) {
+            Image(systemName: "music.note")
+                .font(.islandText(size: 12, weight: .semibold))
+                .foregroundStyle(V6Palette.paper.opacity(0.55))
+
+            Text(text)
+                .font(.islandMono(size: 13, weight: .medium))
+                .foregroundStyle(V6Palette.paper.opacity(0.72))
+                .lineLimit(1)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 11)

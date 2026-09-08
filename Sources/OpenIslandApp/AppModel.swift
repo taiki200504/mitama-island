@@ -539,6 +539,8 @@ final class AppModel {
     /// separate file, and `private` in Swift is file-scoped rather than
     /// type-scoped.
     @ObservationIgnored let pasteboardWatcher = PasteboardWatcher()
+    /// What's playing right now, read through the MediaRemote adapter.
+    let nowPlaying = NowPlayingCoordinator()
 
     /// Holds no microphone until the key is pressed with a card waiting.
     @ObservationIgnored let voiceAnswer: VoiceCommandSession
@@ -865,6 +867,7 @@ final class AppModel {
         startAmbientBoardIfEnabled()
         configureFocusTimer()
         configureClipboard()
+        configureNowPlaying()
 
         quietScenes.start()
         screenLockWatcher.onLocked = { [weak self] in
@@ -1264,6 +1267,10 @@ final class AppModel {
         ambient.nextEvent = { [weak self] in self?.calendar.band }
         ambient.currentEvent = { [weak self] in self?.calendar.current() }
         ambient.timer = { [weak self] in self?.focusTimer.state ?? .idle }
+        ambient.nowPlaying = { [weak self] in
+            guard let title = self?.nowPlaying.state?.title else { return nil }
+            return (title: title, artist: self?.nowPlaying.state?.artist)
+        }
         ambient.onDismiss = { [weak self] in self?.idle.markActive() }
         idle.onTick = { [weak self] seconds in self?.considerAmbientBoard(idleFor: seconds) }
     }
@@ -1294,6 +1301,22 @@ final class AppModel {
         }
     }
 
+    // MARK: - Now playing
+
+    /// Wires the now-playing coordinator to the overlay it posts its
+    /// "track changed" sneak peek through, then starts the adapter process
+    /// if the setting says it should be running. Safe to call even when the
+    /// framework was never vendored — `NowPlayingCoordinator.start()` just
+    /// reports itself unavailable in that case rather than failing.
+    private func configureNowPlaying() {
+        nowPlaying.overlay = overlay
+        nowPlaying.lang = lang
+        nowPlaying.settings = settings.nowPlaying
+        if settings.nowPlaying.enabled {
+            nowPlaying.start()
+        }
+    }
+
     /// The closed-island accessory's timer input: the real timer's own
     /// remaining time when one is running, falling back to whatever a
     /// harness scenario forced directly (`debugClosedAccessoryTimer`) so
@@ -1303,6 +1326,19 @@ final class AppModel {
             return IslandClosedInputs.Timer(remainingMinutes: snapshot.remainingMinutes, label: snapshot.label)
         }
         return debugClosedAccessoryTimer
+    }
+
+    /// The closed-island accessory's now-playing input, the same
+    /// real-state-falls-back-to-debug-fixture shape as the timer's.
+    private func nowPlayingAccessoryInput() -> IslandClosedInputs.NowPlaying? {
+        guard settings.nowPlaying.showsInClosedIsland else { return nil }
+        if let state = nowPlaying.state, state.isPlaying || state.title != nil {
+            return IslandClosedInputs.NowPlaying(
+                isPlaying: state.isPlaying,
+                artworkThumbnailPNG: nowPlaying.artworkThumbnail
+            )
+        }
+        return debugClosedAccessoryNowPlaying
     }
 
     /// Whether the machine being left alone should become a full screen.
@@ -1345,7 +1381,10 @@ final class AppModel {
             shelfItemNames: shelf.items.map(\.displayName),
             waitingCount: liveAttentionCount,
             timerRunningLabel: focusTimer.state.snapshot(at: .now)?.label,
-            clipboardIsEnabled: settings.clipboard.enabled
+            clipboardIsEnabled: settings.clipboard.enabled,
+            nowPlayingTrack: nowPlaying.state.flatMap { state in
+                state.title.map { StatusMenuInputs.NowPlayingTrack(title: $0, isPlaying: state.isPlaying) }
+            }
         )
     }
 
@@ -1353,6 +1392,11 @@ final class AppModel {
     /// when no real timer is running — a harness scenario sets this directly
     /// to exercise the accessory without starting `focusTimer` for real.
     var debugClosedAccessoryTimer: IslandClosedInputs.Timer?
+
+    /// Same reasoning as `debugClosedAccessoryTimer`, for the now-playing
+    /// accessory — a harness scenario sets this directly to exercise the
+    /// accessory without a real adapter process running.
+    var debugClosedAccessoryNowPlaying: IslandClosedInputs.NowPlaying?
 
     /// The calendar entry happening right now, if the setting that watches
     /// for one is on. Read by the opened island's join bar and the ambient
@@ -1413,9 +1457,7 @@ final class AppModel {
             nextEvent: calendar.band,
             showsNextEvent: settings.display.showsNextEvent,
             timer: focusTimerAccessoryInput(now: now),
-            // No now-playing feature exists yet — a later PR wires it from
-            // MediaRemote.
-            nowPlayingIsPlaying: nil,
+            nowPlaying: nowPlayingAccessoryInput(),
             // macOS lights the camera indicator for as long as the device
             // runs, and the island is the only thing that can say why.
             cameraIsWatching: cameraActivation.phase == .awaitingGesture,
@@ -2141,6 +2183,8 @@ final class AppModel {
         // this scenario poses one, so a previous scenario's timer never
         // bleeds into this one's screenshot.
         focusTimer.loadDebugState(snapshot.debugTimerState ?? .idle)
+        debugClosedAccessoryNowPlaying = snapshot.debugAccessoryNowPlaying
+        nowPlaying.loadDebugState(snapshot.debugNowPlayingState)
 
         // Exercises the real `CalendarWatcher.loadFixture` path: the closed
         // body, the opened island's join bar, and the ambient board all read

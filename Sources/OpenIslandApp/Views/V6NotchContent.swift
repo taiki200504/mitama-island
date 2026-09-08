@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import OpenIslandCore
 
@@ -658,8 +659,17 @@ struct IslandClosedAccessoryView: View {
                 Text("\(remainingMinutes)m")
                     .font(.islandMono(size: 11, weight: .semibold))
                     .foregroundStyle(V6Palette.paper.opacity(0.85))
-            case .nowPlaying(let isPlaying):
-                NowPlayingVisualiser(isPlaying: isPlaying)
+            case .nowPlaying(let isPlaying, let artworkThumbnailPNG):
+                HStack(spacing: 4) {
+                    if let artworkThumbnailPNG, let image = NSImage(data: artworkThumbnailPNG) {
+                        Image(nsImage: image)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 14, height: 14)
+                            .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
+                    }
+                    NowPlayingVisualiser(isPlaying: isPlaying)
+                }
             case .cameraWatching:
                 // The same glyph the peek band used to draw for this — macOS
                 // lights its own camera indicator for as long as the device
@@ -689,8 +699,8 @@ struct IslandClosedAccessoryView: View {
         switch accessory {
         case .timer(let remainingMinutes, _):
             return CGFloat("\(remainingMinutes)m".count) * charWidth
-        case .nowPlaying:
-            return 14
+        case .nowPlaying(_, let artworkThumbnailPNG):
+            return artworkThumbnailPNG != nil ? 14 + 4 + 14 : 14
         case .cameraWatching:
             return 11
         case .shelf(let count):

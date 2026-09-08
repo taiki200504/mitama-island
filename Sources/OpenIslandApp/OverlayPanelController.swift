@@ -710,10 +710,12 @@ final class OverlayPanelController {
         )
     }
 
-    /// Fixed floors for the placeholder surfaces — none of them measure their
-    /// own content yet, so this is what reserves the window's height until a
-    /// later PR gives each one real content to measure.
-    private static let nowPlayingPlaceholderHeight: CGFloat = 150
+    /// Fixed floors for surfaces that don't measure their own content yet.
+    /// `.nowPlaying` and `.timer` have real content now, but neither
+    /// measures itself either — this is what reserves the window's height
+    /// for them too, sized to their tallest state (artwork + seek bar +
+    /// transport for now-playing; the ring + digits + presets for timer).
+    private static let nowPlayingContentHeight: CGFloat = 280
     private static let timerPlaceholderHeight: CGFloat = 190
     private static let clipboardPlaceholderHeight: CGFloat = 360
 
@@ -721,7 +723,7 @@ final class OverlayPanelController {
         let maxHeight = CGFloat(model.settings.display.maxPanelHeight)
         switch model.islandSurface {
         case .nowPlaying:
-            return min(Self.nowPlayingPlaceholderHeight, maxHeight)
+            return min(Self.nowPlayingContentHeight, maxHeight)
         case .timer:
             return min(Self.timerPlaceholderHeight, maxHeight)
         case .clipboard:

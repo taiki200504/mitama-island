@@ -29,7 +29,11 @@ public enum IslandClosedAccessory: Equatable, Hashable, Sendable {
     /// Minutes only — a closed pill that re-ticks every second to show
     /// seconds would redraw a background app sixty times a minute.
     case timer(remainingMinutes: Int, label: String)
-    case nowPlaying(isPlaying: Bool)
+    /// `artworkThumbnailPNG` is whatever image data the source app handed
+    /// MediaRemote, already small — the accessory only ever draws it at
+    /// 14pt. `nil` while artwork hasn't loaded yet, which the visualiser
+    /// alone still communicates "something is playing" for.
+    case nowPlaying(isPlaying: Bool, artworkThumbnailPNG: Data? = nil)
     /// macOS lights its own camera indicator for as long as the device runs;
     /// this is the island's only way to say why.
     case cameraWatching
@@ -67,13 +71,23 @@ public struct IslandClosedInputs: Sendable {
         }
     }
 
+    public struct NowPlaying: Equatable, Hashable, Sendable {
+        public let isPlaying: Bool
+        public let artworkThumbnailPNG: Data?
+
+        public init(isPlaying: Bool, artworkThumbnailPNG: Data? = nil) {
+            self.isPlaying = isPlaying
+            self.artworkThumbnailPNG = artworkThumbnailPNG
+        }
+    }
+
     public var mitamaUrgent: IslandPeekBand.Content?
     public var waiting: IslandPeekBand.Content?
     public var eventStarted: EventStarted?
     public var nextEvent: UpcomingCalendarEvent.Band?
     public var showsNextEvent: Bool
     public var timer: Timer?
-    public var nowPlayingIsPlaying: Bool?
+    public var nowPlaying: NowPlaying?
     public var cameraIsWatching: Bool
     public var shelfCount: Int
     public var now: Date
@@ -85,7 +99,7 @@ public struct IslandClosedInputs: Sendable {
         nextEvent: UpcomingCalendarEvent.Band? = nil,
         showsNextEvent: Bool = false,
         timer: Timer? = nil,
-        nowPlayingIsPlaying: Bool? = nil,
+        nowPlaying: NowPlaying? = nil,
         cameraIsWatching: Bool = false,
         shelfCount: Int = 0,
         now: Date = .now
@@ -96,7 +110,7 @@ public struct IslandClosedInputs: Sendable {
         self.nextEvent = nextEvent
         self.showsNextEvent = showsNextEvent
         self.timer = timer
-        self.nowPlayingIsPlaying = nowPlayingIsPlaying
+        self.nowPlaying = nowPlaying
         self.cameraIsWatching = cameraIsWatching
         self.shelfCount = shelfCount
         self.now = now
@@ -152,8 +166,8 @@ public enum IslandClosedArbiter {
         if let timer = inputs.timer {
             return .timer(remainingMinutes: timer.remainingMinutes, label: timer.label)
         }
-        if let isPlaying = inputs.nowPlayingIsPlaying {
-            return .nowPlaying(isPlaying: isPlaying)
+        if let nowPlaying = inputs.nowPlaying {
+            return .nowPlaying(isPlaying: nowPlaying.isPlaying, artworkThumbnailPNG: nowPlaying.artworkThumbnailPNG)
         }
         if inputs.cameraIsWatching {
             return .cameraWatching

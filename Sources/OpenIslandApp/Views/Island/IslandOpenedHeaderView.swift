@@ -70,6 +70,18 @@ extension IslandPanelView {
                 }
             }
 
+            if model.settings.nowPlaying.enabled {
+                headerIconButton(
+                    systemName: "music.note",
+                    tint: model.nowPlaying.state?.isPlaying == true
+                        ? SAOGrammar.Palette.accentOrange
+                        : V6Palette.paper.opacity(0.62),
+                    accessibilityLabel: model.lang.t("island.header.nowPlaying")
+                ) {
+                    model.notchOpen(reason: .click, surface: .nowPlaying)
+                }
+            }
+
             headerIconButton(
                 systemName: model.isSoundMuted ? "speaker.slash.fill" : "speaker.wave.2.fill",
                 tint: model.isSoundMuted

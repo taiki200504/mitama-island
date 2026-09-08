@@ -109,6 +109,13 @@ final class StatusItemController: NSObject, NSMenuDelegate {
                 addItem(model.lang.t("statusItem.clipboard.open"), to: menu) { [weak model] in
                     model?.notchOpen(reason: .click, surface: .clipboard)
                 }
+            case .nowPlayingTrack(let title, let isPlaying):
+                addItem(
+                    model.lang.t(isPlaying ? "statusItem.nowPlaying.playing" : "statusItem.nowPlaying.paused", title),
+                    to: menu
+                ) { [weak model] in
+                    model?.nowPlaying.togglePlayPause()
+                }
             case .shelfHeader(let count):
                 let header = NSMenuItem(
                     title: model.lang.t("statusItem.shelf.header", count),

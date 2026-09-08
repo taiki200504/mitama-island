@@ -12,6 +12,7 @@ struct DisplaySettingsPane: View {
     private var lockScan: LockScanSettings { model.settings.lockScan }
     private var timer: TimerSettings { model.settings.timer }
     private var clipboard: ClipboardSettings { model.settings.clipboard }
+    private var nowPlaying: NowPlayingSettings { model.settings.nowPlaying }
 
     var body: some View {
         SettingsPane(tab: .display) {
@@ -23,6 +24,7 @@ struct DisplaySettingsPane: View {
             shelfSection
             timerSection
             clipboardSection
+            nowPlayingSection
             diagnosticsSection
         }
     }
@@ -406,6 +408,39 @@ struct DisplaySettingsPane: View {
 
     private var pastesOnSelectAvailability: FeatureAvailability {
         AXIsProcessTrusted() ? .ready : .unsupported(reasonKey: "settings.clipboard.pastesOnSelect.needsAccessibility")
+    }
+
+    // MARK: Now playing
+
+    private var nowPlayingSection: some View {
+        Section(lang.t("settings.display.section.nowPlaying")) {
+            SettingsToggleRow(
+                title: lang.t("settings.nowPlaying.enabled"),
+                help: lang.t("settings.nowPlaying.enabled.help"),
+                availability: model.nowPlaying.isAvailable
+                    ? .ready
+                    : .unsupported(reasonKey: "settings.nowPlaying.adapterUnavailable"),
+                isOn: Binding(
+                    get: { nowPlaying.enabled },
+                    set: { isOn in
+                        nowPlaying.enabled = isOn
+                        if isOn {
+                            model.nowPlaying.start()
+                        } else {
+                            model.nowPlaying.stop()
+                        }
+                    }
+                )
+            )
+            SettingsToggleRow(
+                title: lang.t("settings.nowPlaying.showsInClosedIsland"),
+                isOn: Binding(get: { nowPlaying.showsInClosedIsland }, set: { nowPlaying.showsInClosedIsland = $0 })
+            )
+            SettingsToggleRow(
+                title: lang.t("settings.nowPlaying.sneakPeekOnTrackChange"),
+                isOn: Binding(get: { nowPlaying.sneakPeekOnTrackChange }, set: { nowPlaying.sneakPeekOnTrackChange = $0 })
+            )
+        }
     }
 
     // MARK: Diagnostics

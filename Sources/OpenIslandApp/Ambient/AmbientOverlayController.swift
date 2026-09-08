@@ -32,6 +32,10 @@ final class AmbientOverlayController {
     /// keep recomputing the readout against its own once-a-second clock for
     /// as long as it stays up.
     @ObservationIgnored var timer: () -> FocusTimerState = { .idle }
+    /// `(title, artist)` for whatever is currently playing, or `nil` — the
+    /// same "ask fresh at presentation time" reasoning as `timer()`, since
+    /// the board can stay up long after this closure was captured.
+    @ObservationIgnored var nowPlaying: () -> (title: String, artist: String?)? = { nil }
     @ObservationIgnored var lang: LanguageManager = .shared
     /// Called when the board goes away, so the idle count restarts from zero
     /// instead of re-presenting on the next tick.
@@ -54,6 +58,7 @@ final class AmbientOverlayController {
                     nextEvent: nextEvent(),
                     currentEvent: currentEvent(),
                     timer: timer(),
+                    nowPlaying: nowPlaying(),
                     lang: lang
                 ),
                 onDismiss: { [weak self] in self?.dismiss() }

@@ -186,6 +186,7 @@
 "island.hint.installHooks" = "フックが未導入です。このままではイベントを受け取れません。タップして設定します。";
 "island.header.timer" = "タイマー";
 "island.header.clipboard" = "クリップボード";
+"island.header.nowPlaying" = "再生中";
 
 /* Island Panel - Session List */
 "island.sessionList.title" = "セッション";
@@ -329,6 +330,12 @@
 "settings.clipboard.pastesOnSelect" = "選ぶと自動で貼り付ける";
 "settings.clipboard.pastesOnSelect.help" = "既定はオフ。オンにすると項目を選んだ時に手前のアプリへ⌘Vも送ります。";
 "settings.clipboard.pastesOnSelect.needsAccessibility" = "アクセシビリティの許可が必要です。システム設定 → プライバシーとセキュリティ → アクセシビリティ。";
+"settings.display.section.nowPlaying" = "再生中の曲";
+"settings.nowPlaying.enabled" = "再生中の曲を表示";
+"settings.nowPlaying.enabled.help" = "小さなPerlヘルパー経由で再生中の曲を読み取ります。通信も送信もありません。詳細は docs/references/mediaremote-adapter.md。";
+"settings.nowPlaying.showsInClosedIsland" = "閉じた島に表示";
+"settings.nowPlaying.sneakPeekOnTrackChange" = "曲が変わったら知らせる";
+"settings.nowPlaying.adapterUnavailable" = "このMacではmacOSが再生中情報へのアクセスを許可していません。";
 "settings.pending.completionCardSizing" = "完了カードは今は内容に合わせて高さが決まります。";
 "settings.pending.notchCalibration" = "ノッチの寸法を上書きできる作りが要ります。";
 "settings.points.format" = "%@pt";
@@ -770,6 +777,7 @@
 "timer.sneakPeek.done" = "完了";
 "timer.sneakPeek.breakTime" = "休憩";
 "timer.sneakPeek.restSeconds" = "休憩 %d秒";
+"nowPlaying.empty" = "再生中の曲はありません";
 
 "clipboard.title" = "クリップボード";
 "clipboard.empty" = "まだ何もコピーしていません";
@@ -788,5 +796,7 @@
 "statusItem.timer.running" = "タイマー: %@";
 "statusItem.timer.stop" = "タイマーを停止";
 "statusItem.clipboard.open" = "クリップボード…";
+"statusItem.nowPlaying.playing" = "再生中: %@";
+"statusItem.nowPlaying.paused" = "一時停止中: %@";
 "statusItem.shelf.header" = "置いてあるもの（%d）";
 "statusItem.settings" = "設定…";

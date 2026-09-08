@@ -185,6 +185,7 @@
 "island.hint.installHooks" = "No agent hooks installed — sessions won't surface events. Tap to set up.";
 "island.header.timer" = "Timer";
 "island.header.clipboard" = "Clipboard";
+"island.header.nowPlaying" = "Now Playing";
 
 /* Island Panel - Session List */
 "island.sessionList.title" = "Sessions";
@@ -329,6 +330,12 @@
 "settings.clipboard.pastesOnSelect" = "Paste when you pick an item";
 "settings.clipboard.pastesOnSelect.help" = "Off by default. When on, picking a row also sends ⌘V to whatever app was frontmost.";
 "settings.clipboard.pastesOnSelect.needsAccessibility" = "Needs Accessibility access. System Settings → Privacy & Security → Accessibility.";
+"settings.display.section.nowPlaying" = "Now Playing";
+"settings.nowPlaying.enabled" = "Show what's playing";
+"settings.nowPlaying.enabled.help" = "Reads the currently playing track through a small Perl helper — no telemetry, no network request. See docs/references/mediaremote-adapter.md.";
+"settings.nowPlaying.showsInClosedIsland" = "Show on the closed island";
+"settings.nowPlaying.sneakPeekOnTrackChange" = "Announce track changes";
+"settings.nowPlaying.adapterUnavailable" = "macOS isn't granting access to now-playing info on this Mac.";
 "settings.pending.completionCardSizing" = "The completion card sizes itself to its content today.";
 "settings.pending.notchCalibration" = "Needs the notch geometry to accept an override.";
 "settings.points.format" = "%@pt";
@@ -770,6 +777,7 @@
 "timer.sneakPeek.done" = "Done";
 "timer.sneakPeek.breakTime" = "Break";
 "timer.sneakPeek.restSeconds" = "Rest %ds";
+"nowPlaying.empty" = "NOTHING PLAYING";
 
 "clipboard.title" = "Clipboard";
 "clipboard.empty" = "Nothing copied yet";
@@ -788,5 +796,7 @@
 "statusItem.timer.running" = "Timer: %@";
 "statusItem.timer.stop" = "Stop Timer";
 "statusItem.clipboard.open" = "Clipboard…";
+"statusItem.nowPlaying.playing" = "Now Playing: %@";
+"statusItem.nowPlaying.paused" = "Paused: %@";
 "statusItem.shelf.header" = "Set Aside (%d)";
 "statusItem.settings" = "Settings…";

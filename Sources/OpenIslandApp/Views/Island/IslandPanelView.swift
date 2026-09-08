@@ -104,10 +104,14 @@ struct IslandPanelView: View {
     }
 
     var openedHeaderButtonsWidth: CGFloat {
-        // The watching mark occupies a control slot, so the lane has to reserve
-        // room for it. A fixed count here compresses the usage lane's neighbour
-        // instead of widening the lane.
-        let controls = cameraIsWatching ? 4 : 3
+        // The watching mark and the now-playing button each occupy a control
+        // slot when shown, so the lane has to reserve room for them. A fixed
+        // count here compresses the usage lane's neighbour instead of
+        // widening the lane.
+        var controls = cameraIsWatching ? 4 : 3
+        if model.settings.nowPlaying.enabled {
+            controls += 1
+        }
         return (Self.headerControlButtonSize * CGFloat(controls))
             + (Self.headerControlSpacing * CGFloat(controls - 1))
     }
