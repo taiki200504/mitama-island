@@ -1,4 +1,5 @@
 import Foundation
+import OpenIslandCore
 
 /// Incrementally splits a byte stream into complete newline-delimited lines,
 /// buffering whatever hasn't seen a newline yet. Kept separate from the
@@ -39,8 +40,12 @@ struct NDJSONLineSplitter {
 /// own lifecycle (launch → read/terminate → scheduled relaunch), never
 /// concurrently with itself.
 final class MediaRemoteAdapterProcess: @unchecked Sendable {
-    struct Update {
-        let payload: [String: Any]
+    /// Genuinely `Sendable` (not `@unchecked`) — `payload` is `JSONValue`,
+    /// not `JSONSerialization`'s raw `[String: Any]`, precisely so this
+    /// crosses onto `NowPlayingCoordinator`'s `@MainActor` without needing
+    /// an escape hatch of its own.
+    struct Update: Sendable {
+        let payload: [String: JSONValue]
         let diff: Bool
     }
 
@@ -181,7 +186,8 @@ final class MediaRemoteAdapterProcess: @unchecked Sendable {
         for line in splitter.feed(data) {
             guard let lineData = line.data(using: .utf8),
                   let json = try? JSONSerialization.jsonObject(with: lineData) as? [String: Any],
-                  let payload = json["payload"] as? [String: Any] else {
+                  let payloadAny = json["payload"] as? [String: Any],
+                  case .object(let payload)? = JSONValue(jsonObject: payloadAny) else {
                 continue
             }
             let diff = (json["diff"] as? Bool) ?? true
