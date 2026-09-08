@@ -212,7 +212,7 @@ final class CameraActivationSession {
     /// never touches the gesture pipeline's own state. `onFaceSeen` fires at
     /// most once and stops the session immediately after; the caller decides
     /// whether the timing still matters by the time it arrives.
-    func beginFaceCheck(maxDuration: TimeInterval, onFaceSeen: @escaping () -> Void) {
+    func beginFaceCheck(maxDuration: TimeInterval, onFaceSeen: @escaping @Sendable () -> Void) {
         guard AVCaptureDevice.authorizationStatus(for: .video) == .authorized else { return }
         guard faceCheckSession == nil, !isRunning, !cameraIsInUseByAnotherApp else { return }
         guard let session = makeFaceCheckSession(onFaceSeen: onFaceSeen) else { return }
@@ -236,7 +236,7 @@ final class CameraActivationSession {
         queue.async { session?.stopRunning() }
     }
 
-    private func makeFaceCheckSession(onFaceSeen: @escaping () -> Void) -> AVCaptureSession? {
+    private func makeFaceCheckSession(onFaceSeen: @escaping @Sendable () -> Void) -> AVCaptureSession? {
         guard let device = builtInCamera(), let input = try? AVCaptureDeviceInput(device: device) else {
             return nil
         }
