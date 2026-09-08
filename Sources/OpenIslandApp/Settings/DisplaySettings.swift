@@ -159,6 +159,15 @@ final class DisplaySettings: PreferenceGroup {
         get { read(\.showProjectName, Keys.showProjectName, true) }
         set { write(\.showProjectName, Keys.showProjectName, newValue) }
     }
+
+    // MARK: Shelf
+
+    /// Raw string so an unknown future value falls back rather than failing to
+    /// decode, the same reason `agentIconStyleRawValue` is stored this way.
+    var shelfExpiresAfterRawValue: String {
+        get { read(\.shelfExpiresAfterRawValue, Keys.shelfExpiresAfter, ShelfExpiryOption.never.rawValue) }
+        set { write(\.shelfExpiresAfterRawValue, Keys.shelfExpiresAfter, newValue) }
+    }
 }
 
 extension DisplaySettings {
@@ -211,6 +220,7 @@ extension DisplaySettings {
         static let showReasoningEffort = "display.sessionCard.showReasoningEffort"
         static let showWorktree = "display.sessionCard.showWorktree"
         static let showProjectName = "display.sessionCard.showProjectName"
+        static let shelfExpiresAfter = "display.shelfExpiresAfter"
     }
 }
 

@@ -16,11 +16,17 @@ struct ShelfItemDragSource: NSViewRepresentable {
     /// Called once the file has gone somewhere. The shelf drops the row — and
     /// deletes the copy if the receiver took one rather than moving it.
     let onTakenAway: () -> Void
+    /// ⌥-click removes the item without a drag — the same result as taking it
+    /// off the shelf, reached without leaving the pointer over the chip.
+    let onOptionClick: () -> Void
     let menuEntries: [MenuEntry]
 
     struct MenuEntry {
         let title: String
-        let action: () -> Void
+        /// Takes the view the menu was raised over — the share sheet needs a
+        /// real `NSView` to anchor its popover to, and the other entries just
+        /// ignore it.
+        let action: (NSView) -> Void
     }
 
     func makeNSView(context: Context) -> ShelfDragSourceView {
@@ -36,6 +42,7 @@ struct ShelfItemDragSource: NSViewRepresentable {
     private func configure(_ view: ShelfDragSourceView) {
         view.url = url
         view.onTakenAway = onTakenAway
+        view.onOptionClick = onOptionClick
         view.menuEntries = menuEntries
     }
 }
@@ -45,18 +52,42 @@ struct ShelfItemDragSource: NSViewRepresentable {
 final class ShelfDragSourceView: NSView, NSDraggingSource {
     var url: URL?
     var onTakenAway: (() -> Void)?
+    var onOptionClick: (() -> Void)?
     var menuEntries: [ShelfItemDragSource.MenuEntry] = []
+
+    /// Whether ⌥ was down when the press started. Read again at `mouseUp`
+    /// rather than trusting the press event alone — the user might let go of
+    /// the key mid-gesture, but by then the gesture has already been decided.
+    private var optionWasHeldAtMouseDown = false
+    /// Set the moment a drag actually starts, so `mouseUp` can tell an
+    /// ⌥-drag (which must keep dragging) from a plain ⌥-click (which removes).
+    private var didBeginDragging = false
 
     /// The island's panel never becomes the active application, so without this
     /// the first press would be spent waking it up instead of starting a drag.
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
-    /// Nothing to do on the way down — but the drag events only arrive if the
-    /// press was taken here.
-    override func mouseDown(with event: NSEvent) {}
+    /// Only records intent here — firing on press would remove the item
+    /// before a drag that started with ⌥ held gets the chance to happen.
+    override func mouseDown(with event: NSEvent) {
+        optionWasHeldAtMouseDown = event.modifierFlags.contains(.option)
+        didBeginDragging = false
+    }
+
+    /// ⌥-click removes the item on release, but only if nothing dragged it
+    /// away in the meantime.
+    override func mouseUp(with event: NSEvent) {
+        defer {
+            optionWasHeldAtMouseDown = false
+            didBeginDragging = false
+        }
+        guard optionWasHeldAtMouseDown, !didBeginDragging else { return }
+        onOptionClick?()
+    }
 
     override func mouseDragged(with event: NSEvent) {
         guard let url else { return }
+        didBeginDragging = true
 
         let item = NSDraggingItem(pasteboardWriter: url as NSURL)
         item.setDraggingFrame(bounds, contents: NSWorkspace.shared.icon(forFile: url.path))
@@ -101,6 +132,6 @@ final class ShelfDragSourceView: NSView, NSDraggingSource {
 
     @objc private func runMenuEntry(_ sender: NSMenuItem) {
         guard menuEntries.indices.contains(sender.tag) else { return }
-        menuEntries[sender.tag].action()
+        menuEntries[sender.tag].action(self)
     }
 }

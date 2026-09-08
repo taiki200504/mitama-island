@@ -476,6 +476,14 @@ def main() -> None:
         if not any("12" in value for value in text_values):
             fail("closedAccessoryTimer is missing the timer accessory")
 
+    elif scenario == "shelfSurface":
+        if notch_status != "opened":
+            fail(f"expected opened notch for shelfSurface, got {notch_status!r}")
+        if island_surface != "sessionList":
+            fail(f"expected shelfSurface to use sessionList surface, got {island_surface!r}")
+        assert_contains_any(text_values, ["quarterly-report.pdf"], "shelfSurface text values")
+        assert_contains_any(text_values, ["notes.md"], "shelfSurface text values")
+
     else:
         fail(f"unsupported scenario {scenario!r}")
 

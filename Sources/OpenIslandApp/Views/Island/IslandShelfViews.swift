@@ -21,7 +21,7 @@ extension IslandPanelView {
                     .font(.islandText(size: 10))
                     .foregroundStyle(V6Palette.paper.opacity(0.45))
                 Spacer(minLength: 0)
-                if isShelfBadgeHovered {
+                if isShelfExpanded {
                     Button(model.lang.t("shelf.clear")) { model.shelf.removeAll() }
                         .buttonStyle(.plain)
                         .font(.islandText(size: 10))
@@ -29,7 +29,7 @@ extension IslandPanelView {
                 }
             }
 
-            if isShelfBadgeHovered {
+            if isShelfExpanded {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(model.shelf.items) { item in
@@ -44,13 +44,25 @@ extension IslandPanelView {
         .padding(.vertical, 6)
         .background(shelfBackground(theme: theme))
         .onHover { isShelfBadgeHovered = $0 }
-        .animation(theme.animationProfile.pop, value: isShelfBadgeHovered)
+        .animation(theme.animationProfile.pop, value: isShelfExpanded)
+    }
+
+    /// Hovered by the pointer, or forced open by a debug/harness scenario that
+    /// needs the chips on screen for a screenshot without a real pointer.
+    private var isShelfExpanded: Bool {
+        isShelfBadgeHovered || model.debugShelfBadgeForcedExpanded
     }
 
     /// Only ever on screen while something is being carried over the island.
     @ViewBuilder
     var shelfDropInvitation: some View {
-        if isShelfTargeted {
+        // Real-time file counts and sizes are not available while merely
+        // hovering — `isShelfTargeted` is the only signal SwiftUI gives before
+        // the drop lands — so this is `.idle`/`.invited` only. A refusal is
+        // only known once `putOnShelf` actually tries, and shows up as the
+        // closed-pill message instead.
+        let feedback = ShelfDropFeedback.state(hoveringCount: isShelfTargeted ? 1 : 0)
+        if case .invited = feedback {
             let theme = IslandThemes.current
 
             VStack(spacing: 8) {
@@ -97,6 +109,12 @@ extension IslandPanelView {
                 .foregroundStyle(V6Palette.paper.opacity(0.7))
                 .lineLimit(1)
                 .truncationMode(.middle)
+            if let caption = model.shelfExpiryCaption(for: item) {
+                Text(caption)
+                    .font(.islandText(size: 8))
+                    .foregroundStyle(V6Palette.paper.opacity(0.4))
+                    .lineLimit(1)
+            }
         }
         .frame(width: 62)
         .padding(.vertical, 2)
@@ -107,14 +125,23 @@ extension IslandPanelView {
             ShelfItemDragSource(
                 url: url,
                 onTakenAway: { model.shelf.remove(item) },
+                onOptionClick: { model.shelf.remove(item) },
                 menuEntries: [
                     .init(
+                        title: model.lang.t("shelf.airDrop"),
+                        action: { _ in model.shelf.airDrop(item) }
+                    ),
+                    .init(
+                        title: model.lang.t("shelf.share"),
+                        action: { view in model.shelf.share(item, from: view) }
+                    ),
+                    .init(
                         title: model.lang.t("shelf.revealInFinder"),
-                        action: { NSWorkspace.shared.activateFileViewerSelecting([url]) }
+                        action: { _ in NSWorkspace.shared.activateFileViewerSelecting([url]) }
                     ),
                     .init(
                         title: model.lang.t("shelf.remove"),
-                        action: { model.shelf.remove(item) }
+                        action: { _ in model.shelf.remove(item) }
                     ),
                 ]
             )

@@ -143,6 +143,32 @@ struct DisplaySettingsWiringTests {
         #expect(settings.display.maxPanelHeight == range.upperBound)
     }
 
+    // MARK: Shelf expiry
+
+    @Test
+    func shelfNeverExpiresByDefault() {
+        let settings = makeSettings()
+        let option = ShelfExpiryOption(rawValue: settings.display.shelfExpiresAfterRawValue)
+        #expect(option == .never)
+        #expect(option?.ttl == nil)
+    }
+
+    @Test
+    func shelfExpiresAfterPersistsAcrossInstancesOfTheSameStore() {
+        let settings = makeSettings()
+        settings.display.shelfExpiresAfterRawValue = ShelfExpiryOption.oneDay.rawValue
+
+        #expect(settings.display.shelfExpiresAfterRawValue == ShelfExpiryOption.oneDay.rawValue)
+        #expect(ShelfExpiryOption(rawValue: settings.display.shelfExpiresAfterRawValue)?.ttl == 86400)
+    }
+
+    @Test
+    func anUnknownStoredValueFallsBackToNever() {
+        let settings = makeSettings()
+        settings.display.shelfExpiresAfterRawValue = "some-future-option"
+        #expect(ShelfExpiryOption(rawValue: settings.display.shelfExpiresAfterRawValue) == nil)
+    }
+
     // MARK: Honesty of the pending markers
 
     /// All four metadata switches have data behind them. Reasoning effort used

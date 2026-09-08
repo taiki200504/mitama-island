@@ -31,6 +31,9 @@ struct IslandDebugSnapshot {
     /// exists yet — this is only how a scenario exercises the accessory
     /// ahead of it.
     var debugAccessoryTimer: IslandClosedInputs.Timer?
+    /// Items to put on the shelf before capture, and force the chip row open
+    /// for — a scenario is the one caller with no pointer to hover with.
+    var shelfItems: [ShelfItem] = []
 }
 
 enum IslandDebugScenario: String, CaseIterable, Identifiable {
@@ -48,6 +51,7 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
     case linkstart
     case sneakPeekPop
     case closedAccessoryTimer
+    case shelfSurface
 
     var id: String { rawValue }
 
@@ -83,6 +87,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Sneak Peek Pop"
         case .closedAccessoryTimer:
             "Closed + Timer Accessory"
+        case .shelfSurface:
+            "Shelf Surface"
         }
     }
 
@@ -116,6 +122,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "A temporary closed-island message overriding the body for a few seconds."
         case .closedAccessoryTimer:
             "Closed island with a waiting agent body and a running timer alongside it."
+        case .shelfSurface:
+            "Opened island with two items set aside, chips forced open for capture."
         }
     }
 
@@ -333,11 +341,50 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                 selectedSessionID: waiting.id,
                 debugAccessoryTimer: IslandClosedInputs.Timer(remainingMinutes: 12, label: "Focus")
             )
+
+        case .shelfSurface:
+            return IslandDebugSnapshot(
+                title: title,
+                summary: summary,
+                previewHeight: 220,
+                notchStatus: .opened,
+                notchOpenReason: .click,
+                islandSurface: .sessionList(),
+                sessions: [],
+                selectedSessionID: nil,
+                shelfItems: DebugSessionFactory.shelfFixtureItems(now: now)
+            )
         }
     }
 }
 
 private enum DebugSessionFactory {
+    /// Two real files in a scratch directory, so the fixture's byte sizes are
+    /// genuine rather than made up. `AppModel.loadDebugSnapshot` loads these
+    /// straight into the shelf's memory rather than copying them in, so a
+    /// harness run never touches the real Application Support shelf folder.
+    static func shelfFixtureItems(now: Date) -> [ShelfItem] {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("OpenIslandShelfFixture-\(UUID().uuidString)")
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+
+        let names = ["quarterly-report.pdf", "notes.md"]
+        return names.enumerated().map { index, name in
+            let url = directory.appendingPathComponent(name)
+            let contents = Data(repeating: 0, count: 1024 * (index + 1))
+            try? contents.write(to: url)
+            let byteSize = Int64(
+                (try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? contents.count
+            )
+            return ShelfItem(
+                displayName: name,
+                storedName: name,
+                byteSize: byteSize,
+                addedAt: now.addingTimeInterval(-Double(index) * 60)
+            )
+        }
+    }
+
     static func listSessions(now: Date) -> [AgentSession] {
         [
             runningSession(now: now),

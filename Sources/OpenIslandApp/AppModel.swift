@@ -556,6 +556,10 @@ final class AppModel {
 
     /// What you put down in the island on the way somewhere else.
     @ObservationIgnored let shelf = ShelfStore()
+    /// Debug/harness only: shows the shelf's chips without needing a real
+    /// hover, so a scenario can put items on screen for a screenshot.
+    var debugShelfBadgeForcedExpanded = false
+    @ObservationIgnored private let shelfExpiryTimerBox = RepeatingTimerBox()
 
     /// Reads the battery, the heat and the lid. Holds the camera to account.
     @ObservationIgnored let power = PowerMonitor()
@@ -842,6 +846,8 @@ final class AppModel {
 
         quietScenes.start()
         startIdleSessionCleanup()
+        shelf.expiryProvider = { [weak self] in self?.shelfExpiresAfter.ttl }
+        startShelfExpiryPruning()
         hooks.onUsageSnapshotChanged = { [weak self] in
             self?.checkUsageThreshold()
         }
@@ -1511,6 +1517,7 @@ final class AppModel {
         hasStarted = true
 
         shelf.load()
+        shelf.pruneExpired()
         power.start()
         power.onChange = { [weak self] in self?.refreshSustainedCamera() }
 
@@ -1723,8 +1730,11 @@ final class AppModel {
     /// Takes files onto the shelf. Says something only when it cannot.
     ///
     /// A file that landed is already on screen — the chip is right there. A
-    /// sentence announcing what you just watched happen is one more thing to
-    /// read, and it opens the island to say it.
+    /// refusal is the only thing worth a word, and it must not cost the
+    /// user the full island: `present(notice:)` opens it, which is a bigger
+    /// interruption than "no" deserves. Closed, it goes out as a `.shelf`
+    /// sneak peek instead — the same brief, closed-only channel `notchPop()`
+    /// uses for a plain drop, just with something to say.
     /// Returns whether anything actually landed, so the caller can answer for
     /// it — the closed island has no room to say so in words.
     @discardableResult
@@ -1732,7 +1742,21 @@ final class AppModel {
         guard !urls.isEmpty else { return false }
         let before = shelf.items.count
         if let refusal = shelf.accept(urls) {
-            present(notice: lang.t(refusal.noticeKey))
+            // Closed: a refusal must not be the thing that opens the island.
+            // Already open: it already has a notice bar for exactly this, and
+            // showing it there opens nothing that was not open already.
+            if overlay.notchStatus == .closed {
+                overlay.presentSneakPeek(
+                    IslandSneakPeek(
+                        kind: .shelf,
+                        text: lang.t(refusal.noticeKey),
+                        icon: "tray.full",
+                        until: Date.now.addingTimeInterval(overlay.sneakPeekDurationProvider(.shelf))
+                    )
+                )
+            } else {
+                present(notice: lang.t(refusal.noticeKey))
+            }
         }
         return shelf.items.count > before
     }
@@ -1989,6 +2013,15 @@ final class AppModel {
                     self?.openCompletionSummary(for: sessionID)
                 }
             )
+        }
+
+        if !snapshot.shelfItems.isEmpty {
+            // Straight into memory rather than through `accept`, so a harness
+            // run never copies anything into the real Application Support
+            // shelf folder. Forced open because there is no pointer here to
+            // hover with.
+            shelf.loadFixture(snapshot.shelfItems)
+            debugShelfBadgeForcedExpanded = true
         }
     }
 
@@ -2779,6 +2812,33 @@ final class AppModel {
         set { settings.display.agentIconStyleRawValue = newValue.rawValue }
     }
 
+    var shelfExpiresAfter: ShelfExpiryOption {
+        get { ShelfExpiryOption(rawValue: settings.display.shelfExpiresAfterRawValue) ?? .never }
+        set {
+            settings.display.shelfExpiresAfterRawValue = newValue.rawValue
+            // Switching from never to a TTL should not leave anything already
+            // past it sitting there for up to an hour until the timer next
+            // fires.
+            shelf.pruneExpired()
+        }
+    }
+
+    /// "Expires in 3h", or nil while the setting is off or the item is
+    /// somehow already past due (the pruning timer just hasn't reached it yet).
+    func shelfExpiryCaption(for item: ShelfItem, now: Date = .now) -> String? {
+        guard let ttl = shelfExpiresAfter.ttl else { return nil }
+        let remaining = ttl - now.timeIntervalSince(item.addedAt)
+        guard remaining > 0 else { return nil }
+
+        if remaining < 3600 {
+            return lang.t("shelf.expiresIn.minutes", Int((remaining / 60).rounded(.up)))
+        }
+        if remaining < 86400 {
+            return lang.t("shelf.expiresIn.hours", Int((remaining / 3600).rounded(.up)))
+        }
+        return lang.t("shelf.expiresIn.days", Int((remaining / 86400).rounded(.up)))
+    }
+
     /// Sessions that were already running when hooks were last installed.
     ///
     /// Only live ones count. A session that has since finished cannot be
@@ -2882,6 +2942,17 @@ final class AppModel {
         }
         timer.tolerance = 60
         idleCleanupTimerBox.timer = timer
+    }
+
+    /// Sweeps out shelf items whose time is up. Most days this finds nothing:
+    /// the setting defaults to never, and the timer costs nothing to leave
+    /// running against that case.
+    private func startShelfExpiryPruning() {
+        let timer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
+            Task { @MainActor in self?.shelf.pruneExpired() }
+        }
+        timer.tolerance = 60
+        shelfExpiryTimerBox.timer = timer
     }
 
     @discardableResult

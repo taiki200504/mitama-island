@@ -14,6 +14,7 @@ struct DisplaySettingsPane: View {
             panelSizeSection
             notchSection
             sessionCardSection
+            shelfSection
             diagnosticsSection
         }
     }
@@ -268,6 +269,25 @@ struct DisplaySettingsPane: View {
                     set: { display.showAgentActivity = $0 }
                 )
             )
+        }
+    }
+
+    // MARK: Shelf
+
+    private var shelfSection: some View {
+        Section(lang.t("settings.display.section.shelf")) {
+            SettingsPickerRow(
+                title: lang.t("settings.display.shelfExpiresAfter"),
+                help: lang.t("settings.display.shelfExpiresAfter.help"),
+                selection: Binding(
+                    get: { model.shelfExpiresAfter },
+                    set: { model.shelfExpiresAfter = $0 }
+                )
+            ) {
+                ForEach(ShelfExpiryOption.allCases) { option in
+                    Text(lang.t(option.labelKey)).tag(option)
+                }
+            }
         }
     }
 
