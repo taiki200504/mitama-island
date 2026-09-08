@@ -17,14 +17,18 @@ struct OpenedIslandSurfaceShapeFloatingPillTests {
         let shape = OpenedIslandSurfaceShape(topProfile: .floatingPill)
         let path = shape.path(in: rect)
 
-        // The exact top corners are excluded by any positive rounding.
-        #expect(!path.contains(CGPoint(x: rect.minX, y: rect.minY)))
-        #expect(!path.contains(CGPoint(x: rect.maxX, y: rect.minY)))
+        // A point just inside the exact corner is excluded by any positive
+        // rounding. `CGPath.contains` treats the boundary itself as filled,
+        // so the exact corner point (0,0) can't tell rounded from square —
+        // it has to be checked a couple of points in instead.
+        let justInside: CGFloat = 2
+        #expect(!path.contains(CGPoint(x: rect.minX + justInside, y: rect.minY + justInside)))
+        #expect(!path.contains(CGPoint(x: rect.maxX - justInside, y: rect.minY + justInside)))
 
         // Comfortably past the 12pt top radius on both axes, the fill
         // resumes — a margin generous enough to hold for either a circular
         // or a continuous (squircle) corner curve.
-        let inset: CGFloat = 18
+        let inset: CGFloat = 20
         #expect(path.contains(CGPoint(x: rect.minX + inset, y: rect.minY + inset)))
         #expect(path.contains(CGPoint(x: rect.maxX - inset, y: rect.minY + inset)))
     }
@@ -34,7 +38,10 @@ struct OpenedIslandSurfaceShapeFloatingPillTests {
         let shape = OpenedIslandSurfaceShape(topProfile: .floatingPill, bottomCornerRadius: 20)
         let path = shape.path(in: rect)
 
-        #expect(!path.contains(CGPoint(x: rect.minX, y: rect.maxY)))
+        // Same boundary caveat as the top corners: check a couple of points
+        // in from the exact corner, not the corner point itself.
+        let justInside: CGFloat = 2
+        #expect(!path.contains(CGPoint(x: rect.minX + justInside, y: rect.maxY - justInside)))
 
         let inset: CGFloat = 26
         #expect(path.contains(CGPoint(x: rect.minX + inset, y: rect.maxY - inset)))
