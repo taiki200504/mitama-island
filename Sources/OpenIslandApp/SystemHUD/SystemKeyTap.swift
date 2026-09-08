@@ -42,7 +42,7 @@ final class SystemKeyTap {
             return false
         }
 
-        guard let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)?.takeRetainedValue() else {
+        guard let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0) else {
             return false
         }
 
@@ -72,23 +72,14 @@ final class SystemKeyTap {
         CGEvent.tapEnable(tap: eventTap, enable: true)
     }
 
-    /// Returns `nil` to swallow the event (no macOS OSD, no macOS-side
-    /// volume/brightness change), or the original event to let it through.
-    fileprivate func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
-        guard
-            let nsEvent = NSEvent(cgEvent: event),
-            nsEvent.type == .systemDefined,
-            let decoded = SystemKeyEvent.decode(subtype: Int(nsEvent.subtype.rawValue), data1: nsEvent.data1)
-        else {
-            return Unmanaged.passUnretained(event)
-        }
-
+    /// Runs `onKey`, then answers whether the key that produced `decoded`
+    /// should be swallowed. Takes only the already-decoded, `Sendable` key
+    /// info — never the originating `CGEvent`, which is not `Sendable` and
+    /// must not cross into this `@MainActor`-isolated call.
+    fileprivate func dispatch(_ decoded: (key: SystemKey, isDown: Bool, isRepeat: Bool)) -> Bool {
         onKey?(decoded.key, decoded.isDown, decoded.isRepeat)
-
-        guard decoded.isDown, shouldSwallow?(decoded.key) == true else {
-            return Unmanaged.passUnretained(event)
-        }
-        return nil
+        guard decoded.isDown else { return false }
+        return shouldSwallow?(decoded.key) ?? false
     }
 }
 
@@ -99,7 +90,9 @@ final class SystemKeyTap {
 /// The tap is only ever installed on the main run loop (`start()` runs on
 /// `@MainActor`, and `CFRunLoopGetCurrent()` at that point is the main run
 /// loop), so this callback always fires on the main thread even though nothing
-/// here is statically isolated.
+/// here is statically isolated. Decoding the event into a plain, `Sendable`
+/// tuple happens out here, nonisolated, before anything crosses into the
+/// `@MainActor`-isolated call below — `CGEvent`/`NSEvent` themselves never do.
 private func systemKeyTapCallback(
     proxy _: CGEventTapProxy,
     type: CGEventType,
@@ -114,5 +107,14 @@ private func systemKeyTapCallback(
         return Unmanaged.passUnretained(event)
     }
 
-    return MainActor.assumeIsolated { tap.handle(type: type, event: event) }
+    guard
+        let nsEvent = NSEvent(cgEvent: event),
+        nsEvent.type == .systemDefined,
+        let decoded = SystemKeyEvent.decode(subtype: Int(nsEvent.subtype.rawValue), data1: nsEvent.data1)
+    else {
+        return Unmanaged.passUnretained(event)
+    }
+
+    let shouldSwallow = MainActor.assumeIsolated { tap.dispatch(decoded) }
+    return shouldSwallow ? nil : Unmanaged.passUnretained(event)
 }
