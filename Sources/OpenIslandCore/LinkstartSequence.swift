@@ -22,14 +22,23 @@ public enum LinkstartCue: Equatable, Sendable {
     case resolve
 }
 
-/// One flash of the colour-calibration test pattern that runs between the
-/// opening burst and the checklist: red, green and blue twice each, then a
-/// longer white flash to close the pattern out.
+/// One colour of the calibration wash that runs between the opening burst
+/// and the checklist: red, green, blue, then white — once, not a repeating
+/// cycle, and slow enough to read as a colour wash rather than a strobe.
 public enum CalibrationStep: Equatable, Sendable {
     case red
     case green
     case blue
     case white
+}
+
+/// A colour and how strongly it's showing during the calibration wash.
+/// `calibrationFrames(at:)` returns two of these during a handoff between
+/// colours — one fading out, one fading in — so the view can draw a
+/// straight opacity blend instead of a hard colour cut.
+public struct CalibrationFrame: Equatable, Sendable {
+    public let step: CalibrationStep
+    public let opacity: Double
 }
 
 /// Where the boot sequence is at a given moment.
@@ -153,38 +162,50 @@ public enum LinkstartSequence: Sendable {
 
     // MARK: - Calibration
 
-    private static let calibrationStepDuration: TimeInterval = 0.12
-    private static let calibrationWhiteDuration: TimeInterval = 0.10
-    private static let calibrationSequence: [CalibrationStep] = [
-        .red, .green, .blue, .red, .green, .blue, .white,
+    private static let calibrationSteps: [CalibrationStep] = [.red, .green, .blue, .white]
+    /// The strongest the wash ever gets — capped well under full opacity so
+    /// even the moment it lands is a wash, not a flash.
+    private static let calibrationMaxOpacity: Double = 0.35
+    /// Half the width of the handoff around each colour change: a colour
+    /// starts giving way to the next 0.05s before its nominal boundary and
+    /// finishes 0.05s after, so no change is ever a hard cut.
+    private static let calibrationCrossfadeHalfWidth: TimeInterval = 0.05
+
+    /// Where red gives way to green, green to blue, and blue to white — red,
+    /// green and blue each hold 0.30s (≈1 colour change per second, well
+    /// under the ~3Hz photosensitivity guideline) and white closes the
+    /// pattern out at 0.10s, for the `calibrationDuration` of 1.00s this adds
+    /// up to. Each is a single offset from `raysEnd` rather than a running
+    /// sum — repeated addition drifts by a ULP or two, which is enough to put
+    /// an exact boundary on the wrong side of a test's expectation.
+    private static let calibrationTransitionTimes: [TimeInterval] = [
+        raysEnd + 0.30, raysEnd + 0.60, raysEnd + 0.90,
     ]
 
-    /// The end of each calibration step (its boundary with the next one),
-    /// with `raysEnd` standing in for the start of the first. Each is a single
-    /// offset from `raysEnd` rather than a running sum — six additions in a
-    /// row drift by a ULP or two, which is enough to put an exact boundary
-    /// like 2.36 on the wrong side of it.
-    private static let calibrationBoundaries: [TimeInterval] = {
-        let whiteStart = raysEnd + Double(calibrationSequence.count - 1) * calibrationStepDuration
-        return (0..<(calibrationSequence.count - 1)).map { raysEnd + Double($0 + 1) * calibrationStepDuration }
-            + [whiteStart + calibrationWhiteDuration]
-    }()
+    /// The colour(s) on screen during the calibration wash: one frame at full
+    /// strength while holding, two — one fading out, one in — while handing
+    /// off to the next colour. Empty outside the wash entirely, including its
+    /// own tail once white has finished and nothing is left to show before
+    /// the senses begin.
+    public static func calibrationFrames(at elapsed: TimeInterval) -> [CalibrationFrame] {
+        guard elapsed >= raysEnd, elapsed < sensesStart else { return [] }
 
-    /// The colour on screen during the calibration flash, or nil outside it —
-    /// including the tail end of the phase, once white has finished and
-    /// nothing is left to show before the senses begin.
-    public static func calibrationColor(at elapsed: TimeInterval) -> CalibrationStep? {
-        guard elapsed >= raysEnd, elapsed < calibrationBoundaries[calibrationBoundaries.count - 1] else {
-            return nil
+        for (index, boundary) in calibrationTransitionTimes.enumerated() {
+            let windowStart = boundary - calibrationCrossfadeHalfWidth
+            let windowEnd = boundary + calibrationCrossfadeHalfWidth
+            guard elapsed >= windowStart, elapsed < windowEnd else { continue }
+            let progress = (elapsed - windowStart) / (calibrationCrossfadeHalfWidth * 2)
+            return [
+                CalibrationFrame(step: calibrationSteps[index], opacity: calibrationMaxOpacity * (1 - progress)),
+                CalibrationFrame(step: calibrationSteps[index + 1], opacity: calibrationMaxOpacity * progress),
+            ]
         }
-        return calibrationSequence[calibrationStepIndex(at: elapsed)]
+
+        return [CalibrationFrame(step: calibrationSteps[calibrationStepIndex(at: elapsed)], opacity: calibrationMaxOpacity)]
     }
 
     private static func calibrationStepIndex(at elapsed: TimeInterval) -> Int {
-        for index in calibrationSequence.indices where elapsed < calibrationBoundaries[index] {
-            return index
-        }
-        return calibrationSequence.count - 1
+        calibrationTransitionTimes.firstIndex(where: { elapsed < $0 }) ?? calibrationSteps.count - 1
     }
 
     // MARK: - Fade

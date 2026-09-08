@@ -19,6 +19,11 @@ final class LinkstartOverlayController {
         case listening
         /// Running, from this moment.
         case playing(startedAt: Date)
+        /// Harness-only: frozen at this elapsed time rather than advancing
+        /// with the clock, so a screenshot always lands on the exact frame it
+        /// asked for instead of whatever the wall clock produced by the time
+        /// the capture callback happened to run.
+        case pinned(elapsed: TimeInterval)
     }
 
     private static let logger = Logger(subsystem: "com.mitama.island", category: "linkstart")
@@ -103,7 +108,7 @@ final class LinkstartOverlayController {
         Self.logger.notice("Presenting (harness) across \(screens.count) screen(s), pinned at \(elapsedOverride)s")
 
         heard = nil
-        stage = .playing(startedAt: Date().addingTimeInterval(-elapsedOverride))
+        stage = .pinned(elapsed: elapsedOverride)
         presentPanels()
 
         scheduleDismissalAfterSequence()

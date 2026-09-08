@@ -130,20 +130,46 @@ struct LinkstartSequenceTests {
         #expect(LinkstartSequence.rayProgress(at: 0) == 0)
     }
 
-    /// R at 2.00, G at 2.12, B at 2.24, R at 2.36, G at 2.48, B at 2.60, white
-    /// at 2.72, then nothing until the senses begin at 3.00.
-    @Test("Calibration cycles red, green, blue twice, then white")
-    func calibrationCyclesColors() {
-        #expect(LinkstartSequence.calibrationColor(at: 2.00) == .red)
-        #expect(LinkstartSequence.calibrationColor(at: 2.12) == .green)
-        #expect(LinkstartSequence.calibrationColor(at: 2.24) == .blue)
-        #expect(LinkstartSequence.calibrationColor(at: 2.36) == .red)
-        #expect(LinkstartSequence.calibrationColor(at: 2.48) == .green)
-        #expect(LinkstartSequence.calibrationColor(at: 2.60) == .blue)
-        #expect(LinkstartSequence.calibrationColor(at: 2.72) == .white)
-        #expect(LinkstartSequence.calibrationColor(at: 2.85) == nil)
-        #expect(LinkstartSequence.calibrationColor(at: 1.99) == nil)
-        #expect(LinkstartSequence.calibrationColor(at: 3.00) == nil)
+    /// Red holds 2.00–2.25, crossfades to green over 2.25–2.35, green holds
+    /// to 2.55, crossfades to blue over 2.55–2.65, blue holds to 2.85,
+    /// crossfades to white over 2.85–2.95, white holds to 3.00 — once, not a
+    /// repeating cycle, and nothing outside [2.00, 3.00).
+    @Test("Calibration washes red, green, blue, then white, crossfading between them")
+    func calibrationWashesColorsOnce() {
+        func steps(_ elapsed: TimeInterval) -> [CalibrationStep] {
+            LinkstartSequence.calibrationFrames(at: elapsed).map(\.step)
+        }
+        func opacity(_ elapsed: TimeInterval, _ step: CalibrationStep) -> Double? {
+            LinkstartSequence.calibrationFrames(at: elapsed).first { $0.step == step }?.opacity
+        }
+
+        // Pure holds: exactly one frame, at the wash's one and only strength.
+        #expect(steps(2.00) == [.red])
+        #expect(opacity(2.00, .red) == 0.35)
+        #expect(steps(2.20) == [.red])
+        #expect(steps(2.45) == [.green])
+        #expect(steps(2.75) == [.blue])
+        #expect(steps(2.97) == [.white])
+
+        // Crossfades: two frames, opposite ends of the same 0.35 strength.
+        let redGreen = LinkstartSequence.calibrationFrames(at: 2.30)
+        #expect(Set(redGreen.map(\.step)) == [.red, .green])
+        #expect(redGreen.allSatisfy { abs($0.opacity - 0.175) < 0.01 })
+
+        let greenBlue = LinkstartSequence.calibrationFrames(at: 2.60)
+        #expect(Set(greenBlue.map(\.step)) == [.green, .blue])
+
+        let blueWhite = LinkstartSequence.calibrationFrames(at: 2.90)
+        #expect(Set(blueWhite.map(\.step)) == [.blue, .white])
+
+        // No handoff runs faster than 0.30s apart — well under a strobe rate.
+        #expect(opacity(2.26, .red)! > opacity(2.26, .green) ?? 0)
+        #expect(opacity(2.34, .green)! > opacity(2.34, .red) ?? 0)
+
+        // Nothing outside the wash, including its own tail and the moment
+        // the senses begin.
+        #expect(steps(1.99).isEmpty)
+        #expect(steps(3.00).isEmpty)
     }
 
     @Test("Fade opacity runs from 1 to 0 across the closing window")

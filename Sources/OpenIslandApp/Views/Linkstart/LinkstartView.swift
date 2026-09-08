@@ -19,6 +19,8 @@ struct LinkstartView: View {
             listening
         case let .playing(startedAt):
             sequence(startedAt: startedAt)
+        case let .pinned(elapsed):
+            frame(elapsed: elapsed)
         }
     }
 
@@ -54,42 +56,58 @@ struct LinkstartView: View {
 
     private func sequence(startedAt: Date) -> some View {
         TimelineView(.animation) { context in
-            let elapsed = context.date.timeIntervalSince(startedAt)
-            let phase = LinkstartSequence.phase(at: elapsed)
-            let theme = IslandThemes.current
-            let reducesMotion = IslandMotion.reducesMotion
-
-            ZStack {
-                backdrop(elapsed: elapsed, reducesMotion: reducesMotion)
-
-                if showsDetail {
-                    VStack(spacing: 34) {
-                        title(elapsed: elapsed, theme: theme)
-                        checklist(elapsed: elapsed, theme: theme, reducesMotion: reducesMotion)
-                        trailer(phase: phase, theme: theme)
-                    }
-                    .padding(60)
-                }
-            }
-            .background(.black.opacity(0.62))
-            .opacity(LinkstartSequence.fadeOpacity(at: elapsed))
-            .ignoresSafeArea()
+            frame(elapsed: context.date.timeIntervalSince(startedAt))
         }
+    }
+
+    /// Everything the sequence draws, as a pure function of elapsed time.
+    /// `sequence(startedAt:)` re-evaluates this every frame from the real
+    /// clock; `.pinned(elapsed:)` calls it exactly once, with no
+    /// `TimelineView` advancing it afterwards — the harness's screenshot
+    /// lands on the frame it asked for rather than on whatever elapsed time
+    /// the wall clock had produced by the moment the capture callback ran.
+    private func frame(elapsed: TimeInterval) -> some View {
+        let phase = LinkstartSequence.phase(at: elapsed)
+        let theme = IslandThemes.current
+        let reducesMotion = IslandMotion.reducesMotion
+
+        return ZStack {
+            backdrop(elapsed: elapsed, reducesMotion: reducesMotion)
+
+            if showsDetail {
+                VStack(spacing: 34) {
+                    title(elapsed: elapsed, theme: theme)
+                    checklist(elapsed: elapsed, theme: theme, reducesMotion: reducesMotion)
+                    trailer(phase: phase, theme: theme, reducesMotion: reducesMotion)
+                }
+                .padding(60)
+            }
+        }
+        .background(.black.opacity(0.62))
+        .opacity(LinkstartSequence.fadeOpacity(at: elapsed))
+        .ignoresSafeArea()
     }
 
     // MARK: - Pieces
 
     /// The opening burst: concentric rings, a ray starburst outlasting them,
-    /// then the colour-calibration flash. Reduced motion collapses all of it
-    /// into one still frame for the rings' own duration and skips the flash
-    /// entirely — it is the one part of this sequence built to strobe.
+    /// then the colour-calibration wash. Reduced motion collapses the rings
+    /// and rays into one still frame, held until the checklist itself starts
+    /// rather than for just their own animated duration, and skips the wash
+    /// entirely — colour changes, even slow ones, are exactly the kind of
+    /// motion that setting asks to remove.
     @ViewBuilder
     private func backdrop(elapsed: TimeInterval, reducesMotion: Bool) -> some View {
         if reducesMotion {
-            if elapsed < LinkstartSequence.ringsDuration {
+            let isBeforeChecklist = elapsed < LinkstartSequence.sensesStart
+            Group {
                 SAORingView(progress: 1, count: 5, tint: .white, ringTint: Self.ringTint)
                 SAORaysView(progress: 1, count: 24, tint: SAOGrammar.Palette.systemCyan, gradient: Self.rayGradient)
             }
+            .opacity(isBeforeChecklist ? 1 : 0)
+            // A plain cut rather than a fade: this branch exists so nothing
+            // here animates.
+            .animation(nil, value: isBeforeChecklist)
         } else {
             SAORingView(
                 progress: LinkstartSequence.ringProgress(at: elapsed).first ?? 0,
@@ -104,12 +122,12 @@ struct LinkstartView: View {
                 gradient: Self.rayGradient
             )
 
-            if let step = LinkstartSequence.calibrationColor(at: elapsed) {
-                // Capped well under full opacity: this is the one part of the
-                // sequence built to flash, and a full-strength strobe is a
-                // photosensitivity risk a login screen has no business taking.
-                Self.calibrationTint(for: step)
-                    .opacity(0.35)
+            // Capped well under full opacity and handed off between colours
+            // as a crossfade rather than a cut — see `calibrationFrames`'s
+            // own doc comment for why a strobe has no place on a login screen.
+            ForEach(Array(LinkstartSequence.calibrationFrames(at: elapsed).enumerated()), id: \.offset) { _, frame in
+                Self.calibrationTint(for: frame.step)
+                    .opacity(frame.opacity)
                     .ignoresSafeArea()
             }
         }
@@ -235,7 +253,7 @@ struct LinkstartView: View {
 
     /// What the sequence says about you once the body checks out.
     @ViewBuilder
-    private func trailer(phase: LinkstartPhase, theme: SAOTheme) -> some View {
+    private func trailer(phase: LinkstartPhase, theme: SAOTheme, reducesMotion: Bool) -> some View {
         VStack(spacing: 10) {
             switch phase {
             case .awakening, .rings, .rays, .calibration, .senses:
@@ -259,6 +277,6 @@ struct LinkstartView: View {
         }
         .font(IslandTypography.mono(size: 16))
         .tracking(3)
-        .animation(theme.animationProfile.open, value: phase)
+        .animation(reducesMotion ? nil : theme.animationProfile.open, value: phase)
     }
 }
