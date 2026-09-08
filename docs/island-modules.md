@@ -170,6 +170,56 @@ posts a synthetic ⌘V to whatever app is frontmost. `ClipboardStore` tells the
 watcher about every write it makes back to the pasteboard so a copy the
 store itself performed is never re-recorded as a new external one.
 
+## System HUD: answering volume and brightness keys ourselves
+
+2026-09-08. The first module to actually use the `hudGauge` sneak peek the
+table above already reserved a row for.
+
+### Mechanism
+
+`SystemKeyTap` installs a `CGEvent` tap on the system-defined event stream
+(`NX_SYSDEFINED`, decoded by `SystemKeyEvent` in `OpenIslandCore`) and
+returns `nil` from the callback for a key it takes over — that `nil` is the
+entire suppression mechanism, since it is what stops macOS from ever drawing
+its own on-screen display for that key. The tap needs Accessibility
+(`AXIsProcessTrusted`) and dies with the process: revoke the permission or
+quit the app and the next press reaches macOS unchanged, there is no state
+where a key goes permanently silent.
+
+Volume and mute go through public CoreAudio (`AudioOutputControl`): the
+default output device's `kAudioDevicePropertyVolumeScalar` and
+`kAudioDevicePropertyMute`, main element with a per-channel fallback for
+interfaces that only expose that. Brightness (`DisplayBrightnessControl`) and
+the keyboard backlight (`KeyboardBacklightControl`) have no public API at
+all — every third-party brightness tool on macOS resorts to the same private
+`DisplayServices` and `CoreBrightness` frameworks this does, loaded via
+`dlopen`/`dlsym` and the Objective-C runtime rather than linked directly.
+
+**Fails open.** If a private symbol cannot be found, that backend's
+`isAvailable` is `false`, and `SystemHUDCoordinator` never swallows a key
+whose backend does not work — the key reaches macOS unchanged and its own
+OSD shows for it, rather than the app taking over a key it cannot actually
+act on. `HUDStepper` (`OpenIslandCore`) is the pure stepping grid every press
+moves along: 1/16 of the range per plain press, 1/64 with ⌥⇧ held, matching
+macOS's own two granularities for these keys.
+
+### What it does not cover
+
+Control Center's own sliders, AirPods' volume, the Touch Bar, and an
+external display's own on-screen controls are outside what a system-defined
+key event or these private frameworks can reach — those still show macOS's
+own display no matter how this feature is configured.
+
+### Settings
+
+Everything lives behind `HUDSettings.replacesSystem`, off by default:
+turning it on is the one place that asks for Accessibility
+(`AXIsProcessTrustedWithOptions` with the prompt option), and every other
+switch in the group — per-meter enable, the keyboard backlight, the feedback
+sound — only matters once it is. The keyboard backlight stays opt-in even
+with the master switch on, being the meter most likely to shift between
+macOS versions.
+
 ## What this PR does not do
 
 - No real now-playing or lock-scan feature exists yet. `AppModel` exposes

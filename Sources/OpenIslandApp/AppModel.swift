@@ -539,6 +539,10 @@ final class AppModel {
     /// separate file, and `private` in Swift is file-scoped rather than
     /// type-scoped.
     @ObservationIgnored let pasteboardWatcher = PasteboardWatcher()
+    /// Answers volume/brightness/keyboard-backlight keys with the island's
+    /// own gauge instead of macOS's built-in on-screen display, when
+    /// `settings.hud.replacesSystem` is on.
+    let systemHUD = SystemHUDCoordinator()
 
     /// Holds no microphone until the key is pressed with a card waiting.
     @ObservationIgnored let voiceAnswer: VoiceCommandSession
@@ -865,6 +869,7 @@ final class AppModel {
         startAmbientBoardIfEnabled()
         configureFocusTimer()
         configureClipboard()
+        configureSystemHUD()
 
         quietScenes.start()
         screenLockWatcher.onLocked = { [weak self] in
@@ -1642,6 +1647,7 @@ final class AppModel {
         // away from the copy the user is actually using.
         if !disablesOverlayEventMonitoringDuringHarness {
             startPanelHotkeys()
+            startSystemHUDIfNeeded()
         }
 
         if loadRuntimeState {

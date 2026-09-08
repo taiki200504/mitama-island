@@ -1,4 +1,5 @@
 import AppKit
+import ApplicationServices
 import AVFoundation
 import SwiftUI
 
@@ -12,6 +13,7 @@ struct DisplaySettingsPane: View {
     private var lockScan: LockScanSettings { model.settings.lockScan }
     private var timer: TimerSettings { model.settings.timer }
     private var clipboard: ClipboardSettings { model.settings.clipboard }
+    private var hud: HUDSettings { model.settings.hud }
 
     var body: some View {
         SettingsPane(tab: .display) {
@@ -23,6 +25,7 @@ struct DisplaySettingsPane: View {
             shelfSection
             timerSection
             clipboardSection
+            hudSection
             diagnosticsSection
         }
     }
@@ -406,6 +409,76 @@ struct DisplaySettingsPane: View {
 
     private var pastesOnSelectAvailability: FeatureAvailability {
         AXIsProcessTrusted() ? .ready : .unsupported(reasonKey: "settings.clipboard.pastesOnSelect.needsAccessibility")
+    }
+
+    // MARK: System HUD
+
+    private var hudAccessibilityDenied: Bool {
+        hud.replacesSystem && !AXIsProcessTrusted()
+    }
+
+    private var hudSection: some View {
+        Section(lang.t("settings.display.section.hud")) {
+            SettingsToggleRow(
+                title: lang.t("settings.hud.replacesSystem"),
+                help: lang.t("settings.hud.replacesSystem.help"),
+                availability: hudAccessibilityDenied
+                    ? .unsupported(reasonKey: "settings.hud.replacesSystem.denied")
+                    : .ready,
+                isOn: Binding(
+                    get: { hud.replacesSystem },
+                    set: { isOn in
+                        hud.replacesSystem = isOn
+                        guard isOn else {
+                            model.systemHUD.stop()
+                            return
+                        }
+                        // Asking here and nowhere else, the same rule
+                        // `showsNextEvent` follows above: a permission dialog
+                        // only makes sense right after the switch that caused it.
+                        //
+                        // `kAXTrustedCheckOptionPrompt` itself is a global
+                        // `var` the SDK does not mark concurrency-safe; its
+                        // value is this fixed string, so the string literal
+                        // sidesteps that without changing what gets asked.
+                        _ = AXIsProcessTrustedWithOptions(
+                            ["AXTrustedCheckOptionPrompt" as CFString: true] as CFDictionary
+                        )
+                        model.systemHUD.start()
+                    }
+                )
+            )
+
+            SettingsToggleRow(
+                title: lang.t("settings.hud.volume"),
+                isOn: Binding(get: { hud.volume }, set: { hud.volume = $0 })
+            )
+            .disabled(!hud.replacesSystem)
+
+            SettingsToggleRow(
+                title: lang.t("settings.hud.brightness"),
+                isOn: Binding(get: { hud.brightness }, set: { hud.brightness = $0 })
+            )
+            .disabled(!hud.replacesSystem)
+
+            SettingsToggleRow(
+                title: lang.t("settings.hud.keyboardBacklight"),
+                help: lang.t("settings.hud.keyboardBacklight.help"),
+                isOn: Binding(get: { hud.keyboardBacklight }, set: { hud.keyboardBacklight = $0 })
+            )
+            .disabled(!hud.replacesSystem)
+
+            SettingsToggleRow(
+                title: lang.t("settings.hud.playsFeedbackSound"),
+                isOn: Binding(get: { hud.playsFeedbackSound }, set: { hud.playsFeedbackSound = $0 })
+            )
+            .disabled(!hud.replacesSystem)
+
+            SettingsRow(
+                title: lang.t("settings.hud.limits"),
+                help: lang.t("settings.hud.limits.help")
+            )
+        }
     }
 
     // MARK: Diagnostics

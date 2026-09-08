@@ -329,6 +329,17 @@
 "settings.clipboard.pastesOnSelect" = "選ぶと自動で貼り付ける";
 "settings.clipboard.pastesOnSelect.help" = "既定はオフ。オンにすると項目を選んだ時に手前のアプリへ⌘Vも送ります。";
 "settings.clipboard.pastesOnSelect.needsAccessibility" = "アクセシビリティの許可が必要です。システム設定 → プライバシーとセキュリティ → アクセシビリティ。";
+"settings.display.section.hud" = "システムHUD";
+"settings.hud.replacesSystem" = "音量・輝度キーを島で受ける";
+"settings.hud.replacesSystem.help" = "最初の一回だけアクセシビリティを求め、以後はmacOS標準の表示の代わりに島自身のゲージを出します。";
+"settings.hud.replacesSystem.denied" = "アクセシビリティのアクセスが許可されていません。システム設定 → プライバシーとセキュリティ → アクセシビリティ で許可してください。";
+"settings.hud.volume" = "音量";
+"settings.hud.brightness" = "画面の輝度";
+"settings.hud.keyboardBacklight" = "キーボードのバックライト";
+"settings.hud.keyboardBacklight.help" = "非公開のAPIを使っており、macOSのバージョンによって挙動が変わり得るため、上のスイッチをオンにしても既定では無効のままです。";
+"settings.hud.playsFeedbackSound" = "押すたびに音を鳴らす";
+"settings.hud.limits" = "対象外";
+"settings.hud.limits.help" = "コントロールセンターのスライダー、AirPods、Touch Bar、外部ディスプレイ自体の操作は、引き続きmacOS標準の表示になります。";
 "settings.pending.completionCardSizing" = "完了カードは今は内容に合わせて高さが決まります。";
 "settings.pending.notchCalibration" = "ノッチの寸法を上書きできる作りが要ります。";
 "settings.points.format" = "%@pt";

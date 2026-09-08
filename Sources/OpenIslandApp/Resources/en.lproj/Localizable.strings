@@ -329,6 +329,17 @@
 "settings.clipboard.pastesOnSelect" = "Paste when you pick an item";
 "settings.clipboard.pastesOnSelect.help" = "Off by default. When on, picking a row also sends ⌘V to whatever app was frontmost.";
 "settings.clipboard.pastesOnSelect.needsAccessibility" = "Needs Accessibility access. System Settings → Privacy & Security → Accessibility.";
+"settings.display.section.hud" = "System HUD";
+"settings.hud.replacesSystem" = "Answer volume and brightness keys on the island";
+"settings.hud.replacesSystem.help" = "Asks for Accessibility once, then shows the island's own gauge instead of macOS's on-screen display.";
+"settings.hud.replacesSystem.denied" = "Accessibility access is off. System Settings → Privacy & Security → Accessibility.";
+"settings.hud.volume" = "Volume";
+"settings.hud.brightness" = "Brightness";
+"settings.hud.keyboardBacklight" = "Keyboard backlight";
+"settings.hud.keyboardBacklight.help" = "Uses a private API that can change between macOS versions, so it stays off even once the switch above is on.";
+"settings.hud.playsFeedbackSound" = "Play a sound on each press";
+"settings.hud.limits" = "Not covered";
+"settings.hud.limits.help" = "Control Center's sliders, AirPods, the Touch Bar, and external displays' own controls still show macOS's own display.";
 "settings.pending.completionCardSizing" = "The completion card sizes itself to its content today.";
 "settings.pending.notchCalibration" = "Needs the notch geometry to accept an override.";
 "settings.points.format" = "%@pt";

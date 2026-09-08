@@ -565,9 +565,12 @@ struct SAOSneakPeekView: View {
     let peek: IslandSneakPeek
 
     var body: some View {
-        if peek.kind == .lockScan {
+        switch peek.kind {
+        case .lockScan:
             LockScanPeekView(peek: peek)
-        } else {
+        case .hudGauge:
+            HUDGaugePeekView(peek: peek)
+        default:
             HStack(spacing: 5) {
                 Image(systemName: peek.icon)
                     .font(.islandMono(size: 10, weight: .semibold))
@@ -590,6 +593,48 @@ struct SAOSneakPeekView: View {
             .lineLimit(1)
             .fixedSize(horizontal: true, vertical: false)
         }
+    }
+}
+
+/// A system HUD gauge — volume, brightness, or the keyboard backlight —
+/// drawn as `HUDStepper`'s 16 discrete blocks rather than the continuous
+/// fill the generic sneak-peek gauge above uses. Matches the stepped feel of
+/// the key presses driving it: each plain press moves exactly one block.
+private struct HUDGaugePeekView: View {
+    let peek: IslandSneakPeek
+    private static let totalSegments = 16
+    private static let segmentWidth: CGFloat = 2
+    private static let segmentGap: CGFloat = 1.5
+
+    private var litSegments: Int {
+        HUDStepper.segments(level: peek.gauge ?? 0)
+    }
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: peek.icon)
+                .font(.islandMono(size: 10, weight: .semibold))
+                .foregroundStyle(V6Palette.paper.opacity(0.92))
+
+            HStack(spacing: Self.segmentGap) {
+                ForEach(0..<Self.totalSegments, id: \.self) { index in
+                    SAOGaugeShape(fraction: 1, isTrack: true)
+                        .fill(index < litSegments ? SAOGrammar.Palette.hpLimeEnd : V6Palette.paper.opacity(0.16))
+                        .frame(width: Self.segmentWidth, height: 6)
+                }
+            }
+
+            Text(peek.text)
+                .font(.islandMono(size: 11))
+                .foregroundStyle(V6Palette.paper.opacity(0.92))
+        }
+        .lineLimit(1)
+        .fixedSize(horizontal: true, vertical: false)
+    }
+
+    /// The width `IslandSneakPeek.intrinsicWidth()` reserves for this layout.
+    static var reservedWidth: CGFloat {
+        CGFloat(totalSegments) * segmentWidth + CGFloat(totalSegments - 1) * segmentGap
     }
 }
 
@@ -789,6 +834,9 @@ extension IslandSneakPeek {
             return 16 + 5 + textWidth
         }
         let icon: CGFloat = 10 + 5
+        if kind == .hudGauge {
+            return icon + HUDGaugePeekView.reservedWidth + 5 + textWidth
+        }
         let gaugeWidth: CGFloat = gauge != nil ? 44 + 5 : 0
         return icon + textWidth + gaugeWidth
     }

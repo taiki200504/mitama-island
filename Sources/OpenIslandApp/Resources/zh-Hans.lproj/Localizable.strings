@@ -329,6 +329,17 @@
 "settings.clipboard.pastesOnSelect" = "选中时自动粘贴";
 "settings.clipboard.pastesOnSelect.help" = "默认关闭。开启后选中一项会向当前最前面的应用发送 ⌘V。";
 "settings.clipboard.pastesOnSelect.needsAccessibility" = "需要辅助功能权限。系统设置 → 隐私与安全性 → 辅助功能。";
+"settings.display.section.hud" = "系统 HUD";
+"settings.hud.replacesSystem" = "在岛上响应音量与亮度按键";
+"settings.hud.replacesSystem.help" = "只询问一次辅助功能权限，之后用岛本身的量表取代 macOS 内建的画面显示。";
+"settings.hud.replacesSystem.denied" = "辅助功能权限已关闭。系统设置 → 隐私与安全性 → 辅助功能。";
+"settings.hud.volume" = "音量";
+"settings.hud.brightness" = "屏幕亮度";
+"settings.hud.keyboardBacklight" = "键盘背光";
+"settings.hud.keyboardBacklight.help" = "使用的是私有 API，可能随 macOS 版本变化，因此即使上方开关已打开，默认仍保持关闭。";
+"settings.hud.playsFeedbackSound" = "每次按下时播放声音";
+"settings.hud.limits" = "不涵盖的范围";
+"settings.hud.limits.help" = "控制中心的滑块、AirPods、Touch Bar 以及外部显示器自身的控制，仍会显示 macOS 内建画面。";
 "settings.pending.completionCardSizing" = "完成卡片目前会根据内容自动确定高度。";
 "settings.pending.notchCalibration" = "需要刘海尺寸支持覆盖设置。";
 "settings.points.format" = "%@pt";

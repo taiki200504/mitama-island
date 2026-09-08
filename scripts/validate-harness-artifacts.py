@@ -559,6 +559,20 @@ def main() -> None:
             "clipboardSurface text values (file item)",
         )
 
+    elif scenario == "hudVolume":
+        # The HUD gauge overrides the closed body just like sneakPeekPop —
+        # the fixture's percentage text has to actually be on screen.
+        if notch_status != "closed":
+            fail(f"expected closed notch for hudVolume, got {notch_status!r}")
+        require_frame_between(
+            overlay_frame,
+            width=(520, 780),
+            height=(35, 500),
+            context="hudVolume overlay frame",
+        )
+        if not any("56%" in value for value in text_values):
+            fail("hudVolume is missing its gauge percentage")
+
     else:
         fail(f"unsupported scenario {scenario!r}")
 

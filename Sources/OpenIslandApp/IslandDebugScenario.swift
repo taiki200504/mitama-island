@@ -71,6 +71,7 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
     case timerSurface
     case eventInProgress
     case clipboardSurface
+    case hudVolume
 
     var id: String { rawValue }
 
@@ -116,6 +117,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Event In Progress"
         case .clipboardSurface:
             "Clipboard Surface"
+        case .hudVolume:
+            "System HUD (Volume)"
         }
     }
 
@@ -159,6 +162,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Closed island body while a calendar entry that just started is still fresh."
         case .clipboardSurface:
             "Opened island with three fixture clipboard items: text, a file, and an image."
+        case .hudVolume:
+            "The closed island's HUD gauge, pinned at 9 of 16 segments after a volume-up press."
         }
     }
 
@@ -471,6 +476,31 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                 sessions: [],
                 selectedSessionID: nil,
                 debugClipboardItems: DebugSessionFactory.clipboardFixtureItems(now: now)
+            )
+
+        case .hudVolume:
+            let sessions = DebugSessionFactory.listSessions(now: now)
+            return IslandDebugSnapshot(
+                title: title,
+                summary: summary,
+                previewHeight: 78,
+                notchStatus: .closed,
+                notchOpenReason: nil,
+                islandSurface: .sessionList(),
+                sessions: sessions,
+                selectedSessionID: sessions.first?.id,
+                debugSneakPeek: IslandSneakPeek(
+                    kind: .hudGauge,
+                    // 9 of 16 segments (0.5625) rounds to the odd 56% a real
+                    // volume-up press would leave the level at, rather than a
+                    // round number a fixture could be confused with.
+                    text: "56%",
+                    icon: "speaker.wave.2.fill",
+                    gauge: 0.5625,
+                    // Set well past the kind's real 1.2s so a headless
+                    // capture always lands while it's still showing.
+                    until: now.addingTimeInterval(30)
+                )
             )
         }
     }
