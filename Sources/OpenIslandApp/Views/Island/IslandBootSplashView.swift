@@ -12,6 +12,7 @@ struct IslandBootSplashView<Fallback: View>: View {
 
     @State private var ringProgress: Double = 0
     @State private var isFinished = false
+    @State private var finishTask: Task<Void, Never>?
 
     /// Fixed, not localized — a system readout rather than a sentence, the
     /// same treatment `V6PeekBandView` gives an agent's own name.
@@ -35,9 +36,18 @@ struct IslandBootSplashView<Fallback: View>: View {
                 withAnimation(.linear(duration: 1.0)) {
                     ringProgress = 1
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                // A plain `asyncAfter` would still fire and flip `isFinished`
+                // even after this view (and its `@State`) is gone — the
+                // panel can close well inside 1.0s if the user acts first.
+                finishTask = Task {
+                    try? await Task.sleep(for: .seconds(1.0))
+                    guard !Task.isCancelled else { return }
                     isFinished = true
                 }
+            }
+            .onDisappear {
+                finishTask?.cancel()
+                finishTask = nil
             }
         }
     }

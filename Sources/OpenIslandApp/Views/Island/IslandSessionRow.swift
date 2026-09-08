@@ -59,6 +59,10 @@ struct IslandSessionRow: View {
     @State var detailOverride: Bool?
     @State var replyText: String = ""
     @State private var showsGestureRing = true
+    /// Invalidates a pending hide from a stale arming — without this, a ring
+    /// armed for one session could still fire its hide after the row was
+    /// reused for a different, freshly-armed one.
+    @State private var gestureRingGeneration = 0
 
     var body: some View {
         rowBody(referenceDate: referenceDate)
@@ -92,7 +96,13 @@ struct IslandSessionRow: View {
                         .padding(.leading, detailLeadingInset)
                         .padding(.trailing, sideInset)
                         .padding(.bottom, 13)
-                        .transition(IslandTransition.resolved(IslandTransition.modal))
+                        // `IslandTransition.modal` scales visually but never
+                        // shrinks the layout height it reserves, so inside
+                        // this row's scroll view the rest of the list jumped
+                        // to its final position the instant this appeared —
+                        // only the scale animated, not the space around it.
+                        // A plain fade has no such mismatch to expose.
+                        .transition(.opacity)
                 }
             }
         }
@@ -140,11 +150,18 @@ struct IslandSessionRow: View {
         // A session that changes state should be seen changing, not found
         // already changed the next time you look at the panel.
         .animation(IslandMotion.rowPhase, value: session.phase)
-        .onAppear {
-            guard isGestureHighlighted else { return }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                showsGestureRing = false
-            }
+        .onAppear { armGestureRingIfHighlighted() }
+        // List rows get reused for a different session at the same scroll
+        // position without a fresh `onAppear` — without this, a row that
+        // already hid its ring for a past session stayed hidden forever for
+        // whichever session landed on it next.
+        .onChange(of: session.id) { _, _ in
+            showsGestureRing = true
+            armGestureRingIfHighlighted()
+        }
+        .onChange(of: isGestureHighlighted) { _, _ in
+            showsGestureRing = true
+            armGestureRingIfHighlighted()
         }
         .onHover { hovering in
             guard isInteractive, allowsRowHoverHighlight else { return }
@@ -154,6 +171,20 @@ struct IslandSessionRow: View {
             if !interactive {
                 detailOverride = nil
             }
+        }
+    }
+
+    /// Schedules the ring's own 1.2s hide, only while this row is actually
+    /// the one a gesture pointed at. Each call retires any hide scheduled by
+    /// an earlier call, so a row recycled mid-countdown for a new highlight
+    /// isn't hidden early by the old session's timer.
+    private func armGestureRingIfHighlighted() {
+        guard isGestureHighlighted else { return }
+        gestureRingGeneration &+= 1
+        let generation = gestureRingGeneration
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+            guard generation == gestureRingGeneration else { return }
+            showsGestureRing = false
         }
     }
 

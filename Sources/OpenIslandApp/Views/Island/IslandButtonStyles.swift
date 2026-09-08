@@ -104,15 +104,19 @@ private struct IslandActionButtonBody: View {
             .animation(.easeOut(duration: 0.08), value: isPressed)
             .onHover { hovering in
                 isHovering = hovering
-                guard hovering else { return }
+                // Reduce Motion drops the sweep entirely rather than merely
+                // shortening it — it has no informational content, only
+                // motion, so there is nothing to keep once the animation
+                // that carries it is gone.
+                guard hovering, !IslandMotion.reducesMotion else { return }
                 // Runs once per hover, not on every frame the pointer stays.
                 sweepOffset = -1
-                withAnimation(IslandMotion.selectionSweep) {
+                withAnimation(IslandMotion.resolved(IslandMotion.selectionSweep)) {
                     sweepOffset = 1
                 }
             }
             .onChange(of: isPressed) { _, pressed in
-                withAnimation(IslandMotion.glowPulse) {
+                withAnimation(IslandMotion.resolved(IslandMotion.glowPulse)) {
                     glowOpacity = pressed ? 1.0 : 0.81
                 }
             }
