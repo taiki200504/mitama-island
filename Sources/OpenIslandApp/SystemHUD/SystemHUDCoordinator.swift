@@ -46,7 +46,7 @@ final class SystemHUDCoordinator {
     private let volume: any VolumeControlling
     private let brightness: any BrightnessControlling
     private let keyboardBacklight: any KeyboardBacklightControlling
-    private let feedbackSound: () -> Void
+    private let feedbackSound: @MainActor () -> Void
     private let modifierFlags: () -> NSEvent.ModifierFlags
 
     @ObservationIgnored var settings: HUDSettings?
@@ -61,7 +61,7 @@ final class SystemHUDCoordinator {
         volume: any VolumeControlling = AudioOutputControl(),
         brightness: any BrightnessControlling = DisplayBrightnessControl(),
         keyboardBacklight: any KeyboardBacklightControlling = KeyboardBacklightControl(),
-        feedbackSound: @escaping () -> Void = SystemHUDCoordinator.playSystemFeedbackSound,
+        feedbackSound: @escaping @MainActor () -> Void = SystemHUDCoordinator.playSystemFeedbackSound,
         modifierFlags: @escaping () -> NSEvent.ModifierFlags = { NSEvent.modifierFlags }
     ) {
         self.tap = tap
