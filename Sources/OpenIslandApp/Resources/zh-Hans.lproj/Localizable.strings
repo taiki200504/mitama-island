@@ -741,6 +741,13 @@
 "settings.display.ambient.help" = "离开 Mac 后，全屏显示时钟、下一个日程和正在等待你的对象。在专注模式、共享屏幕、其他应用正在使用摄像头（通话中）或岛已展开时不会出现。按任意键或点击即可返回。";
 "settings.display.ambient.never" = "不显示";
 "settings.display.ambient.minutes" = "%d 分钟后";
+"settings.display.ambientBackdrop" = "待机画面背景";
+"settings.display.ambientBackdrop.help" = "使用电池、低电量模式、Mac 过热，或非主显示器时不会播放视频。";
+"settings.display.ambientBackdrop.gradient" = "按时段渐变";
+"settings.display.ambientBackdrop.video" = "我自己的视频";
+"settings.display.ambientVideoFolder" = "视频文件夹";
+"settings.display.ambientVideoFolder.help" = "把你自己的 .mov、.mp4 或 .m4v 文件放进这里。应用本身不附带任何视频。";
+"settings.display.ambientVideoFolder.choose" = "选择文件夹…";
 "settings.display.showsNextEvent" = "在收起的岛上显示下一个日程";
 "settings.display.showsNextEvent.help" = "当没有任何事情等待你时，显示 8 小时内下一个日程的开始时间与剩余时间。需要日历读取权限。全天日程不会显示。";
 "settings.display.showsNextEvent.noAccess" = "没有日历访问权限。请在系统设置 → 隐私与安全性 → 日历 中允许 Mitama Island。";

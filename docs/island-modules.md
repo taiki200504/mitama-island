@@ -170,6 +170,45 @@ posts a synthetic ⌘V to whatever app is frontmost. `ClipboardStore` tells the
 watcher about every write it makes back to the pasteboard so a copy the
 store itself performed is never re-recorded as a new external one.
 
+## Ambient backdrop
+
+2026-09-08. What the idle board draws behind the clock, on top of the fixed
+`ink` layer everything else already sits on.
+
+`AmbientBackdrop` (`OpenIslandCore`) is one of two things: `.gradient(phase)`
+— `TimeOfDayPhase` is `dawn` (05:00–08:00) / `day` (08:00–17:00) / `dusk`
+(17:00–20:00) / `night`, from fixed local hours rather than a sunrise
+calculation — or `.video(URL)`. `AmbientBackdropPolicy.resolve(_:)` is the
+pure function that picks between them: video only when the setting asks for
+it, a file actually exists in the ambient folder, and
+`AmbientBackdropPolicy.Conditions` says the machine can afford to decode one
+(not on battery, not in Low Power Mode, not thermally elevated) — everything
+else falls back to the gradient for whatever `now` is, the same reasoning
+`CameraPowerPolicy` uses for the sustained camera. `AmbientVideoLibrary`
+filters a directory listing to `.mov`/`.mp4`/`.m4v` and picks one
+deterministically by day-of-year, so the same day always shows the same clip.
+
+No video ships with the app. Apple's own Aerial clips are not
+redistributable, and licensing a substitute isn't worth it for a decoration —
+so `Sources/OpenIslandApp/Ambient/AmbientVideoFolder.swift` just points at
+`Application Support/MitamaIsland/Ambient` (or wherever
+`DisplaySettings.ambientVideoFolderPath` says instead) and creates it on
+first look. `AmbientVideoLayerView` is an `AVQueuePlayer` +
+`AVPlayerLooper` behind an `NSViewRepresentable`, muted, looping, and paused
+the moment SwiftUI tears it down.
+
+Weather is deliberately not part of this — the phase already changes four
+times a day without a network call, and pulling in an actual forecast would
+turn a decoration into another permission dialog and another thing that can
+fail silently.
+
+`AmbientOverlayController.present()` resolves the backdrop once per
+presentation for the primary display; every other screen gets the gradient
+outright rather than a second copy of the same decode. The harness pins this
+with `debugAmbientDate` (`ambientBoardNight`, fixed to 02:00) rather than
+forcing `.gradient(.night)` directly, so the scenario still exercises the
+real `TimeOfDay.phase` boundary rather than bypassing it.
+
 ## What this PR does not do
 
 - No real now-playing or lock-scan feature exists yet. `AppModel` exposes
@@ -179,3 +218,5 @@ store itself performed is never re-recorded as a new external one.
 - `IslandSurface.nowPlaying` still exists as an opened-content placeholder (a
   bare `saoCaps` title) so the surface is reachable; its real content is a
   later PR.
+- The idle board doesn't add a now-playing row either, for the same reason:
+  no `AppModel.nowPlaying` to read from exists on `main` yet.

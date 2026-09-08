@@ -45,6 +45,10 @@ struct IslandDebugSnapshot {
     /// closed body, the opened island's join bar, and the ambient board all
     /// read from a real refresh.
     var debugCurrentEvent: UpcomingCalendarEvent.Current?
+    /// Pins the ambient board's backdrop resolution to a fixed moment
+    /// instead of the wall clock, so `ambientBoardNight` always lands on the
+    /// same gradient no matter when the harness happens to run.
+    var debugAmbientDate: Date?
     /// Items to load straight into `ClipboardStore` for the
     /// `clipboardSurface` scenario — never through `record(_:)`, the same
     /// reasoning `shelfItems` gives for its own fixture loading.
@@ -68,6 +72,7 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
     case completionBanner
     case longQuestionCard
     case ambientBoard
+    case ambientBoardNight
     case linkstart
     case sneakPeekPop
     case closedAccessoryTimer
@@ -107,6 +112,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Long Question Card"
         case .ambientBoard:
             "Idle Board"
+        case .ambientBoardNight:
+            "Idle Board (Night Gradient)"
         case .linkstart:
             "Login Sequence"
         case .sneakPeekPop:
@@ -152,6 +159,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Many long options: the list scrolls and the submit button stays put."
         case .ambientBoard:
             "The screen the machine shows while it is being left alone."
+        case .ambientBoardNight:
+            "The idle board's backdrop pinned to 2am, so its night gradient shows regardless of when this runs."
         case .linkstart:
             "The full-screen sequence that runs before the island lets you in, paused partway through."
         case .sneakPeekPop:
@@ -348,6 +357,27 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                 sessions: [recent, stale],
                 selectedSessionID: recent.id,
                 presentsAmbientBoard: true
+            )
+
+        case .ambientBoardNight:
+            // 2am on whatever day `now` falls on, so `TimeOfDay.phase`
+            // always resolves to `.night` no matter when this runs.
+            var components = Calendar.current.dateComponents([.year, .month, .day], from: now)
+            components.hour = 2
+            components.minute = 0
+            let night = Calendar.current.date(from: components) ?? now
+            let recent = DebugSessionFactory.approvalSession(now: now.addingTimeInterval(-8 * 60))
+            return IslandDebugSnapshot(
+                title: title,
+                summary: summary,
+                previewHeight: 78,
+                notchStatus: .closed,
+                notchOpenReason: nil,
+                islandSurface: .sessionList(),
+                sessions: [recent],
+                selectedSessionID: recent.id,
+                presentsAmbientBoard: true,
+                debugAmbientDate: night
             )
 
         case .linkstart:
