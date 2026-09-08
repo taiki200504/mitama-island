@@ -71,8 +71,17 @@ final class ClipboardStore {
     /// `PasteboardWatcher.onNewItem` in. Not `add(_:)` on any random item:
     /// production only ever calls this from that one place, so the ledger's
     /// own dedup-and-cap rule always runs on a real, just-copied item.
+    ///
+    /// Whatever the ledger's own cap or dedup rule pushed out — an image
+    /// bumped off the tail, or a duplicate's older copy — has its blob files
+    /// deleted here. Without this an image that fell off the end of the
+    /// history would sit in `Application Support` forever, outliving every
+    /// row that could ever point back to it.
     func record(_ item: ClipboardItem) {
+        let previousIDs = Set(items.map(\.id))
         items = ClipboardLedger.inserting(item, into: items)
+        let droppedIDs = previousIDs.subtracting(items.map(\.id))
+        for id in droppedIDs { removeBlobs(for: id) }
         saveIfPersisting()
     }
 
@@ -91,16 +100,33 @@ final class ClipboardStore {
         watcher?.resyncChangeCount()
     }
 
-    /// `copy(_:)`, followed by a synthetic ⌘V — only when the setting is on
-    /// and Accessibility has actually been granted. Without that permission
-    /// the event is silently dropped by macOS, which is worse than not
-    /// trying: the row would look like it did nothing. Falling back to a
-    /// plain copy at least leaves the item on the pasteboard for a manual
-    /// ⌘V.
-    func pasteBack(_ item: ClipboardItem) {
-        copy(item)
-        guard pastesOnSelectEnabled(), AXIsProcessTrusted() else { return }
-        postCommandV()
+    /// Whether picking a row should also send a synthetic ⌘V — only true
+    /// when the setting is on and Accessibility has actually been granted.
+    /// Without that permission the event is silently dropped by macOS, which
+    /// is worse than not trying: the row would look like it did nothing.
+    /// `AppModel.selectClipboardItem` checks this to decide whether to defer
+    /// a `postPasteKeystroke()` call until after the island has closed.
+    var shouldPostPasteKeystroke: Bool {
+        pastesOnSelectEnabled() && AXIsProcessTrusted()
+    }
+
+    /// Sends a synthetic ⌘V to whatever app is now frontmost.
+    ///
+    /// Deliberately a separate call from `copy(_:)`, not bundled into one
+    /// "paste back" method: the caller has to close the island — and give
+    /// the frontmost app back its focus — before this fires, or the
+    /// keystroke lands on the island's own search field instead of wherever
+    /// the user actually wanted to paste.
+    func postPasteKeystroke() {
+        let keyCode: CGKeyCode = 9
+        guard let down = CGEvent(keyboardEventSource: nil, virtualKey: keyCode, keyDown: true),
+              let up = CGEvent(keyboardEventSource: nil, virtualKey: keyCode, keyDown: false) else {
+            return
+        }
+        down.flags = .maskCommand
+        up.flags = .maskCommand
+        down.post(tap: .cghidEventTap)
+        up.post(tap: .cghidEventTap)
     }
 
     func remove(_ item: ClipboardItem) {
@@ -109,10 +135,24 @@ final class ClipboardStore {
         saveIfPersisting()
     }
 
+    /// Removes everything, in memory and on disk — unconditionally, whether
+    /// or not `persistsToDisk` is currently on. A stale `ledger.json` left
+    /// over from a session where persistence used to be on is exactly the
+    /// kind of thing "clear" and "turn the feature off" both promise to
+    /// actually clear; gating this on the current setting would leave it
+    /// sitting there, readable the next time persistence is switched back on.
     func clear() {
         for item in items { removeBlobs(for: item.id) }
         items = []
-        saveIfPersisting()
+        try? fileManager.removeItem(at: ledgerURL)
+    }
+
+    /// Same wipe as `clear()`, under the name `AppModel+Clipboard` calls when
+    /// the feature itself is switched off rather than when the user taps
+    /// "Clear all" — turning the setting off has to mean nothing survives it,
+    /// on disk or in memory, the same as it would for a fresh install.
+    func purge() {
+        clear()
     }
 
     /// Test and harness fixture loading: puts items in memory without
@@ -215,21 +255,6 @@ final class ClipboardStore {
 
     private func thumbnailBlobURL(for id: UUID) -> URL {
         directory.appending(path: "\(id.uuidString)-thumb.png")
-    }
-
-    /// Posts a synthetic ⌘V to whatever app is now frontmost — the island
-    /// itself has just closed, so this always lands on the app the user was
-    /// actually in.
-    private func postCommandV() {
-        let keyCode: CGKeyCode = 9
-        guard let down = CGEvent(keyboardEventSource: nil, virtualKey: keyCode, keyDown: true),
-              let up = CGEvent(keyboardEventSource: nil, virtualKey: keyCode, keyDown: false) else {
-            return
-        }
-        down.flags = .maskCommand
-        up.flags = .maskCommand
-        down.post(tap: .cghidEventTap)
-        up.post(tap: .cghidEventTap)
     }
 }
 

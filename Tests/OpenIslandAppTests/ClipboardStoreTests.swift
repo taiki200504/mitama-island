@@ -128,4 +128,101 @@ struct ClipboardStoreTests {
         store.load()
         #expect(store.items.isEmpty)
     }
+
+    // MARK: - Purging (turning the feature off)
+
+    @Test("Purging empties the store even while persistence is on, and nothing comes back on reload")
+    func purgeRemovesEverythingRegardlessOfPersistence() {
+        let directory = makeTempDirectory()
+
+        let store = ClipboardStore(directory: directory)
+        store.persistsToDisk = { true }
+        store.load()
+        let item = imageItem(hash: "img")
+        store.record(item)
+        #expect(store.items.count == 1)
+        #expect(FileManager.default.fileExists(atPath: blobPath(directory, item.id)))
+
+        store.purge()
+        #expect(store.items.isEmpty)
+        #expect(!FileManager.default.fileExists(atPath: blobPath(directory, item.id)))
+
+        let reloaded = ClipboardStore(directory: directory)
+        reloaded.load()
+        #expect(reloaded.items.isEmpty)
+    }
+
+    @Test("A stale ledger from when persistence used to be on doesn't survive clear(), even with persistence now off")
+    func clearDeletesStaleLedgerAfterPersistenceIsTurnedOff() {
+        let directory = makeTempDirectory()
+
+        let store = ClipboardStore(directory: directory)
+        store.persistsToDisk = { true }
+        store.load()
+        store.record(textItem("hello", hash: "a"))
+
+        // The setting is now off, the way `applyClipboardEnabled` leaves it —
+        // `clear()` still has to remove what an earlier, persisting session
+        // wrote.
+        store.persistsToDisk = { false }
+        store.clear()
+
+        let reloaded = ClipboardStore(directory: directory)
+        reloaded.load()
+        #expect(reloaded.items.isEmpty)
+    }
+
+    @Test("Clearing deletes an image item's blob files from disk, not just its ledger entry")
+    func clearDeletesImageBlobFiles() {
+        let directory = makeTempDirectory()
+
+        let store = ClipboardStore(directory: directory)
+        store.persistsToDisk = { true }
+        store.load()
+        let item = imageItem(hash: "img")
+        store.record(item)
+        #expect(FileManager.default.fileExists(atPath: blobPath(directory, item.id)))
+        #expect(FileManager.default.fileExists(atPath: thumbnailBlobPath(directory, item.id)))
+
+        store.clear()
+        #expect(!FileManager.default.fileExists(atPath: blobPath(directory, item.id)))
+        #expect(!FileManager.default.fileExists(atPath: thumbnailBlobPath(directory, item.id)))
+    }
+
+    @Test("An image dropped off the tail by the ledger's own count cap has its blob deleted too")
+    func droppedImageOverCapHasItsBlobDeleted() {
+        let directory = makeTempDirectory()
+
+        let store = ClipboardStore(directory: directory)
+        store.persistsToDisk = { true }
+        store.load()
+
+        let oldest = imageItem(hash: "0")
+        store.record(oldest)
+        #expect(FileManager.default.fileExists(atPath: blobPath(directory, oldest.id)))
+
+        // One more than the cap allows, so `oldest` — the first one in,
+        // sitting at the tail once every later copy lands ahead of it — is
+        // the one the ledger's own count cap pushes out.
+        for index in 1...ClipboardLedger.maximumCount {
+            store.record(imageItem(hash: "\(index)"))
+        }
+
+        #expect(store.items.count == ClipboardLedger.maximumCount)
+        #expect(!store.items.contains { $0.id == oldest.id })
+        #expect(!FileManager.default.fileExists(atPath: blobPath(directory, oldest.id)))
+    }
+
+    // MARK: - Private
+
+    /// Mirrors `ClipboardStore`'s own (private) blob-naming convention, so a
+    /// test can check a blob file's presence on disk directly rather than
+    /// only inferring it from what a reload brings back.
+    private func blobPath(_ directory: URL, _ id: UUID) -> String {
+        directory.appendingPathComponent("\(id.uuidString).png").path
+    }
+
+    private func thumbnailBlobPath(_ directory: URL, _ id: UUID) -> String {
+        directory.appendingPathComponent("\(id.uuidString)-thumb.png").path
+    }
 }
