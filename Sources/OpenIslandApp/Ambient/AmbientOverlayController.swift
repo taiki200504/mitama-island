@@ -25,6 +25,12 @@ final class AmbientOverlayController {
     /// a snapshot taken at presentation time would go stale on screen.
     @ObservationIgnored var board: () -> AmbientBoard = { .make(for: []) }
     @ObservationIgnored var nextEvent: () -> UpcomingCalendarEvent.Band? = { nil }
+    /// The raw state, not a resolved snapshot — captured once at
+    /// presentation, the same way `nextEvent()` hands over an absolute
+    /// `startsAt` rather than a pre-computed "in N minutes" so the board can
+    /// keep recomputing the readout against its own once-a-second clock for
+    /// as long as it stays up.
+    @ObservationIgnored var timer: () -> FocusTimerState = { .idle }
     @ObservationIgnored var lang: LanguageManager = .shared
     /// Called when the board goes away, so the idle count restarts from zero
     /// instead of re-presenting on the next tick.
@@ -45,6 +51,7 @@ final class AmbientOverlayController {
                 rootView: AmbientBoardView(
                     board: board(),
                     nextEvent: nextEvent(),
+                    timer: timer(),
                     lang: lang
                 ),
                 onDismiss: { [weak self] in self?.dismiss() }

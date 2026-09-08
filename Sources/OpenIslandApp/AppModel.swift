@@ -531,6 +531,8 @@ final class AppModel {
     @ObservationIgnored let idle = UserIdleWatcher()
     /// What is coming up, for the closed island's otherwise blank state.
     let calendar = CalendarWatcher()
+    /// The one countdown/Pomodoro/eye-break the app runs.
+    let focusTimer = FocusTimerCoordinator()
 
     /// Holds no microphone until the key is pressed with a card waiting.
     @ObservationIgnored let voiceAnswer: VoiceCommandSession
@@ -848,6 +850,7 @@ final class AppModel {
         }
 
         startAmbientBoardIfEnabled()
+        configureFocusTimer()
 
         quietScenes.start()
         screenLockWatcher.onLocked = { [weak self] in
@@ -1245,6 +1248,7 @@ final class AppModel {
             )
         }
         ambient.nextEvent = { [weak self] in self?.calendar.band }
+        ambient.timer = { [weak self] in self?.focusTimer.state ?? .idle }
         ambient.onDismiss = { [weak self] in self?.idle.markActive() }
         idle.onTick = { [weak self] seconds in self?.considerAmbientBoard(idleFor: seconds) }
     }
@@ -1258,6 +1262,32 @@ final class AppModel {
             return
         }
         idle.start()
+    }
+
+    // MARK: - Focus timer
+
+    /// Wires the timer coordinator to sound, language and the overlay it
+    /// posts its sneak peeks through, then starts the eye-break loop if the
+    /// setting says it should already be running.
+    private func configureFocusTimer() {
+        focusTimer.soundSettings = settings.sound
+        focusTimer.timerSettings = settings.timer
+        focusTimer.lang = lang
+        focusTimer.overlay = overlay
+        if settings.timer.eyeBreakEnabled {
+            focusTimer.start(.eyeBreak())
+        }
+    }
+
+    /// The closed-island accessory's timer input: the real timer's own
+    /// remaining time when one is running, falling back to whatever a
+    /// harness scenario forced directly (`debugClosedAccessoryTimer`) so
+    /// that fixture keeps working ahead of any real timer being active.
+    private func focusTimerAccessoryInput(now: Date) -> IslandClosedInputs.Timer? {
+        if let snapshot = focusTimer.state.snapshot(at: now) {
+            return IslandClosedInputs.Timer(remainingMinutes: snapshot.remainingMinutes, label: snapshot.label)
+        }
+        return debugClosedAccessoryTimer
     }
 
     /// Whether the machine being left alone should become a full screen.
@@ -1298,13 +1328,14 @@ final class AppModel {
             isMuted: isSoundMuted,
             cameraIsWatching: cameraActivation.isRunning,
             shelfItemNames: shelf.items.map(\.displayName),
-            waitingCount: liveAttentionCount
+            waitingCount: liveAttentionCount,
+            timerRunningLabel: focusTimer.state.snapshot(at: .now)?.label
         )
     }
 
-    /// A timer's remaining time, for the closed-island accessory. No real
-    /// timer feature exists yet — a later PR fills this from a live one; the
-    /// harness sets it directly to exercise the accessory ahead of that.
+    /// A timer's remaining time, for the closed-island accessory, used only
+    /// when no real timer is running — a harness scenario sets this directly
+    /// to exercise the accessory without starting `focusTimer` for real.
     var debugClosedAccessoryTimer: IslandClosedInputs.Timer?
 
     /// The closed island's one body slot and one trailing accessory, decided
@@ -1328,7 +1359,7 @@ final class AppModel {
             eventStarted: nil,
             nextEvent: calendar.band,
             showsNextEvent: settings.display.showsNextEvent,
-            timer: debugClosedAccessoryTimer,
+            timer: focusTimerAccessoryInput(now: now),
             // No now-playing feature exists yet — a later PR wires it from
             // MediaRemote.
             nowPlayingIsPlaying: nil,
@@ -2049,10 +2080,14 @@ final class AppModel {
 
         overlay.applyOverlayState(from: snapshot, presentOverlay: presentOverlay, autoCollapseNotificationCards: autoCollapseNotificationCards)
 
-        // No real timer feature exists yet — a scenario forces this directly
-        // to exercise the closed-island accessory ahead of it. Always set,
-        // never left over from whatever scenario loaded before this one.
+        // A scenario forces this directly to exercise the closed-island
+        // accessory without a real timer running. Always set, never left
+        // over from whatever scenario loaded before this one.
         debugClosedAccessoryTimer = snapshot.debugAccessoryTimer
+        // Same reasoning for the timer itself: always reset, whether or not
+        // this scenario poses one, so a previous scenario's timer never
+        // bleeds into this one's screenshot.
+        focusTimer.loadDebugState(snapshot.debugTimerState ?? .idle)
 
         if let sneakPeek = snapshot.debugSneakPeek {
             overlay.presentSneakPeek(sneakPeek)

@@ -11,17 +11,22 @@ public struct StatusMenuInputs: Sendable {
     public var shelfItemNames: [String]
     /// Sessions waiting on an approval or an answer right now.
     public var waitingCount: Int
+    /// The running timer's label ("WORK", "REST", …), or `nil` while idle —
+    /// nil is what decides whether the menu offers presets or a stop action.
+    public var timerRunningLabel: String?
 
     public init(
         isMuted: Bool,
         cameraIsWatching: Bool,
         shelfItemNames: [String],
-        waitingCount: Int
+        waitingCount: Int,
+        timerRunningLabel: String? = nil
     ) {
         self.isMuted = isMuted
         self.cameraIsWatching = cameraIsWatching
         self.shelfItemNames = shelfItemNames
         self.waitingCount = waitingCount
+        self.timerRunningLabel = timerRunningLabel
     }
 }
 
@@ -30,6 +35,10 @@ public enum StatusMenuEntry: Equatable, Sendable {
     case openIsland(waitingCount: Int)
     case toggleMute(isMuted: Bool)
     case toggleCamera(isWatching: Bool)
+    /// Idle: offers the fixed preset list as its own submenu.
+    case startTimer(presets: [FocusTimerPreset])
+    case timerRunning(label: String)
+    case stopTimer
     case shelfHeader(count: Int)
     case shelfItem(name: String)
     case clearShelf
@@ -57,6 +66,13 @@ public enum StatusMenuLayout {
             .toggleMute(isMuted: inputs.isMuted),
             .toggleCamera(isWatching: inputs.cameraIsWatching),
         ]
+
+        if let label = inputs.timerRunningLabel {
+            entries.append(.timerRunning(label: label))
+            entries.append(.stopTimer)
+        } else {
+            entries.append(.startTimer(presets: FocusTimerPreset.allCases))
+        }
 
         if !inputs.shelfItemNames.isEmpty {
             entries.append(.separator)

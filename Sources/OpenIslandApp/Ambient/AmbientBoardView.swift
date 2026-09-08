@@ -10,6 +10,10 @@ import SwiftUI
 struct AmbientBoardView: View {
     let board: AmbientBoard
     let nextEvent: UpcomingCalendarEvent.Band?
+    /// Captured once at presentation; the row below recomputes its own
+    /// readout from this against the board's own once-a-second clock, the
+    /// same way `nextEventRow` does from `event.startsAt`.
+    var timer: FocusTimerState = .idle
     let lang: LanguageManager
 
     var body: some View {
@@ -43,6 +47,11 @@ struct AmbientBoardView: View {
 
                     if let nextEvent {
                         nextEventRow(nextEvent, now: context.date)
+                            .padding(.top, 8)
+                    }
+
+                    if let snapshot = timer.snapshot(at: context.date) {
+                        timerRow(snapshot)
                             .padding(.top, 8)
                     }
 
@@ -89,6 +98,27 @@ struct AmbientBoardView: View {
             Text(lang.t("island.peek.inMinutes", minutes))
                 .font(.islandMono(size: 14, weight: .medium))
                 .foregroundStyle(IslandThemes.current.statusTints.running.opacity(0.9))
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 11)
+        .background(V6Palette.paper.opacity(0.05), in: Capsule())
+    }
+
+    // MARK: - Focus timer
+
+    private func timerRow(_ snapshot: FocusTimerState.Snapshot) -> some View {
+        HStack(spacing: 12) {
+            Circle()
+                .fill(SAOGrammar.Palette.accentOrange)
+                .frame(width: 7, height: 7)
+
+            Text(snapshot.label)
+                .font(.islandMono(size: 14, weight: .semibold))
+                .foregroundStyle(V6Palette.paper.opacity(0.72))
+
+            Text(lang.t("island.peek.inMinutes", snapshot.remainingMinutes))
+                .font(.islandMono(size: 14, weight: .medium))
+                .foregroundStyle(SAOGrammar.Palette.accentOrange.opacity(0.9))
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 11)

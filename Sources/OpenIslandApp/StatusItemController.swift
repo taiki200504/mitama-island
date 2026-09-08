@@ -79,6 +79,32 @@ final class StatusItemController: NSObject, NSMenuDelegate {
                         model.beginTouchlessActivation()
                     }
                 }
+            case .startTimer(let presets):
+                let item = NSMenuItem(
+                    title: model.lang.t("statusItem.timer.start"),
+                    action: nil,
+                    keyEquivalent: ""
+                )
+                let submenu = NSMenu()
+                for preset in presets {
+                    addItem(model.lang.t(preset.labelKey), to: submenu) { [weak model] in
+                        model?.focusTimer.start(preset.mode)
+                    }
+                }
+                item.submenu = submenu
+                menu.addItem(item)
+            case .timerRunning(let label):
+                let item = NSMenuItem(
+                    title: model.lang.t("statusItem.timer.running", label),
+                    action: nil,
+                    keyEquivalent: ""
+                )
+                item.isEnabled = false
+                menu.addItem(item)
+            case .stopTimer:
+                addItem(model.lang.t("statusItem.timer.stop"), to: menu) { [weak model] in
+                    model?.focusTimer.reset()
+                }
             case .shelfHeader(let count):
                 let header = NSMenuItem(
                     title: model.lang.t("statusItem.shelf.header", count),

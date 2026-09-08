@@ -23,6 +23,7 @@ final class SettingsStore: Sendable {
     let voiceCommand: VoiceCommandSettings
     let usage: UsageSettings
     let lockScan: LockScanSettings
+    let timer: TimerSettings
 
     init(store: PreferenceStore = .standard) {
         behaviour = BehaviourSettings(store: store)
@@ -35,6 +36,7 @@ final class SettingsStore: Sendable {
         voiceCommand = VoiceCommandSettings(store: store)
         usage = UsageSettings(store: store)
         lockScan = LockScanSettings(store: store)
+        timer = TimerSettings(store: store)
 
         DisplaySettings.migrateLegacyTheme(in: store)
     }

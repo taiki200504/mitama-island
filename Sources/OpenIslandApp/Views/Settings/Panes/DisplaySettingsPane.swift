@@ -9,6 +9,7 @@ struct DisplaySettingsPane: View {
     private var lang: LanguageManager { model.lang }
     private var display: DisplaySettings { model.settings.display }
     private var lockScan: LockScanSettings { model.settings.lockScan }
+    private var timer: TimerSettings { model.settings.timer }
 
     var body: some View {
         SettingsPane(tab: .display) {
@@ -18,6 +19,7 @@ struct DisplaySettingsPane: View {
             unlockSection
             sessionCardSection
             shelfSection
+            timerSection
             diagnosticsSection
         }
     }
@@ -326,6 +328,37 @@ struct DisplaySettingsPane: View {
                     Text(lang.t(option.labelKey)).tag(option)
                 }
             }
+        }
+    }
+
+    // MARK: Timer
+
+    private var timerSection: some View {
+        Section(lang.t("settings.display.section.timer")) {
+            SettingsToggleRow(
+                title: lang.t("settings.timer.eyeBreakEnabled"),
+                help: lang.t("settings.timer.eyeBreakEnabled.help"),
+                isOn: Binding(
+                    get: { timer.eyeBreakEnabled },
+                    set: { isOn in
+                        timer.eyeBreakEnabled = isOn
+                        if isOn {
+                            model.focusTimer.start(.eyeBreak())
+                        } else if case .eyeBreak = model.focusTimer.state.mode {
+                            model.focusTimer.reset()
+                        }
+                    }
+                )
+            )
+            SettingsToggleRow(
+                title: lang.t("settings.timer.playsSound"),
+                isOn: Binding(get: { timer.playsSound }, set: { timer.playsSound = $0 })
+            )
+            SettingsToggleRow(
+                title: lang.t("settings.timer.autoAdvance"),
+                help: lang.t("settings.timer.autoAdvance.help"),
+                isOn: Binding(get: { timer.autoAdvance }, set: { timer.autoAdvance = $0 })
+            )
         }
     }
 

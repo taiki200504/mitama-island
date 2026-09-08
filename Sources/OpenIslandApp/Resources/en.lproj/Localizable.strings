@@ -183,6 +183,7 @@
 "island.startAgent" = "Start a coding agent in your terminal";
 "island.recentSessions" = "Recent sessions are kept here until the terminal is open again";
 "island.hint.installHooks" = "No agent hooks installed — sessions won't surface events. Tap to set up.";
+"island.header.timer" = "Timer";
 
 /* Island Panel - Session List */
 "island.sessionList.title" = "Sessions";
@@ -297,6 +298,7 @@
 "settings.lockScan.usesCamera" = "Confirm with the camera";
 "settings.lockScan.usesCamera.help" = "Opens the camera for up to two seconds after unlock to see whether you're actually there.";
 "settings.lockScan.usesCamera.denied" = "Camera access is off. System Settings → Privacy & Security → Camera.";
+"settings.display.section.timer" = "Timer";
 "settings.display.contentFontSize" = "Content font size";
 "settings.display.maxPanelHeight" = "Maximum panel height";
 "settings.display.maxPanelWidth" = "Maximum panel width";
@@ -312,6 +314,11 @@
 "settings.display.showSubagents" = "Show subagents";
 "settings.display.showSubagents.help" = "Approvals and questions stay visible either way.";
 "settings.display.showAgentActivity" = "Show what the agent is doing";
+"settings.timer.eyeBreakEnabled" = "Run the 20-20-20 eye break";
+"settings.timer.eyeBreakEnabled.help" = "Every 20 minutes, a 20-second break — starts now and restarts after every rest.";
+"settings.timer.playsSound" = "Play a sound when a phase ends";
+"settings.timer.autoAdvance" = "Move to the next phase automatically";
+"settings.timer.autoAdvance.help" = "Off leaves a finished Pomodoro or eye break waiting on the timer surface's own controls.";
 "settings.pending.completionCardSizing" = "The completion card sizes itself to its content today.";
 "settings.pending.notchCalibration" = "Needs the notch geometry to accept an override.";
 "settings.points.format" = "%@pt";
@@ -725,11 +732,32 @@
 "settings.display.showsNextEvent.noAccess" = "No calendar access. Allow Mitama Island in System Settings → Privacy & Security → Calendars.";
 "island.peek.hours" = "%dh";
 
+/* Focus timer */
+"timer.title.idle" = "Timer";
+"timer.title.work" = "Work";
+"timer.title.rest" = "Rest";
+"timer.action.start" = "Start";
+"timer.action.pause" = "Pause";
+"timer.action.resume" = "Resume";
+"timer.action.reset" = "Reset";
+"timer.preset.pomodoro" = "Pomodoro";
+"timer.preset.eyeBreak" = "Eye break";
+"timer.preset.five" = "5 min";
+"timer.preset.ten" = "10 min";
+"timer.preset.fifteen" = "15 min";
+"timer.preset.twentyFive" = "25 min";
+"timer.sneakPeek.done" = "Done";
+"timer.sneakPeek.breakTime" = "Break";
+"timer.sneakPeek.restSeconds" = "Rest %ds";
+
 /* Status Item (Menu Bar) */
 "statusItem.openIsland" = "Open the Island";
 "statusItem.openIsland.waiting" = "Open the Island (%d waiting)";
 "statusItem.unmute" = "Unmute";
 "statusItem.cameraOn" = "Wake the Camera";
 "statusItem.cameraOff" = "Close the Camera";
+"statusItem.timer.start" = "Start Timer…";
+"statusItem.timer.running" = "Timer: %@";
+"statusItem.timer.stop" = "Stop Timer";
 "statusItem.shelf.header" = "Set Aside (%d)";
 "statusItem.settings" = "Settings…";

@@ -7,13 +7,15 @@ struct StatusMenuLayoutTests {
         isMuted: Bool = false,
         cameraIsWatching: Bool = false,
         shelfItemNames: [String] = [],
-        waitingCount: Int = 0
+        waitingCount: Int = 0,
+        timerRunningLabel: String? = nil
     ) -> StatusMenuInputs {
         StatusMenuInputs(
             isMuted: isMuted,
             cameraIsWatching: cameraIsWatching,
             shelfItemNames: shelfItemNames,
-            waitingCount: waitingCount
+            waitingCount: waitingCount,
+            timerRunningLabel: timerRunningLabel
         )
     }
 
@@ -24,6 +26,7 @@ struct StatusMenuLayoutTests {
             .openIsland(waitingCount: 0),
             .toggleMute(isMuted: false),
             .toggleCamera(isWatching: false),
+            .startTimer(presets: FocusTimerPreset.allCases),
             .separator,
             .settings,
             .quit,
@@ -65,6 +68,7 @@ struct StatusMenuLayoutTests {
             .openIsland(waitingCount: 0),
             .toggleMute(isMuted: false),
             .toggleCamera(isWatching: false),
+            .startTimer(presets: FocusTimerPreset.allCases),
             .separator,
             .shelfHeader(count: 2),
             .shelfItem(name: "a.txt"),
@@ -110,6 +114,7 @@ struct StatusMenuLayoutTests {
             .openIsland(waitingCount: 1),
             .toggleMute(isMuted: true),
             .toggleCamera(isWatching: true),
+            .startTimer(presets: FocusTimerPreset.allCases),
             .separator,
             .shelfHeader(count: 1),
             .shelfItem(name: "only.txt"),
@@ -118,5 +123,23 @@ struct StatusMenuLayoutTests {
             .settings,
             .quit,
         ])
+    }
+
+    // MARK: - Timer
+
+    @Test("Idle offers the preset list instead of a running row")
+    func idleOffersPresets() {
+        let entries = StatusMenuLayout.entries(for: inputs())
+        #expect(entries.contains(.startTimer(presets: FocusTimerPreset.allCases)))
+        #expect(!entries.contains { if case .timerRunning = $0 { true } else { false } })
+        #expect(!entries.contains(.stopTimer))
+    }
+
+    @Test("A running timer offers its label and a stop action instead of presets")
+    func runningOffersStop() {
+        let entries = StatusMenuLayout.entries(for: inputs(timerRunningLabel: "WORK"))
+        #expect(entries.contains(.timerRunning(label: "WORK")))
+        #expect(entries.contains(.stopTimer))
+        #expect(!entries.contains { if case .startTimer = $0 { true } else { false } })
     }
 }
