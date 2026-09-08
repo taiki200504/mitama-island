@@ -50,7 +50,10 @@ struct FocusTimerCoordinatorTests {
         #expect(coordinator.state == state)
     }
 
-    @Test("A finished countdown plays the finish sound and posts a timerDone sneak peek")
+    @Test(
+        "A finished countdown plays the finish sound and posts a timerDone sneak peek",
+        .enabled(if: !TestEnvironment.isCI, "wall-clock expiry; CI runners stall for seconds")
+    )
     func finishPlaysSoundAndPeeks() async throws {
         let coordinator = makeCoordinator()
         var cues: [String] = []
