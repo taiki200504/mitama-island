@@ -31,7 +31,14 @@ struct NDJSONLineSplitter {
 /// `(payload, diff)` pairs for `NowPlayingCoordinator` to fold through
 /// `NowPlayingReducer`. See docs/references/mediaremote-adapter.md for why
 /// this exists instead of talking to `MediaRemote.framework` directly.
-final class MediaRemoteAdapterProcess {
+///
+/// `@unchecked Sendable`, same reasoning as `CodexAppServerClient`:
+/// `Pipe.readabilityHandler` and `Process.terminationHandler` are
+/// `@Sendable`-typed, so capturing `self` in either requires the class to
+/// conform. Every mutation happens sequentially through this one process's
+/// own lifecycle (launch → read/terminate → scheduled relaunch), never
+/// concurrently with itself.
+final class MediaRemoteAdapterProcess: @unchecked Sendable {
     struct Update {
         let payload: [String: Any]
         let diff: Bool
