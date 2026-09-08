@@ -276,7 +276,9 @@ struct V6ClosedPill: View {
         let showsSneakPeek = sneakPeek.map { !$0.text.isEmpty } ?? false
         let hasBody = content?.body != nil
         let showsPeekArea = showsSneakPeek || hasBody
-        let peekWidth = showsSneakPeek ? (sneakPeek?.intrinsicWidth() ?? 0) : (hasBody ? (content?.bodyWidth() ?? 0) : 0)
+        // No title here: the physical notch sits in the middle of exactly
+        // the space an event title would need on this layout.
+        let peekWidth = showsSneakPeek ? (sneakPeek?.intrinsicWidth() ?? 0) : (hasBody ? (content?.bodyWidth(showsEventTitle: false) ?? 0) : 0)
 
         let leftContent = 24 + (showsPeekArea ? Self.innerGap + peekWidth : 0)
         let rightSlotWidth = rightSlot.map { V6RightSlotView.intrinsicWidth(of: $0) } ?? 0
@@ -325,9 +327,11 @@ struct V6ClosedPill: View {
     private var externalBody: some View {
         let glyphW: CGFloat = 24
         let hasBody = content?.body != nil
+        // External layout has room to show the event title next to the HUD
+        // readout — the MacBook layout never does (see `macbookLayout`).
         let peekW = showsSneakPeek
             ? (sneakPeek?.intrinsicWidth() ?? 0)
-            : (hasBody ? (content?.bodyWidth() ?? 0) : 0)
+            : (hasBody ? (content?.bodyWidth(showsEventTitle: true) ?? 0) : 0)
         let showsPeekArea = showsSneakPeek || hasBody
         // The peek area replaces the session-name label while something is
         // showing. Both would fit here, but reading a session title next to
@@ -360,7 +364,7 @@ struct V6ClosedPill: View {
                         .padding(.leading, Self.innerGap)
                         .transition(.opacity.combined(with: .move(edge: .leading)))
                 } else if hasBody, let content {
-                    SAOPeekGaugeView(content: content)
+                    SAOPeekGaugeView(content: content, showsEventTitle: true)
                         .padding(.leading, Self.innerGap)
                         .transition(.opacity.combined(with: .move(edge: .leading)))
                 }
@@ -470,6 +474,10 @@ struct V6ClosedPill: View {
 /// localize it into.
 struct SAOPeekGaugeView: View {
     let content: IslandClosedContent
+    /// Whether there's room to show a just-started meeting's title next to
+    /// the HUD readout. False on the MacBook layout, where the physical
+    /// notch sits in exactly the space it would need.
+    var showsEventTitle: Bool = false
 
     @State private var urgentPulse = false
 
@@ -506,6 +514,15 @@ struct SAOPeekGaugeView: View {
                 Text(SAOPeekGauge.elapsedText(for: islandBody))
                     .font(.islandMono(size: 11))
                     .foregroundStyle(V6Palette.paper.opacity(0.62))
+
+                if showsEventTitle, let eventTitle = SAOPeekGauge.eventTitle(for: islandBody) {
+                    Text(eventTitle)
+                        .font(.islandText(size: 11))
+                        .foregroundStyle(V6Palette.paper.opacity(0.62))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .frame(maxWidth: IslandClosedContent.peekEventTitleMaxWidth, alignment: .leading)
+                }
 
                 if others > 0 {
                     SAOPeekTailStrip(count: others, isWaiting: SAOPeekGauge.tailIsWaiting(for: islandBody))
@@ -718,6 +735,10 @@ extension IslandClosedContent {
     private static let peekInnerGap: CGFloat = 5
     private static let peekTailCell: CGFloat = 8
     private static let peekTailGap: CGFloat = 2
+    /// Room reserved for a just-started meeting's title, on layouts that show
+    /// one — kept in sync with the `.frame(maxWidth:)` `SAOPeekGaugeView`
+    /// actually draws it at, so the two can never disagree.
+    fileprivate static let peekEventTitleMaxWidth: CGFloat = 90
 
     private func tailStripWidth(cells: Int) -> CGFloat {
         guard cells > 0 else { return 0 }
@@ -731,7 +752,11 @@ extension IslandClosedContent {
     /// decision blind to the glyph/padding/gaps that actually eat into the
     /// same budget — see `V6ClosedPill.macbookLayout(...)`, the single place
     /// that now owns the full-width math.
-    fileprivate func bodyWidth() -> CGFloat {
+    ///
+    /// `showsEventTitle` mirrors whichever layout is asking: the MacBook
+    /// layout never reserves room for a title, because the physical notch
+    /// sits in exactly the space it would need.
+    fileprivate func bodyWidth(showsEventTitle: Bool) -> CGFloat {
         guard let body else { return 0 }
         let label = SAOPeekGauge.label(for: body)
         let elapsed = SAOPeekGauge.elapsedText(for: body)
@@ -741,6 +766,9 @@ extension IslandClosedContent {
         width += CGFloat(label.count) * Self.peekCharWidth + Self.peekInnerGap
         width += Self.peekGaugeWidth + Self.peekInnerGap
         width += CGFloat(elapsed.count) * Self.peekCharWidth
+        if showsEventTitle, SAOPeekGauge.eventTitle(for: body) != nil {
+            width += Self.peekInnerGap + Self.peekEventTitleMaxWidth
+        }
         if others > 0 {
             width += Self.peekInnerGap + tailStripWidth(cells: others)
         }

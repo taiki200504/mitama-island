@@ -206,9 +206,11 @@ struct IslandPanelView: View {
             }
         }
         .onTapGesture {
-            if model.notchStatus != .opened {
-                model.notchOpen(reason: .click)
-            }
+            guard model.notchStatus != .opened else { return }
+            // A just-started meeting's join link is only ever offered from
+            // the opened island's join bar — the closed pill always just
+            // opens, the same as every other body it can show.
+            model.notchOpen(reason: .click)
         }
     }
 

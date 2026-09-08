@@ -25,6 +25,7 @@ final class AmbientOverlayController {
     /// a snapshot taken at presentation time would go stale on screen.
     @ObservationIgnored var board: () -> AmbientBoard = { .make(for: []) }
     @ObservationIgnored var nextEvent: () -> UpcomingCalendarEvent.Band? = { nil }
+    @ObservationIgnored var currentEvent: () -> UpcomingCalendarEvent.Current? = { nil }
     /// The raw state, not a resolved snapshot — captured once at
     /// presentation, the same way `nextEvent()` hands over an absolute
     /// `startsAt` rather than a pre-computed "in N minutes" so the board can
@@ -51,6 +52,7 @@ final class AmbientOverlayController {
                 rootView: AmbientBoardView(
                     board: board(),
                     nextEvent: nextEvent(),
+                    currentEvent: currentEvent(),
                     timer: timer(),
                     lang: lang
                 ),

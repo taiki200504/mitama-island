@@ -85,6 +85,19 @@ final class DisplaySettings: PreferenceGroup {
         set { write(\.showsNextEvent, Keys.showsNextEvent, newValue) }
     }
 
+    /// Play a sound and put the entry on the closed island the instant it
+    /// starts, for the first three minutes.
+    ///
+    /// Its own setting rather than folded into `showsNextEvent`, because
+    /// wanting to be told the moment something starts is a different ask
+    /// from wanting a quiet countdown to it — but it has nothing to watch
+    /// without `showsNextEvent`'s calendar access already granted, which is
+    /// why the row that controls this sits disabled until that one is on.
+    var alertsWhenEventStarts: Bool {
+        get { read(\.alertsWhenEventStarts, Keys.alertsWhenEventStarts, true) }
+        set { write(\.alertsWhenEventStarts, Keys.alertsWhenEventStarts, newValue) }
+    }
+
     /// How many minutes of the machine being left alone before the idle board
     /// takes the screen. Zero means never, which is the default.
     ///
@@ -208,6 +221,7 @@ extension DisplaySettings {
         static let playsLinkstart = "display.playsLinkstart"
         static let linkstartWaitsForPhrase = "display.linkstartWaitsForPhrase"
         static let showsNextEvent = "display.showsNextEvent"
+        static let alertsWhenEventStarts = "display.alertsWhenEventStarts"
         static let ambientAfterMinutes = "display.ambientAfterMinutes"
         static let hideIdleSessions = "display.hideIdleSessions"
         static let sessionAutoNaming = "display.sessionAutoNaming"

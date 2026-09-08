@@ -43,8 +43,8 @@ enum SAOPeekGauge {
         switch body {
         case .urgent(let peek), .waiting(let peek):
             peek.agent
-        case .eventStarted(_, let startedAt, _):
-            clockFormatter.string(from: startedAt)
+        case .eventStarted:
+            "NOW"
         case .nextEvent(let band):
             clockFormatter.string(from: band.startsAt)
         }
@@ -54,11 +54,21 @@ enum SAOPeekGauge {
         switch body {
         case .urgent(let peek), .waiting(let peek):
             text(for: peek.elapsed)
-        case .eventStarted:
-            "STARTED"
+        case .eventStarted(_, let startedAt, let endsAt, _):
+            "\(clockFormatter.string(from: startedAt))–\(clockFormatter.string(from: endsAt))"
         case .nextEvent(let band):
             "IN \(band.minutesUntil)M"
         }
+    }
+
+    /// The entry's own title, shown alongside the label on external displays
+    /// where there's room for it — omitted on the MacBook layout, where the
+    /// physical notch sits in the middle of exactly the space it would need.
+    /// `nil` for every other body: only a just-started meeting has a title
+    /// worth showing next to the HUD readout.
+    static func eventTitle(for body: IslandClosedBody) -> String? {
+        guard case .eventStarted(let title, _, _, _) = body else { return nil }
+        return title
     }
 
     static func othersCount(for body: IslandClosedBody) -> Int {

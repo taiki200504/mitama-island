@@ -93,6 +93,13 @@ extension IslandPanelView {
                     .transition(IslandTransition.resolved(IslandTransition.panelDrop))
             }
 
+            if let currentEvent = model.currentCalendarEvent, let joinURL = currentEvent.url {
+                currentEventBar(currentEvent, url: joinURL)
+                    .padding(.horizontal, 18)
+                    .padding(.top, 8)
+                    .transition(IslandTransition.resolved(IslandTransition.panelDrop))
+            }
+
             if let notice = model.notice {
                 noticeBar(notice)
                     .padding(.horizontal, 18)
@@ -165,6 +172,45 @@ extension IslandPanelView {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(notice.text)
+    }
+
+    /// A meeting already in progress, with a join link — the one calendar
+    /// fact worth its own row in the opened island rather than living only
+    /// on the closed pill. No dedicated surface exists for this; it sits
+    /// here the same way the notice bar and the shelf badge do.
+    private func currentEventBar(_ event: UpcomingCalendarEvent.Current, url: URL) -> some View {
+        HStack(spacing: 8) {
+            Text(model.lang.t("island.currentEvent.now"))
+                .font(.islandMono(size: 11, weight: .semibold))
+                .foregroundStyle(SAOGrammar.Palette.accentOrange)
+            Text(event.title)
+                .font(.islandText(size: 12, weight: .medium))
+                .foregroundStyle(V6Palette.paper.opacity(0.9))
+                .lineLimit(1)
+                .truncationMode(.tail)
+            Spacer(minLength: 0)
+            Button {
+                NSWorkspace.shared.open(url)
+            } label: {
+                Text(model.lang.t("island.currentEvent.join"))
+                    .font(.islandMono(size: 11, weight: .semibold))
+                    .foregroundStyle(V6Palette.ink)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(SAOGrammar.Palette.accentOrange, in: Capsule())
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(
+            IslandThemes.current.shape(cornerRadius: 10)
+                .fill(V6Palette.paper.opacity(0.07))
+                .overlay(
+                    IslandThemes.current.shape(cornerRadius: 10)
+                        .stroke(SAOGrammar.Palette.accentOrange.opacity(0.30), lineWidth: 0.5)
+                )
+        )
     }
 
     /// Persistent hint at the top of the expanded island while no agent

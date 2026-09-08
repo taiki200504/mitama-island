@@ -38,6 +38,11 @@ struct IslandDebugSnapshot {
     /// scenario, with no run loop attached so a headless capture always
     /// lands on this exact remaining time.
     var debugTimerState: FocusTimerState?
+    /// Loaded into `CalendarWatcher.loadFixture` rather than bypassing the
+    /// arbiter directly — exercises the same `calendar.current` path the
+    /// closed body, the opened island's join bar, and the ambient board all
+    /// read from a real refresh.
+    var debugCurrentEvent: UpcomingCalendarEvent.Current?
 }
 
 enum IslandDebugScenario: String, CaseIterable, Identifiable {
@@ -58,6 +63,7 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
     case shelfSurface
     case unlockScan
     case timerSurface
+    case eventInProgress
 
     var id: String { rawValue }
 
@@ -99,6 +105,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Unlock Greeting"
         case .timerSurface:
             "Timer Surface"
+        case .eventInProgress:
+            "Event In Progress"
         }
     }
 
@@ -138,6 +146,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "The ring-into-check greeting shown for a couple of seconds right after the screen unlocks."
         case .timerSurface:
             "The opened timer surface mid-Pomodoro, with its own controls and cycle dots."
+        case .eventInProgress:
+            "Closed island body while a calendar entry that just started is still fresh."
         }
     }
 
@@ -417,6 +427,26 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                 sessions: sessions,
                 selectedSessionID: sessions.first?.id,
                 debugTimerState: timerState
+            )
+
+        case .eventInProgress:
+            let sessions = DebugSessionFactory.listSessions(now: now)
+            let startedAt = now.addingTimeInterval(-60)
+            return IslandDebugSnapshot(
+                title: title,
+                summary: summary,
+                previewHeight: 78,
+                notchStatus: .closed,
+                notchOpenReason: nil,
+                islandSurface: .sessionList(),
+                sessions: sessions,
+                selectedSessionID: sessions.first?.id,
+                debugCurrentEvent: UpcomingCalendarEvent.Current(
+                    title: "Design sync",
+                    startsAt: startedAt,
+                    endsAt: startedAt.addingTimeInterval(29 * 60),
+                    url: URL(string: "https://zoom.us/j/5551234567")
+                )
             )
         }
     }

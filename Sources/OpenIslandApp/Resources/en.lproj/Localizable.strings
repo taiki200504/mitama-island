@@ -730,6 +730,13 @@
 "settings.display.showsNextEvent" = "Show what is next on the closed island";
 "settings.display.showsNextEvent.help" = "While nothing is waiting on you, shows the start time of the next entry beginning within eight hours, and how long that is. Needs read access to your calendar. All-day entries are skipped.";
 "settings.display.showsNextEvent.noAccess" = "No calendar access. Allow Mitama Island in System Settings → Privacy & Security → Calendars.";
+
+"settings.display.alertsWhenEventStarts" = "Alert when it starts";
+"settings.display.alertsWhenEventStarts.help" = "Plays a sound and puts the entry on the closed island for the first three minutes, the moment it begins. Needs \"Show what is next on the closed island\" turned on.";
+"island.currentEvent.now" = "NOW";
+"island.currentEvent.join" = "JOIN";
+"ambient.now" = "NOW";
+"ambient.until" = "until %@";
 "island.peek.hours" = "%dh";
 
 /* Focus timer */

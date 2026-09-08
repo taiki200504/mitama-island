@@ -16,12 +16,44 @@ public enum UpcomingCalendarEvent: Sendable {
     public struct Event: Equatable, Sendable {
         public let title: String
         public let startsAt: Date
+        public let endsAt: Date
+        /// A video-call link found on the entry, if any — see `MeetingLink`.
+        public let url: URL?
         public let isAllDay: Bool
 
-        public init(title: String, startsAt: Date, isAllDay: Bool) {
+        public init(title: String, startsAt: Date, endsAt: Date, url: URL? = nil, isAllDay: Bool) {
             self.title = title
             self.startsAt = startsAt
+            self.endsAt = endsAt
+            self.url = url
             self.isAllDay = isAllDay
+        }
+    }
+
+    /// A calendar entry that is happening right now — `startsAt <= now <
+    /// endsAt`. Separate from `Band`, which is only ever about something that
+    /// has not started yet.
+    public struct Current: Equatable, Sendable {
+        public let title: String
+        public let startsAt: Date
+        public let endsAt: Date
+        public let url: URL?
+
+        public init(title: String, startsAt: Date, endsAt: Date, url: URL?) {
+            self.title = title
+            self.startsAt = startsAt
+            self.endsAt = endsAt
+            self.url = url
+        }
+
+        /// Whole minutes since the event began. Never negative.
+        public func minutesSinceStart(at now: Date) -> Int {
+            max(0, Int(now.timeIntervalSince(startsAt) / 60))
+        }
+
+        /// Whole minutes until the event ends. Never negative.
+        public func minutesRemaining(at now: Date) -> Int {
+            max(0, Int(ceil(endsAt.timeIntervalSince(now) / 60)))
         }
     }
 
@@ -76,5 +108,24 @@ public enum UpcomingCalendarEvent: Sendable {
             minutesUntil: max(0, Int(ceil(next.startsAt.timeIntervalSince(now) / 60))),
             othersAhead: upcoming.count - 1
         )
+    }
+
+    /// The entry happening right now, if any — `startsAt <= now < endsAt`.
+    ///
+    /// All-day entries are skipped for the same reason `band` skips them: an
+    /// entry with no real start time isn't "in progress" in a way worth
+    /// interrupting the closed island for. Two overlapping entries pick
+    /// whichever started first — the one that has had the longer claim on
+    /// the moment. Two that started at the same instant fall back to title
+    /// order, so the pick is deterministic rather than following whatever
+    /// order EventKit happened to hand back.
+    public static func current(for events: [Event], now: Date = .now) -> Current? {
+        let inProgress = events
+            .filter { !$0.isAllDay }
+            .filter { $0.startsAt <= now && now < $0.endsAt }
+            .sorted { ($0.startsAt, $0.title) < ($1.startsAt, $1.title) }
+
+        guard let first = inProgress.first else { return nil }
+        return Current(title: first.title, startsAt: first.startsAt, endsAt: first.endsAt, url: first.url)
     }
 }

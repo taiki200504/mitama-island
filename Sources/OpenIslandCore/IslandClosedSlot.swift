@@ -19,7 +19,7 @@ public enum IslandClosedBody: Equatable, Hashable, Sendable {
     /// A calendar entry that just started. Shown only for the first three
     /// minutes — after that it stops being news and starts being a countdown
     /// nobody asked the island to keep.
-    case eventStarted(title: String, startedAt: Date, url: URL?)
+    case eventStarted(title: String, startedAt: Date, endsAt: Date, url: URL?)
     /// What's next, while nothing above is asking for attention.
     case nextEvent(UpcomingCalendarEvent.Band)
 }
@@ -46,11 +46,13 @@ public struct IslandClosedInputs: Sendable {
     public struct EventStarted: Equatable, Hashable, Sendable {
         public let title: String
         public let startedAt: Date
+        public let endsAt: Date
         public let url: URL?
 
-        public init(title: String, startedAt: Date, url: URL?) {
+        public init(title: String, startedAt: Date, endsAt: Date, url: URL?) {
             self.title = title
             self.startedAt = startedAt
+            self.endsAt = endsAt
             self.url = url
         }
     }
@@ -137,7 +139,7 @@ public enum IslandClosedArbiter {
         if let started = inputs.eventStarted {
             let elapsed = inputs.now.timeIntervalSince(started.startedAt)
             if elapsed >= 0, elapsed <= eventStartedFreshness {
-                return .eventStarted(title: started.title, startedAt: started.startedAt, url: started.url)
+                return .eventStarted(title: started.title, startedAt: started.startedAt, endsAt: started.endsAt, url: started.url)
             }
         }
         if inputs.showsNextEvent, let next = inputs.nextEvent {

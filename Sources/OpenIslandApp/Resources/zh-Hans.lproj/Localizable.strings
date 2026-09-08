@@ -730,6 +730,13 @@
 "settings.display.showsNextEvent" = "在收起的岛上显示下一个日程";
 "settings.display.showsNextEvent.help" = "当没有任何事情等待你时，显示 8 小时内下一个日程的开始时间与剩余时间。需要日历读取权限。全天日程不会显示。";
 "settings.display.showsNextEvent.noAccess" = "没有日历访问权限。请在系统设置 → 隐私与安全性 → 日历 中允许 Mitama Island。";
+
+"settings.display.alertsWhenEventStarts" = "开始时提醒";
+"settings.display.alertsWhenEventStarts.help" = "日程开始的瞬间播放提示音，并在最初三分钟内显示在合拢的灵动岛上。需要先开启“在合拢的灵动岛上显示下一项日程”。";
+"island.currentEvent.now" = "NOW";
+"island.currentEvent.join" = "加入";
+"ambient.now" = "NOW";
+"ambient.until" = "至 %@";
 "island.peek.hours" = "%d小时";
 
 /* Focus timer */
