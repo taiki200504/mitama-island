@@ -92,4 +92,43 @@ public enum ShelfLedger: Sendable {
     public static func ordered(_ items: [ShelfItem]) -> [ShelfItem] {
         items.sorted { $0.addedAt > $1.addedAt }
     }
+
+    /// What has sat around longer than `ttl` allows. `ttl == nil` — the
+    /// default — means never, so nothing here ever comes back expired.
+    public static func expired(_ items: [ShelfItem], now: Date, ttl: TimeInterval?) -> [ShelfItem] {
+        guard let ttl else { return [] }
+        return items.filter { now.timeIntervalSince($0.addedAt) >= ttl }
+    }
+}
+
+/// What the drop invitation should tell the user, purely as data.
+///
+/// Pulled out of the view for the same reason `ShelfLedger` was: whether a
+/// drag is worth a warning is a decision, and a decision belongs somewhere it
+/// can be checked without a screen.
+public enum ShelfDropFeedback: Sendable {
+    public enum State: Equatable, Sendable {
+        /// Nothing is being dragged over the shelf.
+        case idle
+        /// Files are hovering and would be accepted.
+        case invited(count: Int)
+        /// Files are hovering, but the shelf already knows it would refuse them.
+        case refused(ShelfLedger.Refusal)
+    }
+
+    /// `count` is how many files are currently hovering; `bytes` is their
+    /// combined size, if known. A hover with nothing yet known about size just
+    /// invites — the refusal, if any, shows once the drop is actually
+    /// attempted and `ShelfStore.accept` has real numbers to check.
+    public static func state(
+        hoveringCount count: Int,
+        addingBytes bytes: Int64? = nil,
+        over items: [ShelfItem] = []
+    ) -> State {
+        guard count > 0 else { return .idle }
+        if let bytes, let refusal = ShelfLedger.refusal(adding: bytes, to: items) {
+            return .refused(refusal)
+        }
+        return .invited(count: count)
+    }
 }

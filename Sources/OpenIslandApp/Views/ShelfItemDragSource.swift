@@ -16,11 +16,17 @@ struct ShelfItemDragSource: NSViewRepresentable {
     /// Called once the file has gone somewhere. The shelf drops the row — and
     /// deletes the copy if the receiver took one rather than moving it.
     let onTakenAway: () -> Void
+    /// ⌥-click removes the item without a drag — the same result as taking it
+    /// off the shelf, reached without leaving the pointer over the chip.
+    let onOptionClick: () -> Void
     let menuEntries: [MenuEntry]
 
     struct MenuEntry {
         let title: String
-        let action: () -> Void
+        /// Takes the view the menu was raised over — the share sheet needs a
+        /// real `NSView` to anchor its popover to, and the other entries just
+        /// ignore it.
+        let action: (NSView) -> Void
     }
 
     func makeNSView(context: Context) -> ShelfDragSourceView {
@@ -36,6 +42,7 @@ struct ShelfItemDragSource: NSViewRepresentable {
     private func configure(_ view: ShelfDragSourceView) {
         view.url = url
         view.onTakenAway = onTakenAway
+        view.onOptionClick = onOptionClick
         view.menuEntries = menuEntries
     }
 }
@@ -45,15 +52,19 @@ struct ShelfItemDragSource: NSViewRepresentable {
 final class ShelfDragSourceView: NSView, NSDraggingSource {
     var url: URL?
     var onTakenAway: (() -> Void)?
+    var onOptionClick: (() -> Void)?
     var menuEntries: [ShelfItemDragSource.MenuEntry] = []
 
     /// The island's panel never becomes the active application, so without this
     /// the first press would be spent waking it up instead of starting a drag.
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
-    /// Nothing to do on the way down — but the drag events only arrive if the
-    /// press was taken here.
-    override func mouseDown(with event: NSEvent) {}
+    /// ⌥-click removes the item on the spot; anything else waits for
+    /// `mouseDragged` to decide whether a drag is starting.
+    override func mouseDown(with event: NSEvent) {
+        guard event.modifierFlags.contains(.option) else { return }
+        onOptionClick?()
+    }
 
     override func mouseDragged(with event: NSEvent) {
         guard let url else { return }
@@ -101,6 +112,6 @@ final class ShelfDragSourceView: NSView, NSDraggingSource {
 
     @objc private func runMenuEntry(_ sender: NSMenuItem) {
         guard menuEntries.indices.contains(sender.tag) else { return }
-        menuEntries[sender.tag].action()
+        menuEntries[sender.tag].action(self)
     }
 }

@@ -78,4 +78,38 @@ struct ShelfTests {
         let new = item("new", addedAt: Date(timeIntervalSince1970: 900))
         #expect(ShelfLedger.ordered([old, new]).first?.displayName == "new")
     }
+
+    // MARK: Expiry
+
+    @Test("Nil ttl never expires anything, no matter how old")
+    func nilTTLNeverExpires() {
+        let ancient = item(addedAt: Date(timeIntervalSince1970: 0))
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        #expect(ShelfLedger.expired([ancient], now: now, ttl: nil).isEmpty)
+    }
+
+    @Test("An item younger than the ttl survives")
+    func youngerThanTTLSurvives() {
+        let added = Date(timeIntervalSince1970: 1000)
+        let fresh = item(addedAt: added)
+        let now = added.addingTimeInterval(59)
+        #expect(ShelfLedger.expired([fresh], now: now, ttl: 60).isEmpty)
+    }
+
+    @Test("An item exactly at the ttl boundary is expired")
+    func exactlyAtTTLBoundaryExpires() {
+        let added = Date(timeIntervalSince1970: 1000)
+        let borderline = item(addedAt: added)
+        let now = added.addingTimeInterval(60)
+        #expect(ShelfLedger.expired([borderline], now: now, ttl: 60) == [borderline])
+    }
+
+    @Test("An item past the ttl is expired, one younger is not")
+    func mixedExpiryFiltersOnlyThePastDue() {
+        let added = Date(timeIntervalSince1970: 1000)
+        let old = item("old", addedAt: added)
+        let recent = item("recent", addedAt: added.addingTimeInterval(50))
+        let now = added.addingTimeInterval(61)
+        #expect(ShelfLedger.expired([old, recent], now: now, ttl: 60) == [old])
+    }
 }
