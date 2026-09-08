@@ -31,8 +31,10 @@ struct OverlayDisplayResolverTests {
 
     @Test
     func floatingPillModeFloatsBelowTheMenuBar() {
-        // The menu bar reserves 24pt on this screen (1080 - 1056), so the
-        // panel's top edge should land 6pt further down than that.
+        // The panel's own top edge lands exactly at the menu bar's bottom
+        // edge — the extra 6pt gap the closed capsule floats by is that
+        // pill's own inset *inside* the window, not part of the window's
+        // placement (see `IslandPanelView.v6ClosedSurface()`).
         let visibleFrame = NSRect(x: 0, y: 0, width: 1_920, height: 1_056)
 
         let frame = OverlayDisplayResolver.pureFrame(
@@ -43,8 +45,45 @@ struct OverlayDisplayResolverTests {
             mode: .floatingPill
         )
 
-        #expect(frame.maxY == visibleFrame.maxY - 6)
+        #expect(frame.maxY == visibleFrame.maxY)
         #expect(frame.maxY < screenFrame.maxY)
+    }
+
+    @Test
+    func topAnchoredYMatchesForBothCallersOnAScreenWithAnAutoHiddenMenuBar() {
+        // When the menu bar auto-hides, `visibleFrame.maxY == screenFrame.maxY`
+        // — the exact case that used to make the real window frame
+        // (`OverlayPanelController.panelFrame`, driven by a `topStatusBarHeight`
+        // fallback of 24) disagree with this pure placement math (driven by
+        // `visibleFrame` directly). Both now call the same `topAnchoredY`, so
+        // they can no longer drift apart regardless of which fallback either
+        // side used to take.
+        let fullHeightVisibleFrame = screenFrame
+
+        let y = OverlayDisplayResolver.topAnchoredY(
+            screenFrame: screenFrame,
+            visibleFrame: fullHeightVisibleFrame,
+            height: panelSize.height,
+            mode: .floatingPill
+        )
+
+        #expect(y == screenFrame.maxY - panelSize.height)
+    }
+
+    @Test
+    func topAnchoredYForNotchModeIgnoresTheVisibleFrame() {
+        // The physical notch is part of the bezel — flush with the screen's
+        // own top edge regardless of how much the menu bar reserves.
+        let visibleFrame = NSRect(x: 0, y: 0, width: 1_920, height: 1_000)
+
+        let y = OverlayDisplayResolver.topAnchoredY(
+            screenFrame: screenFrame,
+            visibleFrame: visibleFrame,
+            height: panelSize.height,
+            mode: .notch
+        )
+
+        #expect(y == screenFrame.maxY - panelSize.height)
     }
 
     @Test

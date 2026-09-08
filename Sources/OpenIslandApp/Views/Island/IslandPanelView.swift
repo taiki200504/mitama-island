@@ -289,6 +289,12 @@ struct IslandPanelView: View {
         // so nothing ties its height to that measurement anymore.
         let pillHeight = layout == .external ? IslandChromeMetrics.floatingPillHeight : closedNotchHeight
         let topOffset = layout == .external ? floatingPillTopOffset : 0
+        // A pathologically long session title must not grow the pill past
+        // a sane fraction of the screen — see `V6ClosedPill.externalMaxWidth`.
+        let externalMaxWidth = V6ClosedPill.externalMaxWidth(
+            configuredMaxPanelWidth: CGFloat(model.settings.display.maxPanelWidth),
+            visibleWidth: targetOverlayScreen?.visibleFrame.width ?? 1_200
+        )
         // One tick a minute, which is the resolution the band shows. The pill
         // has no other reason to redraw on a timer, and a waiting request is
         // exactly the situation where nothing else is arriving to redraw it.
@@ -303,6 +309,7 @@ struct IslandPanelView: View {
                 height: pillHeight,
                 physicalNotchWidth: layout == .macbook ? physicalNotchWidth : 0,
                 minWidth: IslandChromeMetrics.floatingPillMinWidth,
+                maxWidth: layout == .external ? externalMaxWidth : nil,
                 motionRevision: model.motionRevision
             )
             .background(
@@ -319,11 +326,17 @@ struct IslandPanelView: View {
         }
     }
 
-    /// How far below the menu bar's bottom edge the floating capsule sits.
+    /// How far below the window's own top edge the floating capsule sits.
     /// Only meaningful on non-notched displays — the physical notch case
     /// wants the pill flush with the top edge instead, and never reads this.
+    ///
+    /// The window's top edge is *already* the menu bar's bottom edge on
+    /// these displays (see `OverlayPanelController.panelFrame`, which
+    /// anchors it there via `OverlayDisplayResolver.topAnchoredY`) — so all
+    /// that's left for the pill itself to add is its own small floating
+    /// gap, not a second copy of the menu bar's height.
     private var floatingPillTopOffset: CGFloat {
-        (targetOverlayScreen?.topStatusBarHeight ?? 24) + IslandChromeMetrics.floatingPillGap
+        IslandChromeMetrics.floatingPillGap
     }
 
     // MARK: - Opened surface

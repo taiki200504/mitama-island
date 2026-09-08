@@ -102,6 +102,36 @@ struct OverlayPanelControllerTests {
     }
 
     @Test
+    func externalDisplayClosedWidthNeverOutgrowsTheConfiguredMaxWidth() {
+        // A pathologically long session title must not make the hit area
+        // outgrow what the pill itself is capped at (see
+        // `V6ClosedPill.externalMaxWidth`) — otherwise a click past the
+        // visible capsule's edge would still register.
+        let width = OverlayPanelController.closedPanelWidth(
+            notchWidth: 0,
+            isNotchedDisplay: false,
+            intrinsicContentWidth: 2_000,
+            maxWidth: 400,
+            notchStatus: .closed
+        )
+        #expect(width == 400)
+    }
+
+    @Test
+    func aNotchedDisplayIgnoresMaxWidthEntirely() {
+        // The physical notch locks the macbook layout's width regardless of
+        // any configured cap — `maxWidth` only ever applies to the floating
+        // capsule.
+        let width = OverlayPanelController.closedPanelWidth(
+            notchWidth: 224,
+            isNotchedDisplay: true,
+            maxWidth: 50,
+            notchStatus: .closed
+        )
+        #expect(width == 224 + (OverlayPanelController.closedPillSideBleed * 2))
+    }
+
+    @Test
     func floatingClosedSurfaceRectSitsBelowTheMenuBarCenteredOnScreen() {
         let screenFrame = NSRect(x: 100, y: 0, width: 1_920, height: 1_080)
         let visibleFrame = NSRect(x: 100, y: 0, width: 1_920, height: 1_056)

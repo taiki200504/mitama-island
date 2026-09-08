@@ -189,13 +189,27 @@ private struct AgentsGridWaitingTile: View {
 
 struct V6CenterLabelView: View {
     let text: String
+    /// Caps how wide the label may render. `nil` leaves it at its natural
+    /// width (via `.fixedSize`) the way it always has — passing a value
+    /// trades that for `.lineLimit`'s own truncation once the label doesn't
+    /// fit in `maxWidth`, which is what lets `V6ClosedPill.externalBody`
+    /// shrink an arbitrarily long session title down to a capped pill
+    /// instead of letting it overflow the capsule.
+    var maxWidth: CGFloat?
 
     var body: some View {
-        Text(text)
+        let styledText = Text(text)
             .font(.islandMono(size: 11.5, weight: .medium))
             .lineLimit(1)
-            .fixedSize(horizontal: true, vertical: false)
             .foregroundStyle(V6Palette.paper)
+
+        if let maxWidth {
+            styledText
+                .truncationMode(.tail)
+                .frame(maxWidth: maxWidth, alignment: .leading)
+        } else {
+            styledText.fixedSize(horizontal: true, vertical: false)
+        }
     }
 
     static func intrinsicWidth(of text: String) -> CGFloat {
@@ -229,6 +243,14 @@ struct V6ClosedPill: View {
     /// External mode only — minimum pill width (locked). Defaults to the
     /// floating capsule's minimum width.
     var minWidth: CGFloat = IslandChromeMetrics.floatingPillMinWidth
+
+    /// External mode only — the pill never grows past this, however long
+    /// the label or waiting-agent body gets. `nil` leaves it unbounded
+    /// (used by the settings-tab preview, which never renders live,
+    /// arbitrary-length content). The center label truncates instead of
+    /// overflowing once its own share of the pill is squeezed below what it
+    /// would otherwise want.
+    var maxWidth: CGFloat?
 
     /// Bumped by `AppModel` when Reduce Motion is toggled, so the band
     /// animation below re-evaluates immediately instead of waiting for
@@ -342,6 +364,20 @@ struct V6ClosedPill: View {
         return pad * 2 + glyphW + labelBlock + peekBlock + accessoryBlock + rightBlock
     }
 
+    /// Caps the floating capsule's width so a pathologically long session
+    /// title or waiting-agent name can't grow it past a sane fraction of
+    /// the screen. `configuredMaxPanelWidth` is `display.maxPanelWidth`
+    /// (the *opened* panel's own cap, 480–900pt) — reused here rather than
+    /// adding a second setting, but scaled down to 60% of the visible
+    /// width besides: the closed pill is meant to read as a glance, not
+    /// grow into a second panel.
+    nonisolated static func externalMaxWidth(
+        configuredMaxPanelWidth: CGFloat,
+        visibleWidth: CGFloat
+    ) -> CGFloat {
+        min(configuredMaxPanelWidth, visibleWidth * 0.6)
+    }
+
     var body: some View {
         switch layout {
         case .external: externalBody
@@ -379,7 +415,18 @@ struct V6ClosedPill: View {
             sneakPeek: sneakPeek,
             height: height
         )
-        let width = max(minWidth, intrinsic)
+        let uncappedWidth = max(minWidth, intrinsic)
+        let width = maxWidth.map { min(uncappedWidth, $0) } ?? uncappedWidth
+
+        // Everything else in the pill is a fixed-size icon or a short,
+        // fixed-vocabulary string (the glyph, the waiting-agent gauge, the
+        // accessory, the right slot) — the center label is the one thing
+        // carrying arbitrary-length text, so it's the one that gives way
+        // once `maxWidth` has squeezed the pill below what `intrinsic`
+        // wanted.
+        let labelW = showsLabel ? V6CenterLabelView.intrinsicWidth(of: label ?? "") : 0
+        let nonLabelWidth = intrinsic - (showsLabel ? 6 + labelW : 0)
+        let labelMaxWidth: CGFloat? = showsLabel ? max(0, width - nonLabelWidth - 6) : nil
 
         return ZStack {
             // A full capsule rather than `V6ClosedPillShape`'s flat-top
@@ -404,7 +451,7 @@ struct V6ClosedPill: View {
                 }
 
                 if showsLabel, let label {
-                    V6CenterLabelView(text: label)
+                    V6CenterLabelView(text: label, maxWidth: labelMaxWidth)
                         .padding(.leading, 6)
                         .transition(.opacity.combined(with: .move(edge: .leading)))
                 }

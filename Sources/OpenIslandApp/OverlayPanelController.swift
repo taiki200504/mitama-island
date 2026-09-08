@@ -654,13 +654,16 @@ final class OverlayPanelController {
     /// - On a non-notched display the floating capsule is content-driven, so
     ///   the hit area follows `intrinsicContentWidth` (the same width math
     ///   `V6ClosedPill.externalIntrinsicWidth` renders with) plus a little
-    ///   slop per side, floored at the capsule's own minimum width — a
-    ///   generous fixed 360pt used to stand in here before the capsule had a
-    ///   real, measurable width to follow.
+    ///   slop per side, floored at the capsule's own minimum width and
+    ///   capped at `maxWidth` — the same ceiling `V6ClosedPill.externalBody`
+    ///   renders with (see `V6ClosedPill.externalMaxWidth`), so a
+    ///   pathologically long session title can't make the hit area outgrow
+    ///   what's actually drawn any more than it can the pill itself.
     nonisolated static func closedPanelWidth(
         notchWidth: CGFloat,
         isNotchedDisplay: Bool,
         intrinsicContentWidth: CGFloat = 0,
+        maxWidth: CGFloat = .infinity,
         notchStatus: NotchStatus
     ) -> CGFloat {
         let popBonus: CGFloat = notchStatus == .popping ? 18 : 0
@@ -671,7 +674,7 @@ final class OverlayPanelController {
             IslandChromeMetrics.floatingPillMinWidth,
             intrinsicContentWidth + (IslandChromeMetrics.floatingPillHitPadding * 2)
         )
-        return hitWidth + popBonus
+        return min(hitWidth, maxWidth) + popBonus
     }
 
     private func closedSurfaceRect(for model: AppModel) -> NSRect? {
@@ -702,9 +705,22 @@ final class OverlayPanelController {
 
     private func panelFrame(for model: AppModel?, on screen: NSScreen) -> NSRect {
         let size = panelSize(for: model, on: screen)
+        // Same top-anchoring rule the diagnostics-only `pureFrame` uses —
+        // on a non-notched display the window's own top edge now sits at
+        // the menu bar's bottom edge instead of the screen's physical top,
+        // so the opened surface drawn inside it no longer sinks under the
+        // menu bar. Sharing `topAnchoredY` is what keeps this window's real
+        // position and the diagnostics panel's reported position from
+        // disagreeing on a display with an auto-hidden menu bar.
+        let y = OverlayDisplayResolver.topAnchoredY(
+            screenFrame: screen.frame,
+            visibleFrame: screen.visibleFrame,
+            height: size.height,
+            mode: screen.safeAreaInsets.top > 0 ? .notch : .floatingPill
+        )
         return NSRect(
             x: screen.frame.midX - size.width / 2,
-            y: screen.frame.maxY - size.height,
+            y: y,
             width: size.width,
             height: size.height
         )
@@ -747,10 +763,17 @@ final class OverlayPanelController {
         let notchWidth = screen.notchSize.width
         let isNotched = screen.safeAreaInsets.top > 0
         let intrinsicContentWidth = isNotched ? 0 : closedFloatingIntrinsicWidth(for: model)
+        let maxWidth = isNotched
+            ? .infinity
+            : V6ClosedPill.externalMaxWidth(
+                configuredMaxPanelWidth: CGFloat(model.settings.display.maxPanelWidth),
+                visibleWidth: screen.visibleFrame.width
+            )
         return Self.closedPanelWidth(
             notchWidth: notchWidth,
             isNotchedDisplay: isNotched,
             intrinsicContentWidth: intrinsicContentWidth,
+            maxWidth: maxWidth,
             notchStatus: model.notchStatus
         )
     }
@@ -1037,8 +1060,21 @@ final class NotchHostingView<Content: View>: NSHostingView<Content> {
             return nil
         }
 
-        guard let interactiveRect = controller.interactiveRect(for: model, in: bounds),
-              interactiveRect.contains(point) else {
+        guard let interactiveRect = controller.interactiveRect(for: model, in: bounds) else {
+            return nil
+        }
+
+        // `interactiveRect` answers in two different coordinate spaces
+        // depending on state: view-local while opened (`openedInteractiveRect`,
+        // anchored to `bounds`), but screen coordinates while closed
+        // (`closedSurfaceRect`, anchored to the physical notch or the
+        // floating capsule). `point` from AppKit is always view-local, so
+        // the closed case has to convert before comparing — this only
+        // matters while a file drag is in flight (`beginClosedDropTargeting`
+        // is the one thing that makes the closed panel stop ignoring mouse
+        // events, so `hitTest` runs at all while `notchStatus == .closed`).
+        let testPoint = model.notchStatus == .opened ? point : convertToScreen(point)
+        guard interactiveRect.contains(testPoint) else {
             return nil
         }
 

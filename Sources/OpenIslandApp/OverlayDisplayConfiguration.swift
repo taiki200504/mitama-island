@@ -120,19 +120,33 @@ enum OverlayDisplayResolver {
         let width = min(panelSize.width, visibleFrame.width - 64)
         let height = panelSize.height
         let x = screenFrame.midX - (width / 2)
-
-        let y: CGFloat
-        switch mode {
-        case .notch:
-            y = screenFrame.maxY - height
-        case .floatingPill:
-            // Floats below the menu bar rather than sitting flush against
-            // the physical top edge — see `IslandPanelView.floatingPillTopOffset`
-            // for the matching closed-pill placement.
-            y = visibleFrame.maxY - height - 6
-        }
+        let y = topAnchoredY(screenFrame: screenFrame, visibleFrame: visibleFrame, height: height, mode: mode)
 
         return NSRect(x: x, y: y, width: width, height: height)
+    }
+
+    /// Where a top-anchored overlay's own top edge should sit, in screen
+    /// coordinates: flush with the physical top edge for a notched display
+    /// (the notch is part of the bezel), or flush with the menu bar's
+    /// bottom edge otherwise.
+    ///
+    /// The single place both `pureFrame` above and the real window frame
+    /// (`OverlayPanelController.panelFrame`) get this number from — so a
+    /// display with an auto-hidden menu bar (where `visibleFrame.maxY ==
+    /// screenFrame.maxY`) can't give the two callers a different answer
+    /// than a display with a normal, always-visible one.
+    static func topAnchoredY(
+        screenFrame: NSRect,
+        visibleFrame: NSRect,
+        height: CGFloat,
+        mode: OverlayPlacementMode
+    ) -> CGFloat {
+        switch mode {
+        case .notch:
+            screenFrame.maxY - height
+        case .floatingPill:
+            visibleFrame.maxY - height
+        }
     }
 
     private static func resolveScreen(preferredScreenID: String?) -> (screen: NSScreen, selectionSummary: String)? {
