@@ -2,12 +2,13 @@ import AppKit
 import Testing
 @testable import OpenIslandApp
 
-/// ⌥-click removes a shelf item on the spot, without waiting for a drag.
+/// ⌥-click removes a shelf item on release, without waiting for a drag —
+/// unless a drag actually started, in which case the drag wins.
 @MainActor
 struct ShelfItemDragSourceTests {
-    private func mouseDownEvent(modifierFlags: NSEvent.ModifierFlags) -> NSEvent {
+    private func mouseEvent(_ type: NSEvent.EventType, modifierFlags: NSEvent.ModifierFlags) -> NSEvent {
         NSEvent.mouseEvent(
-            with: .leftMouseDown,
+            with: type,
             location: .zero,
             modifierFlags: modifierFlags,
             timestamp: 0,
@@ -19,14 +20,16 @@ struct ShelfItemDragSourceTests {
         )!
     }
 
-    @Test("⌥-click fires the option handler")
-    func optionClickFiresTheHandler() {
+    @Test("⌥-click fires the option handler on release")
+    func optionClickFiresTheHandlerOnMouseUp() {
         let view = ShelfDragSourceView()
         var didFire = false
         view.onOptionClick = { didFire = true }
 
-        view.mouseDown(with: mouseDownEvent(modifierFlags: .option))
+        view.mouseDown(with: mouseEvent(.leftMouseDown, modifierFlags: .option))
+        #expect(!didFire, "must not fire before the mouse is released")
 
+        view.mouseUp(with: mouseEvent(.leftMouseUp, modifierFlags: .option))
         #expect(didFire)
     }
 
@@ -36,8 +39,15 @@ struct ShelfItemDragSourceTests {
         var didFire = false
         view.onOptionClick = { didFire = true }
 
-        view.mouseDown(with: mouseDownEvent(modifierFlags: []))
+        view.mouseDown(with: mouseEvent(.leftMouseDown, modifierFlags: []))
+        view.mouseUp(with: mouseEvent(.leftMouseUp, modifierFlags: []))
 
         #expect(!didFire)
     }
+
+    // An ⌥-drag that actually starts moving is not covered here: starting a
+    // real `NSDraggingSession` needs a window and an event loop, which a
+    // headless unit test does not have. `mouseDragged` setting
+    // `didBeginDragging` before `mouseUp` checks it is exercised by reading
+    // the source in `ShelfItemDragSource.swift` instead.
 }

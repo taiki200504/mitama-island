@@ -195,13 +195,32 @@ final class ShelfStore {
     }
 }
 
+/// Just enough of `NSRunningApplication` for the "give focus back" decision,
+/// so a test can stand in a fake rather than needing a real running —
+/// or already-terminated — app to point at.
+protocol ShelfFocusTarget: AnyObject {
+    var isTerminated: Bool { get }
+    @discardableResult
+    func activate(options: NSApplication.ActivationOptions) -> Bool
+}
+
+extension ShelfFocusTarget {
+    @discardableResult
+    func activate() -> Bool { activate(options: []) }
+}
+
+extension NSRunningApplication: ShelfFocusTarget {}
+
 /// Brings the app forward long enough to show AirDrop or the share sheet, then
 /// hands focus back to whatever had it — the island's panel never becomes the
 /// active application on its own, the same problem `LinkstartOverlayController`
 /// solves for its own overlay by remembering and restoring the frontmost app.
 @MainActor
-private final class ShelfSharingFocusHandler: NSObject, @MainActor NSSharingServiceDelegate, @MainActor NSSharingServicePickerDelegate {
-    private var returnFocusTo: NSRunningApplication?
+final class ShelfSharingFocusHandler: NSObject, @MainActor NSSharingServiceDelegate, @MainActor NSSharingServicePickerDelegate {
+    /// Not `private`, and typed as the protocol rather than the concrete
+    /// `NSRunningApplication`, so a test can inject a fake without needing a
+    /// real running (or terminated) app to point at.
+    var returnFocusTo: ShelfFocusTarget?
 
     func activateIfNeeded() {
         guard !NSApp.isActive else { return }
@@ -209,10 +228,10 @@ private final class ShelfSharingFocusHandler: NSObject, @MainActor NSSharingServ
         NSApp.activate()
     }
 
-    private func restoreFocus() {
+    func restoreFocus() {
+        defer { returnFocusTo = nil }
         guard let returnFocusTo, !returnFocusTo.isTerminated else { return }
         returnFocusTo.activate()
-        self.returnFocusTo = nil
     }
 
     func sharingService(_ sharingService: NSSharingService, didShareItems items: [Any]) {

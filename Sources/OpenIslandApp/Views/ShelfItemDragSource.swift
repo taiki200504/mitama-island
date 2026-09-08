@@ -55,19 +55,39 @@ final class ShelfDragSourceView: NSView, NSDraggingSource {
     var onOptionClick: (() -> Void)?
     var menuEntries: [ShelfItemDragSource.MenuEntry] = []
 
+    /// Whether ⌥ was down when the press started. Read again at `mouseUp`
+    /// rather than trusting the press event alone — the user might let go of
+    /// the key mid-gesture, but by then the gesture has already been decided.
+    private var optionWasHeldAtMouseDown = false
+    /// Set the moment a drag actually starts, so `mouseUp` can tell an
+    /// ⌥-drag (which must keep dragging) from a plain ⌥-click (which removes).
+    private var didBeginDragging = false
+
     /// The island's panel never becomes the active application, so without this
     /// the first press would be spent waking it up instead of starting a drag.
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
-    /// ⌥-click removes the item on the spot; anything else waits for
-    /// `mouseDragged` to decide whether a drag is starting.
+    /// Only records intent here — firing on press would remove the item
+    /// before a drag that started with ⌥ held gets the chance to happen.
     override func mouseDown(with event: NSEvent) {
-        guard event.modifierFlags.contains(.option) else { return }
+        optionWasHeldAtMouseDown = event.modifierFlags.contains(.option)
+        didBeginDragging = false
+    }
+
+    /// ⌥-click removes the item on release, but only if nothing dragged it
+    /// away in the meantime.
+    override func mouseUp(with event: NSEvent) {
+        defer {
+            optionWasHeldAtMouseDown = false
+            didBeginDragging = false
+        }
+        guard optionWasHeldAtMouseDown, !didBeginDragging else { return }
         onOptionClick?()
     }
 
     override func mouseDragged(with event: NSEvent) {
         guard let url else { return }
+        didBeginDragging = true
 
         let item = NSDraggingItem(pasteboardWriter: url as NSURL)
         item.setDraggingFrame(bounds, contents: NSWorkspace.shared.icon(forFile: url.path))

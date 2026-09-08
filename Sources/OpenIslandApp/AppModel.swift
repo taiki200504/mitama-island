@@ -2814,7 +2814,13 @@ final class AppModel {
 
     var shelfExpiresAfter: ShelfExpiryOption {
         get { ShelfExpiryOption(rawValue: settings.display.shelfExpiresAfterRawValue) ?? .never }
-        set { settings.display.shelfExpiresAfterRawValue = newValue.rawValue }
+        set {
+            settings.display.shelfExpiresAfterRawValue = newValue.rawValue
+            // Switching from never to a TTL should not leave anything already
+            // past it sitting there for up to an hour until the timer next
+            // fires.
+            shelf.pruneExpired()
+        }
     }
 
     /// "Expires in 3h", or nil while the setting is off or the item is
