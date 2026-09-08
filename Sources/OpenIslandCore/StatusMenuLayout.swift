@@ -14,19 +14,25 @@ public struct StatusMenuInputs: Sendable {
     /// The running timer's label ("WORK", "REST", …), or `nil` while idle —
     /// nil is what decides whether the menu offers presets or a stop action.
     public var timerRunningLabel: String?
+    /// Whether the clipboard history is switched on at all. Off by default,
+    /// so the menu carries no clipboard row for anyone who never turned the
+    /// feature on.
+    public var clipboardIsEnabled: Bool
 
     public init(
         isMuted: Bool,
         cameraIsWatching: Bool,
         shelfItemNames: [String],
         waitingCount: Int,
-        timerRunningLabel: String? = nil
+        timerRunningLabel: String? = nil,
+        clipboardIsEnabled: Bool = false
     ) {
         self.isMuted = isMuted
         self.cameraIsWatching = cameraIsWatching
         self.shelfItemNames = shelfItemNames
         self.waitingCount = waitingCount
         self.timerRunningLabel = timerRunningLabel
+        self.clipboardIsEnabled = clipboardIsEnabled
     }
 }
 
@@ -39,6 +45,7 @@ public enum StatusMenuEntry: Equatable, Sendable {
     case startTimer(presets: [FocusTimerPreset])
     case timerRunning(label: String)
     case stopTimer
+    case openClipboard
     case shelfHeader(count: Int)
     case shelfItem(name: String)
     case clearShelf
@@ -72,6 +79,10 @@ public enum StatusMenuLayout {
             entries.append(.stopTimer)
         } else {
             entries.append(.startTimer(presets: FocusTimerPreset.allCases))
+        }
+
+        if inputs.clipboardIsEnabled {
+            entries.append(.openClipboard)
         }
 
         if !inputs.shelfItemNames.isEmpty {

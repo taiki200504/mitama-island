@@ -8,14 +8,16 @@ struct StatusMenuLayoutTests {
         cameraIsWatching: Bool = false,
         shelfItemNames: [String] = [],
         waitingCount: Int = 0,
-        timerRunningLabel: String? = nil
+        timerRunningLabel: String? = nil,
+        clipboardIsEnabled: Bool = false
     ) -> StatusMenuInputs {
         StatusMenuInputs(
             isMuted: isMuted,
             cameraIsWatching: cameraIsWatching,
             shelfItemNames: shelfItemNames,
             waitingCount: waitingCount,
-            timerRunningLabel: timerRunningLabel
+            timerRunningLabel: timerRunningLabel,
+            clipboardIsEnabled: clipboardIsEnabled
         )
     }
 
@@ -141,5 +143,28 @@ struct StatusMenuLayoutTests {
         #expect(entries.contains(.timerRunning(label: "WORK")))
         #expect(entries.contains(.stopTimer))
         #expect(!entries.contains { if case .startTimer = $0 { true } else { false } })
+    }
+
+    // MARK: - Clipboard
+
+    @Test("With the clipboard feature off, the menu carries no clipboard row at all")
+    func clipboardDisabledHasNoRow() {
+        let entries = StatusMenuLayout.entries(for: inputs(clipboardIsEnabled: false))
+        #expect(!entries.contains(.openClipboard))
+    }
+
+    @Test("With the clipboard feature on, its row sits after the timer section")
+    func clipboardEnabledAddsItsRow() {
+        let entries = StatusMenuLayout.entries(for: inputs(clipboardIsEnabled: true))
+        #expect(entries == [
+            .openIsland(waitingCount: 0),
+            .toggleMute(isMuted: false),
+            .toggleCamera(isWatching: false),
+            .startTimer(presets: FocusTimerPreset.allCases),
+            .openClipboard,
+            .separator,
+            .settings,
+            .quit,
+        ])
     }
 }

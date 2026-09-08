@@ -1,3 +1,4 @@
+import AppKit
 import AVFoundation
 import SwiftUI
 
@@ -10,6 +11,7 @@ struct DisplaySettingsPane: View {
     private var display: DisplaySettings { model.settings.display }
     private var lockScan: LockScanSettings { model.settings.lockScan }
     private var timer: TimerSettings { model.settings.timer }
+    private var clipboard: ClipboardSettings { model.settings.clipboard }
 
     var body: some View {
         SettingsPane(tab: .display) {
@@ -20,6 +22,7 @@ struct DisplaySettingsPane: View {
             sessionCardSection
             shelfSection
             timerSection
+            clipboardSection
             diagnosticsSection
         }
     }
@@ -370,6 +373,39 @@ struct DisplaySettingsPane: View {
                 isOn: Binding(get: { timer.autoAdvance }, set: { timer.autoAdvance = $0 })
             )
         }
+    }
+
+    // MARK: Clipboard
+
+    private var clipboardSection: some View {
+        Section(lang.t("settings.display.section.clipboard")) {
+            SettingsToggleRow(
+                title: lang.t("settings.clipboard.enabled"),
+                help: lang.t("settings.clipboard.enabled.help"),
+                isOn: Binding(
+                    get: { clipboard.enabled },
+                    set: { isOn in
+                        clipboard.enabled = isOn
+                        model.applyClipboardEnabled(isOn)
+                    }
+                )
+            )
+            SettingsToggleRow(
+                title: lang.t("settings.clipboard.persistsToDisk"),
+                help: lang.t("settings.clipboard.persistsToDisk.help"),
+                isOn: Binding(get: { clipboard.persistsToDisk }, set: { clipboard.persistsToDisk = $0 })
+            )
+            SettingsToggleRow(
+                title: lang.t("settings.clipboard.pastesOnSelect"),
+                help: lang.t("settings.clipboard.pastesOnSelect.help"),
+                availability: pastesOnSelectAvailability,
+                isOn: Binding(get: { clipboard.pastesOnSelect }, set: { clipboard.pastesOnSelect = $0 })
+            )
+        }
+    }
+
+    private var pastesOnSelectAvailability: FeatureAvailability {
+        AXIsProcessTrusted() ? .ready : .unsupported(reasonKey: "settings.clipboard.pastesOnSelect.needsAccessibility")
     }
 
     // MARK: Diagnostics

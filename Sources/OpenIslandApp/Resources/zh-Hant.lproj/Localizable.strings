@@ -184,6 +184,7 @@
 "island.recentSessions" = "最近的工作階段將保留在這裡，直到終端機重新開啟";
 "island.hint.installHooks" = "尚未安裝任何代理 hook，工作階段不會觸發事件 · 點擊設定";
 "island.header.timer" = "計時器";
+"island.header.clipboard" = "剪貼簿";
 
 /* Island Panel - Session List */
 "island.sessionList.title" = "會話";
@@ -318,6 +319,15 @@
 "settings.timer.playsSound" = "階段結束時播放提示音";
 "settings.timer.autoAdvance" = "自動進入下一階段";
 "settings.timer.autoAdvance.help" = "關閉後，結束的番茄鐘或護眼休息會停在計時器畫面等待手動操作。";
+
+"settings.display.section.clipboard" = "剪貼簿";
+"settings.clipboard.enabled" = "記錄剪貼簿歷史";
+"settings.clipboard.enabled.help" = "預設關閉。開啟期間會記錄你複製的內容；密碼管理工具的複製與鎖定畫面期間的複製永遠不會被記錄。";
+"settings.clipboard.persistsToDisk" = "重新啟動後保留歷史";
+"settings.clipboard.persistsToDisk.help" = "預設關閉。開啟後歷史會儲存到磁碟，結束應用程式也不會遺失。";
+"settings.clipboard.pastesOnSelect" = "選取時自動貼上";
+"settings.clipboard.pastesOnSelect.help" = "預設關閉。開啟後選取一項會向目前最前面的應用程式送出 ⌘V。";
+"settings.clipboard.pastesOnSelect.needsAccessibility" = "需要輔助使用權限。系統設定 → 隱私權與安全性 → 輔助使用。";
 "settings.pending.completionCardSizing" = "完成卡片目前會依內容自動決定高度。";
 "settings.pending.notchCalibration" = "需要瀏海尺寸支援覆寫設定。";
 "settings.points.format" = "%@pt";
@@ -659,6 +669,10 @@
 "settings.linkstart.trigger.claimed" = "此組合已被 macOS 佔用。快速鍵能註冊但收不到按鍵。請在系統設定 → 鍵盤 → 鍵盤快速鍵中取消佔用。";
 "settings.linkstart.waitsForPhrase" = "先說出「link start」再播放";
 "settings.linkstart.waitsForPhrase.help" = "預設關閉。開啟後螢幕會保持變暗等待語音，聽不到則在 9 秒後退出。它取決於麥克風權限、辨識結果與環境是否安靜——為一段動畫承擔三種失敗方式並不划算。";
+
+"settings.clipboard.section" = "剪貼簿";
+"settings.clipboard.trigger" = "開啟剪貼簿歷史";
+"settings.clipboard.trigger.claimed" = "macOS 已保留此組合鍵。按鍵會註冊但永遠不會送達——請在系統設定 → 鍵盤 → 鍵盤快速鍵中變更。";
 "camera.status.denied" = "攝影機存取被拒絕。系統設定 → 隱私權與安全性 → 攝影機。";
 "camera.status.palmNeedsPermission" = "舉手作答需要攝影機權限。按一次 ⌃⌥space 並在彈出的對話框中允許。";
 "camera.power.lidClosed" = "闔蓋期間不會開啟攝影機。";
@@ -756,6 +770,13 @@
 "timer.sneakPeek.breakTime" = "休息";
 "timer.sneakPeek.restSeconds" = "休息 %d 秒";
 
+"clipboard.title" = "剪貼簿";
+"clipboard.empty" = "還沒有複製過任何內容";
+"clipboard.search.placeholder" = "搜尋";
+"clipboard.search.noMatches" = "沒有符合的項目";
+"clipboard.clearAll" = "全部清除";
+"clipboard.kind.image" = "圖片";
+
 /* Status Item (Menu Bar) */
 "statusItem.openIsland" = "開啟島";
 "statusItem.openIsland.waiting" = "開啟島（%d 項等待）";
@@ -765,5 +786,6 @@
 "statusItem.timer.start" = "開始計時…";
 "statusItem.timer.running" = "計時器：%@";
 "statusItem.timer.stop" = "停止計時器";
+"statusItem.clipboard.open" = "剪貼簿…";
 "statusItem.shelf.header" = "暫存（%d）";
 "statusItem.settings" = "設定…";

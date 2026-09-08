@@ -105,6 +105,10 @@ final class StatusItemController: NSObject, NSMenuDelegate {
                 addItem(model.lang.t("statusItem.timer.stop"), to: menu) { [weak model] in
                     model?.focusTimer.reset()
                 }
+            case .openClipboard:
+                addItem(model.lang.t("statusItem.clipboard.open"), to: menu) { [weak model] in
+                    model?.notchOpen(reason: .click, surface: .clipboard)
+                }
             case .shelfHeader(let count):
                 let header = NSMenuItem(
                     title: model.lang.t("statusItem.shelf.header", count),

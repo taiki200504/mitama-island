@@ -537,6 +537,28 @@ def main() -> None:
         if not any("NOW" in value for value in text_values):
             fail("eventInProgress is missing the NOW marker")
 
+    elif scenario == "clipboardSurface":
+        if notch_status != "opened":
+            fail(f"expected opened notch for clipboardSurface, got {notch_status!r}")
+        if island_surface != "clipboard":
+            fail(f"expected the clipboard surface, got {island_surface!r}")
+        require_frame_between(
+            overlay_frame,
+            width=(520, 780),
+            height=(180, 480),
+            context="clipboardSurface overlay frame",
+        )
+        assert_contains_any(
+            text_values,
+            ["mitama-island clipboard fixture"],
+            "clipboardSurface text values (text item)",
+        )
+        assert_contains_any(
+            text_values,
+            ["quarterly-report.pdf"],
+            "clipboardSurface text values (file item)",
+        )
+
     else:
         fail(f"unsupported scenario {scenario!r}")
 

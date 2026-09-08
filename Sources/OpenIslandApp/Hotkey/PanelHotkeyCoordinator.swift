@@ -28,6 +28,7 @@ final class PanelHotkeyCoordinator {
     var onTouchlessActivation: (() -> Void)?
     var onVoiceAnswer: (() -> Void)?
     var onLinkstart: (() -> Void)?
+    var onOpenClipboard: (() -> Void)?
     /// Off until the camera feature is switched on. A global shortcut that does
     /// nothing still takes ⌃⇧Space away from whatever else the user bound it to.
     /// Re-run `startPersistentBindings()` after changing this.
@@ -38,6 +39,9 @@ final class PanelHotkeyCoordinator {
     /// Same rule again: the sequence is a party trick, and a global key that
     /// nobody asked for should not hold ⌃⌥L hostage.
     var linkstartEnabled = false
+    /// Same rule again: the clipboard history is off by default, so ⌃⌥C stays
+    /// free for whatever else until the feature itself is switched on.
+    var clipboardOpenEnabled = false
 
     init(
         registrar: any HotkeyRegistering,
@@ -71,6 +75,7 @@ final class PanelHotkeyCoordinator {
         case Self.touchlessActivationBindingID: onTouchlessActivation?()
         case Self.voiceAnswerBindingID: onVoiceAnswer?()
         case Self.linkstartBindingID: onLinkstart?()
+        case Self.clipboardOpenBindingID: onOpenClipboard?()
         default:
             guard let action = PanelShortcutAction(rawValue: id) else { return }
             onAction?(action)
@@ -88,6 +93,7 @@ final class PanelHotkeyCoordinator {
     static let touchlessActivationBindingID = "touchlessActivation.begin"
     static let voiceAnswerBindingID = "voiceAnswer.begin"
     static let linkstartBindingID = "linkstart.play"
+    static let clipboardOpenBindingID = "clipboard.open"
 
     /// Backtick, next to the shift key on every layout this app runs on. Not
     /// user-assignable: it is the one shortcut that has to be live all the time,
@@ -105,6 +111,14 @@ final class PanelHotkeyCoordinator {
         SystemHotkeys.isClaimed(
             keyCode: TouchlessActivationTrigger.keyCode,
             modifiers: TouchlessActivationTrigger.modifiers,
+            in: SystemHotkeys.current()
+        )
+    }
+
+    var clipboardOpenIsClaimedBySystem: Bool {
+        SystemHotkeys.isClaimed(
+            keyCode: ClipboardOpenTrigger.keyCode,
+            modifiers: ClipboardOpenTrigger.modifiers,
             in: SystemHotkeys.current()
         )
     }
@@ -146,6 +160,16 @@ final class PanelHotkeyCoordinator {
                     id: Self.linkstartBindingID,
                     keyCode: UInt16(LinkstartTrigger.keyCode),
                     modifiers: NSEvent.ModifierFlags(rawValue: UInt(LinkstartTrigger.modifiers)),
+                    scope: .persistent
+                )
+            )
+        }
+        if clipboardOpenEnabled {
+            bindings.append(
+                HotkeyBinding(
+                    id: Self.clipboardOpenBindingID,
+                    keyCode: UInt16(ClipboardOpenTrigger.keyCode),
+                    modifiers: NSEvent.ModifierFlags(rawValue: UInt(ClipboardOpenTrigger.modifiers)),
                     scope: .persistent
                 )
             )

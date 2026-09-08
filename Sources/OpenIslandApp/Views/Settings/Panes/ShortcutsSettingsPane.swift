@@ -21,6 +21,7 @@ struct ShortcutsSettingsPane: View {
             cameraGestureSection
             voiceAnswerSection
             linkstartSection
+            clipboardSection
             panelSection
             resetSection
         }
@@ -273,6 +274,33 @@ struct ShortcutsSettingsPane: View {
             Text(lang.t("settings.linkstart.section.footer"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
+        }
+    }
+
+    private var clipboardTriggerIsClaimed: Bool {
+        SystemHotkeys.isClaimed(
+            keyCode: ClipboardOpenTrigger.keyCode,
+            modifiers: ClipboardOpenTrigger.modifiers,
+            in: SystemHotkeys.current()
+        )
+    }
+
+    /// Only shown once the clipboard history itself is switched on (in the
+    /// Display pane) — a shortcut for a feature that isn't running has
+    /// nothing to open.
+    @ViewBuilder
+    private var clipboardSection: some View {
+        if model.settings.clipboard.enabled {
+            Section {
+                SettingsRow(
+                    title: lang.t("settings.clipboard.trigger"),
+                    help: clipboardTriggerIsClaimed ? lang.t("settings.clipboard.trigger.claimed") : nil
+                ) {
+                    ShortcutKeyChip(label: ClipboardOpenTrigger.displayLabel)
+                }
+            } header: {
+                Text(lang.t("settings.clipboard.section"))
+            }
         }
     }
 

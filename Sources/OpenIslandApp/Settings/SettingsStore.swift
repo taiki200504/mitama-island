@@ -24,6 +24,7 @@ final class SettingsStore: Sendable {
     let usage: UsageSettings
     let lockScan: LockScanSettings
     let timer: TimerSettings
+    let clipboard: ClipboardSettings
 
     init(store: PreferenceStore = .standard) {
         behaviour = BehaviourSettings(store: store)
@@ -37,6 +38,7 @@ final class SettingsStore: Sendable {
         usage = UsageSettings(store: store)
         lockScan = LockScanSettings(store: store)
         timer = TimerSettings(store: store)
+        clipboard = ClipboardSettings(store: store)
 
         DisplaySettings.migrateLegacyTheme(in: store)
     }

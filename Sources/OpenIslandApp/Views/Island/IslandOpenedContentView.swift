@@ -40,9 +40,10 @@ struct AutoHeightScrollView<Content: View>: View {
 }
 
 extension IslandPanelView {
-    /// Routes on the island surface first — the two remaining placeholder
-    /// accessories get a bare title and stop there, `.timer` gets its real
-    /// content — and only the `sessionList` surface goes on to `openedRoute`,
+    /// Routes on the island surface first — the one remaining placeholder
+    /// accessory gets a bare title and stops there, `.timer` and `.clipboard`
+    /// get their real content — and only the `sessionList` surface goes on
+    /// to `openedRoute`,
     /// whose `.bootSplash` swaps itself out for `regularOpenedContent` after
     /// its own ring finishes while every other route renders the ordinary
     /// content directly.
@@ -54,7 +55,7 @@ extension IslandPanelView {
         case .nowPlaying:
             placeholderOpenedContent(title: "NOW PLAYING")
         case .clipboard:
-            placeholderOpenedContent(title: "CLIPBOARD")
+            ClipboardSurfaceView(model: model)
         case .timer:
             FocusTimerSurfaceView(model: model)
         }
