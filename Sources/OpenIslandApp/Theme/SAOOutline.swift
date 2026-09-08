@@ -37,6 +37,11 @@ extension View {
     /// sheen gradient, forced to light colour scheme so `Color.primary` /
     /// `.secondary` and system controls resolve dark against it even though
     /// the panel around the card always forces `.preferredColorScheme(.dark)`.
+    ///
+    /// Carries its own enter/exit transition — every one of these three
+    /// cards drops onto the opened surface uninvited, so they share one
+    /// motion rather than each call site picking its own.
+    @MainActor
     func saoCard(cornerRadius: CGFloat = 10, cutDepth: CGFloat = 14) -> some View {
         let shape = SAOPanelShape(cornerRadius: cornerRadius, cutDepth: cutDepth)
         return self
@@ -48,5 +53,18 @@ extension View {
             )
             .saoOutline(shape)
             .environment(\.colorScheme, .light)
+            .transition(IslandTransition.resolved(IslandTransition.panelDrop))
+    }
+
+    /// `saoOutline(_:)`, applied only while `condition` holds — for a ring
+    /// that comes and goes (the switcher's selection, a gesture's landing
+    /// spot) rather than one that is simply always there.
+    @ViewBuilder
+    func saoOutline<S: InsettableShape>(_ shape: S, when condition: Bool) -> some View {
+        if condition {
+            saoOutline(shape)
+        } else {
+            self
+        }
     }
 }

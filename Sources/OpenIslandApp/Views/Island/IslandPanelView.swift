@@ -61,13 +61,16 @@ struct IslandPanelView: View {
         model.notchStatus == .popping
     }
 
-    /// Single animation selection based on the current notch status.
+    /// Single animation selection based on the current notch status, run
+    /// through `IslandMotion.resolved(_:)` so Reduce Motion always wins.
     private var notchTransitionAnimation: Animation {
+        let base: Animation
         switch model.notchStatus {
-        case .opened:  return IslandThemes.current.animationProfile.open
-        case .closed:  return IslandThemes.current.animationProfile.close
-        case .popping: return IslandThemes.current.animationProfile.pop
+        case .opened:  base = IslandThemes.current.animationProfile.open
+        case .closed:  base = IslandThemes.current.animationProfile.close
+        case .popping: base = IslandThemes.current.animationProfile.pop
         }
+        return IslandMotion.resolved(base)
     }
 
     var targetOverlayScreen: NSScreen? {
@@ -188,11 +191,17 @@ struct IslandPanelView: View {
         .scaleEffect(closedSurfaceScale, anchor: .top)
         .padding(.horizontal, panelShadowHorizontalInset)
         .padding(.bottom, panelShadowBottomInset)
-        .animation(notchTransitionAnimation, value: model.notchStatus)
+        // `motionRevision` bumps whenever Reduce Motion is toggled, so this
+        // animation re-evaluates immediately instead of waiting for the next
+        // unrelated `notchStatus` change to pick up the new setting.
+        .animation(
+            notchTransitionAnimation,
+            value: AnyHashable([AnyHashable(model.notchStatus), AnyHashable(model.motionRevision)])
+        )
         .animation(IslandThemes.current.animationProfile.pop, value: isClosedPillTargeted)
         .contentShape(Rectangle())
         .onHover { hovering in
-            withAnimation(.spring(response: 0.38, dampingFraction: 0.8)) {
+            withAnimation(IslandMotion.hover) {
                 isHovering = hovering
             }
         }

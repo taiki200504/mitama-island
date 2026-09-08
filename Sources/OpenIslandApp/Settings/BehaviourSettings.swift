@@ -218,7 +218,12 @@ final class BehaviourSettings: PreferenceGroup {
 extension BehaviourSettings {
     enum Defaults {
         static let hoverDuration: Double = 0.15
-        static let hoverDurationRange: ClosedRange<Double> = 0...1.0
+        // A lower bound of exactly 0 let the slider promise an "instant"
+        // hover open that never actually fires — SwiftUI's own hover
+        // detection needs a moment to settle, so 0 silently behaved like the
+        // next tick up instead. 0.1 is the fastest the setting can honestly
+        // deliver.
+        static let hoverDurationRange: ClosedRange<Double> = 0.1...1.0
         /// Kept at the value the app already shipped so nobody's panel starts
         /// closing sooner than it used to just because the setting now exists.
         /// The reference product offers this as a picker, so do the same.
