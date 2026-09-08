@@ -134,6 +134,14 @@ struct GeneralBehaviourWiringTests {
         #expect(AppModel.hoverOpenDelay == BehaviourSettings.Defaults.hoverDuration)
     }
 
+    /// A lower bound of exactly zero let the slider promise an instant hover
+    /// open the pointer-driven detection can never actually deliver.
+    @Test
+    func hoverDurationRangeNeverReachesZero() {
+        #expect(BehaviourSettings.Defaults.hoverDurationRange.lowerBound == 0.1)
+        #expect(BehaviourSettings.Defaults.hoverDurationRange.contains(BehaviourSettings.Defaults.hoverDuration))
+    }
+
     /// Changing the default would shorten every existing user's auto-reveal
     /// without them asking, so it is pinned to the value the app already used.
     @Test

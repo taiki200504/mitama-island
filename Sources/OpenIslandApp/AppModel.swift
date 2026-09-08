@@ -545,6 +545,13 @@ final class AppModel {
 
     @ObservationIgnored private var resignObserver: (any NSObjectProtocol)?
 
+    @ObservationIgnored private var motionObserver: (any NSObjectProtocol)?
+
+    /// Bumped whenever the system's Reduce Motion setting changes, so a
+    /// `.animation(_, value:)` that folds this in re-evaluates immediately
+    /// instead of waiting for the next unrelated state change to notice.
+    private(set) var motionRevision: Int = 0
+
     private static let voiceLogger = Logger(subsystem: "com.mitama.island", category: "voice")
 
     /// What you put down in the island on the way somewhere else.
@@ -837,6 +844,16 @@ final class AppModel {
         startIdleSessionCleanup()
         hooks.onUsageSnapshotChanged = { [weak self] in
             self?.checkUsageThreshold()
+        }
+
+        motionObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.motionRevision &+= 1
+            }
         }
 
         overlay.appModel = self

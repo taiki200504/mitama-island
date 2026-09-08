@@ -40,19 +40,33 @@ struct AutoHeightScrollView<Content: View>: View {
 }
 
 extension IslandPanelView {
+    /// Which layout the opened surface leads with. `.bootSplash` swaps
+    /// itself out for `regularOpenedContent` after its own ring finishes;
+    /// every other route renders the ordinary content directly.
+    @ViewBuilder
     var openedContent: some View {
+        switch openedRoute {
+        case .bootSplash:
+            IslandBootSplashView { regularOpenedContent }
+        case .notificationCard, .sessionList, .switcher:
+            regularOpenedContent
+        }
+    }
+
+    private var regularOpenedContent: some View {
         VStack(spacing: 8) {
             if !model.shelf.isEmpty {
                 shelfBadge
                     .padding(.horizontal, 18)
                     .padding(.top, 8)
+                    .transition(IslandTransition.resolved(IslandTransition.panelDrop))
             }
 
             if let notice = model.notice {
                 noticeBar(notice)
                     .padding(.horizontal, 18)
                     .padding(.top, 8)
-                    .transition(.opacity)
+                    .transition(IslandTransition.resolved(IslandTransition.panelDrop))
                     .id(notice.id)
             }
 
@@ -60,6 +74,7 @@ extension IslandPanelView {
                 installHooksHint
                     .padding(.horizontal, 18)
                     .padding(.top, 8)
+                    .transition(IslandTransition.resolved(IslandTransition.panelDrop))
             }
 
             if model.shouldShowSessionBootstrapPlaceholder {

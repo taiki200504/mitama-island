@@ -22,47 +22,52 @@ struct StructuredQuestionPromptView: View {
 
             if structuredQuestions.isEmpty {
                 freeformAnswerBody
+                    .transition(IslandTransition.resolved(IslandTransition.modal))
             } else {
-                // Deliberately every question at once rather than one per page.
-                // The panel already scrolls, and paging hides how much is left
-                // to answer — which is the thing the user wants to know.
-                if structuredQuestions.count > 1 {
-                    Text(lang.t(
-                        "question.progress",
-                        String(answeredQuestionCount),
-                        String(structuredQuestions.count)
-                    ))
-                    .font(.islandMono(size: 10, weight: .medium))
-                    .foregroundStyle(SAOGrammar.Palette.ink.opacity(0.5))
-                }
+                Group {
+                    // Deliberately every question at once rather than one per
+                    // page. The panel already scrolls, and paging hides how
+                    // much is left to answer — which is the thing the user
+                    // wants to know.
+                    if structuredQuestions.count > 1 {
+                        Text(lang.t(
+                            "question.progress",
+                            String(answeredQuestionCount),
+                            String(structuredQuestions.count)
+                        ))
+                        .font(.islandMono(size: 10, weight: .medium))
+                        .foregroundStyle(SAOGrammar.Palette.ink.opacity(0.5))
+                    }
 
-                // Only the questions scroll. The submit button below stays put:
-                // with a long list it used to be pushed off the bottom of the
-                // card with no way to reach it, which left the question
-                // unanswerable from the island at all.
-                AutoHeightScrollView(maxHeight: IslandChromeMetrics.questionOptionListMaxHeight) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        ForEach(structuredQuestions, id: \.question) { question in
-                            questionRow(question)
+                    // Only the questions scroll. The submit button below stays
+                    // put: with a long list it used to be pushed off the
+                    // bottom of the card with no way to reach it, which left
+                    // the question unanswerable from the island at all.
+                    AutoHeightScrollView(maxHeight: IslandChromeMetrics.questionOptionListMaxHeight) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            ForEach(structuredQuestions, id: \.question) { question in
+                                questionRow(question)
+                            }
                         }
                     }
-                }
 
-                quickReplyField
+                    quickReplyField
 
-                // Says why the button is inert instead of leaving the user to
-                // hunt for the question they missed.
-                if !canSubmit, answeredQuestionCount < structuredQuestions.count {
-                    Text(lang.t("question.answerAllFirst"))
-                        .font(.islandText(size: 10.5, weight: .medium))
-                        .foregroundStyle(IslandDesignPalette.Status.waitingForAnswer.opacity(0.8))
-                }
+                    // Says why the button is inert instead of leaving the
+                    // user to hunt for the question they missed.
+                    if !canSubmit, answeredQuestionCount < structuredQuestions.count {
+                        Text(lang.t("question.answerAllFirst"))
+                            .font(.islandText(size: 10.5, weight: .medium))
+                            .foregroundStyle(IslandDesignPalette.Status.waitingForAnswer.opacity(0.8))
+                    }
 
-                Button(submitButtonTitle) {
-                    submitAnswer()
+                    Button(submitButtonTitle) {
+                        submitAnswer()
+                    }
+                    .buttonStyle(IslandActionButtonStyle(kind: canSubmit ? .primary : .secondary, expands: true, surface: .lightCard))
+                    .disabled(!canSubmit)
                 }
-                .buttonStyle(IslandActionButtonStyle(kind: canSubmit ? .primary : .secondary, expands: true, surface: .lightCard))
-                .disabled(!canSubmit)
+                .transition(IslandTransition.resolved(IslandTransition.modal))
             }
         }
         .padding(.horizontal, 10)
@@ -118,11 +123,11 @@ struct StructuredQuestionPromptView: View {
                         .foregroundStyle(isSelected ? SAOGrammar.Palette.panelWhite : SAOGrammar.Palette.ink.opacity(0.42))
                         .frame(width: 22, height: 20)
                         .background(
-                            IslandThemes.current.shape(cornerRadius: 5)
+                            SAOPanelShape(cornerRadius: 5, cuts: [.bottomTrailing], cutDepth: 5)
                                 .fill(isSelected ? AnyShapeStyle(SAOGrammar.selectionGradient) : AnyShapeStyle(SAOGrammar.Palette.ink.opacity(0.045)))
                         )
                         .overlay(
-                            IslandThemes.current.shape(cornerRadius: 5)
+                            SAOPanelShape(cornerRadius: 5, cuts: [.bottomTrailing], cutDepth: 5)
                                 .strokeBorder(SAOGrammar.Palette.ink.opacity(isSelected ? 0 : 0.08))
                         )
 
@@ -167,6 +172,14 @@ struct StructuredQuestionPromptView: View {
             IslandThemes.current.shape(cornerRadius: 8)
                 .strokeBorder(optionStrokeColor(isSelected: isSelected, isHovered: isHovered))
         )
+        .overlay(alignment: .leading) {
+            if isSelected {
+                RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                    .fill(SAOGrammar.Palette.accentOrange)
+                    .frame(width: 3)
+                    .padding(.vertical, 5)
+            }
+        }
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.12)) {
                 hoveredOptionKey = hovering ? key : (hoveredOptionKey == key ? nil : hoveredOptionKey)
@@ -398,7 +411,7 @@ struct StructuredQuestionPromptView: View {
 
     private func optionFillColor(isSelected: Bool, isHovered: Bool) -> Color {
         if isSelected {
-            return SAOGrammar.Palette.ink.opacity(0.10)
+            return SAOGrammar.Palette.accentOrange.opacity(0.18)
         }
         if isHovered {
             return SAOGrammar.Palette.ink.opacity(0.065)

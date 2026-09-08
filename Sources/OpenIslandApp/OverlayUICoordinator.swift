@@ -279,7 +279,7 @@ final class OverlayUICoordinator {
         guard notchStatus == .closed else { return }
         islandSurface = .sessionList()
         notchStatus = .popping
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + IslandMotion.popHold) { [weak self] in
             guard self?.notchStatus == .popping else { return }
             self?.notchStatus = .closed
         }

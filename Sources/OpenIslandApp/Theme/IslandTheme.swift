@@ -86,9 +86,9 @@ struct SAOTheme: Sendable {
     /// How far a glow bleeds past its shape.
     let glowRadius: CGFloat = 3.0
     let animationProfile = IslandAnimationProfile(
-        open: .spring(response: 0.36, dampingFraction: 0.76, blendDuration: 0),
-        close: .smooth(duration: 0.15),
-        pop: .spring(response: 0.36, dampingFraction: 0.76)
+        open: IslandMotion.open,
+        close: IslandMotion.close,
+        pop: IslandMotion.pop
     )
     let soundProfile = IslandSoundProfile.sao
 

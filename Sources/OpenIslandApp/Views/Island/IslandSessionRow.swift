@@ -49,12 +49,20 @@ struct IslandSessionRow: View {
     var shortcutHint: ShortcutSettings?
     /// Draws the switcher's ring when this row is the one selected.
     var isSwitcherHighlighted = false
+    /// True for the row a hand gesture pointed at when it opened the
+    /// island — draws a `saoOutline` ring for the first 1.2s the row exists.
+    var isGestureHighlighted = false
     /// Prefer a name derived from the first prompt over the workspace name.
     var usesAutoNaming = false
 
     @State var isHighlighted = false
     @State var detailOverride: Bool?
     @State var replyText: String = ""
+    @State private var showsGestureRing = true
+    /// Invalidates a pending hide from a stale arming — without this, a ring
+    /// armed for one session could still fire its hide after the row was
+    /// reused for a different, freshly-armed one.
+    @State private var gestureRingGeneration = 0
 
     var body: some View {
         rowBody(referenceDate: referenceDate)
@@ -88,6 +96,13 @@ struct IslandSessionRow: View {
                         .padding(.leading, detailLeadingInset)
                         .padding(.trailing, sideInset)
                         .padding(.bottom, 13)
+                        // `IslandTransition.modal` scales visually but never
+                        // shrinks the layout height it reserves, so inside
+                        // this row's scroll view the rest of the list jumped
+                        // to its final position the instant this appeared —
+                        // only the scale animated, not the space around it.
+                        // A plain fade has no such mismatch to expose.
+                        .transition(.opacity)
                 }
             }
         }
@@ -127,13 +142,27 @@ struct IslandSessionRow: View {
             }
         }
         .opacity(isStaleCompleted ? 0.7 : 1)
+        .saoOutline(IslandThemes.current.shape(cornerRadius: 8), when: isGestureHighlighted && showsGestureRing)
         // The drawing group flattens the row into a bitmap, which is why it is
         // off while hovering: a cached row cannot show a glow that changes.
         .modifier(ConditionalDrawingGroup(enabled: useDrawingGroup && !isActionable && !isHighlighted))
         .animation(.easeInOut(duration: 0.15), value: isHighlighted)
         // A session that changes state should be seen changing, not found
         // already changed the next time you look at the panel.
-        .animation(.easeInOut(duration: 0.28), value: session.phase)
+        .animation(IslandMotion.rowPhase, value: session.phase)
+        .onAppear { armGestureRingIfHighlighted() }
+        // List rows get reused for a different session at the same scroll
+        // position without a fresh `onAppear` — without this, a row that
+        // already hid its ring for a past session stayed hidden forever for
+        // whichever session landed on it next.
+        .onChange(of: session.id) { _, _ in
+            showsGestureRing = true
+            armGestureRingIfHighlighted()
+        }
+        .onChange(of: isGestureHighlighted) { _, _ in
+            showsGestureRing = true
+            armGestureRingIfHighlighted()
+        }
         .onHover { hovering in
             guard isInteractive, allowsRowHoverHighlight else { return }
             isHighlighted = hovering
@@ -142,6 +171,20 @@ struct IslandSessionRow: View {
             if !interactive {
                 detailOverride = nil
             }
+        }
+    }
+
+    /// Schedules the ring's own 1.2s hide, only while this row is actually
+    /// the one a gesture pointed at. Each call retires any hide scheduled by
+    /// an earlier call, so a row recycled mid-countdown for a new highlight
+    /// isn't hidden early by the old session's timer.
+    private func armGestureRingIfHighlighted() {
+        guard isGestureHighlighted else { return }
+        gestureRingGeneration &+= 1
+        let generation = gestureRingGeneration
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+            guard generation == gestureRingGeneration else { return }
+            showsGestureRing = false
         }
     }
 

@@ -59,6 +59,12 @@ private struct IslandActionButtonBody: View {
 
     @Environment(\.isEnabled) private var isEnabled
     @State private var isHovering = false
+    /// Runs the sweep from −W to +W exactly once per hover, rather than
+    /// looping for as long as the pointer rests on the button.
+    @State private var sweepOffset: CGFloat = -1
+    /// Eases from the outline's own resting opacity up to full and back
+    /// across a press, rather than the outline simply appearing.
+    @State private var glowOpacity: Double = 0.81
 
     private var theme: SAOTheme { IslandThemes.current }
     private var isPressed: Bool { configuration.isPressed }
@@ -88,36 +94,60 @@ private struct IslandActionButtonBody: View {
                 }
             }
             .overlay(shape.stroke(strokeColor, lineWidth: 1))
-            .overlay(alignment: .bottomLeading) { hoverUnderline }
+            .overlay { hoverSweep }
             .clipShape(shape)
+            .overlay(pressGlow)
             // A press has to feel like the button moved, not merely faded.
             .scaleEffect(isPressed ? 0.97 : 1)
             .shadow(color: glowColor, radius: isLit ? theme.glowRadius * 2 : 0)
             .animation(.easeOut(duration: 0.12), value: isHovering)
             .animation(.easeOut(duration: 0.08), value: isPressed)
-            .onHover { isHovering = $0 }
+            .onHover { hovering in
+                isHovering = hovering
+                // Reduce Motion drops the sweep entirely rather than merely
+                // shortening it — it has no informational content, only
+                // motion, so there is nothing to keep once the animation
+                // that carries it is gone.
+                guard hovering, !IslandMotion.reducesMotion else { return }
+                // Runs once per hover, not on every frame the pointer stays.
+                sweepOffset = -1
+                withAnimation(IslandMotion.resolved(IslandMotion.selectionSweep)) {
+                    sweepOffset = 1
+                }
+            }
+            .onChange(of: isPressed) { _, pressed in
+                withAnimation(IslandMotion.resolved(IslandMotion.glowPulse)) {
+                    glowOpacity = pressed ? 1.0 : 0.81
+                }
+            }
     }
 
-    /// A one-pixel line that grows in from the left edge. Cheap to draw, and it
-    /// reads as the control waking up rather than merely changing colour.
-    @ViewBuilder
-    private var hoverUnderline: some View {
-        Rectangle()
-            .fill(accentLine)
-            .frame(height: 1.5)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .scaleEffect(x: isLit ? 1 : 0, anchor: .leading)
-            .opacity(isLit ? 1 : 0)
-    }
-
-    private var accentLine: Color {
-        switch (surface, kind) {
-        case (.lightCard, .primary): SAOGrammar.Palette.ink.opacity(0.55)
-        case (.darkShell, .primary): theme.ink.opacity(0.55)
-        case (.lightCard, .warning): SAOGrammar.Palette.ink.opacity(0.7)
-        case (.darkShell, .warning): V6Palette.paper.opacity(0.7)
-        case (_, .secondary): theme.accent
+    /// A soft white band that crosses the button once when the pointer
+    /// lands, 40% of the button's own width, travelling from off the
+    /// leading edge to off the trailing edge.
+    private var hoverSweep: some View {
+        GeometryReader { geometry in
+            let width = geometry.size.width
+            LinearGradient(
+                colors: [.clear, .white.opacity(0.35), .clear],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+            .frame(width: width * 0.4)
+            .offset(x: sweepOffset * width)
         }
+        .clipShape(shape)
+        .allowsHitTesting(false)
+    }
+
+    /// The outer crystal-HUD glow, held at rest and flashed brighter across
+    /// a press — the same colour `saoOutline` uses for its own outer ring.
+    private var pressGlow: some View {
+        shape
+            .stroke(SAOGrammar.Palette.outlineGlow, lineWidth: 1.5)
+            .blur(radius: 0.6)
+            .opacity(isPressed || isLit ? glowOpacity : 0)
+            .allowsHitTesting(false)
     }
 
     private var glowColor: Color {

@@ -225,6 +225,11 @@ struct V6ClosedPill: View {
     /// width that fits just the glyph.
     var minWidth: CGFloat = 70
 
+    /// Bumped by `AppModel` when Reduce Motion is toggled, so the band
+    /// animation below re-evaluates immediately instead of waiting for
+    /// `label`/`rightSlot`/`mode`/`peek` to change on their own.
+    var motionRevision: Int = 0
+
     var body: some View {
         switch layout {
         case .external: externalBody
@@ -290,12 +295,13 @@ struct V6ClosedPill: View {
         }
         .frame(width: width, height: height)
         .animation(
-            .timingCurve(0.4, 0, 0.2, 1, duration: 0.45),
+            IslandMotion.resolved(IslandMotion.bandChange),
             value: AnyHashable([
                 AnyHashable(label ?? ""),
                 AnyHashable(rightSlot.map(RightSlotKey.init) ?? .none),
                 AnyHashable(mode),
                 AnyHashable(peek),
+                AnyHashable(motionRevision),
             ])
         )
     }

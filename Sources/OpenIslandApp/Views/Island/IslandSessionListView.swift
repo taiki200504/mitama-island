@@ -242,6 +242,7 @@ extension IslandPanelView {
                     agentIconStyle: model.agentIconStyle,
                     shortcutHint: model.shortcutHints.isModifierHeld ? model.settings.shortcuts : nil,
                     isSwitcherHighlighted: model.switcher.highlightedID == session.id,
+                    isGestureHighlighted: gestureHighlightSessionID == session.id,
                     usesAutoNaming: model.settings.display.sessionAutoNaming
                             )
                         }
@@ -301,6 +302,7 @@ extension IslandPanelView {
                     agentIconStyle: model.agentIconStyle,
                     shortcutHint: model.shortcutHints.isModifierHeld ? model.settings.shortcuts : nil,
                     isSwitcherHighlighted: model.switcher.highlightedID == session.id,
+                    isGestureHighlighted: gestureHighlightSessionID == session.id,
                     usesAutoNaming: model.settings.display.sessionAutoNaming
                     )
                 }
