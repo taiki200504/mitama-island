@@ -52,6 +52,7 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
     case sneakPeekPop
     case closedAccessoryTimer
     case shelfSurface
+    case unlockScan
 
     var id: String { rawValue }
 
@@ -89,6 +90,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Closed + Timer Accessory"
         case .shelfSurface:
             "Shelf Surface"
+        case .unlockScan:
+            "Unlock Greeting"
         }
     }
 
@@ -124,6 +127,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Closed island with a waiting agent body and a running timer alongside it."
         case .shelfSurface:
             "Opened island with two items set aside, chips forced open for capture."
+        case .unlockScan:
+            "The ring-into-check greeting shown for a couple of seconds right after the screen unlocks."
         }
     }
 
@@ -353,6 +358,31 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                 sessions: [],
                 selectedSessionID: nil,
                 shelfItems: DebugSessionFactory.shelfFixtureItems(now: now)
+            )
+
+        case .unlockScan:
+            let sessions = DebugSessionFactory.listSessions(now: now)
+            // Pinned partway through the sequence — past the ring's own
+            // 0.6s landing point — so a headless capture always finds the
+            // ring full and the check already showing rather than racing
+            // the animation.
+            let pinnedElapsed: TimeInterval = 1.0
+            return IslandDebugSnapshot(
+                title: title,
+                summary: summary,
+                previewHeight: 78,
+                notchStatus: .closed,
+                notchOpenReason: nil,
+                islandSurface: .sessionList(),
+                sessions: sessions,
+                selectedSessionID: sessions.first?.id,
+                debugSneakPeek: IslandSneakPeek(
+                    kind: .lockScan,
+                    text: "Taiki",
+                    icon: "person.crop.circle",
+                    gauge: nil,
+                    until: now.addingTimeInterval(LockScanSequence.duration - pinnedElapsed)
+                )
             )
         }
     }

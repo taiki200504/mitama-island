@@ -30,9 +30,9 @@ enum NotificationSoundEvent: String, CaseIterable, Sendable {
     case timerFinished
     /// Not raised in this PR; reserved for a calendar feature.
     case eventStarting
-    /// Not raised in this PR; reserved for a lock-screen feature.
+    /// Plays when the unlock greeting starts scanning.
     case lockScan
-    /// Not raised in this PR; reserved for a lock-screen feature.
+    /// Plays when the unlock greeting's ring resolves into a check.
     case unlock
 
     var labelKey: String { "settings.sound.event.\(rawValue)" }

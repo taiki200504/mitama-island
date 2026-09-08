@@ -291,6 +291,12 @@
 "settings.display.section.panelSize" = "パネルサイズ";
 "settings.display.section.notch" = "ノッチの微調整";
 "settings.display.section.sessionCard" = "セッションカード";
+"settings.display.section.unlock" = "ロック解除";
+"settings.lockScan.enabled" = "ロック解除時に挨拶する";
+"settings.lockScan.enabled.help" = "画面のロックを解除した直後、閉じた島に短い確認表示をします。";
+"settings.lockScan.usesCamera" = "カメラで確認する";
+"settings.lockScan.usesCamera.help" = "解除直後に最大2秒間カメラを開き、実際に人がいるかを確認します。";
+"settings.lockScan.usesCamera.denied" = "カメラのアクセスが拒否されています。システム設定 → プライバシーとセキュリティ → カメラ で許可してください。";
 "settings.display.contentFontSize" = "本文のフォントサイズ";
 "settings.display.maxPanelHeight" = "パネルの最大高さ";
 "settings.display.maxPanelWidth" = "パネルの最大幅";

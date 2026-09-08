@@ -75,6 +75,20 @@ struct IslandSneakPeekPolicyTests {
         #expect(IslandSneakPeekPolicy.duration(for: pair.0) == pair.1)
     }
 
+    @Test("lockScan beats a trackChanged already showing")
+    func lockScanBeatsTrackChanged() {
+        let current = peek(.trackChanged, until: epoch.addingTimeInterval(10))
+        let candidate = peek(.lockScan, until: epoch.addingTimeInterval(1))
+        #expect(IslandSneakPeekPolicy.replace(current: current, with: candidate, now: epoch) == candidate)
+    }
+
+    @Test("lockScan loses to a hudGauge already showing")
+    func lockScanLosesToHudGauge() {
+        let current = peek(.hudGauge, until: epoch.addingTimeInterval(10))
+        let candidate = peek(.lockScan, until: epoch.addingTimeInterval(1))
+        #expect(IslandSneakPeekPolicy.replace(current: current, with: candidate, now: epoch) == current)
+    }
+
     @Test("Kind ordering is the raw priority, not declaration order")
     func kindOrdering() {
         #expect(IslandSneakPeekKind.shelf < .trackChanged)

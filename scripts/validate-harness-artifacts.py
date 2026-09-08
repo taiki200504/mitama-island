@@ -484,6 +484,21 @@ def main() -> None:
         assert_contains_any(text_values, ["quarterly-report.pdf"], "shelfSurface text values")
         assert_contains_any(text_values, ["notes.md"], "shelfSurface text values")
 
+    elif scenario == "unlockScan":
+        # The unlock greeting: closed pill, ring landed, name on screen. Case
+        # is ignored since the display face may or may not uppercase a Latin
+        # name depending on the font path it took.
+        if notch_status != "closed":
+            fail(f"expected closed notch for unlockScan, got {notch_status!r}")
+        require_frame_between(
+            overlay_frame,
+            width=(520, 780),
+            height=(35, 500),
+            context="unlockScan overlay frame",
+        )
+        if not any("taiki" in value.lower() for value in text_values):
+            fail("unlockScan is missing the greeted name")
+
     else:
         fail(f"unsupported scenario {scenario!r}")
 

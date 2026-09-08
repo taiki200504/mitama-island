@@ -290,6 +290,12 @@
 "settings.display.section.panelSize" = "面板尺寸";
 "settings.display.section.notch" = "瀏海微調";
 "settings.display.section.sessionCard" = "工作階段卡片";
+"settings.display.section.unlock" = "解鎖";
+"settings.lockScan.enabled" = "解鎖時問候";
+"settings.lockScan.enabled.help" = "解鎖螢幕後，在收合的島上短暫顯示確認訊息。";
+"settings.lockScan.usesCamera" = "用攝影機確認";
+"settings.lockScan.usesCamera.help" = "解鎖後最多開啟攝影機兩秒，以確認是否真的有人在場。";
+"settings.lockScan.usesCamera.denied" = "攝影機存取被拒絕。系統設定 → 隱私權與安全性 → 攝影機。";
 "settings.display.contentFontSize" = "內容字級";
 "settings.display.maxPanelHeight" = "面板最大高度";
 "settings.display.maxPanelWidth" = "面板最大寬度";
