@@ -25,11 +25,9 @@ struct CodexAppServerTimeoutTests {
         }
 
         // Should fail fast relative to the configured timeout, not hang on the
-        // global test timeout. Leave room for CI runner scheduling jitter —
-        // a busy runner (more suites landing over time) has been observed to
-        // stall this well past a 2x margin.
+        // global test timeout. Leave room for CI runner scheduling jitter.
         let elapsed = Date().timeIntervalSince(start)
-        #expect(elapsed < max(4.0, client.requestTimeoutSeconds * 40))
+        #expect(elapsed < max(2.0, client.requestTimeoutSeconds * 20))
     }
 
     @Test
