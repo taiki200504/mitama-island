@@ -1,12 +1,6 @@
+import AppKit
 import OpenIslandCore
 import SwiftUI
-
-/// Opacity of the link-start sequence's own horizontal scanlines.
-///
-/// Was `SAOTheme.scanlineIntensity` before the crystal-HUD grammar removed
-/// scanlines from the island's chrome; this sequence keeps its sweep, so the
-/// value moved here rather than disappearing with the theme property.
-private let linkstartScanlineIntensity = 0.06
 
 /// The login sequence, drawn over everything.
 ///
@@ -64,120 +58,183 @@ struct LinkstartView: View {
             let elapsed = context.date.timeIntervalSince(startedAt)
             let phase = LinkstartSequence.phase(at: elapsed)
             let theme = IslandThemes.current
+            // ponytail: `IslandMotion` (a shared reduced-motion helper) hasn't
+            // landed on this branch yet — read the system flag directly until
+            // it does, then switch this one line over to it.
+            let reducesMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
 
             ZStack {
-                backdrop(elapsed: elapsed, theme: theme)
+                backdrop(elapsed: elapsed, reducesMotion: reducesMotion)
 
                 if showsDetail {
                     VStack(spacing: 34) {
                         title(elapsed: elapsed, theme: theme)
-                        checklist(elapsed: elapsed, theme: theme)
+                        checklist(elapsed: elapsed, theme: theme, reducesMotion: reducesMotion)
                         trailer(phase: phase, theme: theme)
                     }
                     .padding(60)
                 }
-
-                // The link-start sequence keeps its own scanline sweep — a
-                // separate animation from the island's chrome, unaffected by
-                // the crystal-HUD grammar removing scanlines from the panel.
-                Scanlines(intensity: linkstartScanlineIntensity)
-                    .allowsHitTesting(false)
             }
             .background(.black.opacity(0.62))
+            .opacity(LinkstartSequence.fadeOpacity(at: elapsed))
             .ignoresSafeArea()
         }
     }
 
     // MARK: - Pieces
 
-    /// The light that arrives from above before anything is asked of you.
-    private func backdrop(elapsed: TimeInterval, theme: SAOTheme) -> some View {
-        Canvas { context, size in
-            let descent = min(1, max(0, elapsed / LinkstartSequence.awakeningDuration))
-            let headY = size.height * descent
-
-            // A soft column, brightest where the light currently is.
-            let column = Gradient(stops: [
-                .init(color: theme.accent.opacity(0), location: 0),
-                .init(color: theme.accent.opacity(0.30), location: 0.55),
-                .init(color: theme.accent.opacity(0.02), location: 1),
-            ])
-            context.fill(
-                Path(CGRect(x: 0, y: 0, width: size.width, height: max(headY, 1))),
-                with: .linearGradient(
-                    column,
-                    startPoint: .init(x: size.width / 2, y: 0),
-                    endPoint: .init(x: size.width / 2, y: headY)
-                )
+    /// The opening burst: concentric rings, a ray starburst outlasting them,
+    /// then the colour-calibration flash. Reduced motion collapses all of it
+    /// into one still frame for the rings' own duration and skips the flash
+    /// entirely — it is the one part of this sequence built to strobe.
+    @ViewBuilder
+    private func backdrop(elapsed: TimeInterval, reducesMotion: Bool) -> some View {
+        if reducesMotion {
+            if elapsed < LinkstartSequence.ringsDuration {
+                SAORingView(progress: 1, count: 5, tint: .white, ringTint: Self.ringTint)
+                SAORaysView(progress: 1, count: 24, tint: SAOGrammar.Palette.systemCyan, gradient: Self.rayGradient)
+            }
+        } else {
+            SAORingView(
+                progress: LinkstartSequence.ringProgress(at: elapsed).first ?? 0,
+                count: 5,
+                tint: .white,
+                ringTint: Self.ringTint
+            )
+            SAORaysView(
+                progress: LinkstartSequence.rayProgress(at: elapsed),
+                count: 24,
+                tint: SAOGrammar.Palette.systemCyan,
+                gradient: Self.rayGradient
             )
 
-            // The leading edge itself, thinning as it settles.
-            let edgeOpacity = 0.9 * (1 - descent) + 0.08
-            context.stroke(
-                Path { path in
-                    path.move(to: .init(x: 0, y: headY))
-                    path.addLine(to: .init(x: size.width, y: headY))
-                },
-                with: .color(theme.accent.opacity(edgeOpacity)),
-                lineWidth: 1.5
-            )
-
-            // A slow pulse under everything, so the screen is never quite still.
-            let pulse = 0.06 + 0.03 * sin(elapsed * 1.6)
-            context.fill(
-                Path(ellipseIn: CGRect(
-                    x: size.width / 2 - size.width * 0.4,
-                    y: size.height / 2 - size.height * 0.4,
-                    width: size.width * 0.8,
-                    height: size.height * 0.8
-                )),
-                with: .radialGradient(
-                    Gradient(colors: [theme.accent.opacity(pulse), .clear]),
-                    center: .init(x: size.width / 2, y: size.height / 2),
-                    startRadius: 0,
-                    endRadius: size.width * 0.45
-                )
-            )
+            if let step = LinkstartSequence.calibrationColor(at: elapsed) {
+                // Capped well under full opacity: this is the one part of the
+                // sequence built to flash, and a full-strength strobe is a
+                // photosensitivity risk a login screen has no business taking.
+                Self.calibrationTint(for: step)
+                    .opacity(0.35)
+                    .ignoresSafeArea()
+            }
         }
     }
 
+    /// White for the leading ring, shading to the theme's cyan by the
+    /// trailing one — the same "catching up" read the lag gives their timing.
+    private static func ringTint(for index: Int) -> Color {
+        mixedColor(from: 0xFFFFFF, to: 0x03A9F4, t: Double(index) / 4)
+    }
+
+    /// Every ray shares this gradient, radiating blue at the centre out
+    /// through cyan to white at the tip.
+    private static let rayGradient = Gradient(colors: [
+        Color(hex: 0x1E88E5), SAOGrammar.Palette.systemCyan, .white,
+    ])
+
+    private static func calibrationTint(for step: CalibrationStep) -> Color {
+        switch step {
+        case .red: .red
+        case .green: .green
+        case .blue: .blue
+        case .white: .white
+        }
+    }
+
+    /// Linear interpolation between two `0xRRGGBB` colours. `SAOGrammar`'s own
+    /// palette has no mixing helper, and reaching for one just for this
+    /// five-step ring gradient isn't worth adding one there.
+    private static func mixedColor(from: UInt32, to: UInt32, t: Double) -> Color {
+        let t = min(max(t, 0), 1)
+        func component(_ hex: UInt32, _ shift: Int) -> Double {
+            Double((hex >> shift) & 0xFF) / 255
+        }
+        return Color(
+            red: component(from, 16) + (component(to, 16) - component(from, 16)) * t,
+            green: component(from, 8) + (component(to, 8) - component(from, 8)) * t,
+            blue: component(from, 0) + (component(to, 0) - component(from, 0)) * t
+        )
+    }
+
     private func title(elapsed: TimeInterval, theme: SAOTheme) -> some View {
-        Text(LanguageManager.shared.t("linkstart.title"))
-            .font(IslandTypography.mono(size: 44, weight: .bold))
+        let text = LanguageManager.shared.t("linkstart.title")
+        return Text(text)
+            .saoCaps(size: 44, text: text)
             .foregroundStyle(theme.paper)
-            .tracking(14)
             .shadow(color: theme.accent.opacity(0.8), radius: theme.glowRadius * 3)
             .opacity(min(1, max(0, elapsed / 0.6)))
     }
 
-    private func checklist(elapsed: TimeInterval, theme: SAOTheme) -> some View {
-        let confirmed = LinkstartSequence.confirmedSenseCount(at: elapsed)
-
-        return VStack(alignment: .leading, spacing: 12) {
+    private func checklist(elapsed: TimeInterval, theme: SAOTheme, reducesMotion: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
             ForEach(Array(LinkstartSequence.senses.enumerated()), id: \.element) { index, sense in
-                HStack(spacing: 14) {
-                    Image(systemName: index < confirmed ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 15))
-                        .foregroundStyle(index < confirmed ? theme.accent : theme.paper.opacity(0.28))
-
-                    Text(LanguageManager.shared.t(sense.labelKey))
-                        .font(IslandTypography.mono(size: 17))
-                        .foregroundStyle(index < confirmed ? theme.paper : theme.paper.opacity(0.35))
-                        .tracking(4)
-
-                    Spacer(minLength: 40)
-
-                    Text(index < confirmed ? "OK" : "……")
-                        .font(IslandTypography.mono(size: 15))
-                        .foregroundStyle(index < confirmed ? theme.accent : theme.paper.opacity(0.25))
-                }
-                .frame(width: 320)
-                .shadow(
-                    color: index < confirmed ? theme.accent.opacity(0.5) : .clear,
-                    radius: theme.glowRadius
-                )
+                senseRow(index: index, sense: sense, elapsed: elapsed, theme: theme, reducesMotion: reducesMotion)
             }
         }
+    }
+
+    private static let senseTileShape = SAOPanelShape(
+        cornerRadius: 6,
+        cuts: [.topLeading, .bottomTrailing],
+        cutDepth: 10
+    )
+
+    /// One row of the checklist, tiled in the crystal-HUD grammar. Drops in
+    /// from above with a left-to-right width wipe the moment its own sense
+    /// starts confirming — plain opacity under reduced motion, and hidden
+    /// (rather than dim) before its moment, so the checklist fills in one row
+    /// at a time instead of sitting there half-lit from the very start.
+    @ViewBuilder
+    private func senseRow(
+        index: Int,
+        sense: LinkstartSense,
+        elapsed: TimeInterval,
+        theme: SAOTheme,
+        reducesMotion: Bool
+    ) -> some View {
+        let confirmed = LinkstartSequence.confirmedSenseCount(at: elapsed)
+        let isConfirmed = index < confirmed
+        let entrance = Self.senseEntranceProgress(index: index, elapsed: elapsed)
+
+        let row = HStack(spacing: 14) {
+            Image(systemName: isConfirmed ? "checkmark.circle.fill" : "circle")
+                .font(.system(size: 15))
+                .foregroundStyle(isConfirmed ? theme.accent : theme.paper.opacity(0.28))
+
+            Text(LanguageManager.shared.t(sense.labelKey))
+                .font(IslandTypography.mono(size: 17))
+                .foregroundStyle(isConfirmed ? theme.paper : theme.paper.opacity(0.35))
+                .tracking(4)
+
+            Spacer(minLength: 40)
+
+            Text(isConfirmed ? "OK" : "……")
+                .font(IslandTypography.mono(size: 15))
+                .foregroundStyle(isConfirmed ? theme.accent : theme.paper.opacity(0.25))
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .frame(width: 320, alignment: .leading)
+        .background(Self.senseTileShape.fill(Color.black.opacity(0.3)))
+        .clipShape(Self.senseTileShape)
+        .saoOutline(Self.senseTileShape, scale: 1.0)
+        .shadow(
+            color: isConfirmed ? theme.accent.opacity(0.5) : .clear,
+            radius: theme.glowRadius
+        )
+
+        if reducesMotion {
+            row.opacity(entrance > 0 ? 1 : 0)
+        } else {
+            row
+                .offset(y: -12 * (1 - entrance))
+                .mask(Rectangle().scaleEffect(x: entrance, y: 1, anchor: .leading))
+        }
+    }
+
+    private static func senseEntranceProgress(index: Int, elapsed: TimeInterval) -> Double {
+        let start = LinkstartSequence.sensesStart + Double(index) * LinkstartSequence.perSenseDuration
+        guard elapsed > start else { return 0 }
+        return min((elapsed - start) / 0.25, 1)
     }
 
     /// What the sequence says about you once the body checks out.
@@ -185,13 +242,13 @@ struct LinkstartView: View {
     private func trailer(phase: LinkstartPhase, theme: SAOTheme) -> some View {
         VStack(spacing: 10) {
             switch phase {
-            case .awakening, .senses:
+            case .awakening, .rings, .rays, .calibration, .senses:
                 Text(LanguageManager.shared.t("linkstart.checking"))
                     .foregroundStyle(theme.paper.opacity(0.5))
             case .language:
                 Text(LanguageManager.shared.t("linkstart.language"))
                     .foregroundStyle(theme.paper)
-            case .identity, .complete:
+            case .identity, .fade, .complete:
                 Text(LanguageManager.shared.t("linkstart.welcome").replacingOccurrences(
                     of: "{name}",
                     with: NSFullUserName()
@@ -207,23 +264,5 @@ struct LinkstartView: View {
         .font(IslandTypography.mono(size: 16))
         .tracking(3)
         .animation(theme.animationProfile.open, value: phase)
-    }
-}
-
-/// Horizontal lines three points apart, the same texture the island uses.
-private struct Scanlines: View {
-    let intensity: Double
-
-    var body: some View {
-        Canvas { context, size in
-            var y: CGFloat = 0
-            while y < size.height {
-                context.fill(
-                    Path(CGRect(x: 0, y: y, width: size.width, height: 1)),
-                    with: .color(.black.opacity(intensity))
-                )
-                y += 3
-            }
-        }
     }
 }

@@ -1,3 +1,4 @@
+import AppKit
 import OpenIslandCore
 import SwiftUI
 
@@ -14,12 +15,24 @@ struct AmbientBoardView: View {
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
+            // ponytail: `IslandMotion` (a shared reduced-motion helper) hasn't
+            // landed on this branch yet — read the system flag directly until
+            // it does, then switch this one line over to it.
+            let reducesMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+
             ZStack {
                 // Dark enough to read white type over any wallpaper, light
                 // enough that the desktop is still visibly there — this is the
                 // machine resting, not the machine off.
                 V6Palette.ink.opacity(0.88)
                     .ignoresSafeArea()
+
+                // A faint pulse behind the clock, echoing the login sequence's
+                // own rings — the same shared grammar, at rest.
+                SAORingView(progress: 1, count: 2, tint: V6Palette.paper)
+                    .opacity(0.06)
+                    .rotationEffect(reducesMotion ? .zero : Self.ringRotation(at: context.date))
+                    .allowsHitTesting(false)
 
                 VStack(spacing: 26) {
                     Spacer(minLength: 0)
@@ -122,10 +135,23 @@ struct AmbientBoardView: View {
         .padding(.horizontal, 26)
         .padding(.vertical, 20)
         .frame(maxWidth: 560, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(V6Palette.paper.opacity(0.045))
-        )
+        .background(Self.waitingPanelShape.fill(V6Palette.paper.opacity(0.045)))
+        .clipShape(Self.waitingPanelShape)
+        .saoOutline(Self.waitingPanelShape, scale: 1.0)
+    }
+
+    private static let waitingPanelShape = SAOPanelShape(
+        cornerRadius: 6,
+        cuts: [.topTrailing, .bottomLeading],
+        cutDepth: 12
+    )
+
+    /// One full turn per minute, driven by the board's own once-a-second
+    /// clock rather than a separate animation — a decoration this quiet
+    /// doesn't need its own timer.
+    private static func ringRotation(at date: Date) -> Angle {
+        let seconds = date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 60)
+        return .degrees(seconds / 60 * 360)
     }
 
     private func row(tint: Color, label: String, detail: String) -> some View {

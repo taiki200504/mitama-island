@@ -22,14 +22,19 @@ struct SAORingView: View {
     var count: Int = 5
     var tint: Color
     var lineWidth: CGFloat = 1.5
+    /// Colour for the ring at a given index, indexed 0..<count. Defaults to a
+    /// uniform `tint` for every ring — the idle board's rotating backdrop
+    /// doesn't need per-ring colour and keeps drawing a single hue.
+    var ringTint: ((Int) -> Color)? = nil
 
     var body: some View {
         Canvas { context, size in
             let maxRadius = min(size.width, size.height) / 2
             let center = CGPoint(x: size.width / 2, y: size.height / 2)
-            for radius in SAORing.radii(progress: progress, count: count, maxRadius: maxRadius) where radius > 0 {
+            let radii = SAORing.radii(progress: progress, count: count, maxRadius: maxRadius)
+            for (index, radius) in radii.enumerated() where radius > 0 {
                 let rect = CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2)
-                context.stroke(Path(ellipseIn: rect), with: .color(tint), lineWidth: lineWidth)
+                context.stroke(Path(ellipseIn: rect), with: .color(ringTint?(index) ?? tint), lineWidth: lineWidth)
             }
         }
     }
@@ -58,6 +63,10 @@ struct SAORaysView: View {
     var progress: Double
     var count: Int = 24
     var tint: Color
+    /// A radial gradient from the centre out to the ray tips, in place of the
+    /// flat `tint` stroke — every ray shares one gradient since they all
+    /// radiate from the same point.
+    var gradient: Gradient? = nil
 
     var body: some View {
         Canvas { context, size in
@@ -71,7 +80,15 @@ struct SAORaysView: View {
                 path.move(to: center)
                 path.addLine(to: point)
             }
-            context.stroke(path, with: .color(tint), lineWidth: 1)
+            if let gradient {
+                context.stroke(
+                    path,
+                    with: .radialGradient(gradient, center: center, startRadius: 0, endRadius: length),
+                    lineWidth: 1
+                )
+            } else {
+                context.stroke(path, with: .color(tint), lineWidth: 1)
+            }
         }
     }
 }

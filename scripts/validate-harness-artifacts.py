@@ -22,12 +22,25 @@ def require_path(path: pathlib.Path, context: str) -> None:
         fail(f"missing {context} at {path}")
 
 
-def find_overlay_window(report: dict) -> dict:
+def find_window_by_kind(report: dict, kind: str) -> dict | None:
     windows = report.get("windows") or []
-    overlay = next((window for window in windows if window.get("kind") == "overlay"), None)
+    return next((window for window in windows if window.get("kind") == kind), None)
+
+
+def find_overlay_window(report: dict) -> dict:
+    overlay = find_window_by_kind(report, "overlay")
     if overlay is None:
         fail("report is missing an overlay window artifact")
     return overlay
+
+
+def find_linkstart_window(report: dict) -> dict:
+    # Its own window kind, distinct from the plain island overlay — see
+    # HarnessArtifactRecorder.recognizedWindowKind.
+    window = find_window_by_kind(report, "linkstart")
+    if window is None:
+        fail("linkstart scenario captured no full-screen linkstart window")
+    return window
 
 
 def collect_ax_strings(node: dict, labels: set[str], button_labels: set[str], text_values: set[str]) -> None:
@@ -182,7 +195,15 @@ def main() -> None:
     report_path = pathlib.Path(sys.argv[1])
     report = load_json(report_path)
     log_path = validate_runtime(report_path, report)
-    overlay = find_overlay_window(report)
+
+    scenario = report.get("scenario")
+    if not isinstance(scenario, str) or not scenario:
+        fail("report is missing scenario")
+
+    # The login sequence captures under its own window kind (see
+    # HarnessArtifactRecorder.recognizedWindowKind) rather than the plain
+    # island overlay every other scenario uses.
+    overlay = find_linkstart_window(report) if scenario == "linkstart" else find_overlay_window(report)
 
     accessibility_path = overlay.get("accessibilityPath")
     if not accessibility_path:
@@ -200,10 +221,6 @@ def main() -> None:
     labels.update(summary.get("labels") or [])
     button_labels.update(summary.get("buttonLabels") or [])
     text_values.update(summary.get("textValues") or [])
-
-    scenario = report.get("scenario")
-    if not isinstance(scenario, str) or not scenario:
-        fail("report is missing scenario")
 
     island_surface = report.get("islandSurface") or ""
     notch_status = report.get("notchStatus")
@@ -406,6 +423,26 @@ def main() -> None:
             fail("idle board is missing the clock")
         if not any("CODEX" in value or "CLAUDE" in value for value in text_values):
             fail("idle board is missing the waiting agent")
+
+    elif scenario == "linkstart":
+        # The whole point of this scenario: a full-screen window, pinned
+        # partway through, with at least one sense already confirmed and the
+        # sounds that mark the sequence's own beats already in the log.
+        frame_width = overlay_frame.get("width")
+        frame_height = overlay_frame.get("height")
+        if not isinstance(frame_width, (int, float)) or not isinstance(frame_height, (int, float)):
+            fail("linkstart overlay frame is missing width/height")
+        if frame_width <= 0 or frame_height <= 0:
+            fail(f"linkstart overlay frame is degenerate: {frame_width}x{frame_height}")
+
+        if not any("OK" in value for value in text_values):
+            fail("linkstart is missing the confirmed sense marker")
+
+        log_text = log_path.read_text()
+        if "sound.cue=ui-linkstart-rise" not in log_text:
+            fail("linkstart runtime log is missing the rise cue")
+        if "sound.cue=ui-linkstart-tick" not in log_text:
+            fail("linkstart runtime log is missing a tick cue")
 
     else:
         fail(f"unsupported scenario {scenario!r}")
