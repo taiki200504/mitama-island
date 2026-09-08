@@ -594,6 +594,11 @@ def main() -> None:
         # now-playing accessory both visible at once.
         if notch_status != "closed":
             fail(f"expected closed notch for nowPlayingClosed, got {notch_status!r}")
+    elif scenario == "hudVolume":
+        # The HUD gauge overrides the closed body just like sneakPeekPop —
+        # the fixture's percentage text has to actually be on screen.
+        if notch_status != "closed":
+            fail(f"expected closed notch for hudVolume, got {notch_status!r}")
         require_frame_between(
             overlay_frame,
             width=(520, 780),
@@ -618,6 +623,10 @@ def main() -> None:
         assert_contains_any(text_values, ["Demo Artist"], "nowPlayingSurface text values")
         if not any(re.fullmatch(r"\d:\d{2}", value) for value in text_values):
             fail("nowPlayingSurface is missing its M:SS elapsed/duration readout")
+            context="hudVolume overlay frame",
+        )
+        if not any("56%" in value for value in text_values):
+            fail("hudVolume is missing its gauge percentage")
 
     else:
         fail(f"unsupported scenario {scenario!r}")
