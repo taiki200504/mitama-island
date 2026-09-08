@@ -291,6 +291,12 @@
 "settings.display.section.panelSize" = "Panel size";
 "settings.display.section.notch" = "Notch calibration";
 "settings.display.section.sessionCard" = "Session card";
+"settings.display.section.unlock" = "Unlock";
+"settings.lockScan.enabled" = "Greet you on unlock";
+"settings.lockScan.enabled.help" = "Shows a short check-in on the closed island right after the screen unlocks.";
+"settings.lockScan.usesCamera" = "Confirm with the camera";
+"settings.lockScan.usesCamera.help" = "Opens the camera for up to two seconds after unlock to see whether you're actually there.";
+"settings.lockScan.usesCamera.denied" = "Camera access is off. System Settings → Privacy & Security → Camera.";
 "settings.display.contentFontSize" = "Content font size";
 "settings.display.maxPanelHeight" = "Maximum panel height";
 "settings.display.maxPanelWidth" = "Maximum panel width";

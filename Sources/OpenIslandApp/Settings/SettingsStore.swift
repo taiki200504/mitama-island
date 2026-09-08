@@ -22,6 +22,7 @@ final class SettingsStore: Sendable {
     let cameraGesture: CameraGestureSettings
     let voiceCommand: VoiceCommandSettings
     let usage: UsageSettings
+    let lockScan: LockScanSettings
 
     init(store: PreferenceStore = .standard) {
         behaviour = BehaviourSettings(store: store)
@@ -33,6 +34,7 @@ final class SettingsStore: Sendable {
         cameraGesture = CameraGestureSettings(store: store)
         voiceCommand = VoiceCommandSettings(store: store)
         usage = UsageSettings(store: store)
+        lockScan = LockScanSettings(store: store)
 
         DisplaySettings.migrateLegacyTheme(in: store)
     }

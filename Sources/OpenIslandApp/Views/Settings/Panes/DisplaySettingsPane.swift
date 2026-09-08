@@ -1,3 +1,4 @@
+import AVFoundation
 import SwiftUI
 
 /// The display pane: where the island sits, how big it gets, and which facts a
@@ -7,15 +8,52 @@ struct DisplaySettingsPane: View {
 
     private var lang: LanguageManager { model.lang }
     private var display: DisplaySettings { model.settings.display }
+    private var lockScan: LockScanSettings { model.settings.lockScan }
 
     var body: some View {
         SettingsPane(tab: .display) {
             monitorSection
             panelSizeSection
             notchSection
+            unlockSection
             sessionCardSection
             shelfSection
             diagnosticsSection
+        }
+    }
+
+    // MARK: Unlock
+
+    private var cameraPermissionDenied: Bool {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .denied, .restricted: true
+        case .authorized, .notDetermined: false
+        @unknown default: false
+        }
+    }
+
+    private var unlockSection: some View {
+        Section(lang.t("settings.display.section.unlock")) {
+            SettingsToggleRow(
+                title: lang.t("settings.lockScan.enabled"),
+                help: lang.t("settings.lockScan.enabled.help"),
+                isOn: Binding(
+                    get: { lockScan.enabled },
+                    set: { lockScan.enabled = $0 }
+                )
+            )
+
+            SettingsToggleRow(
+                title: lang.t("settings.lockScan.usesCamera"),
+                help: lang.t("settings.lockScan.usesCamera.help"),
+                availability: cameraPermissionDenied
+                    ? .unsupported(reasonKey: "settings.lockScan.usesCamera.denied")
+                    : .ready,
+                isOn: Binding(
+                    get: { lockScan.usesCamera },
+                    set: { lockScan.usesCamera = $0 }
+                )
+            )
         }
     }
 

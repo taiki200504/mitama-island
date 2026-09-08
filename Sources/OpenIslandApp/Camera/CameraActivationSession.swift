@@ -56,6 +56,14 @@ final class CameraActivationSession {
     /// Same discipline, for the other reason the camera stays shut.
     private var hasSaidCameraIsBusy = false
 
+    /// The lock-scan greeting's own short-lived capture session — kept
+    /// separate from `captureSession`/`analyzer` so it never fights the
+    /// gesture pipeline's state (`phase`, `timeout`) for a session that isn't
+    /// looking for a swipe at all.
+    private var faceCheckSession: AVCaptureSession?
+    private var faceDetector: FacePresenceDetector?
+    private var faceCheckTimeout: Task<Void, Never>?
+
     /// True while a call or a recording holds the built-in camera.
     var cameraIsInUseByAnotherApp: Bool {
         builtInCamera()?.isInUseByAnotherApplication ?? false
@@ -194,6 +202,74 @@ final class CameraActivationSession {
         // Stopping blocks until the device releases, which is exactly the wrong
         // thing to do on the main actor while an animation is running.
         queue.async { session?.stopRunning() }
+    }
+
+    /// Opens the camera for at most `maxDuration` purely to see whether a
+    /// face is in front of it, for the unlock greeting's optional glyph swap.
+    ///
+    /// Never requests permission — this runs on its own, not because of a
+    /// keypress, so a dialog here would have nothing to explain itself — and
+    /// never touches the gesture pipeline's own state. `onFaceSeen` fires at
+    /// most once and stops the session immediately after; the caller decides
+    /// whether the timing still matters by the time it arrives.
+    func beginFaceCheck(maxDuration: TimeInterval, onFaceSeen: @escaping @MainActor @Sendable () -> Void) {
+        guard AVCaptureDevice.authorizationStatus(for: .video) == .authorized else { return }
+        guard faceCheckSession == nil, !isRunning, !cameraIsInUseByAnotherApp else { return }
+        guard let session = makeFaceCheckSession(onFaceSeen: onFaceSeen) else { return }
+
+        faceCheckSession = session
+        queue.async { session.startRunning() }
+
+        // Explicitly `@MainActor`, matching the Vision callback in
+        // `makeFaceCheckSession` below, so every mutation of
+        // `faceCheckSession`/`faceDetector`/`faceCheckTimeout` — from the
+        // timeout, the callback, and `endFaceCheck` itself — happens on the
+        // same actor with no ambiguity for the strict-concurrency checker.
+        faceCheckTimeout = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(maxDuration))
+            guard !Task.isCancelled else { return }
+            self?.endFaceCheck()
+        }
+    }
+
+    private func endFaceCheck() {
+        faceCheckTimeout?.cancel()
+        faceCheckTimeout = nil
+        faceDetector = nil
+        let session = faceCheckSession
+        faceCheckSession = nil
+        queue.async { session?.stopRunning() }
+    }
+
+    private func makeFaceCheckSession(onFaceSeen: @escaping @MainActor @Sendable () -> Void) -> AVCaptureSession? {
+        guard let device = builtInCamera(), let input = try? AVCaptureDeviceInput(device: device) else {
+            return nil
+        }
+
+        let session = AVCaptureSession()
+        session.sessionPreset = session.canSetSessionPreset(.vga640x480) ? .vga640x480 : .low
+        guard session.canAddInput(input) else { return nil }
+        session.addInput(input)
+
+        let output = AVCaptureVideoDataOutput()
+        output.alwaysDiscardsLateVideoFrames = true
+        output.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA]
+
+        let detector = FacePresenceDetector { [weak self] in
+            Task { @MainActor in
+                onFaceSeen()
+                self?.endFaceCheck()
+            }
+        }
+        output.setSampleBufferDelegate(detector, queue: queue)
+
+        // Only retained once the output actually joins the session — holding
+        // it on a failed attempt would leave `faceDetector` pointing at a
+        // detector wired to nothing, wrongly implying a face check is live.
+        guard session.canAddOutput(output) else { return nil }
+        session.addOutput(output)
+        faceDetector = detector
+        return session
     }
 
     // MARK: - Private

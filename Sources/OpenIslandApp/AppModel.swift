@@ -73,6 +73,11 @@ final class AppModel {
     /// hold the panel back.
     let quietScenes: QuietSceneMonitor
 
+    /// The screen locking and unlocking, for the unlock greeting. Distinct
+    /// from `quietScenes`, which only polls whether the screen is obscured
+    /// right now — this wants the moment itself.
+    @ObservationIgnored let screenLockWatcher = ScreenLockWatcher()
+
     var state = SessionState() {
         didSet {
             _cachedSessionBuckets = nil
@@ -845,6 +850,16 @@ final class AppModel {
         startAmbientBoardIfEnabled()
 
         quietScenes.start()
+        screenLockWatcher.onLocked = { [weak self] in
+            // The poll that backs `quietScenes` runs every 5s; a lock is
+            // worth knowing about the moment it happens rather than waiting
+            // out that lag.
+            self?.quietScenes.refresh()
+        }
+        screenLockWatcher.onUnlocked = { [weak self] in
+            self?.presentLockScanGreeting()
+        }
+        screenLockWatcher.start()
         startIdleSessionCleanup()
         shelf.expiryProvider = { [weak self] in self?.shelfExpiresAfter.ttl }
         startShelfExpiryPruning()
@@ -1859,6 +1874,62 @@ final class AppModel {
 
         lastPowerRefusal = nil
         cameraActivation.beginSustained()
+    }
+
+    /// A ring resolving into a check and your name on the closed island,
+    /// right after the screen unlocks.
+    ///
+    /// A presentation, not a security check: macOS has already unlocked the
+    /// screen by the time this runs. Nothing here decides whether to let
+    /// anyone in.
+    private func presentLockScanGreeting() {
+        guard settings.lockScan.enabled else { return }
+
+        let startedAt = Date.now
+        let until = startedAt.addingTimeInterval(LockScanSequence.duration)
+        let name = Self.shortDisplayName(from: NSFullUserName())
+
+        overlay.presentSneakPeek(
+            IslandSneakPeek(
+                kind: .lockScan,
+                text: name,
+                icon: "person.crop.circle",
+                gauge: nil,
+                until: until
+            )
+        )
+        NotificationSoundService.play(.lockScan, settings: settings.sound)
+
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(LockScanSequence.confirmedAt))
+            guard let self, !Task.isCancelled else { return }
+            NotificationSoundService.play(.unlock, settings: self.settings.sound)
+        }
+
+        guard settings.lockScan.usesCamera else { return }
+        // Never lets the camera hold up or change the ring's own timing —
+        // this only asks whether it can swap the eventual check for a face
+        // glyph, and only if the answer arrives before the ring has landed.
+        cameraActivation.beginFaceCheck(maxDuration: 2) { [weak self] in
+            guard let self, Date.now.timeIntervalSince(startedAt) < LockScanSequence.confirmedAt else { return }
+            // Swaps the glyph on the peek already showing rather than
+            // re-presenting a new one — `presentSneakPeek` treats every call
+            // as a fresh candidate under `IslandSneakPeekPolicy`, which has
+            // no reason to exist for changing one field of what is already
+            // on screen.
+            self.overlay.updateSneakPeek(where: .lockScan) { peek in
+                IslandSneakPeek(kind: peek.kind, text: peek.text, icon: "face.smiling", gauge: peek.gauge, until: peek.until)
+            }
+        }
+    }
+
+    /// The first word of a full name — "Taiki" out of "Taiki Mishima" — or
+    /// the whole string when it has no space to split on. Falls back to the
+    /// short POSIX username when macOS has no full name to give.
+    static func shortDisplayName(from fullName: String) -> String {
+        let trimmed = fullName.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return NSUserName() }
+        return trimmed.split(separator: " ").first.map(String.init) ?? trimmed
     }
 
     func beginVoiceAnswer() {

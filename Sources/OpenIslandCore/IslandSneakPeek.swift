@@ -50,7 +50,7 @@ public enum IslandSneakPeekPolicy {
     public static func duration(for kind: IslandSneakPeekKind) -> TimeInterval {
         switch kind {
         case .hudGauge: 1.2
-        case .lockScan: 2.2
+        case .lockScan: LockScanSequence.duration
         case .timerDone: 4
         case .eventStarting: 4
         case .trackChanged: 1.8

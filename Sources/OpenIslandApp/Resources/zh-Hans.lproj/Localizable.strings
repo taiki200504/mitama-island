@@ -291,6 +291,12 @@
 "settings.display.section.panelSize" = "面板尺寸";
 "settings.display.section.notch" = "刘海微调";
 "settings.display.section.sessionCard" = "会话卡片";
+"settings.display.section.unlock" = "解锁";
+"settings.lockScan.enabled" = "解锁时问候";
+"settings.lockScan.enabled.help" = "解锁屏幕后，在收起的岛上短暂显示确认信息。";
+"settings.lockScan.usesCamera" = "用摄像头确认";
+"settings.lockScan.usesCamera.help" = "解锁后最多开启摄像头两秒，以确认是否真的有人在场。";
+"settings.lockScan.usesCamera.denied" = "摄像头访问被拒绝。系统设置 → 隐私与安全性 → 摄像头。";
 "settings.display.contentFontSize" = "内容字号";
 "settings.display.maxPanelHeight" = "面板最大高度";
 "settings.display.maxPanelWidth" = "面板最大宽度";

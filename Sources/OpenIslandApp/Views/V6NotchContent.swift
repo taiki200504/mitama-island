@@ -548,27 +548,80 @@ struct SAOSneakPeekView: View {
     let peek: IslandSneakPeek
 
     var body: some View {
-        HStack(spacing: 5) {
-            Image(systemName: peek.icon)
-                .font(.islandMono(size: 10, weight: .semibold))
-                .foregroundStyle(V6Palette.paper.opacity(0.92))
+        if peek.kind == .lockScan {
+            LockScanPeekView(peek: peek)
+        } else {
+            HStack(spacing: 5) {
+                Image(systemName: peek.icon)
+                    .font(.islandMono(size: 10, weight: .semibold))
+                    .foregroundStyle(V6Palette.paper.opacity(0.92))
 
-            Text(peek.text)
-                .font(.islandMono(size: 11))
-                .foregroundStyle(V6Palette.paper.opacity(0.92))
+                Text(peek.text)
+                    .font(.islandMono(size: 11))
+                    .foregroundStyle(V6Palette.paper.opacity(0.92))
 
-            if let gauge = peek.gauge {
-                ZStack(alignment: .leading) {
-                    SAOGaugeShape(fraction: 1, isTrack: true)
-                        .fill(V6Palette.paper.opacity(0.14))
-                    SAOGaugeShape(fraction: gauge)
-                        .fill(SAOGrammar.Palette.hpLimeEnd)
+                if let gauge = peek.gauge {
+                    ZStack(alignment: .leading) {
+                        SAOGaugeShape(fraction: 1, isTrack: true)
+                            .fill(V6Palette.paper.opacity(0.14))
+                        SAOGaugeShape(fraction: gauge)
+                            .fill(SAOGrammar.Palette.hpLimeEnd)
+                    }
+                    .frame(width: 44, height: 6)
                 }
-                .frame(width: 44, height: 6)
             }
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
         }
-        .lineLimit(1)
-        .fixedSize(horizontal: true, vertical: false)
+    }
+}
+
+/// The unlock greeting: a small ring that resolves into a check (or, if the
+/// camera saw a face early enough, a face glyph) sitting beside the name.
+///
+/// `elapsed` is derived from `peek.until` and `LockScanSequence.duration`
+/// rather than carried as a field on the peek itself — the sequence's own
+/// timing is the only clock this needs, and `TimelineView` supplies the
+/// ticks to read it against.
+private struct LockScanPeekView: View {
+    let peek: IslandSneakPeek
+
+    private var startedAt: Date {
+        peek.until.addingTimeInterval(-LockScanSequence.duration)
+    }
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1.0 / 30.0)) { context in
+            let elapsed = context.date.timeIntervalSince(startedAt)
+            let hasLanded = LockScanSequence.phase(at: elapsed) != .scanning
+
+            HStack(spacing: 5) {
+                ZStack {
+                    SAORingView(
+                        progress: LockScanSequence.ringProgress(at: elapsed),
+                        count: 1,
+                        tint: hasLanded ? SAOGrammar.Palette.hpLimeEnd : SAOGrammar.Palette.systemCyan,
+                        lineWidth: 1.5
+                    )
+                    if hasLanded {
+                        // `peek.icon` doubles as the camera's answer here: the
+                        // greeting is presented again with a face glyph the
+                        // moment a face is seen early enough, in place of the
+                        // "person.crop.circle" placeholder it started with.
+                        Image(systemName: peek.icon == "face.smiling" ? "face.smiling" : "checkmark")
+                            .font(.islandMono(size: 8, weight: .bold))
+                            .foregroundStyle(SAOGrammar.Palette.hpLimeEnd)
+                    }
+                }
+                .frame(width: 16, height: 16)
+
+                Text(peek.text)
+                    .saoCaps(size: 11, text: peek.text)
+                    .foregroundStyle(V6Palette.paper.opacity(0.92))
+            }
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+        }
     }
 }
 
@@ -702,8 +755,12 @@ extension IslandSneakPeek {
     func intrinsicWidth() -> CGFloat {
         guard !text.isEmpty else { return 0 }
         let charWidth: CGFloat = 7.2
-        let icon: CGFloat = 10 + 5
         let textWidth = CGFloat(text.count) * charWidth
+        if kind == .lockScan {
+            // The 16pt ring in place of the usual small icon.
+            return 16 + 5 + textWidth
+        }
+        let icon: CGFloat = 10 + 5
         let gaugeWidth: CGFloat = gauge != nil ? 44 + 5 : 0
         return icon + textWidth + gaugeWidth
     }
