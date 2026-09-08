@@ -62,14 +62,16 @@ struct MediaRemoteAdapterProcessTests {
         #expect(process.isAvailable == false)
     }
 
-    @Test("Starting with nothing resolved reports unavailable rather than throwing")
-    func startWithNothingResolvedReportsUnavailable() {
+    @Test("Starting with nothing resolved does not crash")
+    func startWithNothingResolvedIsSafe() {
+        // `notifyAvailability` hops through `DispatchQueue.main.async` (see
+        // its doc comment), so the callback isn't observable synchronously
+        // here — `unavailableWithNoFramework`/`unavailableWithNoScript`
+        // above already cover the resulting value. This only pins that
+        // calling `start()` with nothing resolved returns cleanly rather
+        // than crashing.
         let process = MediaRemoteAdapterProcess(frameworkPath: nil, perlScriptPath: nil)
-        var reportedAvailability: Bool?
-        process.onAvailabilityChange = { reportedAvailability = $0 }
-
         process.start()
-
-        #expect(reportedAvailability == false)
+        #expect(process.isAvailable == false)
     }
 }
