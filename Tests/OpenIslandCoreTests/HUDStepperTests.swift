@@ -35,10 +35,37 @@ struct HUDStepperTests {
 
     @Test("An off-grid level snaps onto the fine grid the same way")
     func snapsOffGridLevelToFineGrid() {
-        // 0.4 is not a multiple of 1/64; the nearest fine stop above it is
-        // 26/64 = 0.40625.
+        // 0.4 is not a multiple of 1/64; the next fine stop *above* it in
+        // the direction of travel is 26/64 = 0.40625 — not 27/64, which
+        // "round to nearest of level + one step" would land on instead.
         let next = HUDStepper.next(level: 0.4, direction: 1, fine: true)
         #expect(abs(next - 0.40625) < 0.0001)
+    }
+
+    @Test("An off-grid level moving down snaps onto the grid line below it, not the nearest one")
+    func snapsOffGridLevelDownToFloor() {
+        // 0.4 is not a multiple of 1/16; the next coarse stop *below* it is
+        // 6/16 = 0.375.
+        let next = HUDStepper.next(level: 0.4, direction: -1, fine: false)
+        #expect(abs(next - 0.375) < 0.0001)
+    }
+
+    @Test("A level exactly on the grid moves down by exactly one step")
+    func onGridLevelMovesDownByOneStep() {
+        let next = HUDStepper.next(level: 0.5, direction: -1, fine: false)
+        #expect(abs(next - 0.4375) < 0.0001)
+    }
+
+    @Test("Stepping up from exactly zero lands on the grid's first stop")
+    func onGridZeroMovesUpByOneStep() {
+        let next = HUDStepper.next(level: 0, direction: 1, fine: false)
+        #expect(abs(next - HUDStepper.coarseStep) < 0.0001)
+    }
+
+    @Test("Stepping down from exactly one lands on the grid's last stop below it")
+    func onGridOneMovesDownByOneStep() {
+        let next = HUDStepper.next(level: 1, direction: -1, fine: false)
+        #expect(abs(next - (1 - HUDStepper.coarseStep)) < 0.0001)
     }
 
     @Test("Zero segments are lit at the bottom")

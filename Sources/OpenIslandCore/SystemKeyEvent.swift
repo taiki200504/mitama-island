@@ -61,17 +61,32 @@ public enum HUDStepper {
     public static let fineStep: Double = 1.0 / 64.0
     private static let totalSegments = 16
 
-    /// `level` moved one step in `direction` (positive up, negative down),
-    /// clamped to 0...1 and snapped to the grid `fine` selects — so repeated
-    /// presses always land on one of that grid's stops, regardless of where
-    /// `level` started (a device's current level rarely sits exactly on it).
+    /// `level` moved one step in `direction` (positive up, negative down) on
+    /// the grid `fine` selects, clamped to 0...1.
+    ///
+    /// An off-grid `level` (a device's current level rarely sits exactly on
+    /// one of these stops) snaps to the *next* grid line in the direction of
+    /// travel — up rounds up, down rounds down — rather than to whichever
+    /// stop is nearest: nearest-of-`level + step` can overshoot by an extra
+    /// stop whenever `level` already sits more than half a step into the
+    /// cell it is leaving. A `level` already exactly on the grid instead
+    /// advances one full step, or every press from an on-grid level would be
+    /// a no-op.
     public static func next(level: Double, direction: Int, fine: Bool) -> Double {
-        guard direction != 0 else { return min(max(0, level), 1) }
+        let clampedLevel = min(max(0, level), 1)
+        guard direction != 0 else { return clampedLevel }
+
         let step = fine ? fineStep : coarseStep
-        let signedStep = direction > 0 ? step : -step
-        let raw = level + signedStep
-        let snapped = (raw / step).rounded() * step
-        return min(max(0, snapped), 1)
+        let position = clampedLevel / step
+        let nextPosition: Double = if direction > 0 {
+            let ceiled = position.rounded(.up)
+            ceiled == position ? ceiled + 1 : ceiled
+        } else {
+            let floored = position.rounded(.down)
+            floored == position ? floored - 1 : floored
+        }
+
+        return min(max(0, nextPosition * step), 1)
     }
 
     /// How many of 16 segments `level` fills — the discrete look the HUD
