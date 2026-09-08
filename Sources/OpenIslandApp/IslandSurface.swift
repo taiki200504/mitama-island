@@ -3,11 +3,18 @@ import OpenIslandCore
 
 enum IslandSurface: Equatable {
     case sessionList(actionableSessionID: String? = nil)
+    /// Placeholder surfaces for closed-island accessories that don't have
+    /// their own opened content yet — a later PR fills each of these in.
+    case nowPlaying
+    case clipboard
+    case timer
 
     var sessionID: String? {
         switch self {
         case let .sessionList(actionableSessionID):
             actionableSessionID
+        case .nowPlaying, .clipboard, .timer:
+            nil
         }
     }
 

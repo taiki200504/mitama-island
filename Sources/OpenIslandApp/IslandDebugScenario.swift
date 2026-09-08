@@ -22,6 +22,15 @@ struct IslandDebugSnapshot {
     /// waiting out several real seconds of animation.
     var presentsLinkstart = false
     var linkstartElapsedOverride: TimeInterval = 0
+    /// A sneak peek to present immediately after the overlay state loads.
+    /// Only scenarios exercising the temporary closed-island message set
+    /// this; `until` is set well past the kind's real duration so a headless
+    /// capture always lands while it's still showing.
+    var debugSneakPeek: IslandSneakPeek?
+    /// Forces a timer accessory onto the closed island. No real timer feature
+    /// exists yet — this is only how a scenario exercises the accessory
+    /// ahead of it.
+    var debugAccessoryTimer: IslandClosedInputs.Timer?
 }
 
 enum IslandDebugScenario: String, CaseIterable, Identifiable {
@@ -37,6 +46,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
     case longQuestionCard
     case ambientBoard
     case linkstart
+    case sneakPeekPop
+    case closedAccessoryTimer
 
     var id: String { rawValue }
 
@@ -68,6 +79,10 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Idle Board"
         case .linkstart:
             "Login Sequence"
+        case .sneakPeekPop:
+            "Sneak Peek Pop"
+        case .closedAccessoryTimer:
+            "Closed + Timer Accessory"
         }
     }
 
@@ -97,6 +112,10 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "The screen the machine shows while it is being left alone."
         case .linkstart:
             "The full-screen sequence that runs before the island lets you in, paused partway through."
+        case .sneakPeekPop:
+            "A temporary closed-island message overriding the body for a few seconds."
+        case .closedAccessoryTimer:
+            "Closed island with a waiting agent body and a running timer alongside it."
         }
     }
 
@@ -277,6 +296,42 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                 // opening burst and calibration flash have already passed
                 // that there is something worth a screenshot.
                 linkstartElapsedOverride: 3.5
+            )
+
+        case .sneakPeekPop:
+            let sessions = DebugSessionFactory.listSessions(now: now)
+            return IslandDebugSnapshot(
+                title: title,
+                summary: summary,
+                previewHeight: 78,
+                notchStatus: .closed,
+                notchOpenReason: nil,
+                islandSurface: .sessionList(),
+                sessions: sessions,
+                selectedSessionID: sessions.first?.id,
+                debugSneakPeek: IslandSneakPeek(
+                    kind: .shelf,
+                    text: "READY",
+                    icon: "tray.full",
+                    // Set well past the shelf kind's real 1.2s so a headless
+                    // capture always lands while it's still showing — this
+                    // fixture exists to be looked at, not to expire on cue.
+                    until: now.addingTimeInterval(30)
+                )
+            )
+
+        case .closedAccessoryTimer:
+            let waiting = DebugSessionFactory.approvalSession(now: now.addingTimeInterval(-8 * 60))
+            return IslandDebugSnapshot(
+                title: title,
+                summary: summary,
+                previewHeight: 78,
+                notchStatus: .closed,
+                notchOpenReason: nil,
+                islandSurface: .sessionList(),
+                sessions: DebugSessionFactory.notificationSessions(lead: waiting, now: now),
+                selectedSessionID: waiting.id,
+                debugAccessoryTimer: IslandClosedInputs.Timer(remainingMinutes: 12, label: "Focus")
             )
         }
     }

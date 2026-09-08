@@ -325,6 +325,12 @@ enum HarnessArtifactRecorder {
             "sessionList"
         case let .sessionList(actionableSessionID: sessionID?):
             "sessionList:actionable(\(sessionID))"
+        case .nowPlaying:
+            "nowPlaying"
+        case .clipboard:
+            "clipboard"
+        case .timer:
+            "timer"
         }
     }
 

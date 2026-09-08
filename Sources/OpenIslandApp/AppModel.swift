@@ -1281,92 +1281,43 @@ final class AppModel {
         )
     }
 
-    func islandPeekBand(now: Date = .now) -> V6PeekBandView.Content? {
-        // macOS lights the camera indicator for as long as the device runs, and
-        // the island is the only thing that can say why. Carried on whatever
-        // the band is already showing rather than replacing it.
-        let watching = cameraActivation.phase == .awaitingGesture
+    /// A timer's remaining time, for the closed-island accessory. No real
+    /// timer feature exists yet — a later PR fills this from a live one; the
+    /// harness sets it directly to exercise the accessory ahead of that.
+    var debugClosedAccessoryTimer: IslandClosedInputs.Timer?
+
+    /// The closed island's one body slot and one trailing accessory, decided
+    /// fresh from whatever is true right now. `IslandClosedArbiter` owns the
+    /// priority order; this only turns live state into the plain values it
+    /// needs.
+    func islandClosedContent(now: Date = .now) -> IslandClosedContent {
         let alerts = mitamaFeedEnabled ? mitamaFeed.notifications : []
+        // Decomposed rather than reused as one call: `IslandPeekBand.content`
+        // already picks urgent over waiting when both are passed together,
+        // which is exactly the ordering `IslandClosedArbiter` needs to make
+        // for itself instead of inheriting pre-decided.
+        let urgent = IslandPeekBand.content(for: [], mitamaAlerts: alerts, now: now)
+        let waiting = IslandPeekBand.content(for: surfacedSessions, mitamaAlerts: [], now: now)
 
-        guard let band = IslandPeekBand.content(
-            for: surfacedSessions,
-            mitamaAlerts: alerts,
+        let inputs = IslandClosedInputs(
+            mitamaUrgent: urgent,
+            waiting: waiting,
+            // No "calendar entry just started" tracking exists yet — a later
+            // PR wires it from EventKit.
+            eventStarted: nil,
+            nextEvent: calendar.band,
+            showsNextEvent: settings.display.showsNextEvent,
+            timer: debugClosedAccessoryTimer,
+            // No now-playing feature exists yet — a later PR wires it from
+            // MediaRemote.
+            nowPlayingIsPlaying: nil,
+            // macOS lights the camera indicator for as long as the device
+            // runs, and the island is the only thing that can say why.
+            cameraIsWatching: cameraActivation.phase == .awaitingGesture,
+            shelfCount: shelf.items.count,
             now: now
-        ) else {
-            // Nothing is waiting, which is most of the day. Say what is next
-            // instead of saying nothing — something waiting always outranks it,
-            // so this can never push an unanswered request off the band.
-            if let next = nextEventPeekBand(now: now, cameraIsWatching: watching) {
-                return next
-            }
-            // Nothing at all, but the light is on. Explaining it is the whole
-            // point of holding the camera open with nothing waiting.
-            guard watching else { return nil }
-            return V6PeekBandView.Content(
-                agent: lang.t("camera.watching.short"),
-                tintHint: .upcoming,
-                elapsed: "",
-                othersWaiting: 0,
-                cameraIsWatching: true
-            )
-        }
-
-        return V6PeekBandView.Content(
-            agent: band.agent,
-            tintHint: peekTint(band.subject),
-            elapsed: peekElapsedText(band.elapsed),
-            othersWaiting: band.othersWaiting,
-            cameraIsWatching: watching
         )
-    }
-
-    /// The next calendar entry, as the band already knows how to draw.
-    ///
-    /// Reuses the waiting band's shape rather than adding a second one: the
-    /// closed pill reserves its width from one measurement, and a second layout
-    /// would need its own.
-    private func nextEventPeekBand(now: Date, cameraIsWatching: Bool) -> V6PeekBandView.Content? {
-        guard settings.display.showsNextEvent, let band = calendar.band else { return nil }
-
-        return V6PeekBandView.Content(
-            // The start time rather than the title. A title is arbitrary length
-            // and truncating it beside a physical notch leaves a fragment; the
-            // clock time is always five characters and says the same thing.
-            agent: Self.eventClockFormatter.string(from: band.startsAt),
-            tintHint: .upcoming,
-            elapsed: lang.t("island.peek.inMinutes", band.minutesUntil),
-            othersWaiting: band.othersAhead,
-            cameraIsWatching: cameraIsWatching
-        )
-    }
-
-    /// Fixed 24-hour, so the band's width is the same all day. A locale that
-    /// formats 9am as "9:00 AM" would make the pill breathe on the hour.
-    private static let eventClockFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "HH:mm"
-        return formatter
-    }()
-
-    private func peekTint(_ subject: IslandPeekBand.Subject) -> V6PeekBandView.Content.Tint {
-        switch subject {
-        case .mitamaAlert:
-            .mitama
-        case .session(let phase):
-            phase == .waitingForApproval ? .approval : .answer
-        }
-    }
-
-    private func peekElapsedText(_ elapsed: IslandPeekBand.Elapsed) -> String {
-        switch elapsed {
-        case .justNow:
-            lang.t("island.peek.justNow")
-        case .minutes(let minutes):
-            lang.t("island.peek.minutes", minutes)
-        case .hours(let hours):
-            lang.t("island.peek.hours", hours)
-        }
+        return IslandClosedArbiter.resolve(inputs)
     }
 
     func islandClosedRightSlotContent() -> IslandRightSlotContent? {
@@ -2002,6 +1953,15 @@ final class AppModel {
         harnessRuntimeMonitor?.recordMilestone("scenarioLoaded", message: snapshot.title)
 
         overlay.applyOverlayState(from: snapshot, presentOverlay: presentOverlay, autoCollapseNotificationCards: autoCollapseNotificationCards)
+
+        // No real timer feature exists yet — a scenario forces this directly
+        // to exercise the closed-island accessory ahead of it. Always set,
+        // never left over from whatever scenario loaded before this one.
+        debugClosedAccessoryTimer = snapshot.debugAccessoryTimer
+
+        if let sneakPeek = snapshot.debugSneakPeek {
+            overlay.presentSneakPeek(sneakPeek)
+        }
 
         if snapshot.presentsAmbientBoard {
             // Its own full-screen panel, so a scenario has to ask for it — the

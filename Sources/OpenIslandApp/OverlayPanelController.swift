@@ -710,7 +710,26 @@ final class OverlayPanelController {
         )
     }
 
+    /// Fixed floors for the placeholder surfaces — none of them measure their
+    /// own content yet, so this is what reserves the window's height until a
+    /// later PR gives each one real content to measure.
+    private static let nowPlayingPlaceholderHeight: CGFloat = 150
+    private static let timerPlaceholderHeight: CGFloat = 190
+    private static let clipboardPlaceholderHeight: CGFloat = 360
+
     private func openedContentHeight(for model: AppModel) -> CGFloat {
+        let maxHeight = CGFloat(model.settings.display.maxPanelHeight)
+        switch model.islandSurface {
+        case .nowPlaying:
+            return min(Self.nowPlayingPlaceholderHeight, maxHeight)
+        case .timer:
+            return min(Self.timerPlaceholderHeight, maxHeight)
+        case .clipboard:
+            return min(Self.clipboardPlaceholderHeight, maxHeight)
+        case .sessionList:
+            break
+        }
+
         let now = Date.now
         let visibleSessions = openedVisibleSessions(
             sessions: model.islandListSessions

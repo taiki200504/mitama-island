@@ -663,9 +663,8 @@
 "camera.status.requesting" = "正在等待攝影機權限 — 請回應對話框";
 "camera.status.timedOutOnGesture" = "未辨識到手勢。請立起兩指，由上往下滑動。";
 "camera.watching" = "攝影機正在觀察——舉手即可作答";
-"camera.watching.short" = "正在觀察";
 "settings.camera.staysOpen" = "沒有等待事項時也保持攝影機開啟";
-"settings.camera.staysOpen.help" = "讓手勢隨時可用。沒有等待事項時，舉起手掌會播放登入動畫。macOS 在攝影機運行期間會一直亮起綠燈，因此預設關閉（島的橫幅也會顯示「正在觀察」）。闔蓋、過熱與低電量的限制依然有效。";
+"settings.camera.staysOpen.help" = "讓手勢隨時可用。沒有等待事項時，舉起手掌會播放登入動畫。macOS 在攝影機運行期間會一直亮起綠燈，因此預設關閉（島上也會顯示一個手形圖示）。闔蓋、過熱與低電量的限制依然有效。";
 "camera.status.inUseByAnotherApp" = "其他應用程式正在使用攝影機，手勢操作已暫停。";
 "settings.camera.sensitivity" = "反應靈敏度";
 "settings.camera.sensitivity.help" = "誤觸發就選「遲鈍」，怎麼做都不回應就選「靈敏」。它會改變手掌保持的時長與再次觸發的間隔。";
