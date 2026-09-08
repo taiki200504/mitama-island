@@ -148,3 +148,9 @@ The next implementation round should focus on one coherent slice:
 3. split compact and expanded overlay sizes so the default state can live at the notch without feeling like a floating modal
 
 Until those three pieces land together, small coordinate tweaks alone will not make the island feel correct.
+
+## Update: the non-notched closed pill (2026-09)
+
+The fallback mode described above shipped as `OverlayPlacementMode.floatingPill` (renamed from `.topBar`), but the closed island on a non-notched display still drew a 190×38 pseudo-notch glued to the physical top edge — a flat-top pill (`V6ClosedPillShape`) meant to visually merge with a notch that display doesn't have.
+
+The closed island on a `.floatingPill` display now renders as a genuinely floating capsule instead: a full `Capsule()` shape, sized to its content (`V6ClosedPill.externalIntrinsicWidth`, floored at 96pt), sitting 6pt below the menu bar rather than flush against the screen's physical top edge (`IslandPanelView.floatingPillTopOffset`). The opened surface on the same display keeps its existing width and position, only its top corners now round to match the capsule (`OpenedIslandSurfaceShape(topProfile: .floatingPill)`) instead of cutting the notch profile's concave silhouette. `OverlayPanelController`'s hit area follows the same content width, replacing the old fixed 360pt guess.

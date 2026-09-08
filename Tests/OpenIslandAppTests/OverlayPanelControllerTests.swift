@@ -74,16 +74,51 @@ struct OverlayPanelControllerTests {
     }
 
     @Test
-    func externalDisplayClosedWidthUsesFixedHitArea() {
-        // v6 external layout: fluid in SwiftUI, but the controller uses a
-        // generous fixed hit-area so hover/click works without knowing the
-        // live content width.
+    func externalDisplayClosedWidthFollowsIntrinsicContentPlusHitSlop() {
+        // v6 external layout: the floating capsule's hit area follows its
+        // real content width (plus a little slop per side) instead of a
+        // fixed guess, so a long waiting-agent name still gets a hit area
+        // that matches what's actually drawn.
         let width = OverlayPanelController.closedPanelWidth(
             notchWidth: 0,
             isNotchedDisplay: false,
+            intrinsicContentWidth: 140,
             notchStatus: .closed
         )
-        #expect(width == CGFloat(360))
+        #expect(width == 140 + (IslandChromeMetrics.floatingPillHitPadding * 2))
+    }
+
+    @Test
+    func externalDisplayClosedWidthFloorsAtTheCapsuleMinimum() {
+        // A near-empty pill (idle glyph only) must not shrink the hit area
+        // below the capsule's own rendered minimum width.
+        let width = OverlayPanelController.closedPanelWidth(
+            notchWidth: 0,
+            isNotchedDisplay: false,
+            intrinsicContentWidth: 10,
+            notchStatus: .closed
+        )
+        #expect(width == IslandChromeMetrics.floatingPillMinWidth)
+    }
+
+    @Test
+    func floatingClosedSurfaceRectSitsBelowTheMenuBarCenteredOnScreen() {
+        let screenFrame = NSRect(x: 100, y: 0, width: 1_920, height: 1_080)
+        let visibleFrame = NSRect(x: 100, y: 0, width: 1_920, height: 1_056)
+
+        let rect = OverlayPanelController.floatingClosedSurfaceRect(
+            screenFrame: screenFrame,
+            visibleFrame: visibleFrame,
+            width: 160,
+            height: 30
+        )
+
+        #expect(rect.width == 160)
+        #expect(rect.height == 30)
+        #expect(rect.midX == screenFrame.midX)
+        // Floats `floatingPillGap` below the menu bar's bottom edge, not
+        // flush against the physical top edge.
+        #expect(rect.maxY == visibleFrame.maxY - IslandChromeMetrics.floatingPillGap)
     }
 
     @Test

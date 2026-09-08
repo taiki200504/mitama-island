@@ -3,7 +3,9 @@ import SwiftUI
 struct OpenedIslandSurfaceShape: Shape {
     enum TopProfile: Equatable {
         case notch
-        case topBar
+        /// A display with no physical notch: the top corners round like a
+        /// floating capsule instead of cutting a notch silhouette.
+        case floatingPill
     }
 
     /// How deep the crystal-HUD diagonal cut reaches into the notch profile's
@@ -28,11 +30,16 @@ struct OpenedIslandSurfaceShape: Shape {
             )
             .path(in: rect)
             return Self.chamferedBottomCorners(of: base, in: rect)
-        case .topBar:
-            // Left as `V6ClosedPillShape` draws it — same shape the closed
-            // pill uses, untouched by the crystal-HUD chamfer.
-            return V6ClosedPillShape(cornerRadius: bottomCornerRadius)
-                .path(in: rect)
+        case .floatingPill:
+            // Rounded top corners, matching the floating capsule below —
+            // untouched by the crystal-HUD chamfer the notch profile uses.
+            return UnevenRoundedRectangle(
+                topLeadingRadius: IslandChromeMetrics.floatingPillOpenedTopRadius,
+                bottomLeadingRadius: bottomCornerRadius,
+                bottomTrailingRadius: bottomCornerRadius,
+                topTrailingRadius: IslandChromeMetrics.floatingPillOpenedTopRadius,
+                style: .continuous
+            ).path(in: rect)
         }
     }
 

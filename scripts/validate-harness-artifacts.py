@@ -246,6 +246,27 @@ def main() -> None:
         if report.get("liveSessionCount") != 9 and not any("9" in value for value in text_values):
             fail("closed scenario is missing the live session count value")
 
+    elif scenario == "closedFloating":
+        # Forced onto the non-notched layout (see AppModel.debugForcesExternalLayout),
+        # so the closed island renders as the floating capsule instead of
+        # whatever the real display would normally pick. The window itself
+        # stays at its always-opened size, so the capsule's real dimensions
+        # only show up in `closedPillSize` (see HarnessArtifactRecorder),
+        # not in the window frame the other "closed" scenarios check.
+        if notch_status != "closed":
+            fail(f"expected closed notch for closedFloating, got {notch_status!r}")
+        closed_pill_size = report.get("closedPillSize")
+        if not isinstance(closed_pill_size, dict):
+            fail("closedFloating report is missing closedPillSize")
+        require_frame_between(
+            closed_pill_size,
+            width=(96, 320),
+            height=(28, 34),
+            context="closedFloating pill size",
+        )
+        if not any("CODEX" in value for value in text_values):
+            fail("closedFloating is missing the waiting agent")
+
     elif scenario == "peekBand":
         if notch_status != "closed":
             fail(f"expected closed notch for peekBand, got {notch_status!r}")

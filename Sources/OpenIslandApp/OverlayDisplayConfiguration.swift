@@ -10,7 +10,10 @@ struct OverlayDisplayOption: Identifiable, Equatable {
 
 enum OverlayPlacementMode: String, Equatable {
     case notch = "Notch area"
-    case topBar = "Top bar fallback"
+    /// A display with no physical notch: the closed island renders as a
+    /// floating capsule below the menu bar instead of a pseudo-notch glued
+    /// to the physical top edge.
+    case floatingPill = "Floating pill fallback"
 }
 
 struct OverlayPlacementDiagnostics {
@@ -90,16 +93,43 @@ enum OverlayDisplayResolver {
     }
 
     private static func frame(for screen: NSScreen, panelSize: NSSize) -> NSRect {
-        let width = min(panelSize.width, screen.visibleFrame.width - 64)
+        pureFrame(
+            visibleFrame: screen.visibleFrame,
+            screenFrame: screen.frame,
+            notchSize: screen.safeAreaInsets.top > 0 ? screen.notchSize : nil,
+            panelSize: panelSize,
+            mode: placementMode(for: screen)
+        )
+    }
+
+    /// The overlay placement geometry, with every input passed in rather
+    /// than read from `NSScreen` — so a test can exercise both modes without
+    /// real display hardware.
+    ///
+    /// `notchSize` is accepted for parity with the per-mode inputs
+    /// `placementMode` already distinguishes on, even though neither branch
+    /// below reads it yet — width and the notch-mode height both come from
+    /// `panelSize` and `screenFrame` alone.
+    static func pureFrame(
+        visibleFrame: NSRect,
+        screenFrame: NSRect,
+        notchSize: NSSize?,
+        panelSize: NSSize,
+        mode: OverlayPlacementMode
+    ) -> NSRect {
+        let width = min(panelSize.width, visibleFrame.width - 64)
         let height = panelSize.height
-        let x = screen.frame.midX - (width / 2)
+        let x = screenFrame.midX - (width / 2)
 
         let y: CGFloat
-        switch placementMode(for: screen) {
+        switch mode {
         case .notch:
-            y = screen.frame.maxY - height
-        case .topBar:
-            y = screen.visibleFrame.maxY - height - 18
+            y = screenFrame.maxY - height
+        case .floatingPill:
+            // Floats below the menu bar rather than sitting flush against
+            // the physical top edge — see `IslandPanelView.floatingPillTopOffset`
+            // for the matching closed-pill placement.
+            y = visibleFrame.maxY - height - 6
         }
 
         return NSRect(x: x, y: y, width: width, height: height)
@@ -140,7 +170,7 @@ enum OverlayDisplayResolver {
     }
 
     private static func placementMode(for screen: NSScreen) -> OverlayPlacementMode {
-        isNotched(screen) ? .notch : .topBar
+        isNotched(screen) ? .notch : .floatingPill
     }
 
     private static func isNotched(_ screen: NSScreen) -> Bool {
@@ -150,7 +180,7 @@ enum OverlayDisplayResolver {
     }
 
     private static func screenKindDescription(for screen: NSScreen) -> String {
-        placementMode(for: screen) == .notch ? "Built-in notch" : "Top-bar fallback"
+        placementMode(for: screen) == .notch ? "Built-in notch" : "Floating pill fallback"
     }
 
     /// Returns a string that identifies the physical display backing `screen`
