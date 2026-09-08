@@ -245,6 +245,65 @@ struct V6ClosedPill: View {
         return !sneakPeek.text.isEmpty
     }
 
+    /// The pill's real outer width in macbook layout, and which accessory
+    /// (if any) survives once that width is checked against the notch's own
+    /// bleed budget. Pure and static — a test can call it directly, and
+    /// `macbookBody` has no way to compute a different number than what this
+    /// says, because it's the only place either number comes from: the
+    /// accessory-drop decision and the rendered width share one formula
+    /// (previously the drop check compared only body-plus-accessory width
+    /// against the budget, leaving out the leading glyph, the padding, and
+    /// the gaps the real pill also spends width on).
+    ///
+    /// The body's own width is never held against the budget: a waiting
+    /// agent with a long name and a real elapsed time already routinely
+    /// pushes the symmetric two-sided pill past `physicalNotchWidth + 66` on
+    /// its own — that's an existing, accepted shape of the closed pill, not
+    /// something this method is trying to prevent. What it does prevent is
+    /// the *accessory* being the reason the pill grows wider than the body
+    /// alone would already require: `budget` is whichever is larger of the
+    /// notch's own bleed allowance or what the body-only pill already needs,
+    /// so the accessory only gets dropped when *it* would be the one adding
+    /// the overflow.
+    @MainActor
+    static func macbookLayout(
+        content: IslandClosedContent?,
+        sneakPeek: IslandSneakPeek?,
+        rightSlot: IslandRightSlotContent?,
+        physicalNotchWidth: CGFloat,
+        pad: CGFloat
+    ) -> (accessory: IslandClosedAccessory?, outerWidth: CGFloat) {
+        let showsSneakPeek = sneakPeek.map { !$0.text.isEmpty } ?? false
+        let hasBody = content?.body != nil
+        let showsPeekArea = showsSneakPeek || hasBody
+        let peekWidth = showsSneakPeek ? (sneakPeek?.intrinsicWidth() ?? 0) : (hasBody ? (content?.bodyWidth() ?? 0) : 0)
+
+        let leftContent = 24 + (showsPeekArea ? Self.innerGap + peekWidth : 0)
+        let rightSlotWidth = rightSlot.map { V6RightSlotView.intrinsicWidth(of: $0) } ?? 0
+
+        let rawAccessory = showsSneakPeek ? nil : content?.accessory
+        let accessoryWidth = rawAccessory.map { IslandClosedAccessoryView.intrinsicWidth(of: $0) } ?? 0
+        // The accessory sits after the flexible Spacer, ahead of the right
+        // slot — so it's the right side's own leading block, the same way
+        // the glyph is the left side's.
+        let rightContentWithAccessory = rawAccessory == nil
+            ? rightSlotWidth
+            : accessoryWidth + (rightSlot == nil ? 0 : Self.innerGap + rightSlotWidth)
+
+        func outerWidth(rightContent: CGFloat) -> CGFloat {
+            let halfReserve = max(44, pad + max(leftContent, rightContent) + Self.innerGap)
+            return halfReserve + physicalNotchWidth + halfReserve
+        }
+
+        let outerWithoutAccessory = outerWidth(rightContent: rightSlotWidth)
+        let outerWithAccessory = outerWidth(rightContent: rightContentWithAccessory)
+        let notchBudget = physicalNotchWidth + Self.accessoryDropBleed * 2
+        let budget = max(notchBudget, outerWithoutAccessory)
+        let accessoryFits = rawAccessory != nil && outerWithAccessory <= budget
+        let resolvedAccessory = accessoryFits ? rawAccessory : nil
+        return (resolvedAccessory, accessoryFits ? outerWithAccessory : outerWithoutAccessory)
+    }
+
     var body: some View {
         switch layout {
         case .external: externalBody
@@ -268,7 +327,7 @@ struct V6ClosedPill: View {
         let hasBody = content?.body != nil
         let peekW = showsSneakPeek
             ? (sneakPeek?.intrinsicWidth() ?? 0)
-            : (hasBody ? (content?.intrinsicWidth(layout: layout) ?? 0) : 0)
+            : (hasBody ? (content?.bodyWidth() ?? 0) : 0)
         let showsPeekArea = showsSneakPeek || hasBody
         // The peek area replaces the session-name label while something is
         // showing. Both would fit here, but reading a session title next to
@@ -276,7 +335,9 @@ struct V6ClosedPill: View {
         let showsLabel = label != nil && !showsPeekArea
         let labelW = showsLabel ? V6CenterLabelView.intrinsicWidth(of: label ?? "") : 0
         let rightW = rightSlot.map { V6RightSlotView.intrinsicWidth(of: $0) } ?? 0
-        let accessory = content?.resolvedAccessory()
+        // No physical notch to overflow here — the pill is fluid and just
+        // grows to fit, so the accessory is never dropped on this layout.
+        let accessory = showsSneakPeek ? nil : content?.accessory
         let accessoryW = accessory.map { IslandClosedAccessoryView.intrinsicWidth(of: $0) } ?? 0
 
         let labelBlock = (showsLabel ? 6 + labelW : 0)
@@ -345,17 +406,19 @@ struct V6ClosedPill: View {
         // sitting in the middle of the pill. Widening only the side that needs
         // the room would slide the hardware notch off-centre, which reads as a
         // rendering bug rather than as new information.
-        let maxContentWidth = physicalNotchWidth + Self.accessoryDropBleed * 2
         let hasBody = content?.body != nil
-        let peekW = showsSneakPeek
-            ? (sneakPeek?.intrinsicWidth() ?? 0)
-            : (hasBody ? (content?.intrinsicWidth(layout: layout, maxWidth: maxContentWidth) ?? 0) : 0)
-        let showsPeekArea = showsSneakPeek || hasBody
-        let accessory = showsSneakPeek ? nil : content?.resolvedAccessory(maxWidth: maxContentWidth)
-        let leftContent = 24 + (showsPeekArea ? Self.innerGap + peekW : 0)
-        let rightContent = rightSlot.map { V6RightSlotView.intrinsicWidth(of: $0) } ?? 0
-        let halfReserve = max(44, pad + max(leftContent, rightContent) + Self.innerGap)
-        let outer = halfReserve + physicalNotchWidth + halfReserve
+        // The single source of truth for both "does the accessory fit" and
+        // "how wide is the pill" — computed with the exact geometry this view
+        // renders with, so the two questions can never disagree.
+        let layoutResult = Self.macbookLayout(
+            content: content,
+            sneakPeek: sneakPeek,
+            rightSlot: rightSlot,
+            physicalNotchWidth: physicalNotchWidth,
+            pad: pad
+        )
+        let accessory = layoutResult.accessory
+        let outer = layoutResult.outerWidth
 
         return ZStack {
             V6ClosedPillShape()
@@ -608,6 +671,13 @@ extension IslandClosedContent {
         return CGFloat(cells) * Self.peekTailCell + CGFloat(max(0, cells - 1)) * Self.peekTailGap
     }
 
+    /// The body/peek-area's own width — the glyph, gaps, padding, and any
+    /// accessory are the pill's job, not this content's. Combining them here
+    /// used to double-count the accessory (once through this method, again
+    /// through the pill's own accessory block) and left the accessory-drop
+    /// decision blind to the glyph/padding/gaps that actually eat into the
+    /// same budget — see `V6ClosedPill.macbookLayout(...)`, the single place
+    /// that now owns the full-width math.
     fileprivate func bodyWidth() -> CGFloat {
         guard let body else { return 0 }
         let label = SAOPeekGauge.label(for: body)
@@ -622,25 +692,6 @@ extension IslandClosedContent {
             width += Self.peekInnerGap + tailStripWidth(cells: others)
         }
         return width
-    }
-
-    /// The accessory to actually render at `maxWidth` — nil when showing it
-    /// would push the pill past its width budget. The body — whatever is
-    /// actually waiting on you — is never the one that gives way; the
-    /// accessory is dropped first.
-    func resolvedAccessory(maxWidth: CGFloat = .infinity) -> IslandClosedAccessory? {
-        guard let accessory else { return nil }
-        let full = bodyWidth() + Self.peekInnerGap + IslandClosedAccessoryView.intrinsicWidth(of: accessory)
-        return full <= maxWidth ? accessory : nil
-    }
-
-    /// Width this content asks the pill to reserve at `maxWidth`, matching
-    /// `resolvedAccessory(maxWidth:)`'s decision about whether the accessory
-    /// survives.
-    func intrinsicWidth(layout: V6ClosedLayout, maxWidth: CGFloat = .infinity) -> CGFloat {
-        let body = bodyWidth()
-        guard let accessory = resolvedAccessory(maxWidth: maxWidth) else { return body }
-        return body + Self.peekInnerGap + IslandClosedAccessoryView.intrinsicWidth(of: accessory)
     }
 }
 

@@ -50,6 +50,13 @@ final class OverlayUICoordinator {
     @ObservationIgnored
     private var sneakPeekExpiryTask: Task<Void, Never>?
 
+    /// How long a fresh sneak peek of `kind` gets. A seam rather than a
+    /// direct call to `IslandSneakPeekPolicy.duration(for:)` so a test can
+    /// inject a millisecond-scale duration instead of waiting out the real
+    /// 1.2–4s the policy hands back.
+    @ObservationIgnored
+    var sneakPeekDurationProvider: (IslandSneakPeekKind) -> TimeInterval = IslandSneakPeekPolicy.duration(for:)
+
     var overlayDisplayOptions: [OverlayDisplayOption] = []
     var overlayPlacementDiagnostics: OverlayPlacementDiagnostics?
 
@@ -302,7 +309,7 @@ final class OverlayUICoordinator {
                 // pop with nothing new to say.
                 text: "",
                 icon: "tray.full",
-                until: Date.now.addingTimeInterval(IslandSneakPeekPolicy.duration(for: .shelf))
+                until: Date.now.addingTimeInterval(sneakPeekDurationProvider(.shelf))
             )
         )
         notchStatus = .popping
@@ -314,12 +321,17 @@ final class OverlayUICoordinator {
 
     /// Offers `candidate` to the closed island. Dropped outright unless the
     /// island is actually closed and quiet enough to show it — the same gate
-    /// a notification would have to clear.
+    /// a notification would have to clear — and unless `candidate` itself
+    /// hasn't already expired: a peek presented past its own `until` would
+    /// otherwise show for one frame, fire its haptic, and immediately clear
+    /// itself.
     func presentSneakPeek(_ candidate: IslandSneakPeek) {
         guard notchStatus == .closed else { return }
         guard !(appModel?.quietScenes.shouldStayQuiet(under: settings.behaviour) ?? false) else { return }
 
         let now = Date.now
+        guard !IslandSneakPeekPolicy.expired(candidate, now: now) else { return }
+
         let showing = sneakPeek
         let resolved = IslandSneakPeekPolicy.replace(current: showing, with: candidate, now: now)
 
@@ -359,7 +371,20 @@ final class OverlayUICoordinator {
             self.sneakPeek = nil
             if let pending = self.pendingSneakPeek {
                 self.pendingSneakPeek = nil
-                self.presentSneakPeek(pending)
+                // The pending peek's `until` is whatever it was given when it
+                // first lost out — stale by however long it's been waiting.
+                // Refreshed here so it gets its own full duration now that
+                // it's actually about to show, not whatever's left of the
+                // original window.
+                let refreshedUntil = Date.now.addingTimeInterval(self.sneakPeekDurationProvider(pending.kind))
+                let refreshed = IslandSneakPeek(
+                    kind: pending.kind,
+                    text: pending.text,
+                    icon: pending.icon,
+                    gauge: pending.gauge,
+                    until: refreshedUntil
+                )
+                self.presentSneakPeek(refreshed)
             }
         }
     }
