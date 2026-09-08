@@ -78,12 +78,18 @@ public enum HUDStepper {
 
         let step = fine ? fineStep : coarseStep
         let position = clampedLevel / step
-        let nextPosition: Double = if direction > 0 {
-            let ceiled = position.rounded(.up)
-            ceiled == position ? ceiled + 1 : ceiled
+
+        var nextPosition: Double
+        if direction > 0 {
+            nextPosition = position.rounded(.up)
+            if nextPosition == position {
+                nextPosition += 1
+            }
         } else {
-            let floored = position.rounded(.down)
-            floored == position ? floored - 1 : floored
+            nextPosition = position.rounded(.down)
+            if nextPosition == position {
+                nextPosition -= 1
+            }
         }
 
         return min(max(0, nextPosition * step), 1)
