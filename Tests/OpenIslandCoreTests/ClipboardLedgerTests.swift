@@ -48,7 +48,7 @@ struct ClipboardLedgerTests {
 
     @Test("An older item that no longer fits alongside a new one is dropped, even below the count cap")
     func capsAtMaximumBytes() {
-        let bigText = String(repeating: "x", count: Int(ClipboardLedger.maximumTotalBytes) - 10)
+        let bigText = String(repeating: "x", count: Int(ClipboardLedger.maximumTotalBytes) - 4)
         let existing = [item(bigText, hash: "big")]
         let result = ClipboardLedger.inserting(item("small", hash: "small"), into: existing)
         #expect(result.map(\.contentHash) == ["small"])
