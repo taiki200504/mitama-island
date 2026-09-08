@@ -56,10 +56,11 @@ public struct NowPlayingState: Codable, Sendable, Equatable {
 /// Turns one line of `mediaremote-adapter.pl stream` output into the next
 /// `NowPlayingState` — or `nil` once nothing is playing.
 ///
-/// `payload` is the decoded JSON object for that line (a `[String: Any]` from
-/// `JSONSerialization`, so a raw `NSNull` still reads as "this key is
-/// present with a null value" rather than being silently dropped). The
-/// adapter's own `diff` flag decides how it's applied:
+/// `payload` is the decoded JSON object for that line, as `JSONValue` rather
+/// than `JSONSerialization`'s own `[String: Any]` — `Any` isn't `Sendable`,
+/// and this crosses onto `NowPlayingCoordinator`'s `@MainActor`. `.null`
+/// still reads as "this key is present with a null value" rather than being
+/// silently dropped. The adapter's own `diff` flag decides how it's applied:
 ///
 /// - `diff == false`: `payload` is the complete current state. A key that's
 ///   missing means "no value", exactly like starting from `.empty`.
@@ -68,7 +69,7 @@ public struct NowPlayingState: Codable, Sendable, Equatable {
 ///   is left exactly as `current` had it.
 public enum NowPlayingReducer {
     public static func apply(
-        payload: [String: Any],
+        payload: [String: JSONValue],
         diff: Bool,
         into current: NowPlayingState?
     ) -> NowPlayingState? {
@@ -94,67 +95,71 @@ extension NowPlayingState {
         case value(T)
     }
 
-    private static func field<T>(_ raw: [String: Any], _ key: String, as type: T.Type) -> FieldUpdate<T> {
-        guard let any = raw[key] else { return .absent }
-        if any is NSNull { return .cleared }
+    private static func field<T>(
+        _ raw: [String: JSONValue],
+        _ key: String,
+        extract: (JSONValue) -> T?
+    ) -> FieldUpdate<T> {
+        guard let value = raw[key] else { return .absent }
+        if value.isNull { return .cleared }
         // A field of the wrong type is malformed input from the adapter —
         // safer to leave the existing value alone than to guess.
-        guard let typed = any as? T else { return .absent }
+        guard let typed = extract(value) else { return .absent }
         return .value(typed)
     }
 
-    fileprivate func merging(_ raw: [String: Any]) -> NowPlayingState {
+    fileprivate func merging(_ raw: [String: JSONValue]) -> NowPlayingState {
         var result = self
 
-        switch Self.field(raw, "title", as: String.self) {
+        switch Self.field(raw, "title", extract: { $0.stringValue }) {
         case .absent: break
         case .cleared: result.title = nil
         case .value(let value): result.title = value
         }
 
-        switch Self.field(raw, "artist", as: String.self) {
+        switch Self.field(raw, "artist", extract: { $0.stringValue }) {
         case .absent: break
         case .cleared: result.artist = nil
         case .value(let value): result.artist = value
         }
 
-        switch Self.field(raw, "album", as: String.self) {
+        switch Self.field(raw, "album", extract: { $0.stringValue }) {
         case .absent: break
         case .cleared: result.album = nil
         case .value(let value): result.album = value
         }
 
-        switch Self.field(raw, "playing", as: Bool.self) {
+        switch Self.field(raw, "playing", extract: { $0.boolValue }) {
         case .absent: break
         case .cleared: result.isPlaying = false
         case .value(let value): result.isPlaying = value
         }
 
-        switch Self.field(raw, "elapsedTime", as: Double.self) {
+        switch Self.field(raw, "elapsedTime", extract: { $0.doubleValue }) {
         case .absent: break
         case .cleared: result.elapsed = nil
         case .value(let value): result.elapsed = value
         }
 
-        switch Self.field(raw, "duration", as: Double.self) {
+        switch Self.field(raw, "duration", extract: { $0.doubleValue }) {
         case .absent: break
         case .cleared: result.duration = nil
         case .value(let value): result.duration = value
         }
 
-        switch Self.field(raw, "timestamp", as: Double.self) {
+        switch Self.field(raw, "timestamp", extract: { $0.doubleValue }) {
         case .absent: break
         case .cleared: result.timestamp = nil
         case .value(let value): result.timestamp = Date(timeIntervalSince1970: value)
         }
 
-        switch Self.field(raw, "playbackRate", as: Double.self) {
+        switch Self.field(raw, "playbackRate", extract: { $0.doubleValue }) {
         case .absent: break
         case .cleared: result.playbackRate = 1.0
         case .value(let value): result.playbackRate = value
         }
 
-        switch Self.field(raw, "artworkData", as: String.self) {
+        switch Self.field(raw, "artworkData", extract: { $0.stringValue }) {
         case .absent: break
         case .cleared: result.artworkPNG = nil
         case .value(let base64): result.artworkPNG = Data(base64Encoded: base64)
@@ -163,12 +168,12 @@ extension NowPlayingState {
         // `parentApplicationBundleIdentifier` wins over `bundleIdentifier`
         // when both are present — a browser tab or a system extension is
         // reported under its host's bundle ID by the former.
-        switch Self.field(raw, "bundleIdentifier", as: String.self) {
+        switch Self.field(raw, "bundleIdentifier", extract: { $0.stringValue }) {
         case .absent: break
         case .cleared: result.bundleIdentifier = nil
         case .value(let value): result.bundleIdentifier = value
         }
-        switch Self.field(raw, "parentApplicationBundleIdentifier", as: String.self) {
+        switch Self.field(raw, "parentApplicationBundleIdentifier", extract: { $0.stringValue }) {
         case .absent: break
         case .cleared: break
         case .value(let value): result.bundleIdentifier = value
