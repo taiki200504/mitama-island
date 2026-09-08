@@ -127,4 +127,37 @@ struct IslandSurfaceTests {
         #expect(!surface.autoDismissesWhenPresentedAsNotification(session: approvalSession))
         #expect(surface.autoDismissesWhenPresentedAsNotification(session: completedSession))
     }
+
+    // MARK: - Placeholder accessory surfaces
+
+    @Test("The placeholder surfaces carry no session and are never notification cards")
+    func placeholderSurfacesCarryNoSession() {
+        for surface: IslandSurface in [.nowPlaying, .clipboard, .timer] {
+            #expect(surface.sessionID == nil)
+            #expect(!surface.isNotificationCard)
+        }
+    }
+
+    @Test("A placeholder surface always matches — there's no session state for it to disagree with")
+    func placeholderSurfacesAlwaysMatchCurrentState() {
+        for surface: IslandSurface in [.nowPlaying, .clipboard, .timer] {
+            #expect(surface.matchesCurrentState(of: nil))
+        }
+    }
+
+    @Test("A placeholder surface never auto-dismisses as a notification — it never is one")
+    func placeholderSurfacesNeverAutoDismiss() {
+        let completedSession = AgentSession(
+            id: "session-3",
+            title: "Test",
+            tool: .codex,
+            attachmentState: .attached,
+            phase: .completed,
+            summary: "Done",
+            updatedAt: .now
+        )
+        for surface: IslandSurface in [.nowPlaying, .clipboard, .timer] {
+            #expect(!surface.autoDismissesWhenPresentedAsNotification(session: completedSession))
+        }
+    }
 }

@@ -25,7 +25,7 @@ public enum UpcomingCalendarEvent: Sendable {
         }
     }
 
-    public struct Band: Equatable, Sendable {
+    public struct Band: Equatable, Hashable, Sendable {
         public let title: String
         public let startsAt: Date
         /// Whole minutes from now until it starts. Never negative.

@@ -40,17 +40,48 @@ struct AutoHeightScrollView<Content: View>: View {
 }
 
 extension IslandPanelView {
-    /// Which layout the opened surface leads with. `.bootSplash` swaps
-    /// itself out for `regularOpenedContent` after its own ring finishes;
-    /// every other route renders the ordinary content directly.
+    /// Routes on the island surface first — the three placeholder
+    /// accessories get a bare title and stop there — and only the
+    /// `sessionList` surface goes on to `openedRoute`, whose `.bootSplash`
+    /// swaps itself out for `regularOpenedContent` after its own ring
+    /// finishes while every other route renders the ordinary content
+    /// directly.
     @ViewBuilder
     var openedContent: some View {
+        switch model.islandSurface {
+        case .sessionList:
+            sessionListRoutedContent
+        case .nowPlaying:
+            placeholderOpenedContent(title: "NOW PLAYING")
+        case .clipboard:
+            placeholderOpenedContent(title: "CLIPBOARD")
+        case .timer:
+            placeholderOpenedContent(title: "TIMER")
+        }
+    }
+
+    @ViewBuilder
+    private var sessionListRoutedContent: some View {
         switch openedRoute {
         case .bootSplash:
             IslandBootSplashView { regularOpenedContent }
         case .notificationCard, .sessionList, .switcher:
             regularOpenedContent
         }
+    }
+
+    /// A bare title in the crystal-HUD display face — nothing else lives here
+    /// yet. Each of these surfaces gets its real content in a later PR; this
+    /// only keeps the surface reachable and visually inert in the meantime.
+    private func placeholderOpenedContent(title: String) -> some View {
+        VStack {
+            Spacer()
+            Text(title)
+                .saoCaps(size: 16)
+                .foregroundStyle(V6Palette.paper.opacity(0.4))
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, minHeight: 150)
     }
 
     private var regularOpenedContent: some View {

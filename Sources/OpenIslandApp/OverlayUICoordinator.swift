@@ -34,6 +34,29 @@ final class OverlayUICoordinator {
     }
     var isOverlayVisible: Bool { notchStatus != .closed }
 
+    /// A temporary message shown in place of the closed island's body — the
+    /// timer finished, the track changed. `IslandSneakPeekPolicy` decides
+    /// whether a new one replaces this; this class owns the clock that
+    /// expires it.
+    var sneakPeek: IslandSneakPeek?
+
+    /// The one `timerDone` sneak peek a higher-priority one bumped, kept so
+    /// it gets a second try once that one expires — "a timer someone set
+    /// actually finished" is worth a short wait, not losing the announcement
+    /// outright.
+    @ObservationIgnored
+    private var pendingSneakPeek: IslandSneakPeek?
+
+    @ObservationIgnored
+    private var sneakPeekExpiryTask: Task<Void, Never>?
+
+    /// How long a fresh sneak peek of `kind` gets. A seam rather than a
+    /// direct call to `IslandSneakPeekPolicy.duration(for:)` so a test can
+    /// inject a millisecond-scale duration instead of waiting out the real
+    /// 1.2–4s the policy hands back.
+    @ObservationIgnored
+    var sneakPeekDurationProvider: (IslandSneakPeekKind) -> TimeInterval = IslandSneakPeekPolicy.duration(for:)
+
     var overlayDisplayOptions: [OverlayDisplayOption] = []
     var overlayPlacementDiagnostics: OverlayPlacementDiagnostics?
 
@@ -156,6 +179,7 @@ final class OverlayUICoordinator {
         if let observer = screenParametersObserver {
             NotificationCenter.default.removeObserver(observer)
         }
+        sneakPeekExpiryTask?.cancel()
     }
 
     // MARK: - Overlay transitions
@@ -278,10 +302,90 @@ final class OverlayUICoordinator {
     func notchPop() {
         guard notchStatus == .closed else { return }
         islandSurface = .sessionList()
+        presentSneakPeek(
+            IslandSneakPeek(
+                kind: .shelf,
+                // Empty text keeps this exactly what it always was: a scale
+                // pop with nothing new to say.
+                text: "",
+                icon: "tray.full",
+                until: Date.now.addingTimeInterval(sneakPeekDurationProvider(.shelf))
+            )
+        )
         notchStatus = .popping
         DispatchQueue.main.asyncAfter(deadline: .now() + IslandMotion.popHold) { [weak self] in
             guard self?.notchStatus == .popping else { return }
             self?.notchStatus = .closed
+        }
+    }
+
+    /// Offers `candidate` to the closed island. Dropped outright unless the
+    /// island is actually closed and quiet enough to show it — the same gate
+    /// a notification would have to clear — and unless `candidate` itself
+    /// hasn't already expired: a peek presented past its own `until` would
+    /// otherwise show for one frame, fire its haptic, and immediately clear
+    /// itself.
+    func presentSneakPeek(_ candidate: IslandSneakPeek) {
+        guard notchStatus == .closed else { return }
+        guard !(appModel?.quietScenes.shouldStayQuiet(under: settings.behaviour) ?? false) else { return }
+
+        let now = Date.now
+        guard !IslandSneakPeekPolicy.expired(candidate, now: now) else { return }
+
+        let showing = sneakPeek
+        let resolved = IslandSneakPeekPolicy.replace(current: showing, with: candidate, now: now)
+
+        guard resolved == candidate else {
+            // The candidate lost to whatever is still showing. Only a
+            // finished timer is worth a second try once that one expires.
+            if candidate.kind == .timerDone {
+                pendingSneakPeek = candidate
+            }
+            return
+        }
+
+        // The candidate is about to interrupt a `timerDone` that hadn't
+        // finished showing — queue it to come back rather than losing it.
+        if let showing, showing.kind == .timerDone, !IslandSneakPeekPolicy.expired(showing, now: now), showing != candidate {
+            pendingSneakPeek = showing
+        }
+
+        showSneakPeek(candidate, now: now)
+
+        if appModel?.hapticFeedbackEnabled == true {
+            NSHapticFeedbackManager.defaultPerformer.perform(
+                NSHapticFeedbackManager.FeedbackPattern.levelChange,
+                performanceTime: .now
+            )
+        }
+    }
+
+    private func showSneakPeek(_ peek: IslandSneakPeek, now: Date) {
+        sneakPeek = peek
+        sneakPeekExpiryTask?.cancel()
+
+        let delay = max(0, peek.until.timeIntervalSince(now))
+        sneakPeekExpiryTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(delay))
+            guard let self, !Task.isCancelled, self.sneakPeek == peek else { return }
+            self.sneakPeek = nil
+            if let pending = self.pendingSneakPeek {
+                self.pendingSneakPeek = nil
+                // The pending peek's `until` is whatever it was given when it
+                // first lost out — stale by however long it's been waiting.
+                // Refreshed here so it gets its own full duration now that
+                // it's actually about to show, not whatever's left of the
+                // original window.
+                let refreshedUntil = Date.now.addingTimeInterval(self.sneakPeekDurationProvider(pending.kind))
+                let refreshed = IslandSneakPeek(
+                    kind: pending.kind,
+                    text: pending.text,
+                    icon: pending.icon,
+                    gauge: pending.gauge,
+                    until: refreshedUntil
+                )
+                self.presentSneakPeek(refreshed)
+            }
         }
     }
 

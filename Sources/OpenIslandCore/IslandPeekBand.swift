@@ -15,7 +15,7 @@ public enum IslandPeekBand: Sendable {
     /// says something useful. Seconds are deliberately absent: a band that
     /// reticks every second would redraw a background app sixty times a minute
     /// to tell you what "just now" already told you.
-    public enum Elapsed: Equatable, Sendable {
+    public enum Elapsed: Equatable, Hashable, Sendable {
         case justNow
         case minutes(Int)
         case hours(Int)
@@ -24,7 +24,7 @@ public enum IslandPeekBand: Sendable {
     /// What is doing the waiting. The band draws these differently because
     /// they ask for different things: an agent is paused mid-task, while
     /// mitama has already finished and needs a decision.
-    public enum Subject: Equatable, Sendable {
+    public enum Subject: Equatable, Hashable, Sendable {
         case session(SessionPhase)
         case mitamaAlert
     }
@@ -33,7 +33,7 @@ public enum IslandPeekBand: Sendable {
     /// others, but it sits in the same slot and reads the same way.
     public static let mitamaLabel = "MITAMA"
 
-    public struct Content: Equatable, Sendable {
+    public struct Content: Equatable, Hashable, Sendable {
         /// `CLAUDE`, `CODEX` — the tool, not the session title. A session title
         /// is arbitrary length, and truncating it beside a physical notch
         /// leaves a word fragment that means nothing.

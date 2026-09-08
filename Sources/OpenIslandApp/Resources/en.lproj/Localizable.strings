@@ -664,9 +664,8 @@
 "camera.status.requesting" = "Waiting for camera permission — answer the dialog";
 "camera.status.timedOutOnGesture" = "No gesture seen. Two fingers, down the frame.";
 "camera.watching" = "Camera is watching — raise a hand to answer";
-"camera.watching.short" = "Watching";
 "settings.camera.staysOpen" = "Keep the camera open with nothing waiting";
-"settings.camera.staysOpen.help" = "Makes hand gestures a standing input. With nothing waiting, a held palm plays the login sequence. Off by default: macOS lights the camera indicator for as long as the camera runs, so this is a green light all day (the island band says “Watching” too). The lid, heat and battery limits still apply.";
+"settings.camera.staysOpen.help" = "Makes hand gestures a standing input. With nothing waiting, a held palm plays the login sequence. Off by default: macOS lights the camera indicator for as long as the camera runs, so this is a green light all day (the island shows a hand icon while it does). The lid, heat and battery limits still apply.";
 "camera.status.inUseByAnotherApp" = "Another app is using the camera, so hand gestures are paused.";
 "settings.camera.sensitivity" = "How readily it reacts";
 "settings.camera.sensitivity.help" = "Pick Deliberate if it fires when you did not mean it, Quick if it never fires. It changes how long a palm is held and how soon it may fire again.";

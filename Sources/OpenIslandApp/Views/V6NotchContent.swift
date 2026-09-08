@@ -212,9 +212,14 @@ struct V6ClosedPill: View {
     var mode: UnifiedBars.Mode
     var label: String?          // suppressed automatically in MacBook layout
     var rightSlot: IslandRightSlotContent?
-    /// Who is waiting on you, and for how long. Non-nil widens the pill; the
-    /// island is otherwise the same size it always was.
-    var peek: V6PeekBandView.Content?
+    /// The arbiter's one body + one trailing accessory. Non-nil body widens
+    /// the pill the same way the old peek band did; the island is otherwise
+    /// the same size it always was.
+    var content: IslandClosedContent?
+    /// A temporary message that overrides the body for a few seconds — the
+    /// timer finished, the track changed. Empty text keeps the pop's old
+    /// scale-only behaviour: nothing else about the pill changes.
+    var sneakPeek: IslandSneakPeek?
     var layout: V6ClosedLayout
     var height: CGFloat = 32
 
@@ -229,6 +234,75 @@ struct V6ClosedPill: View {
     /// animation below re-evaluates immediately instead of waiting for
     /// `label`/`rightSlot`/`mode`/`peek` to change on their own.
     var motionRevision: Int = 0
+
+    /// How far past the notch's own bleed the pill may widen before the
+    /// accessory has to give way. Matches `OverlayPanelController.closedPillSideBleed`
+    /// on both sides.
+    private static let accessoryDropBleed: CGFloat = 33
+
+    private var showsSneakPeek: Bool {
+        guard let sneakPeek else { return false }
+        return !sneakPeek.text.isEmpty
+    }
+
+    /// The pill's real outer width in macbook layout, and which accessory
+    /// (if any) survives once that width is checked against the notch's own
+    /// bleed budget. Pure and static — a test can call it directly, and
+    /// `macbookBody` has no way to compute a different number than what this
+    /// says, because it's the only place either number comes from: the
+    /// accessory-drop decision and the rendered width share one formula
+    /// (previously the drop check compared only body-plus-accessory width
+    /// against the budget, leaving out the leading glyph, the padding, and
+    /// the gaps the real pill also spends width on).
+    ///
+    /// The body's own width is never held against the budget: a waiting
+    /// agent with a long name and a real elapsed time already routinely
+    /// pushes the symmetric two-sided pill past `physicalNotchWidth + 66` on
+    /// its own — that's an existing, accepted shape of the closed pill, not
+    /// something this method is trying to prevent. What it does prevent is
+    /// the *accessory* being the reason the pill grows wider than the body
+    /// alone would already require: `budget` is whichever is larger of the
+    /// notch's own bleed allowance or what the body-only pill already needs,
+    /// so the accessory only gets dropped when *it* would be the one adding
+    /// the overflow.
+    @MainActor
+    static func macbookLayout(
+        content: IslandClosedContent?,
+        sneakPeek: IslandSneakPeek?,
+        rightSlot: IslandRightSlotContent?,
+        physicalNotchWidth: CGFloat,
+        pad: CGFloat
+    ) -> (accessory: IslandClosedAccessory?, outerWidth: CGFloat) {
+        let showsSneakPeek = sneakPeek.map { !$0.text.isEmpty } ?? false
+        let hasBody = content?.body != nil
+        let showsPeekArea = showsSneakPeek || hasBody
+        let peekWidth = showsSneakPeek ? (sneakPeek?.intrinsicWidth() ?? 0) : (hasBody ? (content?.bodyWidth() ?? 0) : 0)
+
+        let leftContent = 24 + (showsPeekArea ? Self.innerGap + peekWidth : 0)
+        let rightSlotWidth = rightSlot.map { V6RightSlotView.intrinsicWidth(of: $0) } ?? 0
+
+        let rawAccessory = showsSneakPeek ? nil : content?.accessory
+        let accessoryWidth = rawAccessory.map { IslandClosedAccessoryView.intrinsicWidth(of: $0) } ?? 0
+        // The accessory sits after the flexible Spacer, ahead of the right
+        // slot — so it's the right side's own leading block, the same way
+        // the glyph is the left side's.
+        let rightContentWithAccessory = rawAccessory == nil
+            ? rightSlotWidth
+            : accessoryWidth + (rightSlot == nil ? 0 : Self.innerGap + rightSlotWidth)
+
+        func outerWidth(rightContent: CGFloat) -> CGFloat {
+            let halfReserve = max(44, pad + max(leftContent, rightContent) + Self.innerGap)
+            return halfReserve + physicalNotchWidth + halfReserve
+        }
+
+        let outerWithoutAccessory = outerWidth(rightContent: rightSlotWidth)
+        let outerWithAccessory = outerWidth(rightContent: rightContentWithAccessory)
+        let notchBudget = physicalNotchWidth + Self.accessoryDropBleed * 2
+        let budget = max(notchBudget, outerWithoutAccessory)
+        let accessoryFits = rawAccessory != nil && outerWithAccessory <= budget
+        let resolvedAccessory = accessoryFits ? rawAccessory : nil
+        return (resolvedAccessory, accessoryFits ? outerWithAccessory : outerWithoutAccessory)
+    }
 
     var body: some View {
         switch layout {
@@ -250,18 +324,27 @@ struct V6ClosedPill: View {
 
     private var externalBody: some View {
         let glyphW: CGFloat = 24
-        let peekW = peek.map { V6PeekBandView.intrinsicWidth(of: $0) } ?? 0
-        // The band replaces the session-name label while something is waiting.
-        // Both would fit here, but reading a session title next to "who is
-        // waiting and for how long" buries the second in the first.
-        let showsLabel = label != nil && peek == nil
+        let hasBody = content?.body != nil
+        let peekW = showsSneakPeek
+            ? (sneakPeek?.intrinsicWidth() ?? 0)
+            : (hasBody ? (content?.bodyWidth() ?? 0) : 0)
+        let showsPeekArea = showsSneakPeek || hasBody
+        // The peek area replaces the session-name label while something is
+        // showing. Both would fit here, but reading a session title next to
+        // "who is waiting and for how long" buries the second in the first.
+        let showsLabel = label != nil && !showsPeekArea
         let labelW = showsLabel ? V6CenterLabelView.intrinsicWidth(of: label ?? "") : 0
         let rightW = rightSlot.map { V6RightSlotView.intrinsicWidth(of: $0) } ?? 0
+        // No physical notch to overflow here — the pill is fluid and just
+        // grows to fit, so the accessory is never dropped on this layout.
+        let accessory = showsSneakPeek ? nil : content?.accessory
+        let accessoryW = accessory.map { IslandClosedAccessoryView.intrinsicWidth(of: $0) } ?? 0
 
         let labelBlock = (showsLabel ? 6 + labelW : 0)
-        let peekBlock = (peek == nil ? 0 : Self.innerGap + peekW)
+        let peekBlock = (showsPeekArea ? Self.innerGap + peekW : 0)
+        let accessoryBlock = (accessory == nil ? 0 : Self.innerGap + accessoryW)
         let rightBlock = (rightSlot == nil ? 0 : Self.innerGap + rightW)
-        let intrinsic = pad * 2 + glyphW + labelBlock + peekBlock + rightBlock
+        let intrinsic = pad * 2 + glyphW + labelBlock + peekBlock + accessoryBlock + rightBlock
         let width = max(minWidth, intrinsic)
 
         return ZStack {
@@ -272,8 +355,12 @@ struct V6ClosedPill: View {
                 UnifiedBars(mode: mode, size: 24)
                     .frame(width: glyphW, height: 24)
 
-                if let peek {
-                    V6PeekBandView(content: peek)
+                if showsSneakPeek, let sneakPeek {
+                    SAOSneakPeekView(peek: sneakPeek)
+                        .padding(.leading, Self.innerGap)
+                        .transition(.opacity.combined(with: .move(edge: .leading)))
+                } else if hasBody, let content {
+                    SAOPeekGaugeView(content: content)
                         .padding(.leading, Self.innerGap)
                         .transition(.opacity.combined(with: .move(edge: .leading)))
                 }
@@ -285,6 +372,11 @@ struct V6ClosedPill: View {
                 }
 
                 Spacer(minLength: Self.innerGap)
+
+                if let accessory {
+                    IslandClosedAccessoryView(accessory: accessory)
+                        .padding(.trailing, Self.innerGap)
+                }
 
                 if let rightSlot {
                     V6RightSlotView(content: rightSlot)
@@ -300,7 +392,8 @@ struct V6ClosedPill: View {
                 AnyHashable(label ?? ""),
                 AnyHashable(rightSlot.map(RightSlotKey.init) ?? .none),
                 AnyHashable(mode),
-                AnyHashable(peek),
+                AnyHashable(content),
+                AnyHashable(sneakPeek),
                 AnyHashable(motionRevision),
             ])
         )
@@ -313,10 +406,19 @@ struct V6ClosedPill: View {
         // sitting in the middle of the pill. Widening only the side that needs
         // the room would slide the hardware notch off-centre, which reads as a
         // rendering bug rather than as new information.
-        let leftContent = 24 + (peek.map { Self.innerGap + V6PeekBandView.intrinsicWidth(of: $0) } ?? 0)
-        let rightContent = rightSlot.map { V6RightSlotView.intrinsicWidth(of: $0) } ?? 0
-        let halfReserve = max(44, pad + max(leftContent, rightContent) + Self.innerGap)
-        let outer = halfReserve + physicalNotchWidth + halfReserve
+        let hasBody = content?.body != nil
+        // The single source of truth for both "does the accessory fit" and
+        // "how wide is the pill" — computed with the exact geometry this view
+        // renders with, so the two questions can never disagree.
+        let layoutResult = Self.macbookLayout(
+            content: content,
+            sneakPeek: sneakPeek,
+            rightSlot: rightSlot,
+            physicalNotchWidth: physicalNotchWidth,
+            pad: pad
+        )
+        let accessory = layoutResult.accessory
+        let outer = layoutResult.outerWidth
 
         return ZStack {
             V6ClosedPillShape()
@@ -326,13 +428,22 @@ struct V6ClosedPill: View {
                 UnifiedBars(mode: mode, size: 24)
                     .frame(width: 24, height: 24)
 
-                if let peek {
-                    V6PeekBandView(content: peek)
+                if showsSneakPeek, let sneakPeek {
+                    SAOSneakPeekView(peek: sneakPeek)
+                        .padding(.leading, Self.innerGap)
+                        .transition(.opacity.combined(with: .move(edge: .leading)))
+                } else if hasBody, let content {
+                    SAOPeekGaugeView(content: content)
                         .padding(.leading, Self.innerGap)
                         .transition(.opacity.combined(with: .move(edge: .leading)))
                 }
 
                 Spacer(minLength: 0)
+
+                if let accessory {
+                    IslandClosedAccessoryView(accessory: accessory)
+                        .padding(.trailing, Self.innerGap)
+                }
 
                 if let rightSlot {
                     V6RightSlotView(content: rightSlot)
@@ -343,96 +454,258 @@ struct V6ClosedPill: View {
         .frame(width: outer, height: height)
         .animation(
             IslandThemes.current.animationProfile.open,
-            value: AnyHashable([AnyHashable(peek), AnyHashable(mode)])
+            value: AnyHashable([AnyHashable(content), AnyHashable(sneakPeek), AnyHashable(mode)])
         )
     }
 }
 
-// MARK: - Peek band
+// MARK: - Peek gauge
 
 /// The closed island's answer to "is anything waiting on me".
 ///
-/// Everything it needs is already decided by `IslandPeekBand`; this only draws
-/// it. The text arrives pre-localized because the band sits below the layer
-/// that knows about languages.
-struct V6PeekBandView: View {
-    struct Content: Equatable, Hashable {
-        let agent: String
-        /// Which of the waiting tints to use for the dot.
-        let tintHint: Tint
-        let elapsed: String
-        let othersWaiting: Int
-        /// The camera is open right now. macOS lights its own indicator for as
-        /// long as that is true, so the island has to be able to say why.
-        var cameraIsWatching: Bool = false
+/// Everything it needs is already decided by `IslandClosedArbiter`; this only
+/// draws it. Fixed-English throughout — the same choice the old peek band
+/// made for the agent name — because this is a HUD readout in the
+/// crystal-HUD grammar's own display face, and Rajdhani has no glyphs to
+/// localize it into.
+struct SAOPeekGaugeView: View {
+    let content: IslandClosedContent
 
-        enum Tint: Hashable {
-            case approval
-            case answer
-            case mitama
-            /// Nothing is wrong and nothing is waiting — this is what is next.
-            case upcoming
+    @State private var urgentPulse = false
+
+    var body: some View {
+        if let islandBody = content.body {
+            let level = SAOPeekGauge.gaugeLevel(for: islandBody)
+            let urgent = SAOPeekGauge.isUrgent(islandBody)
+            let others = SAOPeekGauge.othersCount(for: islandBody)
+
+            HStack(spacing: 5) {
+                Image(systemName: "diamond.fill")
+                    .font(.system(size: 6, weight: .bold))
+                    .foregroundStyle(SAOGrammar.Palette.statusYellow)
+
+                Text(SAOPeekGauge.label(for: islandBody))
+                    .saoCaps(size: 11)
+                    .foregroundStyle(V6Palette.paper.opacity(0.92))
+
+                ZStack(alignment: .leading) {
+                    SAOGaugeShape(fraction: 1, isTrack: true)
+                        .fill(V6Palette.paper.opacity(0.14))
+                    SAOGaugeShape(fraction: level.fraction)
+                        .fill(level.tint)
+                        .opacity(urgent ? (urgentPulse ? 1 : 0.4) : 1)
+                        .onAppear {
+                            guard urgent else { return }
+                            withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
+                                urgentPulse = true
+                            }
+                        }
+                }
+                .frame(width: 44, height: 6)
+
+                Text(SAOPeekGauge.elapsedText(for: islandBody))
+                    .font(.islandMono(size: 11))
+                    .foregroundStyle(V6Palette.paper.opacity(0.62))
+
+                if others > 0 {
+                    SAOPeekTailStrip(count: others, isWaiting: SAOPeekGauge.tailIsWaiting(for: islandBody))
+                }
+            }
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
         }
     }
+}
 
-    let content: Content
+/// The trailing "+N" count, redrawn as a strip of blocks instead of a number:
+/// still-waiting things breathe statusYellow, everything else (calendar
+/// entries further ahead) sits dim and still.
+private struct SAOPeekTailStrip: View {
+    let count: Int
+    let isWaiting: Bool
+    @State private var breathe = false
+
+    var body: some View {
+        SAOBlockStrip(
+            cells: count,
+            cellSize: CGSize(width: 8, height: 8),
+            gap: 2,
+            color: isWaiting ? SAOGrammar.Palette.statusYellow : V6Palette.paper.opacity(0.22)
+        )
+        .opacity(isWaiting ? (breathe ? 1 : 0.55) : 1)
+        .onAppear {
+            guard isWaiting else { return }
+            withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) {
+                breathe = true
+            }
+        }
+    }
+}
+
+/// A temporary closed-island message — the timer finished, the track
+/// changed — drawn in place of the peek gauge for as long as it lives.
+struct SAOSneakPeekView: View {
+    let peek: IslandSneakPeek
 
     var body: some View {
         HStack(spacing: 5) {
-            if content.cameraIsWatching {
+            Image(systemName: peek.icon)
+                .font(.islandMono(size: 10, weight: .semibold))
+                .foregroundStyle(V6Palette.paper.opacity(0.92))
+
+            Text(peek.text)
+                .font(.islandMono(size: 11))
+                .foregroundStyle(V6Palette.paper.opacity(0.92))
+
+            if let gauge = peek.gauge {
+                ZStack(alignment: .leading) {
+                    SAOGaugeShape(fraction: 1, isTrack: true)
+                        .fill(V6Palette.paper.opacity(0.14))
+                    SAOGaugeShape(fraction: gauge)
+                        .fill(SAOGrammar.Palette.hpLimeEnd)
+                }
+                .frame(width: 44, height: 6)
+            }
+        }
+        .lineLimit(1)
+        .fixedSize(horizontal: true, vertical: false)
+    }
+}
+
+// MARK: - Trailing accessory
+
+/// The one thing the closed island shows besides the body: a timer, what's
+/// playing, that the camera is watching, or that the shelf has something on
+/// it. Never more than one at a time — `IslandClosedArbiter` already decided
+/// which.
+struct IslandClosedAccessoryView: View {
+    let accessory: IslandClosedAccessory
+
+    var body: some View {
+        Group {
+            switch accessory {
+            case .timer(let remainingMinutes, _):
+                Text("\(remainingMinutes)m")
+                    .font(.islandMono(size: 11, weight: .semibold))
+                    .foregroundStyle(V6Palette.paper.opacity(0.85))
+            case .nowPlaying(let isPlaying):
+                NowPlayingVisualiser(isPlaying: isPlaying)
+            case .cameraWatching:
+                // The same glyph the peek band used to draw for this — macOS
+                // lights its own camera indicator for as long as the device
+                // runs, and this is the island's only way to say why.
                 Image(systemName: "hand.raised.fill")
                     .font(.islandMono(size: 9, weight: .semibold))
                     .foregroundStyle(IslandThemes.current.statusTints.waitingForAnswer.opacity(0.92))
-            }
-
-            Circle()
-                .fill(dotColor)
-                .frame(width: 6, height: 6)
-                .shadow(color: dotColor.opacity(0.9), radius: IslandThemes.current.glowRadius)
-
-            Text(content.agent)
-                // Always a fixed English tool name (claude, codex, gemini…),
-                // never translated, so the Latin-only display face is safe
-                // here without checking the text first.
-                .saoCaps(size: 11)
-                .foregroundStyle(V6Palette.paper.opacity(0.92))
-
-            Text(content.elapsed)
-                .font(.islandMono(size: 11))
-                .foregroundStyle(V6Palette.paper.opacity(0.62))
-
-            if content.othersWaiting > 0 {
-                Text("+\(content.othersWaiting)")
-                    .font(.islandMono(size: 11))
-                    .foregroundStyle(dotColor.opacity(0.85))
+            case .shelf(let count):
+                HStack(spacing: 3) {
+                    Image(systemName: "tray.full")
+                        .font(.islandMono(size: 9, weight: .semibold))
+                        .foregroundStyle(V6Palette.paper.opacity(0.7))
+                    Text("\(count)")
+                        .font(.islandMono(size: 11))
+                        .foregroundStyle(V6Palette.paper.opacity(0.7))
+                }
             }
         }
         .lineLimit(1)
         .fixedSize(horizontal: true, vertical: false)
     }
 
-    private var dotColor: Color {
-        switch content.tintHint {
-        case .approval: IslandThemes.current.statusTints.waitingForApproval
-        case .answer:   IslandThemes.current.statusTints.waitingForAnswer
-        case .mitama:   IslandThemes.current.statusTints.critical
-        case .upcoming: IslandThemes.current.statusTints.running
+    /// Reserved width for `accessory` alone — no leading gap; the caller adds
+    /// that when it decides the accessory fits.
+    static func intrinsicWidth(of accessory: IslandClosedAccessory) -> CGFloat {
+        let charWidth: CGFloat = 7.2
+        switch accessory {
+        case .timer(let remainingMinutes, _):
+            return CGFloat("\(remainingMinutes)m".count) * charWidth
+        case .nowPlaying:
+            return 14
+        case .cameraWatching:
+            return 11
+        case .shelf(let count):
+            return 11 + CGFloat("\(count)".count) * charWidth
         }
     }
+}
 
-    /// Padded the same way the right slot's estimate is: the pill has to
-    /// reserve the room before the text lays itself out, and a band that gets
-    /// compressed wraps into a second line inside a 32pt pill.
-    static func intrinsicWidth(of content: Content) -> CGFloat {
-        let charWidth: CGFloat = 7.2   // Departure Mono at 11pt
-        let dot: CGFloat = 6 + 5
-        let hand: CGFloat = content.cameraIsWatching ? 11 + 5 : 0
-        let agent = CGFloat(content.agent.count) * charWidth + 5
-        let elapsed = CGFloat(content.elapsed.count) * charWidth
-        let others = content.othersWaiting > 0
-            ? CGFloat("+\(content.othersWaiting)".count) * charWidth + 5
-            : 0
-        return hand + dot + agent + elapsed + others
+/// A 3-bar pseudo visualiser: bars only move while something is actually
+/// playing, so a paused track reads as at-rest rather than as broken.
+private struct NowPlayingVisualiser: View {
+    let isPlaying: Bool
+    @State private var animate = false
+
+    private static let barHeights: [CGFloat] = [4, 8, 5]
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: 2) {
+            ForEach(Array(Self.barHeights.enumerated()), id: \.offset) { _, height in
+                RoundedRectangle(cornerRadius: 1, style: .continuous)
+                    .fill(V6Palette.paper.opacity(0.85))
+                    .frame(width: 2, height: isPlaying && animate ? height : height * 0.4)
+            }
+        }
+        .frame(width: 14, height: 8, alignment: .bottom)
+        .onAppear {
+            guard isPlaying else { return }
+            withAnimation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true)) {
+                animate = true
+            }
+        }
+    }
+}
+
+// MARK: - Closed content sizing
+
+@MainActor
+extension IslandClosedContent {
+    private static let peekCharWidth: CGFloat = 7.2   // Departure Mono at 11pt
+    private static let peekDotWidth: CGFloat = 6 + 5
+    private static let peekGaugeWidth: CGFloat = 44
+    private static let peekInnerGap: CGFloat = 5
+    private static let peekTailCell: CGFloat = 8
+    private static let peekTailGap: CGFloat = 2
+
+    private func tailStripWidth(cells: Int) -> CGFloat {
+        guard cells > 0 else { return 0 }
+        return CGFloat(cells) * Self.peekTailCell + CGFloat(max(0, cells - 1)) * Self.peekTailGap
+    }
+
+    /// The body/peek-area's own width — the glyph, gaps, padding, and any
+    /// accessory are the pill's job, not this content's. Combining them here
+    /// used to double-count the accessory (once through this method, again
+    /// through the pill's own accessory block) and left the accessory-drop
+    /// decision blind to the glyph/padding/gaps that actually eat into the
+    /// same budget — see `V6ClosedPill.macbookLayout(...)`, the single place
+    /// that now owns the full-width math.
+    fileprivate func bodyWidth() -> CGFloat {
+        guard let body else { return 0 }
+        let label = SAOPeekGauge.label(for: body)
+        let elapsed = SAOPeekGauge.elapsedText(for: body)
+        let others = SAOPeekGauge.othersCount(for: body)
+
+        var width = Self.peekDotWidth
+        width += CGFloat(label.count) * Self.peekCharWidth + Self.peekInnerGap
+        width += Self.peekGaugeWidth + Self.peekInnerGap
+        width += CGFloat(elapsed.count) * Self.peekCharWidth
+        if others > 0 {
+            width += Self.peekInnerGap + tailStripWidth(cells: others)
+        }
+        return width
+    }
+}
+
+extension IslandSneakPeek {
+    /// Width the pill must reserve to show this sneak peek's icon, text, and
+    /// optional gauge. Only meaningful when `text` isn't empty — the empty-text
+    /// "shelf pop" draws nothing extra and asks for none.
+    func intrinsicWidth() -> CGFloat {
+        guard !text.isEmpty else { return 0 }
+        let charWidth: CGFloat = 7.2
+        let icon: CGFloat = 10 + 5
+        let textWidth = CGFloat(text.count) * charWidth
+        let gaugeWidth: CGFloat = gauge != nil ? 44 + 5 : 0
+        return icon + textWidth + gaugeWidth
     }
 }
 

@@ -444,6 +444,38 @@ def main() -> None:
         if "sound.cue=ui-linkstart-tick" not in log_text:
             fail("linkstart runtime log is missing a tick cue")
 
+    elif scenario == "sneakPeekPop":
+        # The sneak peek is a temporary override of the closed body — the
+        # island stays closed and the fixture's text has to actually be on
+        # screen, not just scheduled.
+        if notch_status != "closed":
+            fail(f"expected closed notch for sneakPeekPop, got {notch_status!r}")
+        require_frame_between(
+            overlay_frame,
+            width=(520, 780),
+            height=(35, 500),
+            context="sneakPeekPop overlay frame",
+        )
+        if not any("READY" in value for value in text_values):
+            fail("sneakPeekPop is missing its override text")
+
+    elif scenario == "closedAccessoryTimer":
+        # Both a waiting body and a timer accessory have to be visible at
+        # once — the whole point is that the accessory never hides the agent
+        # that's actually waiting on you.
+        if notch_status != "closed":
+            fail(f"expected closed notch for closedAccessoryTimer, got {notch_status!r}")
+        require_frame_between(
+            overlay_frame,
+            width=(520, 780),
+            height=(35, 500),
+            context="closedAccessoryTimer overlay frame",
+        )
+        if not any("CODEX" in value for value in text_values):
+            fail("closedAccessoryTimer is missing the waiting agent")
+        if not any("12" in value for value in text_values):
+            fail("closedAccessoryTimer is missing the timer accessory")
+
     else:
         fail(f"unsupported scenario {scenario!r}")
 
