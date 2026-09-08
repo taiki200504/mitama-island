@@ -10,13 +10,34 @@ import SwiftUI
 /// Each digit is its own card, so only the digit that changed flips. A single
 /// card for "09" would fold the hour every minute.
 struct FlipClockView: View {
-    let date: Date
+    /// Either a live clock (formatted internally) or a fixed string of
+    /// digits and colons — the timer surface's own MM:SS readout reuses this
+    /// card renderer without going through a `Date` at all.
+    private enum Source {
+        case date(Date)
+        case digits(String)
+    }
+
+    private let source: Source
     /// Height of one card. Everything else is derived, so the clock scales from
     /// one number.
     var cardHeight: CGFloat = 132
 
+    init(date: Date, cardHeight: CGFloat = 132) {
+        self.source = .date(date)
+        self.cardHeight = cardHeight
+    }
+
+    init(digits: String, cardHeight: CGFloat = 132) {
+        self.source = .digits(digits)
+        self.cardHeight = cardHeight
+    }
+
     private var digits: [Character] {
-        Array(Self.formatter.string(from: date))
+        switch source {
+        case .date(let date): Array(Self.formatter.string(from: date))
+        case .digits(let string): Array(string)
+        }
     }
 
     var body: some View {

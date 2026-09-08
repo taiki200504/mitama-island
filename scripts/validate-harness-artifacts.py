@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import re
 import sys
 
 
@@ -498,6 +499,28 @@ def main() -> None:
         )
         if not any("taiki" in value.lower() for value in text_values):
             fail("unlockScan is missing the greeted name")
+
+    elif scenario == "timerSurface":
+        if notch_status != "opened":
+            fail(f"expected opened notch for timerSurface, got {notch_status!r}")
+        if island_surface != "timer":
+            fail(f"expected the timer surface, got {island_surface!r}")
+        require_frame_between(
+            overlay_frame,
+            width=(520, 780),
+            height=(180, 460),
+            context="timerSurface overlay frame",
+        )
+        if not any(re.fullmatch(r"\d{2}:\d{2}", value) for value in text_values):
+            fail("timerSurface is missing its MM:SS countdown readout")
+        if button_labels:
+            assert_contains_any(
+                button_labels,
+                ["Pause", "一時停止", "PAUSE", "Start", "スタート", "START"],
+                "timerSurface keeps its start/pause control reachable",
+            )
+        else:
+            print("timerSurface: accessibility tree was empty, button check skipped")
 
     else:
         fail(f"unsupported scenario {scenario!r}")

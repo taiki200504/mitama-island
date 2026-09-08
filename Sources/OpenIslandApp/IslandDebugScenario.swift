@@ -27,13 +27,17 @@ struct IslandDebugSnapshot {
     /// this; `until` is set well past the kind's real duration so a headless
     /// capture always lands while it's still showing.
     var debugSneakPeek: IslandSneakPeek?
-    /// Forces a timer accessory onto the closed island. No real timer feature
-    /// exists yet — this is only how a scenario exercises the accessory
-    /// ahead of it.
+    /// Forces a timer accessory onto the closed island, independent of
+    /// whether a real timer is running — how `closedAccessoryTimer` exercises
+    /// the accessory in isolation.
     var debugAccessoryTimer: IslandClosedInputs.Timer?
     /// Items to put on the shelf before capture, and force the chip row open
     /// for — a scenario is the one caller with no pointer to hover with.
     var shelfItems: [ShelfItem] = []
+    /// Poses `FocusTimerCoordinator` directly for the `timerSurface`
+    /// scenario, with no run loop attached so a headless capture always
+    /// lands on this exact remaining time.
+    var debugTimerState: FocusTimerState?
 }
 
 enum IslandDebugScenario: String, CaseIterable, Identifiable {
@@ -53,6 +57,7 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
     case closedAccessoryTimer
     case shelfSurface
     case unlockScan
+    case timerSurface
 
     var id: String { rawValue }
 
@@ -92,6 +97,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Shelf Surface"
         case .unlockScan:
             "Unlock Greeting"
+        case .timerSurface:
+            "Timer Surface"
         }
     }
 
@@ -129,6 +136,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Opened island with two items set aside, chips forced open for capture."
         case .unlockScan:
             "The ring-into-check greeting shown for a couple of seconds right after the screen unlocks."
+        case .timerSurface:
+            "The opened timer surface mid-Pomodoro, with its own controls and cycle dots."
         }
     }
 
@@ -383,6 +392,31 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                     gauge: nil,
                     until: now.addingTimeInterval(LockScanSequence.duration - pinnedElapsed)
                 )
+            )
+
+        case .timerSurface:
+            let sessions = DebugSessionFactory.listSessions(now: now)
+            // 12 minutes 34 seconds left in the third Pomodoro work session
+            // (cycle 2 already finished) — an odd, specific remaining time so
+            // a screenshot can't be confused with a fixture that just started.
+            let remaining: TimeInterval = 12 * 60 + 34
+            let timerState = FocusTimerState(
+                mode: .pomodoro(),
+                phase: .running(endsAt: now.addingTimeInterval(remaining)),
+                cycle: 2,
+                isRest: false,
+                currentPhaseDuration: 25 * 60
+            )
+            return IslandDebugSnapshot(
+                title: title,
+                summary: summary,
+                previewHeight: 260,
+                notchStatus: .opened,
+                notchOpenReason: .click,
+                islandSurface: .timer,
+                sessions: sessions,
+                selectedSessionID: sessions.first?.id,
+                debugTimerState: timerState
             )
         }
     }

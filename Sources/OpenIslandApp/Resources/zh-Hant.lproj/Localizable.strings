@@ -183,6 +183,7 @@
 "island.startAgent" = "在終端機中啟動編碼代理";
 "island.recentSessions" = "最近的工作階段將保留在這裡，直到終端機重新開啟";
 "island.hint.installHooks" = "尚未安裝任何代理 hook，工作階段不會觸發事件 · 點擊設定";
+"island.header.timer" = "計時器";
 
 /* Island Panel - Session List */
 "island.sessionList.title" = "會話";
@@ -296,6 +297,7 @@
 "settings.lockScan.usesCamera" = "用攝影機確認";
 "settings.lockScan.usesCamera.help" = "解鎖後最多開啟攝影機兩秒，以確認是否真的有人在場。";
 "settings.lockScan.usesCamera.denied" = "攝影機存取被拒絕。系統設定 → 隱私權與安全性 → 攝影機。";
+"settings.display.section.timer" = "計時器";
 "settings.display.contentFontSize" = "內容字級";
 "settings.display.maxPanelHeight" = "面板最大高度";
 "settings.display.maxPanelWidth" = "面板最大寬度";
@@ -311,6 +313,11 @@
 "settings.display.showSubagents" = "顯示子代理";
 "settings.display.showSubagents.help" = "無論如何設定，審批與問題都會顯示。";
 "settings.display.showAgentActivity" = "顯示代理正在做什麼";
+"settings.timer.eyeBreakEnabled" = "執行 20-20-20 護眼休息";
+"settings.timer.eyeBreakEnabled.help" = "每 20 分鐘休息 20 秒，現在開始，並在每次休息後重新開始。";
+"settings.timer.playsSound" = "階段結束時播放提示音";
+"settings.timer.autoAdvance" = "自動進入下一階段";
+"settings.timer.autoAdvance.help" = "關閉後，結束的番茄鐘或護眼休息會停在計時器畫面等待手動操作。";
 "settings.pending.completionCardSizing" = "完成卡片目前會依內容自動決定高度。";
 "settings.pending.notchCalibration" = "需要瀏海尺寸支援覆寫設定。";
 "settings.points.format" = "%@pt";
@@ -724,11 +731,32 @@
 "settings.display.showsNextEvent.noAccess" = "沒有行事曆存取權限。請在系統設定 → 隱私權與安全性 → 行事曆 中允許 Mitama Island。";
 "island.peek.hours" = "%d小時";
 
+/* Focus timer */
+"timer.title.idle" = "計時器";
+"timer.title.work" = "專注";
+"timer.title.rest" = "休息";
+"timer.action.start" = "開始";
+"timer.action.pause" = "暫停";
+"timer.action.resume" = "繼續";
+"timer.action.reset" = "重置";
+"timer.preset.pomodoro" = "番茄鐘";
+"timer.preset.eyeBreak" = "護眼休息";
+"timer.preset.five" = "5 分鐘";
+"timer.preset.ten" = "10 分鐘";
+"timer.preset.fifteen" = "15 分鐘";
+"timer.preset.twentyFive" = "25 分鐘";
+"timer.sneakPeek.done" = "完成";
+"timer.sneakPeek.breakTime" = "休息";
+"timer.sneakPeek.restSeconds" = "休息 %d 秒";
+
 /* Status Item (Menu Bar) */
 "statusItem.openIsland" = "開啟島";
 "statusItem.openIsland.waiting" = "開啟島（%d 項等待）";
 "statusItem.unmute" = "取消靜音";
 "statusItem.cameraOn" = "喚醒攝影機";
 "statusItem.cameraOff" = "關閉攝影機";
+"statusItem.timer.start" = "開始計時…";
+"statusItem.timer.running" = "計時器：%@";
+"statusItem.timer.stop" = "停止計時器";
 "statusItem.shelf.header" = "暫存（%d）";
 "statusItem.settings" = "設定…";

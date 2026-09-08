@@ -184,6 +184,7 @@
 "island.startAgent" = "ターミナルでコーディングエージェントを起動してください";
 "island.recentSessions" = "最近のセッションは、ターミナルを開き直すまでここに残ります";
 "island.hint.installHooks" = "フックが未導入です。このままではイベントを受け取れません。タップして設定します。";
+"island.header.timer" = "タイマー";
 
 /* Island Panel - Session List */
 "island.sessionList.title" = "セッション";
@@ -297,6 +298,7 @@
 "settings.lockScan.usesCamera" = "カメラで確認する";
 "settings.lockScan.usesCamera.help" = "解除直後に最大2秒間カメラを開き、実際に人がいるかを確認します。";
 "settings.lockScan.usesCamera.denied" = "カメラのアクセスが拒否されています。システム設定 → プライバシーとセキュリティ → カメラ で許可してください。";
+"settings.display.section.timer" = "タイマー";
 "settings.display.contentFontSize" = "本文のフォントサイズ";
 "settings.display.maxPanelHeight" = "パネルの最大高さ";
 "settings.display.maxPanelWidth" = "パネルの最大幅";
@@ -312,6 +314,11 @@
 "settings.display.showSubagents" = "サブエージェントを表示";
 "settings.display.showSubagents.help" = "承認と質問はどちらの設定でも表示される。";
 "settings.display.showAgentActivity" = "エージェントの作業内容を表示";
+"settings.timer.eyeBreakEnabled" = "20-20-20 の目の休憩を実行";
+"settings.timer.eyeBreakEnabled.help" = "20分ごとに20秒の休憩。今すぐ開始し、休憩のたびに再開します。";
+"settings.timer.playsSound" = "フェーズ終了時に音を鳴らす";
+"settings.timer.autoAdvance" = "自動的に次のフェーズへ進む";
+"settings.timer.autoAdvance.help" = "オフにすると、終了したポモドーロや目の休憩はタイマー画面の操作待ちのままになります。";
 "settings.pending.completionCardSizing" = "完了カードは今は内容に合わせて高さが決まります。";
 "settings.pending.notchCalibration" = "ノッチの寸法を上書きできる作りが要ります。";
 "settings.points.format" = "%@pt";
@@ -725,11 +732,32 @@
 "settings.display.showsNextEvent.noAccess" = "カレンダーへのアクセスがありません。システム設定 → プライバシーとセキュリティ → カレンダー で Mitama Island を許可してください。";
 "island.peek.hours" = "%d時間";
 
+/* Focus timer */
+"timer.title.idle" = "タイマー";
+"timer.title.work" = "作業";
+"timer.title.rest" = "休憩";
+"timer.action.start" = "開始";
+"timer.action.pause" = "一時停止";
+"timer.action.resume" = "再開";
+"timer.action.reset" = "リセット";
+"timer.preset.pomodoro" = "ポモドーロ";
+"timer.preset.eyeBreak" = "目の休憩";
+"timer.preset.five" = "5分";
+"timer.preset.ten" = "10分";
+"timer.preset.fifteen" = "15分";
+"timer.preset.twentyFive" = "25分";
+"timer.sneakPeek.done" = "完了";
+"timer.sneakPeek.breakTime" = "休憩";
+"timer.sneakPeek.restSeconds" = "休憩 %d秒";
+
 /* Status Item (Menu Bar) */
 "statusItem.openIsland" = "島を開く";
 "statusItem.openIsland.waiting" = "島を開く（%d件待ち）";
 "statusItem.unmute" = "ミュート解除";
 "statusItem.cameraOn" = "カメラを起こす";
 "statusItem.cameraOff" = "カメラを閉じる";
+"statusItem.timer.start" = "タイマーを開始…";
+"statusItem.timer.running" = "タイマー: %@";
+"statusItem.timer.stop" = "タイマーを停止";
 "statusItem.shelf.header" = "置いてあるもの（%d）";
 "statusItem.settings" = "設定…";

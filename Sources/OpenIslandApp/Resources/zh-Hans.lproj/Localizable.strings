@@ -183,6 +183,7 @@
 "island.startAgent" = "在终端中启动编码代理";
 "island.recentSessions" = "最近的会话将保留在这里，直到终端重新打开";
 "island.hint.installHooks" = "尚未安装任何代理 hook，会话不会触发事件 · 点击配置";
+"island.header.timer" = "计时器";
 
 /* Island Panel - Session List */
 "island.sessionList.title" = "会话";
@@ -297,6 +298,7 @@
 "settings.lockScan.usesCamera" = "用摄像头确认";
 "settings.lockScan.usesCamera.help" = "解锁后最多开启摄像头两秒，以确认是否真的有人在场。";
 "settings.lockScan.usesCamera.denied" = "摄像头访问被拒绝。系统设置 → 隐私与安全性 → 摄像头。";
+"settings.display.section.timer" = "计时器";
 "settings.display.contentFontSize" = "内容字号";
 "settings.display.maxPanelHeight" = "面板最大高度";
 "settings.display.maxPanelWidth" = "面板最大宽度";
@@ -312,6 +314,11 @@
 "settings.display.showSubagents" = "显示子代理";
 "settings.display.showSubagents.help" = "无论如何设置，审批与问题都会显示。";
 "settings.display.showAgentActivity" = "显示代理正在做什么";
+"settings.timer.eyeBreakEnabled" = "运行 20-20-20 护眼休息";
+"settings.timer.eyeBreakEnabled.help" = "每 20 分钟休息 20 秒，现在开始，并在每次休息后重新开始。";
+"settings.timer.playsSound" = "阶段结束时播放提示音";
+"settings.timer.autoAdvance" = "自动进入下一阶段";
+"settings.timer.autoAdvance.help" = "关闭后，结束的番茄钟或护眼休息会停在计时器界面等待手动操作。";
 "settings.pending.completionCardSizing" = "完成卡片目前会根据内容自动确定高度。";
 "settings.pending.notchCalibration" = "需要刘海尺寸支持覆盖设置。";
 "settings.points.format" = "%@pt";
@@ -725,11 +732,32 @@
 "settings.display.showsNextEvent.noAccess" = "没有日历访问权限。请在系统设置 → 隐私与安全性 → 日历 中允许 Mitama Island。";
 "island.peek.hours" = "%d小时";
 
+/* Focus timer */
+"timer.title.idle" = "计时器";
+"timer.title.work" = "专注";
+"timer.title.rest" = "休息";
+"timer.action.start" = "开始";
+"timer.action.pause" = "暂停";
+"timer.action.resume" = "继续";
+"timer.action.reset" = "重置";
+"timer.preset.pomodoro" = "番茄钟";
+"timer.preset.eyeBreak" = "护眼休息";
+"timer.preset.five" = "5 分钟";
+"timer.preset.ten" = "10 分钟";
+"timer.preset.fifteen" = "15 分钟";
+"timer.preset.twentyFive" = "25 分钟";
+"timer.sneakPeek.done" = "完成";
+"timer.sneakPeek.breakTime" = "休息";
+"timer.sneakPeek.restSeconds" = "休息 %d 秒";
+
 /* Status Item (Menu Bar) */
 "statusItem.openIsland" = "打开岛";
 "statusItem.openIsland.waiting" = "打开岛（%d 项等待）";
 "statusItem.unmute" = "取消静音";
 "statusItem.cameraOn" = "唤醒摄像头";
 "statusItem.cameraOff" = "关闭摄像头";
+"statusItem.timer.start" = "开始计时…";
+"statusItem.timer.running" = "计时器：%@";
+"statusItem.timer.stop" = "停止计时器";
 "statusItem.shelf.header" = "暂存（%d）";
 "statusItem.settings" = "设置…";

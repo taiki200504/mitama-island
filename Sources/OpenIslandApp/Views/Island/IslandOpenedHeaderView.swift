@@ -49,6 +49,16 @@ extension IslandPanelView {
             }
 
             headerIconButton(
+                systemName: "timer",
+                tint: model.focusTimer.state.phase == .idle
+                    ? V6Palette.paper.opacity(0.62)
+                    : SAOGrammar.Palette.accentOrange,
+                accessibilityLabel: model.lang.t("island.header.timer")
+            ) {
+                model.notchOpen(reason: .click, surface: .timer)
+            }
+
+            headerIconButton(
                 systemName: model.isSoundMuted ? "speaker.slash.fill" : "speaker.wave.2.fill",
                 tint: model.isSoundMuted
                     ? IslandThemes.current.statusTints.waitingForApproval.opacity(0.92)
