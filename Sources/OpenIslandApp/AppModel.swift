@@ -843,6 +843,13 @@ final class AppModel {
             startWatchRelay()
         }
 
+        // Wired regardless of the setting below: the callback itself checks
+        // `alertsWhenEventStarts` before doing anything, and the watcher only
+        // ever calls it while it's actually running.
+        calendar.onEventStarted = { [weak self] current in
+            self?.handleCalendarEventStarted(current)
+        }
+
         // Never prompts: if access was granted before, this picks it back up;
         // if it was not, the setting is the only place that asks.
         if settings.display.showsNextEvent {
@@ -1248,6 +1255,7 @@ final class AppModel {
             )
         }
         ambient.nextEvent = { [weak self] in self?.calendar.band }
+        ambient.currentEvent = { [weak self] in self?.calendar.current }
         ambient.timer = { [weak self] in self?.focusTimer.state ?? .idle }
         ambient.onDismiss = { [weak self] in self?.idle.markActive() }
         idle.onTick = { [weak self] seconds in self?.considerAmbientBoard(idleFor: seconds) }
@@ -1338,6 +1346,47 @@ final class AppModel {
     /// to exercise the accessory without starting `focusTimer` for real.
     var debugClosedAccessoryTimer: IslandClosedInputs.Timer?
 
+    /// The calendar entry happening right now, if the setting that watches
+    /// for one is on. Read by the opened island's join bar and the ambient
+    /// board — both want the same fact `islandClosedContent` already has.
+    var currentCalendarEvent: UpcomingCalendarEvent.Current? { calendar.current }
+
+    /// A calendar entry just starting, turned into the plain value the
+    /// arbiter needs — nil when the alert setting is off, even if the
+    /// watcher itself still has a `current` entry in hand.
+    private var liveClosedEventStarted: IslandClosedInputs.EventStarted? {
+        guard settings.display.alertsWhenEventStarts, let current = calendar.current else { return nil }
+        return IslandClosedInputs.EventStarted(
+            title: current.title,
+            startedAt: current.startsAt,
+            endsAt: current.endsAt,
+            url: current.url
+        )
+    }
+
+    /// The sound and the sneak peek for a meeting starting. Called from
+    /// `CalendarWatcher.onEventStarted`, which only ever fires while the
+    /// watcher is running — the setting gate here is what actually decides
+    /// whether the moment is worth announcing.
+    private func handleCalendarEventStarted(_ current: UpcomingCalendarEvent.Current) {
+        guard settings.display.alertsWhenEventStarts else { return }
+        NotificationSoundService.play(.eventStarting, settings: settings.sound)
+        overlay.presentSneakPeek(
+            IslandSneakPeek(
+                kind: .eventStarting,
+                text: current.title,
+                icon: "calendar",
+                until: Date.now.addingTimeInterval(IslandSneakPeekPolicy.duration(for: .eventStarting))
+            )
+        )
+    }
+
+    /// What tapping the closed pill should do right now — expand, the same as
+    /// always, unless the body is a just-started meeting with a join link.
+    func closedPillTapAction(now: Date = .now) -> IslandClosedClickAction {
+        IslandClosedClickAction.decide(body: islandClosedContent(now: now).body)
+    }
+
     /// The closed island's one body slot and one trailing accessory, decided
     /// fresh from whatever is true right now. `IslandClosedArbiter` owns the
     /// priority order; this only turns live state into the plain values it
@@ -1354,9 +1403,7 @@ final class AppModel {
         let inputs = IslandClosedInputs(
             mitamaUrgent: urgent,
             waiting: waiting,
-            // No "calendar entry just started" tracking exists yet — a later
-            // PR wires it from EventKit.
-            eventStarted: nil,
+            eventStarted: liveClosedEventStarted,
             nextEvent: calendar.band,
             showsNextEvent: settings.display.showsNextEvent,
             timer: focusTimerAccessoryInput(now: now),
@@ -2088,6 +2135,13 @@ final class AppModel {
         // this scenario poses one, so a previous scenario's timer never
         // bleeds into this one's screenshot.
         focusTimer.loadDebugState(snapshot.debugTimerState ?? .idle)
+
+        // Exercises the real `CalendarWatcher.loadFixture` path: the closed
+        // body, the opened island's join bar, and the ambient board all read
+        // `calendar.current` the same way a live refresh would leave it.
+        if let currentEvent = snapshot.debugCurrentEvent {
+            calendar.loadFixture(band: calendar.band, current: currentEvent)
+        }
 
         if let sneakPeek = snapshot.debugSneakPeek {
             overlay.presentSneakPeek(sneakPeek)

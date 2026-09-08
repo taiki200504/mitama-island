@@ -46,9 +46,9 @@ struct IslandClosedArbiterTests {
 
     @Test("A calendar entry that just started becomes the body")
     func eventStartedAlone() {
-        let started = IslandClosedInputs.EventStarted(title: "Standup", startedAt: epoch, url: nil)
+        let started = IslandClosedInputs.EventStarted(title: "Standup", startedAt: epoch, endsAt: epoch.addingTimeInterval(1_800), url: nil)
         let content = IslandClosedArbiter.resolve(IslandClosedInputs(eventStarted: started, now: epoch))
-        #expect(content.body == .eventStarted(title: "Standup", startedAt: epoch, url: nil))
+        #expect(content.body == .eventStarted(title: "Standup", startedAt: epoch, endsAt: epoch.addingTimeInterval(1_800), url: nil))
     }
 
     @Test("What's next becomes the body when the setting is on")
@@ -71,7 +71,7 @@ struct IslandClosedArbiterTests {
 
     @Test("Urgent outranks waiting, event-started, and next-event")
     func urgentOutranksEverything() {
-        let started = IslandClosedInputs.EventStarted(title: "Standup", startedAt: epoch, url: nil)
+        let started = IslandClosedInputs.EventStarted(title: "Standup", startedAt: epoch, endsAt: epoch.addingTimeInterval(1_800), url: nil)
         let content = IslandClosedArbiter.resolve(
             IslandClosedInputs(
                 mitamaUrgent: urgentPeek(),
@@ -87,7 +87,7 @@ struct IslandClosedArbiterTests {
 
     @Test("Waiting outranks event-started and next-event")
     func waitingOutranksEventAndNext() {
-        let started = IslandClosedInputs.EventStarted(title: "Standup", startedAt: epoch, url: nil)
+        let started = IslandClosedInputs.EventStarted(title: "Standup", startedAt: epoch, endsAt: epoch.addingTimeInterval(1_800), url: nil)
         let content = IslandClosedArbiter.resolve(
             IslandClosedInputs(
                 waiting: peek("CODEX"),
@@ -102,27 +102,27 @@ struct IslandClosedArbiterTests {
 
     @Test("A fresh event-started outranks next-event")
     func eventStartedOutranksNextEvent() {
-        let started = IslandClosedInputs.EventStarted(title: "Standup", startedAt: epoch, url: nil)
+        let started = IslandClosedInputs.EventStarted(title: "Standup", startedAt: epoch, endsAt: epoch.addingTimeInterval(1_800), url: nil)
         let content = IslandClosedArbiter.resolve(
             IslandClosedInputs(eventStarted: started, nextEvent: nextEventBand(), showsNextEvent: true, now: epoch)
         )
-        #expect(content.body == .eventStarted(title: "Standup", startedAt: epoch, url: nil))
+        #expect(content.body == .eventStarted(title: "Standup", startedAt: epoch, endsAt: epoch.addingTimeInterval(1_800), url: nil))
     }
 
     // MARK: - The three-minute freshness boundary
 
     @Test("Exactly three minutes after the start is still fresh")
     func threeMinutesIsStillFresh() {
-        let started = IslandClosedInputs.EventStarted(title: "Standup", startedAt: epoch, url: nil)
+        let started = IslandClosedInputs.EventStarted(title: "Standup", startedAt: epoch, endsAt: epoch.addingTimeInterval(1_800), url: nil)
         let content = IslandClosedArbiter.resolve(
             IslandClosedInputs(eventStarted: started, now: epoch.addingTimeInterval(180))
         )
-        #expect(content.body == .eventStarted(title: "Standup", startedAt: epoch, url: nil))
+        #expect(content.body == .eventStarted(title: "Standup", startedAt: epoch, endsAt: epoch.addingTimeInterval(1_800), url: nil))
     }
 
     @Test("One second past three minutes is no longer fresh")
     func pastThreeMinutesIsStale() {
-        let started = IslandClosedInputs.EventStarted(title: "Standup", startedAt: epoch, url: nil)
+        let started = IslandClosedInputs.EventStarted(title: "Standup", startedAt: epoch, endsAt: epoch.addingTimeInterval(1_800), url: nil)
         let content = IslandClosedArbiter.resolve(
             IslandClosedInputs(eventStarted: started, now: epoch.addingTimeInterval(181))
         )
@@ -131,14 +131,14 @@ struct IslandClosedArbiterTests {
 
     @Test("An in-progress event beyond three minutes yields no body, even with nothing else to fall back to")
     func inProgressEventBeyondFreshnessYieldsNoBody() {
-        let started = IslandClosedInputs.EventStarted(title: "Standup", startedAt: epoch.addingTimeInterval(-3_600), url: nil)
+        let started = IslandClosedInputs.EventStarted(title: "Standup", startedAt: epoch.addingTimeInterval(-3_600), endsAt: epoch.addingTimeInterval(-3_600).addingTimeInterval(1_800), url: nil)
         let content = IslandClosedArbiter.resolve(IslandClosedInputs(eventStarted: started, now: epoch))
         #expect(content.body == nil)
     }
 
     @Test("A clock that jumped backwards before the start does not read as fresh")
     func startInTheFutureIsNotFresh() {
-        let started = IslandClosedInputs.EventStarted(title: "Standup", startedAt: epoch.addingTimeInterval(60), url: nil)
+        let started = IslandClosedInputs.EventStarted(title: "Standup", startedAt: epoch.addingTimeInterval(60), endsAt: epoch.addingTimeInterval(60).addingTimeInterval(1_800), url: nil)
         let content = IslandClosedArbiter.resolve(IslandClosedInputs(eventStarted: started, now: epoch))
         #expect(content.body == nil)
     }

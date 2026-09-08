@@ -99,4 +99,29 @@ struct SAOPeekGaugeTests {
         #expect(SAOPeekGauge.text(for: .minutes(7)) == "7M")
         #expect(SAOPeekGauge.text(for: .hours(3)) == "3H")
     }
+
+    @Test("An event-started body reads NOW with the start–end range, and carries the title")
+    func eventStartedReadsNowWithTheTimeRange() {
+        let startedAt = Date(timeIntervalSince1970: 1_800_000_000) // 2027-01-15 00:00:00 UTC
+        let body = IslandClosedBody.eventStarted(
+            title: "Design sync",
+            startedAt: startedAt,
+            endsAt: startedAt.addingTimeInterval(1_800),
+            url: nil
+        )
+        #expect(SAOPeekGauge.label(for: body) == "NOW")
+        #expect(SAOPeekGauge.elapsedText(for: body).contains("–"))
+        #expect(SAOPeekGauge.eventTitle(for: body) == "Design sync")
+        #expect(SAOPeekGauge.othersCount(for: body) == 0)
+        #expect(!SAOPeekGauge.tailIsWaiting(for: body))
+    }
+
+    @Test("Only an event-started body carries a title")
+    func onlyEventStartedCarriesATitle() {
+        let waiting = IslandClosedBody.waiting(peekContent(elapsed: .minutes(1)))
+        #expect(SAOPeekGauge.eventTitle(for: waiting) == nil)
+
+        let band = UpcomingCalendarEvent.Band(title: "Standup", startsAt: .now, minutesUntil: 5, othersAhead: 0)
+        #expect(SAOPeekGauge.eventTitle(for: .nextEvent(band)) == nil)
+    }
 }

@@ -522,6 +522,21 @@ def main() -> None:
         else:
             print("timerSurface: accessibility tree was empty, button check skipped")
 
+    elif scenario == "eventInProgress":
+        # A calendar entry that just started takes the closed body — the
+        # fixed-English "NOW" label is what proves the real body rendered,
+        # not just some fallback state.
+        if notch_status != "closed":
+            fail(f"expected closed notch for eventInProgress, got {notch_status!r}")
+        require_frame_between(
+            overlay_frame,
+            width=(520, 780),
+            height=(35, 500),
+            context="eventInProgress overlay frame",
+        )
+        if not any("NOW" in value for value in text_values):
+            fail("eventInProgress is missing the NOW marker")
+
     else:
         fail(f"unsupported scenario {scenario!r}")
 

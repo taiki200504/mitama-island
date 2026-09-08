@@ -10,6 +10,7 @@ import SwiftUI
 struct AmbientBoardView: View {
     let board: AmbientBoard
     let nextEvent: UpcomingCalendarEvent.Band?
+    let currentEvent: UpcomingCalendarEvent.Current?
     /// Captured once at presentation; the row below recomputes its own
     /// readout from this against the board's own once-a-second clock, the
     /// same way `nextEventRow` does from `event.startsAt`.
@@ -45,7 +46,12 @@ struct AmbientBoardView: View {
                         .textCase(.uppercase)
                         .kerning(2.4)
 
-                    if let nextEvent {
+                    // A meeting already in progress outranks "what's next" —
+                    // there's nothing next about it any more.
+                    if let currentEvent {
+                        currentEventRow(currentEvent)
+                            .padding(.top, 8)
+                    } else if let nextEvent {
                         nextEventRow(nextEvent, now: context.date)
                             .padding(.top, 8)
                     }
@@ -98,6 +104,34 @@ struct AmbientBoardView: View {
             Text(lang.t("island.peek.inMinutes", minutes))
                 .font(.islandMono(size: 14, weight: .medium))
                 .foregroundStyle(IslandThemes.current.statusTints.running.opacity(0.9))
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 11)
+        .background(V6Palette.paper.opacity(0.05), in: Capsule())
+    }
+
+    /// A meeting already in progress: "NOW · title · until HH:MM" rather than
+    /// a countdown to something that already started.
+    @ViewBuilder
+    private func currentEventRow(_ event: UpcomingCalendarEvent.Current) -> some View {
+        HStack(spacing: 12) {
+            Circle()
+                .fill(SAOGrammar.Palette.accentOrange)
+                .frame(width: 7, height: 7)
+
+            Text(lang.t("ambient.now"))
+                .font(.islandMono(size: 20, weight: .semibold))
+                .foregroundStyle(V6Palette.paper.opacity(0.88))
+
+            Text(event.title)
+                .font(.islandText(size: 15))
+                .foregroundStyle(V6Palette.paper.opacity(0.66))
+                .lineLimit(1)
+                .truncationMode(.tail)
+
+            Text(lang.t("ambient.until", Self.clock.string(from: event.endsAt)))
+                .font(.islandMono(size: 14, weight: .medium))
+                .foregroundStyle(SAOGrammar.Palette.accentOrange.opacity(0.9))
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 11)

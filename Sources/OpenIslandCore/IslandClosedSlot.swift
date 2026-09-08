@@ -19,7 +19,7 @@ public enum IslandClosedBody: Equatable, Hashable, Sendable {
     /// A calendar entry that just started. Shown only for the first three
     /// minutes — after that it stops being news and starts being a countdown
     /// nobody asked the island to keep.
-    case eventStarted(title: String, startedAt: Date, url: URL?)
+    case eventStarted(title: String, startedAt: Date, endsAt: Date, url: URL?)
     /// What's next, while nothing above is asking for attention.
     case nextEvent(UpcomingCalendarEvent.Band)
 }
@@ -46,11 +46,13 @@ public struct IslandClosedInputs: Sendable {
     public struct EventStarted: Equatable, Hashable, Sendable {
         public let title: String
         public let startedAt: Date
+        public let endsAt: Date
         public let url: URL?
 
-        public init(title: String, startedAt: Date, url: URL?) {
+        public init(title: String, startedAt: Date, endsAt: Date, url: URL?) {
             self.title = title
             self.startedAt = startedAt
+            self.endsAt = endsAt
             self.url = url
         }
     }
@@ -137,7 +139,7 @@ public enum IslandClosedArbiter {
         if let started = inputs.eventStarted {
             let elapsed = inputs.now.timeIntervalSince(started.startedAt)
             if elapsed >= 0, elapsed <= eventStartedFreshness {
-                return .eventStarted(title: started.title, startedAt: started.startedAt, url: started.url)
+                return .eventStarted(title: started.title, startedAt: started.startedAt, endsAt: started.endsAt, url: started.url)
             }
         }
         if inputs.showsNextEvent, let next = inputs.nextEvent {
@@ -160,5 +162,23 @@ public enum IslandClosedArbiter {
             return .shelf(count: inputs.shelfCount)
         }
         return nil
+    }
+}
+
+/// What tapping the closed pill should do, given whatever body it is
+/// currently showing.
+///
+/// A meeting that just started and carries a join link is the one body worth
+/// a shortcut: everything else already opens the island the way it always
+/// has, because there's nowhere more useful for the tap to go.
+public enum IslandClosedClickAction: Equatable, Sendable {
+    case open(URL)
+    case expand
+
+    public static func decide(body: IslandClosedBody?) -> IslandClosedClickAction {
+        if case .eventStarted(_, _, _, let url?) = body {
+            return .open(url)
+        }
+        return .expand
     }
 }

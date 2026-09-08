@@ -203,6 +203,16 @@ struct DisplaySettingsPane: View {
             )
 
             SettingsToggleRow(
+                title: lang.t("settings.display.alertsWhenEventStarts"),
+                help: lang.t("settings.display.alertsWhenEventStarts.help"),
+                isOn: Binding(
+                    get: { display.alertsWhenEventStarts },
+                    set: { display.alertsWhenEventStarts = $0 }
+                )
+            )
+            .disabled(!display.showsNextEvent)
+
+            SettingsToggleRow(
                 title: lang.t("settings.display.completionBanner"),
                 help: lang.t("settings.display.completionBanner.help"),
                 isOn: Binding(

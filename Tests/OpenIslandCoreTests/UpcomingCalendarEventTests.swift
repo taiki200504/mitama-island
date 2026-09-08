@@ -5,8 +5,21 @@ import Testing
 @Suite struct UpcomingCalendarEventTests {
     private let now = Date(timeIntervalSince1970: 1_800_000_000)
 
-    private func event(_ title: String, inMinutes: Double, allDay: Bool = false) -> UpcomingCalendarEvent.Event {
-        .init(title: title, startsAt: now.addingTimeInterval(inMinutes * 60), isAllDay: allDay)
+    private func event(
+        _ title: String,
+        inMinutes: Double,
+        durationMinutes: Double = 30,
+        url: URL? = nil,
+        allDay: Bool = false
+    ) -> UpcomingCalendarEvent.Event {
+        let startsAt = now.addingTimeInterval(inMinutes * 60)
+        return .init(
+            title: title,
+            startsAt: startsAt,
+            endsAt: startsAt.addingTimeInterval(durationMinutes * 60),
+            url: url,
+            isAllDay: allDay
+        )
     }
 
     @Test func nothingToShowWhenTheCalendarIsEmpty() {
@@ -47,5 +60,55 @@ import Testing
 
     @Test func aSingleEventHasNothingBehindIt() {
         #expect(UpcomingCalendarEvent.band(for: [event("唯一", inMinutes: 10)], now: now)?.othersAhead == 0)
+    }
+
+    // MARK: - `current`
+
+    @Test("Start equal to now is in progress")
+    func startEqualToNowIsCurrent() {
+        let current = UpcomingCalendarEvent.current(for: [event("開始", inMinutes: 0)], now: now)
+        #expect(current?.title == "開始")
+    }
+
+    @Test("End equal to now is no longer in progress")
+    func endEqualToNowIsNotCurrent() {
+        let current = UpcomingCalendarEvent.current(
+            for: [event("終了", inMinutes: -30, durationMinutes: 30)],
+            now: now
+        )
+        #expect(current == nil)
+    }
+
+    @Test("An all-day entry is never in progress")
+    func allDayIsNeverCurrent() {
+        let current = UpcomingCalendarEvent.current(
+            for: [event("終日", inMinutes: -30, allDay: true)],
+            now: now
+        )
+        #expect(current == nil)
+    }
+
+    @Test("Two overlapping entries pick whichever started first")
+    func overlapPicksEarliestStart() {
+        let current = UpcomingCalendarEvent.current(
+            for: [
+                event("後から始まった", inMinutes: -5, durationMinutes: 60),
+                event("先に始まった", inMinutes: -20, durationMinutes: 60),
+            ],
+            now: now
+        )
+        #expect(current?.title == "先に始まった")
+    }
+
+    @Test("Nothing in progress means nil, even with something upcoming")
+    func nothingInProgressYetIsNil() {
+        #expect(UpcomingCalendarEvent.current(for: [event("これから", inMinutes: 5)], now: now) == nil)
+    }
+
+    @Test("The meeting link found on the entry rides along on `current`")
+    func currentCarriesTheMeetingLink() {
+        let url = URL(string: "https://zoom.us/j/123")!
+        let current = UpcomingCalendarEvent.current(for: [event("同期", inMinutes: 0, url: url)], now: now)
+        #expect(current?.url == url)
     }
 }

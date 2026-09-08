@@ -730,6 +730,13 @@
 "settings.display.showsNextEvent" = "次の予定を閉じた島に出す";
 "settings.display.showsNextEvent.help" = "待っているものが何も無いとき、8時間以内に始まる次の予定の開始時刻と残り時間を出します。カレンダーの読み取り許可が要ります。終日の予定は出しません。";
 "settings.display.showsNextEvent.noAccess" = "カレンダーへのアクセスがありません。システム設定 → プライバシーとセキュリティ → カレンダー で Mitama Island を許可してください。";
+
+"settings.display.alertsWhenEventStarts" = "開始時にお知らせ";
+"settings.display.alertsWhenEventStarts.help" = "予定が始まった瞬間に音を鳴らし、最初の3分間だけ閉じた島に表示します。「閉じた島に次の予定を表示」がオンのときだけ効果があります。";
+"island.currentEvent.now" = "NOW";
+"island.currentEvent.join" = "参加";
+"ambient.now" = "NOW";
+"ambient.until" = "%@ まで";
 "island.peek.hours" = "%d時間";
 
 /* Focus timer */
