@@ -150,7 +150,16 @@ struct FocusTimerSurfaceView: View {
         case .idle:
             timer.start(.pomodoro())
         case .finished:
-            timer.start(state.mode)
+            switch state.mode {
+            case .countdown:
+                // Nothing to advance to — restart the same duration.
+                timer.start(state.mode)
+            case .pomodoro, .eyeBreak:
+                // Move into the next phase rather than restarting the cycle
+                // from scratch, which would drop the cycle count `start`
+                // always resets to zero.
+                timer.advance()
+            }
         case .running:
             timer.pause()
         case .paused:

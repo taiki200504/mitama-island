@@ -23,6 +23,9 @@ final class FocusTimerCoordinator {
 
     @ObservationIgnored private var runLoopTask: Task<Void, Never>?
     @ObservationIgnored private var restCountdownTask: Task<Void, Never>?
+    /// Never removed: the coordinator is app-lifetime (owned by `AppModel`,
+    /// never torn down while the app runs), and a `deinit` that touches this
+    /// token is rejected under strict concurrency — see the note below.
     @ObservationIgnored private var wakeObserver: NSObjectProtocol?
 
     init() {
@@ -70,6 +73,20 @@ final class FocusTimerCoordinator {
     func loadDebugState(_ debugState: FocusTimerState) {
         cancelTasks()
         state = debugState
+    }
+
+    /// Moves a `.finished` phase into whatever comes next — the opened
+    /// surface's own controls call this when `autoAdvance` is off, so it has
+    /// to do the same follow-through `handlePhaseFinished()` does once a
+    /// phase advances on its own: re-arm the run loop for the phase that
+    /// just started, and if that phase is an eye-break rest, start narrating
+    /// it live. Skipping either would leave a manually-advanced rest
+    /// silently ticking with no countdown shown.
+    func advance() {
+        guard case .finished = state.phase else { return }
+        state = FocusTimerReducer.reduce(state, .advance, now: .now)
+        scheduleRunLoop()
+        startEyeBreakRestCountdownIfNeeded()
     }
 
     private func cancelTasks() {
@@ -121,9 +138,7 @@ final class FocusTimerCoordinator {
         presentFinishSneakPeek()
 
         guard timerSettings.autoAdvance else { return }
-        state = FocusTimerReducer.reduce(state, .advance, now: .now)
-        scheduleRunLoop()
-        startEyeBreakRestCountdownIfNeeded()
+        advance()
     }
 
     private func playFinishSound() {

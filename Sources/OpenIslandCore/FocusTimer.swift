@@ -91,17 +91,21 @@ public struct FocusTimerState: Equatable, Sendable {
         }
     }
 
-    /// Seconds left in the current phase, clamped to zero. Never negative
-    /// even if the wall clock jumped backwards underneath a running phase.
+    /// Seconds left in the current phase, clamped to `[0, currentPhaseDuration]`.
+    /// Never negative even if the wall clock jumped backwards underneath a
+    /// running phase, and never more than the phase's own length even if it
+    /// jumped backwards far enough to put `endsAt` more than a full phase away.
     public func remaining(at now: Date) -> TimeInterval {
+        let value: TimeInterval
         switch phase {
         case .idle, .finished:
             return 0
         case .running(let endsAt):
-            return max(0, endsAt.timeIntervalSince(now))
+            value = endsAt.timeIntervalSince(now)
         case .paused(let remaining):
-            return max(0, remaining)
+            value = remaining
         }
+        return min(max(0, value), currentPhaseDuration)
     }
 
     /// How far through the current phase the clock is, 0...1. Also clamped

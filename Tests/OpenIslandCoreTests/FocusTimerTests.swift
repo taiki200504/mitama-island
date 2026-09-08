@@ -133,6 +133,34 @@ struct FocusTimerTests {
         #expect(afterFourth.currentPhaseDuration == 100, "the rest after the 4th work session should be long")
     }
 
+    // MARK: - Manual advance (what the opened surface's controls call when
+    // `autoAdvance` is off — the reducer takes no `autoAdvance` flag, so a
+    // manual `.advance` and an automatic one are the same call)
+
+    @Test("Manually advancing a finished 4th pomodoro work session yields a long rest")
+    func manualAdvanceFourthWorkToLongRest() {
+        let mode = FocusTimerMode.pomodoro(work: 60, short: 10, long: 100, every: 4)
+        let finished = FocusTimerState(mode: mode, phase: .finished(at: epoch), cycle: 3, isRest: false, currentPhaseDuration: 60)
+        let advanced = FocusTimerReducer.reduce(finished, .advance, now: epoch)
+
+        #expect(advanced.cycle == 4)
+        #expect(advanced.isRest == true)
+        #expect(advanced.currentPhaseDuration == 100)
+        #expect(advanced.phase == .running(endsAt: epoch.addingTimeInterval(100)))
+    }
+
+    @Test("Manually advancing a finished eye-break work phase moves into rest")
+    func manualAdvanceEyeBreakWorkToRest() {
+        let mode = FocusTimerMode.eyeBreak(work: 20 * 60, rest: 20)
+        let finished = FocusTimerState(mode: mode, phase: .finished(at: epoch), cycle: 0, isRest: false, currentPhaseDuration: 20 * 60)
+        let advanced = FocusTimerReducer.reduce(finished, .advance, now: epoch)
+
+        #expect(advanced.isRest == true)
+        #expect(advanced.cycle == 1)
+        #expect(advanced.currentPhaseDuration == 20)
+        #expect(advanced.phase == .running(endsAt: epoch.addingTimeInterval(20)))
+    }
+
     // MARK: - Eye break
 
     @Test("Eye break cycles 20 minutes of work into 20 seconds of rest and back")
@@ -191,6 +219,13 @@ struct FocusTimerTests {
         let started = FocusTimerReducer.reduce(.idle, .start(.countdown(60)), now: epoch)
         let ticked = FocusTimerReducer.reduce(started, .tick, now: epoch.addingTimeInterval(-1_000))
         #expect(ticked == started)
+    }
+
+    @Test("remaining(at:) never exceeds the phase's own duration, even far behind a backwards clock")
+    func remainingClampsToPhaseDurationOnBackwardsClock() {
+        let started = FocusTimerReducer.reduce(.idle, .start(.countdown(300)), now: epoch)
+        let farBefore = epoch.addingTimeInterval(-10_000)
+        #expect(started.remaining(at: farBefore) == 300)
     }
 
     // MARK: - remaining(at:) / progress(at:)
