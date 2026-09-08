@@ -184,6 +184,7 @@
 "island.recentSessions" = "最近的会话将保留在这里，直到终端重新打开";
 "island.hint.installHooks" = "尚未安装任何代理 hook，会话不会触发事件 · 点击配置";
 "island.header.timer" = "计时器";
+"island.header.clipboard" = "剪贴板";
 
 /* Island Panel - Session List */
 "island.sessionList.title" = "会话";
@@ -319,6 +320,15 @@
 "settings.timer.playsSound" = "阶段结束时播放提示音";
 "settings.timer.autoAdvance" = "自动进入下一阶段";
 "settings.timer.autoAdvance.help" = "关闭后，结束的番茄钟或护眼休息会停在计时器界面等待手动操作。";
+
+"settings.display.section.clipboard" = "剪贴板";
+"settings.clipboard.enabled" = "记录剪贴板历史";
+"settings.clipboard.enabled.help" = "默认关闭。开启期间会记录你复制的内容；密码管理器的复制和锁屏期间的复制永远不会被记录。";
+"settings.clipboard.persistsToDisk" = "重启后保留历史";
+"settings.clipboard.persistsToDisk.help" = "默认关闭。开启后历史会保存到磁盘，退出应用也不会丢失。";
+"settings.clipboard.pastesOnSelect" = "选中时自动粘贴";
+"settings.clipboard.pastesOnSelect.help" = "默认关闭。开启后选中一项会向当前最前面的应用发送 ⌘V。";
+"settings.clipboard.pastesOnSelect.needsAccessibility" = "需要辅助功能权限。系统设置 → 隐私与安全性 → 辅助功能。";
 "settings.pending.completionCardSizing" = "完成卡片目前会根据内容自动确定高度。";
 "settings.pending.notchCalibration" = "需要刘海尺寸支持覆盖设置。";
 "settings.points.format" = "%@pt";
@@ -660,6 +670,10 @@
 "settings.linkstart.trigger.claimed" = "该组合已被 macOS 占用。快捷键能注册但收不到按键。请在系统设置 → 键盘 → 键盘快捷键中取消占用。";
 "settings.linkstart.waitsForPhrase" = "先说出“link start”再播放";
 "settings.linkstart.waitsForPhrase.help" = "默认关闭。开启后屏幕会保持变暗等待语音，听不到则在 9 秒后退出。它取决于麦克风权限、识别结果和环境是否安静——为一段动画承担三种失败方式并不划算。";
+
+"settings.clipboard.section" = "剪贴板";
+"settings.clipboard.trigger" = "打开剪贴板历史";
+"settings.clipboard.trigger.claimed" = "macOS 已保留此组合键。按键会注册但永远不会送达——请在系统设置 → 键盘 → 键盘快捷键中更改。";
 "camera.status.denied" = "摄像头访问被拒绝。系统设置 → 隐私与安全性 → 摄像头。";
 "camera.status.palmNeedsPermission" = "举手作答需要摄像头权限。按一次 ⌃⌥space 并在弹出的对话框中允许。";
 "camera.power.lidClosed" = "合盖期间不会开启摄像头。";
@@ -757,6 +771,13 @@
 "timer.sneakPeek.breakTime" = "休息";
 "timer.sneakPeek.restSeconds" = "休息 %d 秒";
 
+"clipboard.title" = "剪贴板";
+"clipboard.empty" = "还没有复制过任何内容";
+"clipboard.search.placeholder" = "搜索";
+"clipboard.search.noMatches" = "没有匹配项";
+"clipboard.clearAll" = "全部清除";
+"clipboard.kind.image" = "图片";
+
 /* Status Item (Menu Bar) */
 "statusItem.openIsland" = "打开岛";
 "statusItem.openIsland.waiting" = "打开岛（%d 项等待）";
@@ -766,5 +787,6 @@
 "statusItem.timer.start" = "开始计时…";
 "statusItem.timer.running" = "计时器：%@";
 "statusItem.timer.stop" = "停止计时器";
+"statusItem.clipboard.open" = "剪贴板…";
 "statusItem.shelf.header" = "暂存（%d）";
 "statusItem.settings" = "设置…";

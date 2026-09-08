@@ -1,6 +1,8 @@
+import AppKit
 import CoreGraphics
 import Foundation
 import OpenIslandCore
+import SwiftUI
 
 struct IslandDebugSnapshot {
     let title: String
@@ -43,6 +45,10 @@ struct IslandDebugSnapshot {
     /// closed body, the opened island's join bar, and the ambient board all
     /// read from a real refresh.
     var debugCurrentEvent: UpcomingCalendarEvent.Current?
+    /// Items to load straight into `ClipboardStore` for the
+    /// `clipboardSurface` scenario — never through `record(_:)`, the same
+    /// reasoning `shelfItems` gives for its own fixture loading.
+    var debugClipboardItems: [ClipboardItem] = []
 }
 
 enum IslandDebugScenario: String, CaseIterable, Identifiable {
@@ -64,6 +70,7 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
     case unlockScan
     case timerSurface
     case eventInProgress
+    case clipboardSurface
 
     var id: String { rawValue }
 
@@ -107,6 +114,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Timer Surface"
         case .eventInProgress:
             "Event In Progress"
+        case .clipboardSurface:
+            "Clipboard Surface"
         }
     }
 
@@ -148,6 +157,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "The opened timer surface mid-Pomodoro, with its own controls and cycle dots."
         case .eventInProgress:
             "Closed island body while a calendar entry that just started is still fresh."
+        case .clipboardSurface:
+            "Opened island with three fixture clipboard items: text, a file, and an image."
         }
     }
 
@@ -448,6 +459,19 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                     url: URL(string: "https://zoom.us/j/5551234567")
                 )
             )
+
+        case .clipboardSurface:
+            return IslandDebugSnapshot(
+                title: title,
+                summary: summary,
+                previewHeight: 320,
+                notchStatus: .opened,
+                notchOpenReason: .click,
+                islandSurface: .clipboard,
+                sessions: [],
+                selectedSessionID: nil,
+                debugClipboardItems: DebugSessionFactory.clipboardFixtureItems(now: now)
+            )
         }
     }
 }
@@ -477,6 +501,42 @@ private enum DebugSessionFactory {
                 addedAt: now.addingTimeInterval(-Double(index) * 60)
             )
         }
+    }
+
+    /// One text, one file, one image — the three kinds `ClipboardSurfaceView`
+    /// has to draw a row for. Loaded straight into `ClipboardStore.items`
+    /// (`loadFixture`, never `record`), so a harness run never touches the
+    /// real pasteboard or the real Application Support clipboard folder.
+    static func clipboardFixtureItems(now: Date) -> [ClipboardItem] {
+        let swatch = NSImage(size: NSSize(width: 8, height: 8))
+        swatch.lockFocus()
+        NSColor(SAOGrammar.Palette.accentOrange).setFill()
+        NSRect(x: 0, y: 0, width: 8, height: 8).fill()
+        swatch.unlockFocus()
+        let pngData = swatch.tiffRepresentation
+            .flatMap(NSBitmapImageRep.init(data:))?
+            .representation(using: .png, properties: [:]) ?? Data()
+
+        return [
+            ClipboardItem(
+                kind: .text("mitama-island clipboard fixture"),
+                sourceBundleID: "com.apple.Terminal",
+                copiedAt: now,
+                contentHash: "fixture-text"
+            ),
+            ClipboardItem(
+                kind: .fileURLs([URL(fileURLWithPath: "/tmp/quarterly-report.pdf")]),
+                sourceBundleID: "com.apple.finder",
+                copiedAt: now.addingTimeInterval(-60),
+                contentHash: "fixture-file"
+            ),
+            ClipboardItem(
+                kind: .image(pngData: pngData, thumbnail: pngData),
+                sourceBundleID: nil,
+                copiedAt: now.addingTimeInterval(-120),
+                contentHash: "fixture-image"
+            ),
+        ]
     }
 
     static func listSessions(now: Date) -> [AgentSession] {

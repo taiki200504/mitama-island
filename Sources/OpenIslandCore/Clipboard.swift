@@ -1,0 +1,171 @@
+import Foundation
+
+/// What one thing copied to the clipboard looked like.
+///
+/// Text is kept as a plain string; an image keeps both the full PNG and a
+/// small thumbnail (the row draws the thumbnail, a paste-back writes the
+/// full image); a set of files keeps the URLs a Finder copy actually carries
+/// rather than re-deriving them from a path list later.
+public enum ClipboardItemKind: Equatable, Codable, Sendable {
+    case text(String)
+    case image(pngData: Data, thumbnail: Data?)
+    case fileURLs([URL])
+}
+
+/// One entry in the clipboard history.
+///
+/// `contentHash` — not the pasteboard's own change count — is what
+/// `ClipboardLedger.inserting(_:)` dedups on: copying the same text twice in
+/// a row (a common accident) should move the existing row back to the top
+/// rather than stacking an identical second one under it.
+public struct ClipboardItem: Identifiable, Equatable, Codable, Sendable {
+    public let id: UUID
+    public let kind: ClipboardItemKind
+    /// The bundle identifier of the app that owned the pasteboard when this
+    /// was copied, if it could be read. Shown as a small source icon; never
+    /// required for the item to be usable.
+    public let sourceBundleID: String?
+    public let copiedAt: Date
+    public let contentHash: String
+
+    public init(
+        id: UUID = UUID(),
+        kind: ClipboardItemKind,
+        sourceBundleID: String?,
+        copiedAt: Date,
+        contentHash: String
+    ) {
+        self.id = id
+        self.kind = kind
+        self.sourceBundleID = sourceBundleID
+        self.copiedAt = copiedAt
+        self.contentHash = contentHash
+    }
+
+    /// Roughly how much room this item takes up, for `ClipboardLedger`'s
+    /// total-size cap. Text is measured as UTF-8 bytes; a file entry counts
+    /// only the URLs themselves (the files are not copied in, unlike the
+    /// shelf), so a folder full of large files does not by itself starve the
+    /// history of room for anything else.
+    public var approximateByteSize: Int {
+        switch kind {
+        case let .text(string):
+            string.utf8.count
+        case let .image(pngData, thumbnail):
+            pngData.count + (thumbnail?.count ?? 0)
+        case let .fileURLs(urls):
+            urls.reduce(0) { $0 + $1.absoluteString.utf8.count }
+        }
+    }
+}
+
+/// The rules of the clipboard history, with no pasteboard or filesystem
+/// attached.
+public enum ClipboardLedger: Sendable {
+    /// Deliberately modest, the same reasoning `ShelfLedger` gives for its
+    /// own ceilings: this is a short scrollback of what you recently copied,
+    /// not a permanent archive.
+    public static let maximumCount = 50
+    public static let maximumTotalBytes: Int64 = 20 * 1024 * 1024
+
+    /// Newest first, with duplicates by `contentHash` moved to the top
+    /// rather than repeated. Copying the same thing twice is almost always
+    /// an accident (a second ⌘C before pasting) or a deliberate "bring this
+    /// back to the top" — either way, a second identical row a few items
+    /// down is not information anyone wants.
+    ///
+    /// Oldest items are dropped once the count or the total size would go
+    /// over the cap, the same "stop at the first refusal" shape
+    /// `ShelfLedger` uses, just applied to the tail instead of refusing the
+    /// head.
+    public static func inserting(_ item: ClipboardItem, into items: [ClipboardItem]) -> [ClipboardItem] {
+        var next = items.filter { $0.contentHash != item.contentHash }
+        next.insert(item, at: 0)
+        return capped(next)
+    }
+
+    public static func removing(id: UUID, from items: [ClipboardItem]) -> [ClipboardItem] {
+        items.filter { $0.id != id }
+    }
+
+    private static func capped(_ items: [ClipboardItem]) -> [ClipboardItem] {
+        var result: [ClipboardItem] = []
+        var totalBytes: Int64 = 0
+        for item in items.prefix(maximumCount) {
+            let size = Int64(item.approximateByteSize)
+            guard totalBytes + size <= maximumTotalBytes || result.isEmpty else { break }
+            result.append(item)
+            totalBytes += size
+        }
+        return result
+    }
+}
+
+/// Decides whether a copy should ever be remembered at all.
+///
+/// Kept as pure data so the rule can be tested without a real `NSPasteboard`
+/// or a real lock-screen state to trigger.
+public enum ClipboardPrivacy {
+    /// The three UTIs 1Password, Bitwarden and every other well-behaved
+    /// password manager tag a secret copy with — the same convention the
+    /// macOS Clipboard History and Maccy read. A concealed or transient copy
+    /// is a password or a one-time code; recording it defeats the point of a
+    /// password manager clearing the clipboard after a short timeout.
+    private static let sensitivePasteboardTypes: Set<String> = [
+        "org.nspasteboard.ConcealedType",
+        "org.nspasteboard.TransientType",
+        "org.nspasteboard.AutoGeneratedType",
+    ]
+
+    /// Bundle identifiers never recorded even without the UTI hint, in case
+    /// a given release of one of these forgets to tag its copy. Named
+    /// managers only — this is a floor, not a general secrets detector.
+    public static let defaultDenyList: Set<String> = [
+        "com.1password.1password",
+        "com.agilebits.onepassword7",
+        "com.bitwarden.desktop",
+        "com.apple.keychainaccess",
+        "org.keepassxc.keepassxc",
+    ]
+
+    public static func shouldSkip(
+        types: [String],
+        frontmostBundleID: String?,
+        isLocked: Bool,
+        denyList: Set<String> = defaultDenyList
+    ) -> Bool {
+        if isLocked { return true }
+        if !sensitivePasteboardTypes.isDisjoint(with: types) { return true }
+        if let frontmostBundleID, denyList.contains(frontmostBundleID) { return true }
+        return false
+    }
+}
+
+/// Filters clipboard rows for the opened surface's search field.
+public enum ClipboardSearch {
+    /// Case- and diacritic-insensitive substring match against an item's
+    /// text, or against a file's last path component for a `.fileURLs` item.
+    /// An image matches only an empty query — there is no text to search.
+    public static func filter(_ items: [ClipboardItem], query: String) -> [ClipboardItem] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return items }
+
+        return items.filter { item in
+            switch item.kind {
+            case let .text(string):
+                matches(string, query: trimmed)
+            case .image:
+                false
+            case let .fileURLs(urls):
+                urls.contains { matches($0.lastPathComponent, query: trimmed) }
+            }
+        }
+    }
+
+    private static func matches(_ text: String, query: String) -> Bool {
+        text.range(
+            of: query,
+            options: [.caseInsensitive, .diacriticInsensitive]
+        ) != nil
+    }
+}

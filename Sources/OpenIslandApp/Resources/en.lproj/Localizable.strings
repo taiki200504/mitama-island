@@ -184,6 +184,7 @@
 "island.recentSessions" = "Recent sessions are kept here until the terminal is open again";
 "island.hint.installHooks" = "No agent hooks installed — sessions won't surface events. Tap to set up.";
 "island.header.timer" = "Timer";
+"island.header.clipboard" = "Clipboard";
 
 /* Island Panel - Session List */
 "island.sessionList.title" = "Sessions";
@@ -319,6 +320,15 @@
 "settings.timer.playsSound" = "Play a sound when a phase ends";
 "settings.timer.autoAdvance" = "Move to the next phase automatically";
 "settings.timer.autoAdvance.help" = "Off leaves a finished Pomodoro or eye break waiting on the timer surface's own controls.";
+
+"settings.display.section.clipboard" = "Clipboard";
+"settings.clipboard.enabled" = "Remember clipboard history";
+"settings.clipboard.enabled.help" = "Off by default. Watches what you copy while it's on; password managers and locked-screen copies are never recorded.";
+"settings.clipboard.persistsToDisk" = "Keep history across relaunch";
+"settings.clipboard.persistsToDisk.help" = "Off by default. When on, the history is saved to disk so it survives quitting the app.";
+"settings.clipboard.pastesOnSelect" = "Paste when you pick an item";
+"settings.clipboard.pastesOnSelect.help" = "Off by default. When on, picking a row also sends ⌘V to whatever app was frontmost.";
+"settings.clipboard.pastesOnSelect.needsAccessibility" = "Needs Accessibility access. System Settings → Privacy & Security → Accessibility.";
 "settings.pending.completionCardSizing" = "The completion card sizes itself to its content today.";
 "settings.pending.notchCalibration" = "Needs the notch geometry to accept an override.";
 "settings.points.format" = "%@pt";
@@ -660,6 +670,10 @@
 "settings.linkstart.trigger.claimed" = "macOS has reserved this combination. The key registers but never arrives — change it in System Settings → Keyboard → Keyboard Shortcuts.";
 "settings.linkstart.waitsForPhrase" = "Wait for “link start” first";
 "settings.linkstart.waitsForPhrase.help" = "Off by default. When on, the screen stays dark waiting to be spoken into, and gives up after nine seconds. It depends on microphone permission, what the recogniser writes down, and a quiet room — three ways to fail for something that only plays an animation.";
+
+"settings.clipboard.section" = "Clipboard";
+"settings.clipboard.trigger" = "Open clipboard history";
+"settings.clipboard.trigger.claimed" = "macOS has reserved this combination. The key registers but never arrives — change it in System Settings → Keyboard → Keyboard Shortcuts.";
 "camera.status.denied" = "Camera access is denied. System Settings → Privacy & Security → Camera.";
 "camera.status.palmNeedsPermission" = "Answering with a raised hand needs camera access. Press ⌃⌥space once and answer the dialog.";
 "camera.power.lidClosed" = "The camera stays shut while the lid is closed.";
@@ -757,6 +771,13 @@
 "timer.sneakPeek.breakTime" = "Break";
 "timer.sneakPeek.restSeconds" = "Rest %ds";
 
+"clipboard.title" = "Clipboard";
+"clipboard.empty" = "Nothing copied yet";
+"clipboard.search.placeholder" = "Search";
+"clipboard.search.noMatches" = "No matches";
+"clipboard.clearAll" = "Clear all";
+"clipboard.kind.image" = "Image";
+
 /* Status Item (Menu Bar) */
 "statusItem.openIsland" = "Open the Island";
 "statusItem.openIsland.waiting" = "Open the Island (%d waiting)";
@@ -766,5 +787,6 @@
 "statusItem.timer.start" = "Start Timer…";
 "statusItem.timer.running" = "Timer: %@";
 "statusItem.timer.stop" = "Stop Timer";
+"statusItem.clipboard.open" = "Clipboard…";
 "statusItem.shelf.header" = "Set Aside (%d)";
 "statusItem.settings" = "Settings…";

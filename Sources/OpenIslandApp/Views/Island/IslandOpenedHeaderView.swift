@@ -58,6 +58,18 @@ extension IslandPanelView {
                 model.notchOpen(reason: .click, surface: .timer)
             }
 
+            if model.settings.clipboard.enabled {
+                headerIconButton(
+                    systemName: "doc.on.clipboard",
+                    tint: model.clipboard.isEmpty
+                        ? V6Palette.paper.opacity(0.62)
+                        : SAOGrammar.Palette.accentOrange,
+                    accessibilityLabel: model.lang.t("island.header.clipboard")
+                ) {
+                    model.notchOpen(reason: .click, surface: .clipboard)
+                }
+            }
+
             headerIconButton(
                 systemName: model.isSoundMuted ? "speaker.slash.fill" : "speaker.wave.2.fill",
                 tint: model.isSoundMuted

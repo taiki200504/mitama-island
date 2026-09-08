@@ -533,6 +533,12 @@ final class AppModel {
     let calendar = CalendarWatcher()
     /// The one countdown/Pomodoro/eye-break the app runs.
     let focusTimer = FocusTimerCoordinator()
+    /// What you've recently copied. Off by default — see `ClipboardSettings`.
+    let clipboard = ClipboardStore()
+    /// Not `private`: `AppModel+Clipboard.swift` wires this in from a
+    /// separate file, and `private` in Swift is file-scoped rather than
+    /// type-scoped.
+    @ObservationIgnored let pasteboardWatcher = PasteboardWatcher()
 
     /// Holds no microphone until the key is pressed with a card waiting.
     @ObservationIgnored let voiceAnswer: VoiceCommandSession
@@ -858,6 +864,7 @@ final class AppModel {
 
         startAmbientBoardIfEnabled()
         configureFocusTimer()
+        configureClipboard()
 
         quietScenes.start()
         screenLockWatcher.onLocked = { [weak self] in
@@ -1337,7 +1344,8 @@ final class AppModel {
             cameraIsWatching: cameraActivation.isRunning,
             shelfItemNames: shelf.items.map(\.displayName),
             waitingCount: liveAttentionCount,
-            timerRunningLabel: focusTimer.state.snapshot(at: .now)?.label
+            timerRunningLabel: focusTimer.state.snapshot(at: .now)?.label,
+            clipboardIsEnabled: settings.clipboard.enabled
         )
     }
 
@@ -2181,6 +2189,11 @@ final class AppModel {
             shelf.loadFixture(snapshot.shelfItems)
             debugShelfBadgeForcedExpanded = true
         }
+
+        // Same reasoning as the shelf fixture above: straight into memory,
+        // never through `record(_:)`, so a harness run never touches the
+        // real pasteboard or the real Application Support clipboard folder.
+        clipboard.loadFixture(snapshot.debugClipboardItems)
     }
 
     func showSettings() {
@@ -2887,6 +2900,8 @@ final class AppModel {
         }
         coordinator.linkstartEnabled = settings.display.playsLinkstart
         coordinator.onLinkstart = { [weak self] in self?.playLinkstart() }
+        coordinator.clipboardOpenEnabled = settings.clipboard.enabled
+        coordinator.onOpenClipboard = { [weak self] in self?.notchOpen(reason: .click, surface: .clipboard) }
 
         voiceAnswer.onIntent = { [weak self] intent, heard in
             self?.apply(intent, heard: heard)

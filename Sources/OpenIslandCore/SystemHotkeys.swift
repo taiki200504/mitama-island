@@ -91,3 +91,12 @@ public enum LinkstartTrigger {
     public static let modifiers = 262144 | 524288
     public static let displayLabel = "⌃⌥L"
 }
+
+/// The key that opens the clipboard history surface.
+public enum ClipboardOpenTrigger {
+    /// C.
+    public static let keyCode = 8
+    /// control + option.
+    public static let modifiers = 262144 | 524288
+    public static let displayLabel = "⌃⌥C"
+}

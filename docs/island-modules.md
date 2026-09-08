@@ -131,12 +131,51 @@ event" — once `eventStarted`'s three-minute window passes, the event has
 nothing left to say until `nextEvent` picks up the next thing on the
 calendar.
 
+## Clipboard
+
+2026-09-08. Fills in `IslandSurface.clipboard`, previously a bare-title
+placeholder like `.nowPlaying` still is.
+
+`OpenIslandCore.ClipboardItem` / `ClipboardLedger` are the pure rules — the
+same shape `Shelf.swift` uses for the shelf: a value type per entry, and a
+namespace of static functions (`inserting(_:into:)`, `removing(id:from:)`)
+that decide what the list looks like next, with nothing macOS-shaped in
+sight. Deduping by `contentHash` moves a repeat copy back to the top instead
+of stacking an identical row underneath the one already there; the ledger
+caps at 50 items and 20MB, oldest first to go.
+
+`PasteboardWatcher` (App) polls `NSPasteboard.general.changeCount` every
+0.5s — AppKit has never offered a change notification, since anything on the
+machine can write to the pasteboard at any moment — and turns a new value
+into a `ClipboardItem`: `.text`, `.image` (PNG plus a small thumbnail), or
+`.fileURLs`. Before it does, `ClipboardPrivacy.shouldSkip` gets a veto: a
+locked screen, the `org.nspasteboard.*` UTIs well-behaved password managers
+tag a secret copy with, or a bundle identifier on a small built-in deny list
+(1Password, Bitwarden, Keychain Access, KeePassXC) all mean the copy is never
+turned into an item at all, not merely hidden later.
+
+`ClipboardStore` (App, `@Observable`) holds the in-memory list and, only
+when `ClipboardSettings.persistsToDisk` is on, a `ledger.json` under
+`Application Support/MitamaIsland/Clipboard` — text and file paths live
+inline in that file, an image's PNG and thumbnail go into their own blob
+files next to it, the same "small ledger, larger payloads elsewhere" split
+`ShelfStore` uses for real files. `ClipboardSettings.enabled` gates the
+watcher itself and defaults off: nothing is recorded, on disk or in memory,
+until the setting is switched on.
+
+Picking a row in the opened surface calls `AppModel.selectClipboardItem`,
+which copies the item back to the general pasteboard and — only with
+`ClipboardSettings.pastesOnSelect` on and Accessibility actually granted —
+posts a synthetic ⌘V to whatever app is frontmost. `ClipboardStore` tells the
+watcher about every write it makes back to the pasteboard so a copy the
+store itself performed is never re-recorded as a new external one.
+
 ## What this PR does not do
 
-- No real timer, now-playing, or lock-scan feature exists yet. `AppModel`
-  exposes `debugClosedAccessoryTimer` and the `IslandDebugScenario.closedAccessoryTimer`
+- No real now-playing or lock-scan feature exists yet. `AppModel` exposes
+  `debugClosedAccessoryTimer` and the `IslandDebugScenario.closedAccessoryTimer`
   / `.sneakPeekPop` harness fixtures purely to exercise the accessory and the
   sneak-peek override ahead of those modules landing.
-- `IslandSurface.nowPlaying` / `.clipboard` / `.timer` exist as opened-content
-  placeholders (a bare `saoCaps` title) so the surfaces are reachable; their
-  real content is a later PR.
+- `IslandSurface.nowPlaying` still exists as an opened-content placeholder (a
+  bare `saoCaps` title) so the surface is reachable; its real content is a
+  later PR.
