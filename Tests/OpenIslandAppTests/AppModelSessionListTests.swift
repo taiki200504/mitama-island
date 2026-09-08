@@ -90,7 +90,7 @@ struct AppModelSessionListTests {
         #expect(model.islandListSessions.map(\.id) == ["live-session"])
     }
 
-    @Test
+    @Test(.enabled(if: !TestEnvironment.isCI, "needs a live terminal process table; CI runners have none"))
     func islandListDeduplicatesSessionsSharingTheSameLiveGhosttyTerminal() {
         let now = Date(timeIntervalSince1970: 2_000)
         let model = AppModel()

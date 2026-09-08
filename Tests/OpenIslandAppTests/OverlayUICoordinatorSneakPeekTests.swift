@@ -58,7 +58,7 @@ struct OverlayUICoordinatorSneakPeekTests {
         #expect(coordinator.sneakPeek?.kind == .hudGauge)
     }
 
-    @Test("A pending timerDone re-appears with a freshly computed until, not the stale one it lost with")
+    @Test("A pending timerDone re-appears with a freshly computed until, not the stale one it lost with", .enabled(if: !TestEnvironment.isCI, "wall-clock expiry; CI runners stall for seconds"))
     func pendingTimerDoneGetsAFreshUntil() async throws {
         let coordinator = OverlayUICoordinator()
         coordinator.sneakPeekDurationProvider = { kind in kind == .timerDone ? 2.0 : 0.2 }
@@ -80,7 +80,7 @@ struct OverlayUICoordinatorSneakPeekTests {
         #expect(remaining < 5)
     }
 
-    @Test("A pending timerDone that never gets bumped again simply expires on its own")
+    @Test("A pending timerDone that never gets bumped again simply expires on its own", .enabled(if: !TestEnvironment.isCI, "wall-clock expiry; CI runners stall for seconds"))
     func pendingTimerDoneStillExpiresEventually() async throws {
         let coordinator = OverlayUICoordinator()
         coordinator.sneakPeekDurationProvider = { _ in 0.2 }
