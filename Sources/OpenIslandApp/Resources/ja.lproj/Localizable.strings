@@ -741,6 +741,13 @@
 "settings.display.ambient.help" = "Mac を放置すると、時計・次の予定・待たせている相手を全画面に出します。集中モード中・画面共有中・他のアプリがカメラを使っている間（通話中）・島を開いている間は出しません。どれかキーを押すかクリックすれば戻ります。";
 "settings.display.ambient.never" = "出さない";
 "settings.display.ambient.minutes" = "%d分後";
+"settings.display.ambientBackdrop" = "待機画面の背景";
+"settings.display.ambientBackdrop.help" = "動画は、バッテリー駆動時・低電力モード時・Mac が熱いとき・メイン以外のディスプレイでは出しません。";
+"settings.display.ambientBackdrop.gradient" = "時間帯のグラデーション";
+"settings.display.ambientBackdrop.video" = "自分の動画";
+"settings.display.ambientVideoFolder" = "動画フォルダ";
+"settings.display.ambientVideoFolder.help" = ".mov・.mp4・.m4v ファイルを入れてください。動画はアプリに同梱されていません。";
+"settings.display.ambientVideoFolder.choose" = "フォルダを選択…";
 "settings.display.showsNextEvent" = "次の予定を閉じた島に出す";
 "settings.display.showsNextEvent.help" = "待っているものが何も無いとき、8時間以内に始まる次の予定の開始時刻と残り時間を出します。カレンダーの読み取り許可が要ります。終日の予定は出しません。";
 "settings.display.showsNextEvent.noAccess" = "カレンダーへのアクセスがありません。システム設定 → プライバシーとセキュリティ → カレンダー で Mitama Island を許可してください。";

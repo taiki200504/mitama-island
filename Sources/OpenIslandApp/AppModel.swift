@@ -1273,6 +1273,19 @@ final class AppModel {
         ambient.nextEvent = { [weak self] in self?.calendar.band }
         ambient.currentEvent = { [weak self] in self?.calendar.current() }
         ambient.timer = { [weak self] in self?.focusTimer.state ?? .idle }
+        ambient.backdrop = { [weak self] in
+            guard let self else { return .gradient(.night) }
+            return AmbientBackdropPolicy.resolve(
+                preference: ambientBackdropPreference,
+                availableVideos: AmbientVideoFolder.availableVideos(customPath: settings.display.ambientVideoFolderPath),
+                conditions: .init(
+                    onBattery: !power.isOnAC,
+                    lowPower: power.isLowPowerMode,
+                    thermalElevated: power.thermalState == .serious || power.thermalState == .critical
+                ),
+                isPrimaryDisplay: true
+            )
+        }
         ambient.onDismiss = { [weak self] in self?.idle.markActive() }
         idle.onTick = { [weak self] seconds in self?.considerAmbientBoard(idleFor: seconds) }
     }
@@ -2169,6 +2182,12 @@ final class AppModel {
             // Its own full-screen panel, so a scenario has to ask for it — the
             // same reason the completion banner does.
             configureAmbientBoard()
+            if let ambientDate = snapshot.debugAmbientDate {
+                // Pinned so a headless capture always lands on the same
+                // gradient, rather than whichever phase the wall clock
+                // happens to be in when the harness runs.
+                ambient.backdrop = { .gradient(TimeOfDay.phase(for: ambientDate)) }
+            }
             ambient.present()
         }
 
@@ -2995,6 +3014,11 @@ final class AppModel {
     var agentIconStyle: AgentIconStyle {
         get { AgentIconStyle(rawValue: settings.display.agentIconStyleRawValue) ?? .pixel }
         set { settings.display.agentIconStyleRawValue = newValue.rawValue }
+    }
+
+    var ambientBackdropPreference: AmbientBackdropPreference {
+        get { AmbientBackdropPreference(rawValue: settings.display.ambientBackdropRawValue) ?? .gradient }
+        set { settings.display.ambientBackdropRawValue = newValue.rawValue }
     }
 
     var shelfExpiresAfter: ShelfExpiryOption {

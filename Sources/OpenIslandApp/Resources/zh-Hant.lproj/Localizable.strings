@@ -740,6 +740,13 @@
 "settings.display.ambient.help" = "離開 Mac 後，全螢幕顯示時鐘、下一個行程與正在等待你的對象。在專注模式、共享螢幕、其他應用程式正在使用攝影機（通話中）或島已展開時不會出現。按任意鍵或點擊即可返回。";
 "settings.display.ambient.never" = "不顯示";
 "settings.display.ambient.minutes" = "%d 分鐘後";
+"settings.display.ambientBackdrop" = "待機畫面背景";
+"settings.display.ambientBackdrop.help" = "使用電池、低耗電模式、Mac 過熱，或非主要螢幕時不會播放影片。";
+"settings.display.ambientBackdrop.gradient" = "依時段漸層";
+"settings.display.ambientBackdrop.video" = "我自己的影片";
+"settings.display.ambientVideoFolder" = "影片資料夾";
+"settings.display.ambientVideoFolder.help" = "把你自己的 .mov、.mp4 或 .m4v 檔案放進這裡。應用程式本身不附帶任何影片。";
+"settings.display.ambientVideoFolder.choose" = "選擇資料夾…";
 "settings.display.showsNextEvent" = "在收合的島上顯示下一個行程";
 "settings.display.showsNextEvent.help" = "當沒有任何事情等待你時，顯示 8 小時內下一個行程的開始時間與剩餘時間。需要行事曆讀取權限。全天行程不會顯示。";
 "settings.display.showsNextEvent.noAccess" = "沒有行事曆存取權限。請在系統設定 → 隱私權與安全性 → 行事曆 中允許 Mitama Island。";

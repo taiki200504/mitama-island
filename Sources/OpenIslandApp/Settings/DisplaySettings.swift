@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import OpenIslandCore
 
 /// Panel geometry, notch calibration, and which facts each session row carries.
 final class DisplaySettings: PreferenceGroup {
@@ -108,6 +109,22 @@ final class DisplaySettings: PreferenceGroup {
     var ambientAfterMinutes: Int {
         get { read(\.ambientAfterMinutes, Keys.ambientAfterMinutes, 0) }
         set { write(\.ambientAfterMinutes, Keys.ambientAfterMinutes, newValue) }
+    }
+
+    /// Whether the idle board's backdrop is the time-of-day gradient or a
+    /// video the owner dropped into the ambient folder. Raw string for the
+    /// same reason `agentIconStyleRawValue` is.
+    var ambientBackdropRawValue: String {
+        get { read(\.ambientBackdropRawValue, Keys.ambientBackdrop, AmbientBackdropPreference.gradient.rawValue) }
+        set { write(\.ambientBackdropRawValue, Keys.ambientBackdrop, newValue) }
+    }
+
+    /// Where to look for ambient videos. Empty means "the default
+    /// Application Support folder", not "nothing configured" — there is
+    /// nothing for the user to type here on first run.
+    var ambientVideoFolderPath: String {
+        get { read(\.ambientVideoFolderPath, Keys.ambientVideoFolderPath, "") }
+        set { write(\.ambientVideoFolderPath, Keys.ambientVideoFolderPath, newValue) }
     }
 
     /// Announce a finished session in the middle of the screen.
@@ -223,6 +240,8 @@ extension DisplaySettings {
         static let showsNextEvent = "display.showsNextEvent"
         static let alertsWhenEventStarts = "display.alertsWhenEventStarts"
         static let ambientAfterMinutes = "display.ambientAfterMinutes"
+        static let ambientBackdrop = "display.ambientBackdrop"
+        static let ambientVideoFolderPath = "display.ambientVideoFolderPath"
         static let hideIdleSessions = "display.hideIdleSessions"
         static let sessionAutoNaming = "display.sessionAutoNaming"
         static let notchHeightOverride = "display.notchHeightOverride"
