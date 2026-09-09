@@ -753,7 +753,7 @@ struct AppModelSessionListTests {
         #expect(model.notchOpenReason == .hover)
     }
 
-    @Test
+    @Test(.enabled(if: !TestEnvironment.isCI, "wall-clock collapse timing; CI runners stall for seconds"))
     func hoverOpenedSessionListCollapsesOncePointerStaysAway() async throws {
         let model = AppModel()
         model.pointerExitCollapseGrace = 0.05

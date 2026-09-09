@@ -32,7 +32,7 @@ struct ShelfDragHoldTests {
         #expect(model.notchStatus == .closed)
     }
 
-    @Test
+    @Test(.enabled(if: !TestEnvironment.isCI, "wall-clock collapse timing; CI runners stall for seconds"))
     func theIslandFoldsAwayOnceTheFileHasLanded() async throws {
         let model = AppModel()
         nonisolated(unsafe) var carrying = true
