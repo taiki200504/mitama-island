@@ -194,8 +194,20 @@ so `Sources/OpenIslandApp/Ambient/AmbientVideoFolder.swift` just points at
 `Application Support/MitamaIsland/Ambient` (or wherever
 `DisplaySettings.ambientVideoFolderPath` says instead) and creates it on
 first look. `AmbientVideoLayerView` is an `AVQueuePlayer` +
-`AVPlayerLooper` behind an `NSViewRepresentable`, muted, looping, and paused
-the moment SwiftUI tears it down.
+`AVPlayerLooper` behind an `NSViewRepresentable`. A setting change swapping
+in a different clip rebuilds the player rather than reusing the old item
+(`updateNSView` compares the URL first); playback pauses the moment the view
+is hidden or leaves its window — not only when SwiftUI eventually tears the
+whole view down — and resumes when it comes back. The app isn't sandboxed,
+so the folder picker keeps a plain path rather than a security-scoped
+bookmark, the same as every other path setting here.
+
+Listing the folder is `FileManager` work `AppModel` never does on the main
+actor at presentation time: `refreshAmbientVideoCache` re-lists it in a
+detached `Task` and swaps a cache in, triggered when the folder setting
+changes and again just before the idle board is about to show.
+`ambient.backdrop`'s closure — which runs synchronously while `present()` is
+already building panels — only ever reads that cache.
 
 Weather is deliberately not part of this — the phase already changes four
 times a day without a network call, and pulling in an actual forecast would
@@ -203,11 +215,13 @@ turn a decoration into another permission dialog and another thing that can
 fail silently.
 
 `AmbientOverlayController.present()` resolves the backdrop once per
-presentation for the primary display; every other screen gets the gradient
-outright rather than a second copy of the same decode. The harness pins this
-with `debugAmbientDate` (`ambientBoardNight`, fixed to 02:00) rather than
-forcing `.gradient(.night)` directly, so the scenario still exercises the
-real `TimeOfDay.phase` boundary rather than bypassing it.
+presentation for the primary display — the screen at frame origin `(0, 0)`,
+which is macOS's own notion of "primary" and not necessarily
+`NSScreen.screens.first` — and every other screen gets the gradient outright
+rather than a second copy of the same decode. The harness pins this with
+`debugAmbientDate` (`ambientBoardNight`, fixed to 02:00) rather than forcing
+`.gradient(.night)` directly, so the scenario still exercises the real
+`TimeOfDay.phase` boundary rather than bypassing it.
 
 ## What this PR does not do
 

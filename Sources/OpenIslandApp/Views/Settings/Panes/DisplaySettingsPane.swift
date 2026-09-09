@@ -279,7 +279,11 @@ struct DisplaySettingsPane: View {
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = false
         guard panel.runModal() == .OK, let url = panel.url else { return }
+        // No security-scoped bookmark to save: the app isn't sandboxed, so a
+        // plain path keeps working across launches the way every other path
+        // setting here already does.
         display.ambientVideoFolderPath = url.path
+        model.refreshAmbientVideoCache()
     }
 
     /// Zero reads as "leave it to macOS" rather than a 0pt notch.

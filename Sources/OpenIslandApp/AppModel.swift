@@ -1261,6 +1261,27 @@ final class AppModel {
 
     // MARK: - Idle board
 
+    /// What `ambient.backdrop` reads at presentation time. Listing a folder is
+    /// cheap, but `present()` runs synchronously on the main actor while a
+    /// panel is about to go up, and a resolver that can't afford to block is
+    /// safer than one that merely usually doesn't. `refreshAmbientVideoCache`
+    /// is the only thing allowed to write this.
+    @ObservationIgnored private var cachedAmbientVideos: [URL] = []
+
+    /// Re-lists the ambient video folder off the main actor and swaps the
+    /// cache in when done. Called when the folder setting changes and again
+    /// whenever the idle board is about to show — never from inside
+    /// `ambient.backdrop` itself, which runs at presentation time.
+    func refreshAmbientVideoCache() {
+        let customPath = settings.display.ambientVideoFolderPath
+        Task.detached(priority: .utility) { [weak self] in
+            let videos = AmbientVideoFolder.availableVideos(customPath: customPath)
+            await MainActor.run { [weak self] in
+                self?.cachedAmbientVideos = videos
+            }
+        }
+    }
+
     /// Tells the board where to get what it draws. Always wired, whether or not
     /// the idle clock is running — the harness presents it directly.
     private func configureAmbientBoard() {
@@ -1279,7 +1300,7 @@ final class AppModel {
             guard let self else { return .gradient(.night) }
             return AmbientBackdropPolicy.resolve(
                 preference: ambientBackdropPreference,
-                availableVideos: AmbientVideoFolder.availableVideos(customPath: settings.display.ambientVideoFolderPath),
+                availableVideos: cachedAmbientVideos,
                 conditions: .init(
                     onBattery: !power.isOnAC,
                     lowPower: power.isLowPowerMode,
@@ -1290,6 +1311,7 @@ final class AppModel {
         }
         ambient.onDismiss = { [weak self] in self?.idle.markActive() }
         idle.onTick = { [weak self] seconds in self?.considerAmbientBoard(idleFor: seconds) }
+        refreshAmbientVideoCache()
     }
 
     /// Starts or stops the idle clock to match the setting.
@@ -1354,6 +1376,10 @@ final class AppModel {
         // clock is the point. Only the login sequence's own overlay blocks it.
         guard !linkstart.isPresenting else { return }
 
+        // Fired off rather than awaited: this presentation reads whatever is
+        // already cached, and the fresh listing lands in time for the next
+        // one rather than blocking this one on `FileManager`.
+        refreshAmbientVideoCache()
         ambient.present()
     }
 

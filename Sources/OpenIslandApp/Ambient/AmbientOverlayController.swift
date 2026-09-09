@@ -53,7 +53,12 @@ final class AmbientOverlayController {
 
         // A video is worth its decode cost on the one screen actually being
         // stepped away from; every other display gets the gradient outright
-        // rather than a second copy of the same loop nobody is watching.
+        // rather than a second copy of the same loop nobody is watching. The
+        // screen with the menu bar — origin `(0, 0)` — is macOS's own notion
+        // of "primary", which `screens.first` doesn't reliably match: that
+        // array is ordered by when each display was attached, not by which
+        // one the system considers main.
+        let primaryScreen = screens.first(where: { $0.frame.origin == .zero }) ?? screens.first
         let primaryBackdrop = backdrop()
         let secondaryBackdrop: AmbientBackdrop = {
             if case .video = primaryBackdrop { return .gradient(TimeOfDay.phase(for: .now)) }
@@ -68,7 +73,7 @@ final class AmbientOverlayController {
                     nextEvent: nextEvent(),
                     currentEvent: currentEvent(),
                     timer: timer(),
-                    backdrop: screen == screens.first ? primaryBackdrop : secondaryBackdrop,
+                    backdrop: screen == primaryScreen ? primaryBackdrop : secondaryBackdrop,
                     lang: lang
                 ),
                 onDismiss: { [weak self] in self?.dismiss() }
