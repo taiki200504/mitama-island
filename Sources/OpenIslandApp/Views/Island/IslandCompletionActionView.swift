@@ -6,7 +6,7 @@ extension IslandSessionRow {
     var completionActionBody: some View {
         VStack(alignment: .leading, spacing: 0) {
             if !completionMessageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                AutoHeightScrollView(maxHeight: 240) {
+                AutoHeightScrollView(maxHeight: 560) {
                     Markdown(completionMessageText)
                         .markdownTheme(.completionCard)
                         .frame(maxWidth: .infinity, alignment: .topLeading)
