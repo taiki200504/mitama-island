@@ -215,7 +215,7 @@ struct AgentSessionPresentationTests {
         )
 
         // Headline uses initial prompt (session topic), prompt line uses latest
-        #expect(session.spotlightHeadlineText == "worktree · Start by fixing the island hover behavior.")
+        #expect(session.spotlightHeadlineText == "Start by fixing the island hover behavior.")
         #expect(session.spotlightPromptLineText == promptLine("Now make the overlay height fit the content."))
     }
 
@@ -237,7 +237,7 @@ struct AgentSessionPresentationTests {
             )
         )
 
-        #expect(session.spotlightHeadlineText == "worktree · Start by fixing the island hover behavior.")
+        #expect(session.spotlightHeadlineText == "Start by fixing the island hover behavior.")
         #expect(session.spotlightPromptLineText == promptLine("Now make the overlay height fit the content."))
     }
 
@@ -267,7 +267,7 @@ struct AgentSessionPresentationTests {
             )
         )
 
-        #expect(session.spotlightHeadlineText == "worktree · Commit the README change.")
+        #expect(session.spotlightHeadlineText == "Commit the README change.")
         #expect(session.spotlightPromptLineText == promptLine("Also confirm the worktree status."))
         #expect(session.notificationHeaderPromptLineText == nil)
     }
@@ -338,5 +338,57 @@ struct AgentSessionPresentationTests {
         #expect(session.spotlightStatusLabel == "Live · Search")
         #expect(session.spotlightSecondaryText == "Running Search")
         #expect(session.displayCurrentToolName == "Search")
+    }
+    @Test
+    func headlinePrefersInitialPromptWhenSessionsShareOneWorkspace() {
+        let session = AgentSession(
+            id: "codex-shared-workspace-1",
+            title: "Codex · shared-workspace",
+            tool: .codex,
+            origin: .live,
+            attachmentState: .attached,
+            phase: .running,
+            summary: "Working",
+            updatedAt: Date(timeIntervalSince1970: 10_000),
+            jumpTarget: JumpTarget(
+                terminalApp: "Ghostty",
+                workspaceName: "shared-workspace",
+                paneTitle: "codex ~/tmp/shared-workspace",
+                workingDirectory: "/tmp/shared-workspace",
+                terminalSessionID: "ghostty-1"
+            ),
+            codexMetadata: CodexSessionMetadata(
+                initialUserPrompt: "Why does the card headline show the workspace name?",
+                lastUserPrompt: "Keep the workspace visible somewhere."
+            )
+        )
+
+        #expect(session.spotlightHeadlineText == "Why does the card headline show the workspace name?")
+        #expect(session.spotlightPromptLineText == promptLine("Keep the workspace visible somewhere."))
+        #expect(session.spotlightTerminalBadge == "Ghostty · shared-workspace")
+    }
+
+    @Test
+    func headlineFallsBackToWorkspaceWhenPromptIsMissing() {
+        let session = AgentSession(
+            id: "codex-shared-workspace-2",
+            title: "Codex · shared-workspace",
+            tool: .codex,
+            origin: .live,
+            attachmentState: .attached,
+            phase: .running,
+            summary: "Working",
+            updatedAt: Date(timeIntervalSince1970: 10_000),
+            jumpTarget: JumpTarget(
+                terminalApp: "Ghostty",
+                workspaceName: "shared-workspace",
+                paneTitle: "codex ~/tmp/shared-workspace",
+                workingDirectory: "/tmp/shared-workspace",
+                terminalSessionID: "ghostty-1"
+            )
+        )
+
+        #expect(session.spotlightHeadlineText == "shared-workspace")
+        #expect(session.spotlightTerminalBadge == "Ghostty · shared-workspace")
     }
 }
