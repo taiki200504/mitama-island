@@ -659,6 +659,7 @@
 "linkstart.sense.taste" = "味覚";
 "linkstart.sense.smell" = "嗅覚";
 "linkstart.checking" = "五感を確認しています";
+"linkstart.sync" = "同期率 {rate}%";
 "linkstart.language" = "言語設定 — 日本語";
 "linkstart.welcome" = "ようこそ、{name}";
 "linkstart.dismiss" = "どれかキーを押すと戻ります";

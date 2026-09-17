@@ -17,33 +17,30 @@ struct LinkstartSequenceTests {
         #expect(LinkstartSequence.phase(at: -5) == .awakening)
     }
 
-    /// 0 / 1.2 / 2.0 / 3.0 / 5.5 / 6.4 / 8.0 / 8.8 — rings, rays, calibration,
-    /// senses, language, identity, fade, complete.
+    /// 0 / 0.5 / 3.0 / 3.5 / 4.5 / 7.0 / 7.9 / 9.7 / 10.5 — ignition, warp,
+    /// flash, calibration, senses, language, identity, fade, complete.
     @Test("Phases follow the timeline in order")
     func phasesFollowTheTimeline() {
-        #expect(LinkstartSequence.phase(at: 0.01) == .rings)
-        #expect(LinkstartSequence.phase(at: 1.19) == .rings)
-        #expect(LinkstartSequence.phase(at: 1.21) == .rays)
-        #expect(LinkstartSequence.phase(at: 1.99) == .rays)
-        if case .calibration = LinkstartSequence.phase(at: 2.01) {
+        #expect(LinkstartSequence.phase(at: 0.01) == .ignition)
+        #expect(LinkstartSequence.phase(at: 0.49) == .ignition)
+        #expect(LinkstartSequence.phase(at: 0.51) == .warp)
+        #expect(LinkstartSequence.phase(at: 2.99) == .warp)
+        #expect(LinkstartSequence.phase(at: 3.01) == .flash)
+        #expect(LinkstartSequence.phase(at: 3.49) == .flash)
+        if case .calibration = LinkstartSequence.phase(at: 3.51) {
             // Expected.
         } else {
-            Issue.record("Expected .calibration at 2.01, got \(LinkstartSequence.phase(at: 2.01))")
+            Issue.record("Expected .calibration at 3.51, got \(LinkstartSequence.phase(at: 3.51))")
         }
-        if case .calibration = LinkstartSequence.phase(at: 2.99) {
-            // Expected.
-        } else {
-            Issue.record("Expected .calibration at 2.99, got \(LinkstartSequence.phase(at: 2.99))")
-        }
-        #expect(LinkstartSequence.phase(at: 3.01) == .senses(checked: 0))
-        #expect(LinkstartSequence.phase(at: 5.49) == .senses(checked: 4))
-        #expect(LinkstartSequence.phase(at: 5.51) == .language)
-        #expect(LinkstartSequence.phase(at: 6.39) == .language)
-        #expect(LinkstartSequence.phase(at: 6.41) == .identity)
-        #expect(LinkstartSequence.phase(at: 7.99) == .identity)
-        #expect(LinkstartSequence.phase(at: 8.01) == .fade)
-        #expect(LinkstartSequence.phase(at: 8.79) == .fade)
-        #expect(LinkstartSequence.phase(at: 8.81) == .complete)
+        #expect(LinkstartSequence.phase(at: 4.51) == .senses(checked: 0))
+        #expect(LinkstartSequence.phase(at: 6.99) == .senses(checked: 4))
+        #expect(LinkstartSequence.phase(at: 7.01) == .language)
+        #expect(LinkstartSequence.phase(at: 7.89) == .language)
+        #expect(LinkstartSequence.phase(at: 7.91) == .identity)
+        #expect(LinkstartSequence.phase(at: 9.69) == .identity)
+        #expect(LinkstartSequence.phase(at: 9.71) == .fade)
+        #expect(LinkstartSequence.phase(at: 10.49) == .fade)
+        #expect(LinkstartSequence.phase(at: 10.51) == .complete)
     }
 
     @Test("The senses confirm one at a time, in order")
@@ -86,26 +83,26 @@ struct LinkstartSequenceTests {
         #expect(keys.count == LinkstartSequence.senses.count)
     }
 
-    /// One rise, one tick per sense, one resolve — and each lands exactly
-    /// where the phase it announces begins, so the sound and the checklist
-    /// can never drift apart. Times: 0 / 3.0 / 3.5 / 4.0 / 4.5 / 5.0 / 6.4.
-    @Test("The cue schedule follows the rise, one tick per sense, then resolve")
+    /// Rise, warp, flash, one tick per sense, resolve — each landing exactly
+    /// where the thing it announces begins.
+    @Test("The cue schedule follows rise, warp, flash, one tick per sense, then resolve")
     func cueScheduleMatchesThePhases() {
         let schedule = LinkstartSequence.cueSchedule
 
-        #expect(schedule.count == LinkstartSequence.senses.count + 2)
-        #expect(schedule.first?.at == 0)
-        #expect(schedule.first?.cue == .rise)
+        #expect(schedule.count == LinkstartSequence.senses.count + 4)
+        #expect(schedule.prefix(3).map(\.cue) == [.rise, .warp, .flash])
+        #expect(schedule.prefix(3).map(\.at) == [0, LinkstartSequence.warpStart, LinkstartSequence.warpEnd])
 
         let ticks = schedule.filter { $0.cue == .tick }
-        let expectedTickTimes: [TimeInterval] = [3.0, 3.5, 4.0, 4.5, 5.0]
-        #expect(ticks.map(\.at) == expectedTickTimes)
+        let expectedTickTimes: [TimeInterval] = [4.5, 5.0, 5.5, 6.0, 6.5]
+        #expect(zip(ticks.map(\.at), expectedTickTimes).allSatisfy { abs($0 - $1) < 1e-9 })
 
         #expect(schedule.last?.cue == .resolve)
-        #expect(schedule.last?.at == 6.4)
+        #expect(schedule.last?.at == LinkstartSequence.identityStart)
+        #expect(schedule.map(\.at) == schedule.map(\.at).sorted())
     }
 
-    // MARK: - Rings, rays, calibration, fade
+    // MARK: - Ignition, warp, flash, calibration, fade
 
     @Test("Ring progress is monotonic in time and each ring lags the one before it")
     func ringProgressIsMonotonicWithLag() {
@@ -123,17 +120,73 @@ struct LinkstartSequenceTests {
         #expect(LinkstartSequence.ringProgress(at: LinkstartSequence.ringsDuration)[0] == 1)
     }
 
-    @Test("Ray progress runs from 0 to 1 across its own window")
-    func rayProgressRunsItsWindow() {
-        #expect(LinkstartSequence.rayProgress(at: LinkstartSequence.raysStart) == 0)
-        #expect(LinkstartSequence.rayProgress(at: LinkstartSequence.raysEnd) == 1)
-        #expect(LinkstartSequence.rayProgress(at: 0) == 0)
+    @Test("The tunnel only exists during the dive, and is the same frame every time")
+    func tunnelIsBoundedAndDeterministic() {
+        #expect(LinkstartSequence.streaks(at: 0.2).isEmpty)
+        #expect(LinkstartSequence.streaks(at: LinkstartSequence.warpEnd).isEmpty)
+
+        let mid = LinkstartSequence.streaks(at: 1.7)
+        #expect(mid.count == LinkstartSequence.streakCount)
+        #expect(mid == LinkstartSequence.streaks(at: 1.7))
+        for streak in mid {
+            #expect(streak.inner <= streak.outer)
+            #expect(streak.outer <= 1.15)
+            #expect((0...1).contains(streak.hue))
+            #expect((0...1).contains(streak.opacity))
+        }
+        // Not all piled up in one place.
+        #expect(Set(mid.map { Int($0.angle * 10) }).count > 40)
     }
 
-    /// Red holds 2.00–2.25, crossfades to green over 2.25–2.35, green holds
-    /// to 2.55, crossfades to blue over 2.55–2.65, blue holds to 2.85,
-    /// crossfades to white over 2.85–2.95, white holds to 3.00 — once, not a
-    /// repeating cycle, and nothing outside [2.00, 3.00).
+    @Test("The dive speeds up and the core brightens with it")
+    func warpAccelerates() {
+        #expect(LinkstartSequence.warpSpeed(at: 1.0) < LinkstartSequence.warpSpeed(at: 2.5))
+        #expect(LinkstartSequence.coreGlow(at: 1.0) < LinkstartSequence.coreGlow(at: 2.9))
+        #expect(LinkstartSequence.coreGlow(at: 0.2) == 0)
+    }
+
+    @Test("One white-out, peaking at the tunnel's end and gone by calibration")
+    func flashIsSingleAndCapped() {
+        #expect(LinkstartSequence.flashOpacity(at: 2.0) == 0)
+        #expect(abs(LinkstartSequence.flashOpacity(at: LinkstartSequence.warpEnd) - LinkstartSequence.flashPeakOpacity) < 1e-9)
+        #expect(LinkstartSequence.flashOpacity(at: LinkstartSequence.calibrationStart) == 0)
+
+        // Rises once, falls once: never a second peak.
+        var rising = true
+        var previous = 0.0
+        for elapsed in stride(from: 2.5, through: 4.0, by: 0.01) {
+            let value = LinkstartSequence.flashOpacity(at: elapsed)
+            #expect(value <= LinkstartSequence.flashPeakOpacity + 1e-9)
+            if value < previous - 1e-9 { rising = false }
+            if !rising { #expect(value <= previous + 1e-9) }
+            previous = value
+        }
+    }
+
+    @Test("The title slams in, then is gone before the white-out")
+    func titleSlamsInThenLeaves() {
+        #expect(LinkstartSequence.titleSlam(at: 0).opacity == 0)
+        let landed = LinkstartSequence.titleSlam(at: 0.5)
+        #expect(abs(landed.scale - 1) < 0.01)
+        #expect(landed.opacity == 1)
+        #expect(LinkstartSequence.titleSlam(at: 2.0).opacity == 0)
+    }
+
+    @Test("Sync rate climbs from 0 to 100 and never goes back")
+    func syncRateClimbs() {
+        #expect(LinkstartSequence.syncRate(at: LinkstartSequence.calibrationStart) == 0)
+        #expect(LinkstartSequence.syncRate(at: LinkstartSequence.identityStart) == 100)
+        var previous = 0
+        for elapsed in stride(from: 0.0, through: LinkstartSequence.duration, by: 0.05) {
+            let rate = LinkstartSequence.syncRate(at: elapsed)
+            #expect(rate >= previous)
+            previous = rate
+        }
+    }
+
+    /// Red holds 3.50–3.75, crossfades to green over 3.75–3.85, green holds
+    /// to 4.05, to blue over 4.05–4.15, blue holds to 4.35, to white over
+    /// 4.35–4.45, white holds to 4.50 — once, and nothing outside [3.50, 4.50).
     @Test("Calibration washes red, green, blue, then white, crossfading between them")
     func calibrationWashesColorsOnce() {
         func steps(_ elapsed: TimeInterval) -> [CalibrationStep] {
@@ -143,33 +196,25 @@ struct LinkstartSequenceTests {
             LinkstartSequence.calibrationFrames(at: elapsed).first { $0.step == step }?.opacity
         }
 
-        // Pure holds: exactly one frame, at the wash's one and only strength.
-        #expect(steps(2.00) == [.red])
-        #expect(opacity(2.00, .red) == 0.35)
-        #expect(steps(2.20) == [.red])
-        #expect(steps(2.45) == [.green])
-        #expect(steps(2.75) == [.blue])
-        #expect(steps(2.97) == [.white])
+        #expect(steps(3.50) == [.red])
+        #expect(opacity(3.50, .red) == 0.35)
+        #expect(steps(3.70) == [.red])
+        #expect(steps(3.95) == [.green])
+        #expect(steps(4.25) == [.blue])
+        #expect(steps(4.47) == [.white])
 
-        // Crossfades: two frames, opposite ends of the same 0.35 strength.
-        let redGreen = LinkstartSequence.calibrationFrames(at: 2.30)
+        let redGreen = LinkstartSequence.calibrationFrames(at: 3.80)
         #expect(Set(redGreen.map(\.step)) == [.red, .green])
         #expect(redGreen.allSatisfy { abs($0.opacity - 0.175) < 0.01 })
 
-        let greenBlue = LinkstartSequence.calibrationFrames(at: 2.60)
-        #expect(Set(greenBlue.map(\.step)) == [.green, .blue])
+        #expect(Set(LinkstartSequence.calibrationFrames(at: 4.10).map(\.step)) == [.green, .blue])
+        #expect(Set(LinkstartSequence.calibrationFrames(at: 4.40).map(\.step)) == [.blue, .white])
 
-        let blueWhite = LinkstartSequence.calibrationFrames(at: 2.90)
-        #expect(Set(blueWhite.map(\.step)) == [.blue, .white])
+        #expect(opacity(3.76, .red)! > opacity(3.76, .green) ?? 0)
+        #expect(opacity(3.84, .green)! > opacity(3.84, .red) ?? 0)
 
-        // No handoff runs faster than 0.30s apart — well under a strobe rate.
-        #expect(opacity(2.26, .red)! > opacity(2.26, .green) ?? 0)
-        #expect(opacity(2.34, .green)! > opacity(2.34, .red) ?? 0)
-
-        // Nothing outside the wash, including its own tail and the moment
-        // the senses begin.
-        #expect(steps(1.99).isEmpty)
-        #expect(steps(3.00).isEmpty)
+        #expect(steps(3.49).isEmpty)
+        #expect(steps(4.50).isEmpty)
     }
 
     @Test("Fade opacity runs from 1 to 0 across the closing window")

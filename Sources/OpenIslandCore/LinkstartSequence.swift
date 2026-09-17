@@ -16,15 +16,19 @@ public enum LinkstartSense: String, CaseIterable, Equatable, Sendable {
 public enum LinkstartCue: Equatable, Sendable {
     /// The light arriving, at the very start.
     case rise
+    /// The dive into the tunnel of light.
+    case warp
+    /// The white-out at the far end of the tunnel.
+    case flash
     /// One per sense confirmed.
     case tick
     /// Everything passed; the checklist gives way to identity.
     case resolve
 }
 
-/// One colour of the calibration wash that runs between the opening burst
-/// and the checklist: red, green, blue, then white — once, not a repeating
-/// cycle, and slow enough to read as a colour wash rather than a strobe.
+/// One colour of the calibration wash that runs between the white-out and
+/// the checklist: red, green, blue, then white — once, not a repeating cycle,
+/// and slow enough to read as a colour wash rather than a strobe.
 public enum CalibrationStep: Equatable, Sendable {
     case red
     case green
@@ -41,16 +45,40 @@ public struct CalibrationFrame: Equatable, Sendable {
     public let opacity: Double
 }
 
+/// One line of light in the tunnel, in screen-independent units: `angle` in
+/// radians from the centre, `inner`/`outer` as fractions of half the screen's
+/// diagonal, so the same frame fills a laptop and a 6K display alike.
+public struct LinkstartStreak: Equatable, Sendable {
+    public let angle: Double
+    public let inner: Double
+    public let outer: Double
+    /// 0…1 around the colour wheel.
+    public let hue: Double
+    public let opacity: Double
+    /// Relative thickness, growing as the streak nears the viewer.
+    public let width: Double
+}
+
+/// How the title card sits at a moment: its size, how visible it is, and how
+/// far its red and cyan copies are pulled apart (1 = fully split, 0 = one image).
+public struct LinkstartTitleFrame: Equatable, Sendable {
+    public let scale: Double
+    public let opacity: Double
+    public let split: Double
+}
+
 /// Where the boot sequence is at a given moment.
 public enum LinkstartPhase: Equatable, Sendable {
     /// Before the light has arrived. Also where a clock that moved backwards
     /// lands, so the view always has a state to draw.
     case awakening
-    /// Concentric rings pulsing outward.
-    case rings
-    /// The rays bursting open, continuing after the rings have landed.
-    case rays
-    /// The colour-calibration flash, this many steps into its sequence.
+    /// The title slams in and the shockwave rings go out.
+    case ignition
+    /// Diving through the tunnel of light, faster and faster.
+    case warp
+    /// The white-out at the tunnel's end.
+    case flash
+    /// The colour-calibration wash, this many steps into its sequence.
     case calibration(step: Int)
     /// Running the senses, with this many already confirmed.
     case senses(checked: Int)
@@ -70,26 +98,28 @@ public enum LinkstartPhase: Equatable, Sendable {
 public enum LinkstartSequence: Sendable {
     public static let senses = LinkstartSense.allCases
 
-    /// The concentric rings pulsing outward from the centre.
+    /// The title slamming in, before the dive.
+    public static let ignitionDuration: TimeInterval = 0.5
+    /// The shockwave rings, overlapping the start of the dive.
     public static let ringsDuration: TimeInterval = 1.20
-    /// The rays start mid-way through the rings, and outlast them.
-    public static let raysStart: TimeInterval = 0.60
-    public static let raysDuration: TimeInterval = 1.40
-    /// The colour-calibration flash, once the rays have settled.
+    public static let warpDuration: TimeInterval = 2.5
+    public static let flashDuration: TimeInterval = 0.5
     public static let calibrationDuration: TimeInterval = 1.00
     /// How long each sense takes to confirm.
     public static let perSenseDuration: TimeInterval = 0.5
     public static let languageDuration: TimeInterval = 0.9
-    public static let identityDuration: TimeInterval = 1.6
+    public static let identityDuration: TimeInterval = 1.8
     public static let fadeDuration: TimeInterval = 0.80
 
-    public static var raysEnd: TimeInterval { raysStart + raysDuration }
+    public static var warpStart: TimeInterval { ignitionDuration }
+    public static var warpEnd: TimeInterval { warpStart + warpDuration }
+    public static var calibrationStart: TimeInterval { warpEnd + flashDuration }
 
     public static var sensesDuration: TimeInterval {
         perSenseDuration * Double(senses.count)
     }
 
-    public static var sensesStart: TimeInterval { raysEnd + calibrationDuration }
+    public static var sensesStart: TimeInterval { calibrationStart + calibrationDuration }
     public static var languageStart: TimeInterval { sensesStart + sensesDuration }
     public static var identityStart: TimeInterval { languageStart + languageDuration }
     public static var fadeStart: TimeInterval { identityStart + identityDuration }
@@ -101,8 +131,9 @@ public enum LinkstartSequence: Sendable {
         // Negative time can only come from a clock that moved. Treat it as the
         // beginning rather than as an error the view would have to render.
         guard elapsed > 0 else { return .awakening }
-        if elapsed < ringsDuration { return .rings }
-        if elapsed < raysEnd { return .rays }
+        if elapsed < warpStart { return .ignition }
+        if elapsed < warpEnd { return .warp }
+        if elapsed < calibrationStart { return .flash }
         if elapsed < sensesStart { return .calibration(step: calibrationStepIndex(at: elapsed)) }
 
         let intoSenses = elapsed - sensesStart
@@ -121,7 +152,7 @@ public enum LinkstartSequence: Sendable {
     /// whole way through, so it needs an answer even after the checks are done.
     public static func confirmedSenseCount(at elapsed: TimeInterval) -> Int {
         switch phase(at: elapsed) {
-        case .awakening, .rings, .rays, .calibration:
+        case .awakening, .ignition, .warp, .flash, .calibration:
             0
         case let .senses(checked):
             checked
@@ -131,11 +162,13 @@ public enum LinkstartSequence: Sendable {
     }
 
     /// When each sound plays, derived from the same durations the view draws
-    /// from so the soundtrack can never drift out of step with the checklist:
-    /// the rise as the light arrives, a tick as each sense starts confirming,
-    /// and the resolve as the checklist gives way to identity.
+    /// from so the soundtrack can never drift out of step with the picture.
     public static var cueSchedule: [(at: TimeInterval, cue: LinkstartCue)] {
-        var schedule: [(at: TimeInterval, cue: LinkstartCue)] = [(0, .rise)]
+        var schedule: [(at: TimeInterval, cue: LinkstartCue)] = [
+            (0, .rise),
+            (warpStart, .warp),
+            (warpEnd, .flash),
+        ]
         for index in senses.indices {
             schedule.append((sensesStart + Double(index) * perSenseDuration, .tick))
         }
@@ -143,21 +176,122 @@ public enum LinkstartSequence: Sendable {
         return schedule
     }
 
-    // MARK: - Rings and rays
+    // MARK: - Ignition
 
     /// Progress (0…1, eased) of each of 5 rings. Ring `i` lags the leading
     /// ring by `0.12 * i` of the rings' own duration, so they read as catching
-    /// up to each other rather than moving as one rigid disc — the same lag
-    /// `SAORing.radii` applies to the radius itself, kept here as a pure,
-    /// testable value for the choreography rather than the geometry.
+    /// up to each other rather than moving as one rigid disc.
     public static func ringProgress(at elapsed: TimeInterval) -> [Double] {
         let base = elapsed / ringsDuration
         return (0..<5).map { index in easeOut(base - 0.12 * Double(index)) }
     }
 
-    /// Progress (0…1, eased) of the ray burst.
-    public static func rayProgress(at elapsed: TimeInterval) -> Double {
-        easeOut((elapsed - raysStart) / raysDuration)
+    /// The title card: slams in from 1.6× with its colour copies split, holds
+    /// as the dive begins, then flies past the viewer into the tunnel.
+    /// Nothing once it has gone — the checklist's own title takes over later.
+    public static func titleSlam(at elapsed: TimeInterval) -> LinkstartTitleFrame {
+        guard elapsed > 0 else { return LinkstartTitleFrame(scale: 1.6, opacity: 0, split: 1) }
+        let slam = easeOut(elapsed / 0.3)
+        let opacityIn = clamp01(elapsed / 0.12)
+        let split = 1 - easeOut(elapsed / 0.45)
+
+        let flyStart = warpStart + 0.4
+        let fly = clamp01((elapsed - flyStart) / 0.6)
+        let scale = (1.6 - 0.6 * slam) * (1 + 1.6 * fly * fly)
+        return LinkstartTitleFrame(scale: scale, opacity: opacityIn * (1 - fly), split: max(split, fly * 0.6))
+    }
+
+    // MARK: - Warp
+
+    /// How many lines of light the tunnel draws.
+    public static let streakCount = 160
+
+    /// How strongly the tunnel shows: up over its first 0.3s, full until the
+    /// white-out swallows it.
+    public static func warpIntensity(at elapsed: TimeInterval) -> Double {
+        guard elapsed >= warpStart, elapsed < warpEnd else { return 0 }
+        return easeOut((elapsed - warpStart) / 0.3)
+    }
+
+    /// How fast the dive is going, 0 at the mouth of the tunnel to 1 at its end.
+    public static func warpSpeed(at elapsed: TimeInterval) -> Double {
+        clamp01((elapsed - warpStart) / warpDuration)
+    }
+
+    /// Every line of light in the tunnel at this moment. Deterministic — the
+    /// same elapsed time always draws the same frame — so the harness can pin
+    /// a screenshot and a dropped frame never reshuffles the tunnel.
+    public static func streaks(at elapsed: TimeInterval) -> [LinkstartStreak] {
+        let intensity = warpIntensity(at: elapsed)
+        guard intensity > 0 else { return [] }
+
+        let tau = elapsed - warpStart
+        // Distance travelled: accelerating, in tunnel-lengths.
+        let travelled = 0.35 * tau + 0.45 * tau * tau
+        let speed = warpSpeed(at: elapsed)
+
+        return (0..<streakCount).map { index in
+            let angle = unitHash(index, salt: 1) * 2 * .pi
+            let offset = unitHash(index, salt: 2)
+            let pace = 0.7 + 0.6 * unitHash(index, salt: 3)
+            // Most of the tunnel is blue-white; about a third takes the rest
+            // of the spectrum, which is what makes it read as a rainbow rush
+            // rather than a starfield.
+            let hueSeed = unitHash(index, salt: 4)
+            let hue = hueSeed < 0.65 ? 0.52 + 0.14 * (hueSeed / 0.65) : (hueSeed - 0.65) / 0.35
+
+            let depth = fract(offset + travelled * pace)
+            let tail = max(0, depth - (0.03 + 0.14 * speed))
+            let nearCentreFade = clamp01(depth / 0.18)
+
+            return LinkstartStreak(
+                angle: angle,
+                inner: perspective(tail),
+                outer: perspective(depth),
+                hue: hue,
+                opacity: intensity * nearCentreFade,
+                width: 0.4 + 1.8 * depth
+            )
+        }
+    }
+
+    /// The glow at the tunnel's vanishing point, brightening as the dive speeds up.
+    public static func coreGlow(at elapsed: TimeInterval) -> Double {
+        warpIntensity(at: elapsed) * (0.25 + 0.75 * warpSpeed(at: elapsed))
+    }
+
+    // MARK: - Flash
+
+    /// The strongest the white-out gets — bright enough to read as arriving
+    /// somewhere, never a full-white frame.
+    public static let flashPeakOpacity: Double = 0.85
+
+    /// One white-out at the end of the tunnel: up in 0.12s, down over the
+    /// rest of its window. A single flash, far under the 3-per-second
+    /// photosensitivity guideline.
+    public static func flashOpacity(at elapsed: TimeInterval) -> Double {
+        let rise = 0.12
+        let start = warpEnd - rise
+        guard elapsed > start, elapsed < calibrationStart else { return 0 }
+        if elapsed < warpEnd {
+            return flashPeakOpacity * (elapsed - start) / rise
+        }
+        return flashPeakOpacity * (1 - easeOut((elapsed - warpEnd) / flashDuration))
+    }
+
+    // MARK: - Checklist
+
+    /// How visible the checklist block (title, rows, status) is: nothing
+    /// through the dive, in over 0.4s as the white-out clears.
+    public static func checklistOpacity(at elapsed: TimeInterval) -> Double {
+        clamp01((elapsed - warpEnd) / 0.4)
+    }
+
+    /// The synchronisation rate shown under the checklist, 0…100: climbs
+    /// from the calibration wash to full as identity begins.
+    public static func syncRate(at elapsed: TimeInterval) -> Int {
+        let progress = clamp01((elapsed - calibrationStart) / (identityStart - calibrationStart))
+        return Int((easeInOut(progress) * 100).rounded())
     }
 
     // MARK: - Calibration
@@ -166,29 +300,21 @@ public enum LinkstartSequence: Sendable {
     /// The strongest the wash ever gets — capped well under full opacity so
     /// even the moment it lands is a wash, not a flash.
     private static let calibrationMaxOpacity: Double = 0.35
-    /// Half the width of the handoff around each colour change: a colour
-    /// starts giving way to the next 0.05s before its nominal boundary and
-    /// finishes 0.05s after, so no change is ever a hard cut.
+    /// Half the width of the handoff around each colour change.
     private static let calibrationCrossfadeHalfWidth: TimeInterval = 0.05
 
-    /// Where red gives way to green, green to blue, and blue to white — red,
-    /// green and blue each hold 0.30s (≈1 colour change per second, well
-    /// under the ~3Hz photosensitivity guideline) and white closes the
-    /// pattern out at 0.10s, for the `calibrationDuration` of 1.00s this adds
-    /// up to. Each is a single offset from `raysEnd` rather than a running
-    /// sum — repeated addition drifts by a ULP or two, which is enough to put
-    /// an exact boundary on the wrong side of a test's expectation.
-    private static let calibrationTransitionTimes: [TimeInterval] = [
-        raysEnd + 0.30, raysEnd + 0.60, raysEnd + 0.90,
-    ]
+    /// Where red gives way to green, green to blue, and blue to white — each
+    /// held 0.30s (≈1 change per second, well under the ~3Hz photosensitivity
+    /// guideline), white closing out at 0.10s. Each is a single offset from
+    /// `calibrationStart` rather than a running sum, so no boundary drifts.
+    private static var calibrationTransitionTimes: [TimeInterval] {
+        [calibrationStart + 0.30, calibrationStart + 0.60, calibrationStart + 0.90]
+    }
 
     /// The colour(s) on screen during the calibration wash: one frame at full
-    /// strength while holding, two — one fading out, one in — while handing
-    /// off to the next colour. Empty outside the wash entirely, including its
-    /// own tail once white has finished and nothing is left to show before
-    /// the senses begin.
+    /// strength while holding, two while handing off. Empty outside the wash.
     public static func calibrationFrames(at elapsed: TimeInterval) -> [CalibrationFrame] {
-        guard elapsed >= raysEnd, elapsed < sensesStart else { return [] }
+        guard elapsed >= calibrationStart, elapsed < sensesStart else { return [] }
 
         for (index, boundary) in calibrationTransitionTimes.enumerated() {
             let windowStart = boundary - calibrationCrossfadeHalfWidth
@@ -214,12 +340,37 @@ public enum LinkstartSequence: Sendable {
     /// down to 0 by the time the sequence completes.
     public static func fadeOpacity(at elapsed: TimeInterval) -> Double {
         guard elapsed > fadeStart else { return 1 }
-        let t = min(max((elapsed - fadeStart) / fadeDuration, 0), 1)
-        return 1 - t
+        return 1 - clamp01((elapsed - fadeStart) / fadeDuration)
     }
 
+    // MARK: - Maths
+
+    private static func clamp01(_ t: Double) -> Double { min(max(t, 0), 1) }
+
     private static func easeOut(_ t: Double) -> Double {
-        let clamped = min(max(t, 0), 1)
-        return 1 - pow(1 - clamped, 3)
+        1 - pow(1 - clamp01(t), 3)
+    }
+
+    private static func easeInOut(_ t: Double) -> Double {
+        let x = clamp01(t)
+        return x < 0.5 ? 4 * x * x * x : 1 - pow(-2 * x + 2, 3) / 2
+    }
+
+    private static func fract(_ x: Double) -> Double { x - x.rounded(.down) }
+
+    /// Depth to on-screen radius: slow near the vanishing point, rushing past
+    /// at the edges, and a little beyond them so streaks leave the screen.
+    private static func perspective(_ depth: Double) -> Double {
+        1.15 * pow(depth, 2.4)
+    }
+
+    /// A stable 0..<1 value per streak (SplitMix64), so the tunnel is the same
+    /// every run without storing a table.
+    private static func unitHash(_ index: Int, salt: UInt64) -> Double {
+        var z = UInt64(truncatingIfNeeded: index) &* 0x9E37_79B9_7F4A_7C15 &+ salt &* 0xBF58_476D_1CE4_E5B9
+        z = (z ^ (z >> 30)) &* 0xBF58_476D_1CE4_E5B9
+        z = (z ^ (z >> 27)) &* 0x94D0_49BB_1331_11EB
+        z ^= z >> 31
+        return Double(z >> 11) / Double(1 << 53)
     }
 }

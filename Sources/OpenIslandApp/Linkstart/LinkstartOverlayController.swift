@@ -8,7 +8,7 @@ import SwiftUI
 ///
 /// Separate from `OverlayPanelController` on purpose: that one owns a small
 /// panel that lives for the whole session and must never steal focus. This one
-/// owns full-screen windows that exist for six seconds and are meant to be the
+/// owns full-screen windows that exist for about ten seconds and are meant to be the
 /// only thing you can see.
 @MainActor
 @Observable
@@ -189,7 +189,7 @@ final class LinkstartOverlayController {
     /// drift apart. These are cues synthesised for this app (see
     /// `docs/sound-design.md`), played directly by name rather than through
     /// `NotificationSoundEvent`: the sequence is not a notification and its
-    /// three sounds are a fixed triad, not something anyone reassigns.
+    /// sounds are a fixed set, not something anyone reassigns.
     ///
     /// `elapsedAtStart` is 0 for a normal play — every cue is still ahead, so
     /// this behaves exactly as before. `presentForHarness` passes the pinned
@@ -223,6 +223,8 @@ final class LinkstartOverlayController {
     private static func soundName(for cue: LinkstartCue) -> String {
         switch cue {
         case .rise: "ui-linkstart-rise"
+        case .warp: "ui-linkstart-warp"
+        case .flash: "ui-linkstart-flash"
         case .tick: "ui-linkstart-tick"
         case .resolve: "ui-linkstart-resolve"
         }
