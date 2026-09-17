@@ -75,56 +75,68 @@ struct LinkstartView: View {
             backdrop(elapsed: elapsed, reducesMotion: reducesMotion)
 
             if showsDetail {
+                if !reducesMotion {
+                    titleSlam(elapsed: elapsed, theme: theme)
+                }
+
                 VStack(spacing: 34) {
                     title(elapsed: elapsed, theme: theme)
                     checklist(elapsed: elapsed, theme: theme, reducesMotion: reducesMotion)
-                    trailer(phase: phase, theme: theme, reducesMotion: reducesMotion)
+                    trailer(elapsed: elapsed, phase: phase, theme: theme, reducesMotion: reducesMotion)
                 }
                 .padding(60)
+                .opacity(reducesMotion ? 1 : LinkstartSequence.checklistOpacity(at: elapsed))
+            }
+
+            if !reducesMotion {
+                // Above everything, the checklist included: the white-out is
+                // the moment of arriving, and nothing should sit on top of it.
+                Color.white
+                    .opacity(LinkstartSequence.flashOpacity(at: elapsed))
+                    .allowsHitTesting(false)
             }
         }
-        .background(.black.opacity(0.62))
+        .background(.black.opacity(reducesMotion ? 0.62 : Self.backdropDarkness(at: elapsed)))
         .opacity(LinkstartSequence.fadeOpacity(at: elapsed))
         .ignoresSafeArea()
     }
 
+    /// Near-black while diving so the light has something to cut through,
+    /// easing back to the usual dim once you have arrived.
+    private static func backdropDarkness(at elapsed: TimeInterval) -> Double {
+        let t = min(max((elapsed - LinkstartSequence.calibrationStart) / 0.3, 0), 1)
+        return 0.94 - 0.32 * t
+    }
+
     // MARK: - Pieces
 
-    /// The opening burst: concentric rings, a ray starburst outlasting them,
-    /// then the colour-calibration wash. Reduced motion collapses the rings
-    /// and rays into one still frame, held until the checklist itself starts
-    /// rather than for just their own animated duration, and skips the wash
-    /// entirely — colour changes, even slow ones, are exactly the kind of
-    /// motion that setting asks to remove.
+    /// The opening burst: shockwave rings, the tunnel of light, then the
+    /// colour-calibration wash. Reduced motion collapses all of it into one
+    /// still frame of rings, held until the checklist starts, and skips the
+    /// tunnel, the white-out and the wash — exactly the motion that setting
+    /// asks to remove.
     @ViewBuilder
     private func backdrop(elapsed: TimeInterval, reducesMotion: Bool) -> some View {
         if reducesMotion {
             let isBeforeChecklist = elapsed < LinkstartSequence.sensesStart
-            Group {
-                SAORingView(progress: 1, count: 5, tint: .white, ringTint: Self.ringTint)
-                SAORaysView(progress: 1, count: 24, tint: SAOGrammar.Palette.systemCyan, gradient: Self.rayGradient)
-            }
-            .opacity(isBeforeChecklist ? 1 : 0)
-            // A plain cut rather than a fade: this branch exists so nothing
-            // here animates.
-            .animation(nil, value: isBeforeChecklist)
+            SAORingView(progress: 1, count: 5, tint: .white, ringTint: Self.ringTint)
+                .opacity(isBeforeChecklist ? 1 : 0)
+                // A plain cut rather than a fade: this branch exists so nothing
+                // here animates.
+                .animation(nil, value: isBeforeChecklist)
         } else {
+            LinkstartTunnelView(elapsed: elapsed)
+
             SAORingView(
                 progress: LinkstartSequence.ringProgress(at: elapsed).first ?? 0,
                 count: 5,
                 tint: .white,
                 ringTint: Self.ringTint
             )
-            SAORaysView(
-                progress: LinkstartSequence.rayProgress(at: elapsed),
-                count: 24,
-                tint: SAOGrammar.Palette.systemCyan,
-                gradient: Self.rayGradient
-            )
+            .opacity(1 - LinkstartSequence.warpSpeed(at: elapsed))
 
             // Capped well under full opacity and handed off between colours
-            // as a crossfade rather than a cut — see `calibrationFrames`'s
-            // own doc comment for why a strobe has no place on a login screen.
+            // as a crossfade rather than a cut — see `calibrationFrames`.
             ForEach(Array(LinkstartSequence.calibrationFrames(at: elapsed).enumerated()), id: \.offset) { _, frame in
                 Self.calibrationTint(for: frame.step)
                     .opacity(frame.opacity)
@@ -133,17 +145,36 @@ struct LinkstartView: View {
         }
     }
 
+    /// The big title at the start: slams in with its red and cyan copies
+    /// pulled apart, then flies past into the tunnel.
+    private func titleSlam(elapsed: TimeInterval, theme: SAOTheme) -> some View {
+        let frame = LinkstartSequence.titleSlam(at: elapsed)
+        let text = LanguageManager.shared.t("linkstart.title")
+        let offset = CGFloat(frame.split) * 14
+
+        return ZStack {
+            Text(text).saoCaps(size: 96, text: text)
+                .foregroundStyle(Color(red: 1, green: 0.2, blue: 0.35).opacity(0.7))
+                .offset(x: -offset)
+            Text(text).saoCaps(size: 96, text: text)
+                .foregroundStyle(Color(red: 0.2, green: 0.9, blue: 1).opacity(0.7))
+                .offset(x: offset)
+            Text(text).saoCaps(size: 96, text: text)
+                .foregroundStyle(.white)
+                .shadow(color: theme.accent, radius: theme.glowRadius * 4)
+        }
+        .compositingGroup()
+        .blendMode(.plusLighter)
+        .scaleEffect(frame.scale)
+        .opacity(frame.opacity)
+        .allowsHitTesting(false)
+    }
+
     /// White for the leading ring, shading to the theme's cyan by the
     /// trailing one — the same "catching up" read the lag gives their timing.
     private static func ringTint(for index: Int) -> Color {
         mixedColor(from: 0xFFFFFF, to: 0x03A9F4, t: Double(index) / 4)
     }
-
-    /// Every ray shares this gradient, radiating blue at the centre out
-    /// through cyan to white at the tip.
-    private static let rayGradient = Gradient(colors: [
-        Color(hex: 0x1E88E5), SAOGrammar.Palette.systemCyan, .white,
-    ])
 
     private static func calibrationTint(for step: CalibrationStep) -> Color {
         switch step {
@@ -253,10 +284,13 @@ struct LinkstartView: View {
 
     /// What the sequence says about you once the body checks out.
     @ViewBuilder
-    private func trailer(phase: LinkstartPhase, theme: SAOTheme, reducesMotion: Bool) -> some View {
+    private func trailer(elapsed: TimeInterval, phase: LinkstartPhase, theme: SAOTheme, reducesMotion: Bool) -> some View {
         VStack(spacing: 10) {
+            // A bar filling every frame is motion too: held full under Reduce Motion.
+            syncMeter(rate: reducesMotion ? 100 : LinkstartSequence.syncRate(at: elapsed), theme: theme)
+
             switch phase {
-            case .awakening, .rings, .rays, .calibration, .senses:
+            case .awakening, .ignition, .warp, .flash, .calibration, .senses:
                 Text(LanguageManager.shared.t("linkstart.checking"))
                     .foregroundStyle(theme.paper.opacity(0.5))
             case .language:
@@ -267,8 +301,9 @@ struct LinkstartView: View {
                     of: "{name}",
                     with: NSFullUserName()
                 ))
+                .font(IslandTypography.mono(size: 28, weight: .bold))
                 .foregroundStyle(theme.paper)
-                .shadow(color: theme.accent.opacity(0.8), radius: theme.glowRadius * 2)
+                .shadow(color: theme.accent.opacity(0.9), radius: theme.glowRadius * 3)
             }
 
             Text(LanguageManager.shared.t("linkstart.dismiss"))
@@ -278,5 +313,102 @@ struct LinkstartView: View {
         .font(IslandTypography.mono(size: 16))
         .tracking(3)
         .animation(reducesMotion ? nil : theme.animationProfile.open, value: phase)
+    }
+
+    /// A thin bar and a number, filling as the senses check out.
+    private func syncMeter(rate: Int, theme: SAOTheme) -> some View {
+        VStack(spacing: 6) {
+            Text(LanguageManager.shared.t("linkstart.sync").replacingOccurrences(of: "{rate}", with: String(rate)))
+                .font(IslandTypography.mono(size: 13))
+                .foregroundStyle(rate == 100 ? theme.accent : theme.paper.opacity(0.6))
+                .monospacedDigit()
+            Capsule()
+                .fill(theme.paper.opacity(0.12))
+                .frame(width: 320, height: 3)
+                .overlay(alignment: .leading) {
+                    Capsule()
+                        .fill(theme.accent)
+                        .frame(width: 320 * CGFloat(rate) / 100, height: 3)
+                        .shadow(color: theme.accent, radius: theme.glowRadius)
+                }
+        }
+        .padding(.bottom, 8)
+    }
+}
+
+/// The tunnel of light, drawn from `LinkstartSequence.streaks(at:)`.
+///
+/// Two strokes per streak — a wide faint one under a thin bright one — stand
+/// in for a blur, which over a whole screen at display refresh rate would
+/// cost far more than it looks.
+private struct LinkstartTunnelView: View {
+    let elapsed: TimeInterval
+
+    /// Half the diagonal of a 14" laptop screen in points: the size the
+    /// line widths were tuned on.
+    private static let referenceHalfDiagonal: CGFloat = 900
+    private static let hueBuckets = 8
+    private static let depthBuckets = 4
+
+    var body: some View {
+        let streaks = LinkstartSequence.streaks(at: elapsed)
+        let glow = LinkstartSequence.coreGlow(at: elapsed)
+
+        Canvas { context, size in
+            guard !streaks.isEmpty else { return }
+            let center = CGPoint(x: size.width / 2, y: size.height / 2)
+            let halfDiagonal = (size.width * size.width + size.height * size.height).squareRoot() / 2
+            context.blendMode = .plusLighter
+
+            // Line widths follow the screen like everything else here, so a
+            // 6K display gets the same tunnel as a laptop rather than a thinner one.
+            let widthScale = halfDiagonal / Self.referenceHalfDiagonal
+
+            // Batched: one path per hue × depth bucket instead of one stroke
+            // per streak, so a frame is a few dozen draw calls, not hundreds,
+            // on every screen at display refresh rate.
+            var buckets: [Int: (path: Path, opacity: Double, width: Double, hue: Double, count: Int)] = [:]
+            for streak in streaks where streak.opacity > 0.01 && streak.outer > streak.inner {
+                let hueBucket = min(Int(streak.hue * Double(Self.hueBuckets)), Self.hueBuckets - 1)
+                let depthBucket = min(Int(streak.outer / 1.15 * Double(Self.depthBuckets)), Self.depthBuckets - 1)
+                let key = hueBucket * Self.depthBuckets + depthBucket
+                let direction = CGVector(dx: cos(streak.angle), dy: sin(streak.angle))
+                var entry = buckets[key] ?? (Path(), 0, 0, 0, 0)
+                entry.path.move(to: CGPoint(
+                    x: center.x + direction.dx * halfDiagonal * streak.inner,
+                    y: center.y + direction.dy * halfDiagonal * streak.inner
+                ))
+                entry.path.addLine(to: CGPoint(
+                    x: center.x + direction.dx * halfDiagonal * streak.outer,
+                    y: center.y + direction.dy * halfDiagonal * streak.outer
+                ))
+                entry.opacity += streak.opacity
+                entry.width += streak.width
+                entry.hue += streak.hue
+                entry.count += 1
+                buckets[key] = entry
+            }
+
+            for entry in buckets.values {
+                let n = Double(entry.count)
+                let opacity = entry.opacity / n
+                let width = CGFloat(entry.width / n) * widthScale
+                let colour = Color(hue: entry.hue / n, saturation: 0.7, brightness: 1)
+                context.stroke(entry.path, with: .color(colour.opacity(opacity * 0.25)), style: StrokeStyle(lineWidth: width * 6, lineCap: .round))
+                context.stroke(entry.path, with: .color(.white.opacity(opacity * 0.9)), style: StrokeStyle(lineWidth: width, lineCap: .round))
+            }
+
+            let radius = halfDiagonal * 0.35 * CGFloat(0.4 + glow)
+            context.fill(
+                Path(ellipseIn: CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2)),
+                with: .radialGradient(
+                    Gradient(colors: [.white.opacity(glow), Color(hex: 0x03A9F4).opacity(glow * 0.35), .clear]),
+                    center: center,
+                    startRadius: 0,
+                    endRadius: radius
+                )
+            )
+        }
+        .allowsHitTesting(false)
     }
 }

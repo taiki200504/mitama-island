@@ -214,6 +214,45 @@ def c_linkstart_tick():
     return stack((click, 0), (ring * 0.6, 0.002))
 
 
+def c_linkstart_warp():
+    """The dive: a rushing noise that climbs in pitch and density toward the white-out."""
+    dur = 2.5
+    x = t(dur)
+    p = x / dur
+    # riser: exponential glide 90 Hz -> 1400 Hz, phase integrated so it never clicks
+    freq = 90 * (1400 / 90) ** (p ** 1.6)
+    riser = np.sin(2 * math.pi * np.cumsum(freq) / SR)
+    riser += 0.35 * np.sin(2 * math.pi * np.cumsum(freq * 1.5) / SR)
+    # rushing air: noise through a rising band, chunked like lowpass_sweep
+    n = noise(dur, 23)
+    air = np.zeros_like(n)
+    chunks = 64
+    edges = np.linspace(0, len(n), chunks + 1).astype(int)
+    for i in range(chunks):
+        centre = 250 * (7000 / 250) ** ((i / (chunks - 1)) ** 1.3)
+        seg = n[max(0, edges[i] - 512):edges[i + 1]]
+        filtered = bandpass(seg, centre * 0.6, min(centre * 1.8, 20000), order=2)
+        air[edges[i]:edges[i + 1]] = filtered[-(edges[i + 1] - edges[i]):]
+    # flutter: streaks passing, faster as the dive speeds up
+    flutter = 0.75 + 0.25 * np.sin(2 * math.pi * np.cumsum(4 + 26 * p ** 2) / SR)
+    swell = np.clip(p / 0.15, 0, 1) * (0.25 + 0.75 * p ** 2)
+    sub = np.sin(2 * math.pi * 41 * x) * 0.5 * swell
+    return stereo((riser * 0.35 + air * 0.55 * flutter + sub) * swell, 1.0)
+
+
+def c_linkstart_flash():
+    """Arriving: a deep impact with a bright shimmer that opens into space."""
+    dur = 1.8
+    x = t(dur)
+    drop = 110 * (38 / 110) ** np.clip(x / 0.35, 0, 1)
+    boom = np.sin(2 * math.pi * np.cumsum(drop) / SR) * env_exp(len(x), 0.45, attack=0.003)
+    hit = bandpass(noise(0.25, 29), 150, 9000) * env_exp(int(SR * 0.25), 0.05)
+    shimmer = stack(*[(glass(f, 1.4, 0.6, 1.0), 0.02 + i * 0.025) for i, f in enumerate((1568, 2093, 2637, 3136))])
+    s = stack((boom, 0), (hit * 0.7, 0), (shimmer * 0.3, 0))
+    s = reverb(s, 1.0, wet=0.4)[: int(SR * dur)]
+    return stereo(s, 1.0)
+
+
 def c_linkstart_resolve():
     dur = 1.8
     x = t(dur)
@@ -265,6 +304,8 @@ CUES = {
     "complete": (c_complete, 1.40),
     "link": (c_link, 0.30),
     "linkstart-rise": (c_linkstart_rise, 1.20),
+    "linkstart-warp": (c_linkstart_warp, 2.50),
+    "linkstart-flash": (c_linkstart_flash, 1.80),
     "linkstart-tick": (c_linkstart_tick, 0.15),
     "linkstart-resolve": (c_linkstart_resolve, 1.80),
     "lock-scan": (c_lock_scan, 0.90),

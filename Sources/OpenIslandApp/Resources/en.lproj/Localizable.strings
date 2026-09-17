@@ -659,6 +659,7 @@
 "linkstart.sense.taste" = "TASTE";
 "linkstart.sense.smell" = "SMELL";
 "linkstart.checking" = "CALIBRATING SENSES";
+"linkstart.sync" = "SYNC {rate}%";
 "linkstart.language" = "LANGUAGE SET";
 "linkstart.welcome" = "WELCOME, {name}";
 "linkstart.dismiss" = "PRESS ANY KEY TO RETURN";

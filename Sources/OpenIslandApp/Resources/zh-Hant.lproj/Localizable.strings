@@ -658,6 +658,7 @@
 "linkstart.sense.taste" = "味覺";
 "linkstart.sense.smell" = "嗅覺";
 "linkstart.checking" = "正在校準五感";
+"linkstart.sync" = "同步率 {rate}%";
 "linkstart.language" = "語言已設定";
 "linkstart.welcome" = "歡迎，{name}";
 "linkstart.dismiss" = "按任意鍵返回";

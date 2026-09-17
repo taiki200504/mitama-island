@@ -362,10 +362,9 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                 sessions: sessions,
                 selectedSessionID: sessions.first?.id,
                 presentsLinkstart: true,
-                // Into the first sense's confirmation window: enough of the
-                // opening burst and calibration flash have already passed
-                // that there is something worth a screenshot.
-                linkstartElapsedOverride: 3.5
+                // Deep in the dive, where the tunnel is at its fastest —
+                // the frame that shows the sequence at its most.
+                linkstartElapsedOverride: 2.6
             )
 
         case .sneakPeekPop:
