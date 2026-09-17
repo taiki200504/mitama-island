@@ -792,3 +792,6 @@
 "statusItem.shelf.header" = "Set Aside (%d)";
 "statusItem.settings" = "Settings…";
 "session.stalled" = "No activity for a while";
+"statusItem.state.idle" = "Idle";
+"statusItem.state.running" = "Working";
+"statusItem.state.attention" = "Waiting for you";

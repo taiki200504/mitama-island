@@ -792,3 +792,6 @@
 "statusItem.shelf.header" = "暂存（%d）";
 "statusItem.settings" = "设置…";
 "session.stalled" = "一段时间没有响应";
+"statusItem.state.idle" = "空闲";
+"statusItem.state.running" = "运行中";
+"statusItem.state.attention" = "等待你的操作";

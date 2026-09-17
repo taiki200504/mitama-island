@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import OpenIslandCore
 
 /// v6 `UnifiedBars` glyph — three vertical bars that share the same geometry
 /// across all three notch states (idle / running / waiting). Active states are
@@ -205,7 +206,9 @@ struct UnifiedBars: View {
             animation.keyTimes = [0, 0.5, 1]
             animation.duration = 1.8
             animation.beginTime = CACurrentMediaTime() + (column.x < UnifiedBars.center ? 0 : 0.9)
-            animation.repeatCount = .infinity
+            // Settles back to the layer's own 0.55 once the cap runs out; the
+            // bars are rebuilt, and pulse again, when the waiting set changes.
+            animation.repeatCount = AttentionPulse.repeatCount(period: animation.duration)
             animation.timingFunctions = [
                 CAMediaTimingFunction(name: .easeInEaseOut),
                 CAMediaTimingFunction(name: .easeInEaseOut),

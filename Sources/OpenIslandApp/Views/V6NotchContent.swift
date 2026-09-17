@@ -171,17 +171,14 @@ private struct AgentsGridWaitingTile: View {
     let size: CGFloat
     let radius: CGFloat
     @State private var pulse = false
+    @State private var settled = false
 
     var body: some View {
         RoundedRectangle(cornerRadius: radius, style: .continuous)
             .fill(color)
             .frame(width: size, height: size)
-            .opacity(pulse ? 1.0 : 0.35)
-            .onAppear {
-                withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) {
-                    pulse = true
-                }
-            }
+            .opacity(settled || pulse ? 1.0 : 0.35)
+            .cappedPulse($pulse, settled: $settled, isActive: true, period: 0.7, restartOn: 0)
     }
 }
 
@@ -561,6 +558,7 @@ struct SAOPeekGaugeView: View {
     var showsEventTitle: Bool = false
 
     @State private var urgentPulse = false
+    @State private var urgentSettled = false
 
     var body: some View {
         if let islandBody = content.body {
@@ -582,13 +580,8 @@ struct SAOPeekGaugeView: View {
                         .fill(V6Palette.paper.opacity(0.14))
                     SAOGaugeShape(fraction: level.fraction)
                         .fill(level.tint)
-                        .opacity(urgent ? (urgentPulse ? 1 : 0.4) : 1)
-                        .onAppear {
-                            guard urgent else { return }
-                            withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
-                                urgentPulse = true
-                            }
-                        }
+                        .opacity(urgent && !urgentSettled ? (urgentPulse ? 1 : 0.4) : 1)
+                        .cappedPulse($urgentPulse, settled: $urgentSettled, isActive: urgent, period: 0.9, restartOn: SAOPeekGauge.label(for: islandBody))
                 }
                 .frame(width: 44, height: 6)
 
@@ -622,6 +615,7 @@ private struct SAOPeekTailStrip: View {
     let count: Int
     let isWaiting: Bool
     @State private var breathe = false
+    @State private var settled = false
 
     var body: some View {
         SAOBlockStrip(
@@ -630,13 +624,8 @@ private struct SAOPeekTailStrip: View {
             gap: 2,
             color: isWaiting ? SAOGrammar.Palette.statusYellow : V6Palette.paper.opacity(0.22)
         )
-        .opacity(isWaiting ? (breathe ? 1 : 0.55) : 1)
-        .onAppear {
-            guard isWaiting else { return }
-            withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) {
-                breathe = true
-            }
-        }
+        .opacity(isWaiting && !settled ? (breathe ? 1 : 0.55) : 1)
+        .cappedPulse($breathe, settled: $settled, isActive: isWaiting, period: 0.7, restartOn: count)
     }
 }
 
@@ -785,6 +774,7 @@ struct IslandClosedAccessoryView: View {
 private struct NowPlayingVisualiser: View {
     let isPlaying: Bool
     @State private var animate = false
+    @State private var settled = false
 
     private static let barHeights: [CGFloat] = [4, 8, 5]
 
@@ -793,16 +783,11 @@ private struct NowPlayingVisualiser: View {
             ForEach(Array(Self.barHeights.enumerated()), id: \.offset) { _, height in
                 RoundedRectangle(cornerRadius: 1, style: .continuous)
                     .fill(V6Palette.paper.opacity(0.85))
-                    .frame(width: 2, height: isPlaying && animate ? height : height * 0.4)
+                    .frame(width: 2, height: isPlaying && (animate || settled) ? height : height * 0.4)
             }
         }
         .frame(width: 14, height: 8, alignment: .bottom)
-        .onAppear {
-            guard isPlaying else { return }
-            withAnimation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true)) {
-                animate = true
-            }
-        }
+        .cappedPulse($animate, settled: $settled, isActive: isPlaying, period: 0.5, restartOn: isPlaying)
     }
 }
 
