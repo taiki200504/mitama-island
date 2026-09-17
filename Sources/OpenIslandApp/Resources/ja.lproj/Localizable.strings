@@ -792,3 +792,6 @@
 "statusItem.shelf.header" = "置いてあるもの（%d）";
 "statusItem.settings" = "設定…";
 "session.stalled" = "しばらく応答がありません";
+"statusItem.state.idle" = "待機中";
+"statusItem.state.running" = "実行中";
+"statusItem.state.attention" = "あなたの操作待ち";

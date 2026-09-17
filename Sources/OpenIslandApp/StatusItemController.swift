@@ -18,6 +18,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     /// click away — the menu is always torn down and redrawn from
     /// `StatusMenuLayout` rather than diffed in place.
     private var actions: [() -> Void] = []
+    /// What the icon currently shows, so it is only redrawn when that changes.
+    private var iconState: StatusIconState?
 
     init(model: AppModel) {
         self.model = model
@@ -26,12 +28,36 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     func show() {
         guard statusItem == nil else { return }
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        item.button?.image = Self.makeTemplateImage()
         item.button?.imagePosition = .imageOnly
         let menu = NSMenu()
         menu.delegate = self
         item.menu = menu
         statusItem = item
+        iconState = nil
+        trackIconState()
+    }
+
+    /// Redraws the icon whenever the sessions it summarises change, and only
+    /// then — observation re-arms itself after each change rather than polling.
+    private func trackIconState() {
+        guard statusItem != nil else { return }
+        let state = withObservationTracking {
+            StatusIconState(attentionCount: model.liveAttentionCount, runningCount: model.liveRunningCount)
+        } onChange: { [weak self] in
+            Task { @MainActor in self?.trackIconState() }
+        }
+        guard state != iconState else { return }
+        iconState = state
+        statusItem?.button?.image = StatusIconRenderer.image(for: state)
+        statusItem?.button?.setAccessibilityValue(model.lang.t("statusItem.state.\(Self.stateKey(state))"))
+    }
+
+    private static func stateKey(_ state: StatusIconState) -> String {
+        switch state {
+        case .idle: "idle"
+        case .running: "running"
+        case .attention: "attention"
+        }
     }
 
     func hide() {
@@ -158,25 +184,58 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         guard actions.indices.contains(sender.tag) else { return }
         actions[sender.tag]()
     }
+}
 
-    /// Renders the brand mark's `.template` style — drawn expressly for this
-    /// use, per its own doc comment — into the monochrome image a status item
-    /// needs. Falls back to an SF Symbol if rendering ever comes back empty,
-    /// so a status item still appears rather than silently not showing one.
-    private static func makeTemplateImage() -> NSImage {
-        let width: CGFloat = 18
-        let height = width * 64 / 160
-        let renderer = ImageRenderer(content: OpenIslandBrandMark(size: width, style: .template))
-        renderer.scale = NSScreen.main?.backingScaleFactor ?? 2
-
-        guard let image = renderer.nsImage else {
-            let fallback = NSImage(systemSymbolName: "circle.lefthalf.filled", accessibilityDescription: nil)
-                ?? NSImage()
-            fallback.isTemplate = true
-            return fallback
+/// The menu bar icon: a crystal in the island's cut-corner grammar, reading at
+/// a glance as idle (outline), working (a lit core) or waiting on you (solid).
+/// A template image, so the menu bar tints it for light and dark.
+enum StatusIconRenderer {
+    static func image(for state: StatusIconState) -> NSImage {
+        let size = NSSize(width: 18, height: 18)
+        let image = NSImage(size: size, flipped: false) { rect in
+            draw(state, in: rect)
+            return true
         }
-        image.size = NSSize(width: width, height: height)
         image.isTemplate = true
         return image
+    }
+
+    private static func draw(_ state: StatusIconState, in rect: NSRect) {
+        NSColor.black.setStroke()
+        NSColor.black.setFill()
+
+        let outer = crystal(in: rect.insetBy(dx: 3, dy: 1.5))
+        switch state {
+        case .idle:
+            outer.lineWidth = 1.4
+            outer.stroke()
+        case .running:
+            outer.lineWidth = 1.4
+            outer.stroke()
+            crystal(in: rect.insetBy(dx: 6.5, dy: 5.5)).fill()
+        case .attention:
+            outer.fill()
+            // A cut through the solid crystal, so "waiting" is not just a
+            // heavier version of the same outline.
+            NSGraphicsContext.current?.compositingOperation = .clear
+            let bar = NSBezierPath(rect: NSRect(x: rect.midX - 0.9, y: rect.midY - 1, width: 1.8, height: 5.5))
+            bar.fill()
+            NSBezierPath(ovalIn: NSRect(x: rect.midX - 1, y: rect.midY - 4, width: 2, height: 2)).fill()
+            NSGraphicsContext.current?.compositingOperation = .sourceOver
+        }
+    }
+
+    /// An elongated diamond with its left and right points chamfered flat.
+    private static func crystal(in rect: NSRect) -> NSBezierPath {
+        let chamfer = rect.height * 0.14
+        let path = NSBezierPath()
+        path.move(to: NSPoint(x: rect.midX, y: rect.maxY))
+        path.line(to: NSPoint(x: rect.maxX, y: rect.midY + chamfer))
+        path.line(to: NSPoint(x: rect.maxX, y: rect.midY - chamfer))
+        path.line(to: NSPoint(x: rect.midX, y: rect.minY))
+        path.line(to: NSPoint(x: rect.minX, y: rect.midY - chamfer))
+        path.line(to: NSPoint(x: rect.minX, y: rect.midY + chamfer))
+        path.close()
+        return path
     }
 }
