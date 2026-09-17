@@ -791,3 +791,4 @@
 "statusItem.clipboard.open" = "クリップボード…";
 "statusItem.shelf.header" = "置いてあるもの（%d）";
 "statusItem.settings" = "設定…";
+"session.stalled" = "しばらく応答がありません";

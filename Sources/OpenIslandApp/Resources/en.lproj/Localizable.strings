@@ -791,3 +791,4 @@
 "statusItem.clipboard.open" = "Clipboard…";
 "statusItem.shelf.header" = "Set Aside (%d)";
 "statusItem.settings" = "Settings…";
+"session.stalled" = "No activity for a while";

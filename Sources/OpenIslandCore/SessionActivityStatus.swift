@@ -19,10 +19,11 @@ public struct SessionActivityStatus: Sendable {
     ///
     /// - Parameters:
     ///   - phase: Session's current phase
-    ///   - lastActivityTime: Timestamp of last transcript update or hook event
+    ///   - lastActivityTime: When the reducer last saw anything from the session
     ///   - now: Reference time (defaults to current time)
     ///
-    /// - Returns: `true` if session is running but no activity for ≥ 120 seconds
+    /// - Returns: `true` if the session is running but has been silent for at
+    ///   least `stallThreshold`
     public static func isStalled(phase: SessionPhase, lastActivityTime: Date?, now: Date = .now) -> Bool {
         guard phase == .running else { return false }
         guard let lastActivityTime else { return false }

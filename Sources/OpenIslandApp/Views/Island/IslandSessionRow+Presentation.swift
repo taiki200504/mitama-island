@@ -2,38 +2,37 @@ import SwiftUI
 import OpenIslandCore
 
 extension IslandSessionRow {
-    /// Stall badge: indicates a running session with no activity for 5+ minutes.
-    /// Amber color (statusYellow), displayed only in `.list` presentation.
-    var stallBadge: some View? {
-        let isStalled = SessionActivityStatus.isStalled(
+    /// Whether this row carries the "gone quiet" status mark: running, but
+    /// nothing heard from it for `SessionActivityStatus.stallThreshold`.
+    /// List rows only — a notification card is already about something happening.
+    var isStalledForBadge: Bool {
+        presentation == .list && SessionActivityStatus.isStalled(
             phase: session.phase,
             lastActivityTime: session.updatedAt,
             now: referenceDate
         )
+    }
 
-        guard presentation == .list, isStalled else {
-            return nil
+    /// A status-ailment tag: an hourglass and how long it has been silent, in
+    /// amber on a chamfered tile, so it reads as a condition on the session
+    /// rather than as another label.
+    var stallBadge: some View {
+        let tint = V6Palette.statusYellow
+        let shape = SAOPanelShape(cornerRadius: 2, cuts: [.topLeading, .bottomTrailing], cutDepth: 4)
+        return HStack(spacing: 3) {
+            Image(systemName: "hourglass")
+                .font(.system(size: 8, weight: .bold))
+            Text(SessionActivityStatus.elapsedTimeText(since: session.updatedAt, now: referenceDate))
+                .font(.islandMono(size: 9.5, weight: .medium))
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
         }
-
-        let elapsedText = SessionActivityStatus.elapsedTimeText(
-            since: session.updatedAt,
-            now: referenceDate
-        )
-
-        return Text(elapsedText)
-            .font(.islandMono(size: 9.5, weight: .medium))
-            .lineLimit(1)
-            .fixedSize(horizontal: true, vertical: false)
-            .foregroundStyle(V6Palette.statusYellow)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 3)
-            .background(V6Palette.statusYellow.opacity(0.1), in: RoundedRectangle(cornerRadius: 3))
-            .overlay(
-                RoundedRectangle(cornerRadius: 3).stroke(
-                    V6Palette.statusYellow.opacity(0.3),
-                    lineWidth: 0.5
-                )
-            )
+        .foregroundStyle(tint)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
+        .background(shape.fill(tint.opacity(0.14)))
+        .overlay(shape.stroke(tint.opacity(0.45), lineWidth: 0.75))
+        .accessibilityLabel(LanguageManager.shared.t("session.stalled"))
     }
 
     var agentBadge: some View {
