@@ -804,3 +804,5 @@
 "conversation.you" = "你";
 "approval.risk.elevated" = "此操作會修改檔案或執行指令";
 "approval.risk.ordinary" = "僅讀取";
+"settings.general.keepAwake" = "代理工作時不進入睡眠";
+"settings.general.keepAwake.help" = "僅在接上電源、上蓋開啟且溫度正常時生效。螢幕仍可關閉，工作不會中斷。";

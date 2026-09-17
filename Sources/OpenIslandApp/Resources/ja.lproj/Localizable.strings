@@ -805,3 +805,5 @@
 "conversation.you" = "あなた";
 "approval.risk.elevated" = "ファイルやコマンドでマシンを変更する操作です";
 "approval.risk.ordinary" = "読み取りのみ";
+"settings.general.keepAwake" = "エージェントの作業中はスリープさせない";
+"settings.general.keepAwake.help" = "電源につながっていて、ふたが開いていて、熱くないときだけ。画面は消えても作業は止まりません。";

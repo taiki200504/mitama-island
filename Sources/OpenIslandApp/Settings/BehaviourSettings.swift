@@ -137,6 +137,13 @@ final class BehaviourSettings: PreferenceGroup {
 
     // MARK: Interaction
 
+    /// Keeps the Mac from idling to sleep while an agent is running, on mains
+    /// power only. Off by default: it overrides a system setting the person chose.
+    var keepsAwakeWhileRunning: Bool {
+        get { read(\.keepsAwakeWhileRunning, Keys.keepsAwakeWhileRunning, false) }
+        set { write(\.keepsAwakeWhileRunning, Keys.keepsAwakeWhileRunning, newValue) }
+    }
+
     var disableClickToJump: Bool {
         get { read(\.disableClickToJump, Keys.disableClickToJump, false) }
         set { write(\.disableClickToJump, Keys.disableClickToJump, newValue) }
@@ -243,6 +250,7 @@ extension BehaviourSettings {
         static let autoRevealDwell = "behaviour.autoRevealDwell"
         static let dismissOnOutsideClick = "behaviour.dismissOnOutsideClick"
         static let disableClickToJump = "behaviour.disableClickToJump"
+        static let keepsAwakeWhileRunning = "behaviour.keepsAwakeWhileRunning"
         static let expandOnCompletion = "behaviour.expandOnCompletion"
         static let childAgentNotificationTiming = "behaviour.childAgentNotificationTiming"
         static let reminderDelay = "behaviour.reminder.delay"

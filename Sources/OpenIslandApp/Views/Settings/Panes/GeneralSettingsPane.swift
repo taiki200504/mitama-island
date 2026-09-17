@@ -34,6 +34,15 @@ struct GeneralSettingsPane: View {
                     set: { model.launchAtLoginEnabled = $0 }
                 )
             )
+            SettingsToggleRow(
+                title: lang.t("settings.general.keepAwake"),
+                help: lang.t("settings.general.keepAwake.help"),
+                icon: "cup.and.saucer.fill",
+                isOn: Binding(
+                    get: { behaviour.keepsAwakeWhileRunning },
+                    set: { behaviour.keepsAwakeWhileRunning = $0 }
+                )
+            )
         }
     }
 

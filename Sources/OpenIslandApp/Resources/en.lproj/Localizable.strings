@@ -805,3 +805,5 @@
 "conversation.you" = "You";
 "approval.risk.elevated" = "This changes files or runs commands";
 "approval.risk.ordinary" = "Read only";
+"settings.general.keepAwake" = "Stay awake while an agent is working";
+"settings.general.keepAwake.help" = "Only on power, lid open and not running hot. The display can still sleep; the work keeps going.";
