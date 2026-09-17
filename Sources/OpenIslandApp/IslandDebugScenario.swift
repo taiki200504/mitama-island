@@ -299,7 +299,9 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                     sessionID: session.id,
                     title: "mitama-island",
                     agentName: "Claude Code",
-                    duration: "4分12秒"
+                    duration: "4分12秒",
+                    level: 7,
+                    leveledUp: true
                 )
             )
 

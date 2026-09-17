@@ -9,6 +9,10 @@ struct CompletionBannerContent: Equatable, Sendable {
     var agentName: String
     /// How long the session ran, already formatted for reading.
     var duration: String?
+    /// The level after this completion; nil hides the tag.
+    var level: Int? = nil
+    /// This completion is the one that reached `level`.
+    var leveledUp: Bool = false
 }
 
 /// Whether the banner is arriving, sitting, or being handed off to the island.
@@ -50,7 +54,13 @@ struct CompletionBannerView: View {
     @State private var isHovering = false
 
     private var theme: SAOTheme { IslandThemes.current }
-    private var accent: Color { theme.statusTints.completed }
+    private var accent: Color { content.leveledUp ? Self.levelUpGold : theme.statusTints.completed }
+
+    static let levelUpGold = Color(hex: 0xFFD35A)
+
+    private var headline: String {
+        content.leveledUp ? "LEVEL UP" : LanguageManager.shared.t("banner.completed")
+    }
 
     var body: some View {
         HStack(spacing: 11) {
@@ -61,9 +71,29 @@ struct CompletionBannerView: View {
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 1) {
-                Text(LanguageManager.shared.t("banner.completed"))
-                    .font(.islandText(size: 14, weight: .bold))
-                    .foregroundStyle(theme.paper)
+                HStack(spacing: 6) {
+                    if content.leveledUp {
+                        Text(headline)
+                            .saoCaps(size: 14, text: headline)
+                            .foregroundStyle(accent)
+                            .shadow(color: accent.opacity(0.8), radius: theme.glowRadius * 2)
+                    } else {
+                        Text(headline)
+                            .font(.islandText(size: 14, weight: .bold))
+                            .foregroundStyle(theme.paper)
+                    }
+                    if let level = content.level {
+                        Text("Lv.\(level)")
+                            .font(.islandMono(size: 10, weight: .bold))
+                            .foregroundStyle(content.leveledUp ? accent : theme.paper.opacity(0.55))
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .overlay(
+                                SAOPanelShape(cornerRadius: 2, cuts: [.topLeading, .bottomTrailing], cutDepth: 3)
+                                    .stroke(accent.opacity(content.leveledUp ? 0.8 : 0.35), lineWidth: 0.75)
+                            )
+                    }
+                }
 
                 Text(subtitle)
                     .font(.islandMono(size: 10.5, weight: .medium))
@@ -114,7 +144,7 @@ struct CompletionBannerView: View {
         .contentShape(Rectangle())
         .onTapGesture { onOpen?() }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(LanguageManager.shared.t("banner.completed")) \(content.title)")
+        .accessibilityLabel("\(headline) \(content.level.map { "Lv.\($0) " } ?? "")\(content.title)")
         .accessibilityHint(onOpen == nil ? "" : LanguageManager.shared.t("banner.openHint"))
     }
 

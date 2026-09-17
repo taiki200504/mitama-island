@@ -44,12 +44,12 @@ final class CompletionBannerController {
         self.panel = panel
         panel.orderFrontRegardless()
         startDismissCountdown()
-        presentBurst(on: screen)
+        presentBurst(on: screen, accent: content.leveledUp ? CompletionBannerView.levelUpGold : IslandThemes.current.statusTints.completed)
     }
 
     /// Plays the burst under the notch. Skipped entirely under Reduce Motion:
     /// shards flying across the screen are exactly what that setting removes.
-    private func presentBurst(on screen: NSScreen) {
+    private func presentBurst(on screen: NSScreen, accent: Color) {
         dismissBurst()
         guard !IslandMotion.reducesMotion else { return }
 
@@ -63,7 +63,7 @@ final class CompletionBannerController {
         let burst = NSPanel(contentRect: frame, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         burst.contentView = NSHostingView(rootView: CompletionBurstView(
             startedAt: Date(),
-            accent: IslandThemes.current.statusTints.completed
+            accent: accent
         ))
         burst.isFloatingPanel = true
         burst.level = .statusBar

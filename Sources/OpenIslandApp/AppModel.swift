@@ -2565,6 +2565,9 @@ final class AppModel {
            let session = state.session(id: payload.sessionID) {
             mitamaFeed.record(session)
         }
+        if case .sessionCompleted = event, !wasAlreadyCompleted {
+            recordCompletionForLevel(event)
+        }
 
         // Push relevant events to the Watch/iPhone via the relay
         if let relay = watchRelay {
@@ -2608,6 +2611,9 @@ final class AppModel {
     // MARK: Completion banner
 
     let completionBanner = CompletionBannerController()
+    /// The session whose completion just crossed into a new level, read by the
+    /// banner that announces it.
+    @ObservationIgnored var pendingLevelUp: (sessionID: String, level: Int)?
 
     /// Announces a finished session in the middle of the screen.
     ///
@@ -2639,7 +2645,9 @@ final class AppModel {
                 agentName: session.tool.displayName,
                 duration: CompletionDurationFormatter.string(
                     for: payload.timestamp.timeIntervalSince(session.firstSeenAt)
-                )
+                ),
+                level: IslandLevel.level(forCompletions: completedSessionCount),
+                leveledUp: pendingLevelUp.map { $0.sessionID == session.id } ?? false
             ),
             on: overlay.overlayPanelController.currentOverlayScreen,
             onOpen: { [weak self] sessionID in
