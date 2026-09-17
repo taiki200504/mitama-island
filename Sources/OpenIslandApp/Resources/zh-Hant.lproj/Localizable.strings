@@ -794,3 +794,11 @@
 "statusItem.state.idle" = "閒置";
 "statusItem.state.running" = "執行中";
 "statusItem.state.attention" = "等待你的操作";
+"island.session.openLog" = "查看對話紀錄";
+"conversation.title" = "對話紀錄";
+"conversation.empty" = "尚無可顯示的對話";
+"conversation.hidden" = "螢幕分享中，已隱藏內文";
+"conversation.showAll" = "顯示全部";
+"conversation.showLess" = "收合";
+"conversation.back" = "返回列表";
+"conversation.you" = "你";

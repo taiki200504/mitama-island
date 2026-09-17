@@ -795,3 +795,11 @@
 "statusItem.state.idle" = "Idle";
 "statusItem.state.running" = "Working";
 "statusItem.state.attention" = "Waiting for you";
+"island.session.openLog" = "View conversation";
+"conversation.title" = "Conversation";
+"conversation.empty" = "Nothing to show yet";
+"conversation.hidden" = "Hidden while your screen is shared";
+"conversation.showAll" = "Show all";
+"conversation.showLess" = "Show less";
+"conversation.back" = "Back to list";
+"conversation.you" = "You";

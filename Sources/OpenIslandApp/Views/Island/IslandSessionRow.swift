@@ -42,6 +42,9 @@ struct IslandSessionRow: View {
     var onDismiss: (() -> Void)?
     /// Adds a rule that keeps this kind of session off the island for good.
     var onHide: ((SilenceRule) -> Void)?
+    /// Opens this session's conversation log. Nil when there is no transcript
+    /// this app knows how to read.
+    var onOpenLog: (() -> Void)?
     /// Adds a rule that answers this kind of session's permission requests.
     var onAutoApprove: ((AutoResponseRule) -> Void)?
     var agentIconStyle: AgentIconStyle = .pixel
@@ -195,6 +198,9 @@ struct IslandSessionRow: View {
     /// only silenced today's would look broken.
     @ViewBuilder
     private var hideSessionMenuItems: some View {
+        if let onOpenLog {
+            Button(LanguageManager.shared.t("island.session.openLog"), action: onOpenLog)
+        }
         if onHide != nil, let directory = session.jumpTarget?.workingDirectory, !directory.isEmpty {
             Button(
                 LanguageManager.shared.t("island.session.hideFolder")

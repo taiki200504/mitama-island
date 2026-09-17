@@ -132,7 +132,7 @@ struct IslandSurfaceTests {
 
     @Test("The placeholder surfaces carry no session and are never notification cards")
     func placeholderSurfacesCarryNoSession() {
-        for surface: IslandSurface in [.nowPlaying, .clipboard, .timer] {
+        for surface: IslandSurface in [.nowPlaying, .clipboard, .timer, .conversation(sessionID: "session-9")] {
             #expect(surface.sessionID == nil)
             #expect(!surface.isNotificationCard)
         }
@@ -140,7 +140,7 @@ struct IslandSurfaceTests {
 
     @Test("A placeholder surface always matches — there's no session state for it to disagree with")
     func placeholderSurfacesAlwaysMatchCurrentState() {
-        for surface: IslandSurface in [.nowPlaying, .clipboard, .timer] {
+        for surface: IslandSurface in [.nowPlaying, .clipboard, .timer, .conversation(sessionID: "session-9")] {
             #expect(surface.matchesCurrentState(of: nil))
         }
     }
@@ -156,7 +156,7 @@ struct IslandSurfaceTests {
             summary: "Done",
             updatedAt: .now
         )
-        for surface: IslandSurface in [.nowPlaying, .clipboard, .timer] {
+        for surface: IslandSurface in [.nowPlaying, .clipboard, .timer, .conversation(sessionID: "session-9")] {
             #expect(!surface.autoDismissesWhenPresentedAsNotification(session: completedSession))
         }
     }

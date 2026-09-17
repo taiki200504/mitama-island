@@ -58,6 +58,8 @@ extension IslandPanelView {
             ClipboardSurfaceView(model: model)
         case .timer:
             FocusTimerSurfaceView(model: model)
+        case let .conversation(sessionID):
+            ConversationSurfaceView(model: model, sessionID: sessionID)
         }
     }
 

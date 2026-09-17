@@ -795,3 +795,11 @@
 "statusItem.state.idle" = "空闲";
 "statusItem.state.running" = "运行中";
 "statusItem.state.attention" = "等待你的操作";
+"island.session.openLog" = "查看对话记录";
+"conversation.title" = "对话记录";
+"conversation.empty" = "暂无可显示的对话";
+"conversation.hidden" = "屏幕共享中，已隐藏正文";
+"conversation.showAll" = "显示全部";
+"conversation.showLess" = "收起";
+"conversation.back" = "返回列表";
+"conversation.you" = "你";

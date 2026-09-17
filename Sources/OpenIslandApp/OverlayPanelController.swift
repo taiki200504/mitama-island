@@ -797,6 +797,9 @@ final class OverlayPanelController {
     private static let nowPlayingPlaceholderHeight: CGFloat = 150
     private static let timerPlaceholderHeight: CGFloat = 190
     private static let clipboardPlaceholderHeight: CGFloat = 360
+    /// Fixed rather than measured: the log scrolls inside a frame of its own,
+    /// so the window never jumps as messages load.
+    private static let conversationHeight: CGFloat = 440
 
     private func openedContentHeight(for model: AppModel) -> CGFloat {
         let maxHeight = CGFloat(model.settings.display.maxPanelHeight)
@@ -807,6 +810,8 @@ final class OverlayPanelController {
             return min(Self.timerPlaceholderHeight, maxHeight)
         case .clipboard:
             return min(Self.clipboardPlaceholderHeight, maxHeight)
+        case .conversation:
+            return min(Self.conversationHeight, maxHeight)
         case .sessionList:
             break
         }
