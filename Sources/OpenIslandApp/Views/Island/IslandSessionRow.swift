@@ -277,6 +277,9 @@ struct IslandSessionRow: View {
                    !model.isEmpty {
                     sideBadge(model)
                 }
+                if isStalledForBadge {
+                    stallBadge
+                }
                 agentBadge
                 if session.isRemote {
                     sideBadge("SSH")

@@ -791,3 +791,4 @@
 "statusItem.clipboard.open" = "剪贴板…";
 "statusItem.shelf.header" = "暂存（%d）";
 "statusItem.settings" = "设置…";
+"session.stalled" = "一段时间没有响应";

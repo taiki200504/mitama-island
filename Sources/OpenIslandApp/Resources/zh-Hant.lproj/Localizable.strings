@@ -790,3 +790,4 @@
 "statusItem.clipboard.open" = "剪貼簿…";
 "statusItem.shelf.header" = "暫存（%d）";
 "statusItem.settings" = "設定…";
+"session.stalled" = "一段時間沒有回應";
