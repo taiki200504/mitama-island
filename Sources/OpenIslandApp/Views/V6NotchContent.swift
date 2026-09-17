@@ -185,8 +185,10 @@ private struct AgentsGridWaitingTile: View {
                 // Cap animation to 12 seconds to reduce CPU during extended waits
                 animationTimer?.invalidate()
                 animationTimer = Timer.scheduledTimer(withTimeInterval: 12, repeats: false) { _ in
-                    pulse = false
-                    animationTimer = nil
+                    DispatchQueue.main.async {
+                        pulse = false
+                        animationTimer = nil
+                    }
                 }
             }
             .onDisappear {
@@ -603,8 +605,10 @@ struct SAOPeekGaugeView: View {
                             // Cap animation to 12 seconds to reduce CPU usage during extended urgent waits
                             urgentAnimationTimer?.invalidate()
                             urgentAnimationTimer = Timer.scheduledTimer(withTimeInterval: 12, repeats: false) { _ in
-                                urgentPulse = false
-                                urgentAnimationTimer = nil
+                                DispatchQueue.main.async {
+                                    urgentPulse = false
+                                    urgentAnimationTimer = nil
+                                }
                             }
                         }
                 }
@@ -662,8 +666,10 @@ private struct SAOPeekTailStrip: View {
             // Cap animation to 12 seconds to reduce CPU during extended waits
             breatheTimer?.invalidate()
             breatheTimer = Timer.scheduledTimer(withTimeInterval: 12, repeats: false) { _ in
-                breathe = false
-                breatheTimer = nil
+                DispatchQueue.main.async {
+                    breathe = false
+                    breatheTimer = nil
+                }
             }
         }
         .onDisappear {
@@ -839,8 +845,10 @@ private struct NowPlayingVisualiser: View {
             // Cap animation to 12 seconds to reduce CPU during extended playback
             animateTimer?.invalidate()
             animateTimer = Timer.scheduledTimer(withTimeInterval: 12, repeats: false) { _ in
-                animate = false
-                animateTimer = nil
+                DispatchQueue.main.async {
+                    animate = false
+                    animateTimer = nil
+                }
             }
         }
         .onDisappear {
