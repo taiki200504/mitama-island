@@ -2,6 +2,40 @@ import SwiftUI
 import OpenIslandCore
 
 extension IslandSessionRow {
+    /// Stall badge: indicates a running session with no activity for 5+ minutes.
+    /// Amber color (statusYellow), displayed only in `.list` presentation.
+    var stallBadge: some View? {
+        let isStalled = SessionActivityStatus.isStalled(
+            phase: session.phase,
+            lastActivityTime: session.updatedAt,
+            now: referenceDate
+        )
+
+        guard presentation == .list, isStalled else {
+            return nil
+        }
+
+        let elapsedText = SessionActivityStatus.elapsedTimeText(
+            since: session.updatedAt,
+            now: referenceDate
+        )
+
+        return Text(elapsedText)
+            .font(.islandMono(size: 9.5, weight: .medium))
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+            .foregroundStyle(V6Palette.statusYellow)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .background(V6Palette.statusYellow.opacity(0.1), in: RoundedRectangle(cornerRadius: 3))
+            .overlay(
+                RoundedRectangle(cornerRadius: 3).stroke(
+                    V6Palette.statusYellow.opacity(0.3),
+                    lineWidth: 0.5
+                )
+            )
+    }
+
     var agentBadge: some View {
         let tint = Color(hex: session.tool.brandColorHex) ?? V6Palette.paper
         return Text(agentBadgeTitle)
