@@ -13,6 +13,13 @@ while IFS= read -r file; do
         plutil -lint "$file" 2>&1 | sed 's/^/  /'
         failed=1
     fi
+    # plutil reads a leftover merge-conflict block as more comments and
+    # passes it; the conflicting side's keys then silently go missing.
+    if grep -nE '^(<<<<<<<|=======$|>>>>>>>)' "$file" >/dev/null; then
+        echo "FAIL: $file has merge-conflict markers"
+        grep -nE '^(<<<<<<<|=======$|>>>>>>>)' "$file" | sed 's/^/  /'
+        failed=1
+    fi
 done < <(find "$repo_root/Sources" -name '*.strings' -type f)
 
 if (( failed )); then
