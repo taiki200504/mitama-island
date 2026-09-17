@@ -66,6 +66,8 @@ extension IslandPanelView {
         switch openedRoute {
         case .bootSplash:
             IslandBootSplashView { regularOpenedContent }
+        case .conversationLog(let sessionID):
+            conversationLogContent(sessionID: sessionID)
         case .notificationCard, .sessionList, .switcher:
             regularOpenedContent
         }
@@ -137,6 +139,37 @@ extension IslandPanelView {
             model.putOnShelf(urls)
             return true
         } isTargeted: { isShelfTargeted = $0 }
+    }
+
+    /// Shows the conversation log for a specific session.
+    /// Only available for Claude sessions with a valid transcript path.
+    @ViewBuilder
+    private func conversationLogContent(sessionID: String) -> some View {
+        if let session = model.islandListSessions.first(where: { $0.id == sessionID }) {
+            if session.agentType == "claude" && session.claudeSessionMetadata?.transcriptPath != nil {
+                IslandConversationLogView(
+                    session: session,
+                    lang: model.lang
+                ) {
+                    conversationLogSessionID = nil
+                }
+            } else {
+                emptyLogPlaceholder
+            }
+        } else {
+            emptyLogPlaceholder
+        }
+    }
+
+    private var emptyLogPlaceholder: some View {
+        VStack {
+            Spacer()
+            Text("No transcript available")
+                .font(.islandText(size: 12))
+                .foregroundStyle(V6Palette.paper.opacity(0.5))
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, minHeight: 200)
     }
 
     /// What the camera and the microphone have to say for themselves.

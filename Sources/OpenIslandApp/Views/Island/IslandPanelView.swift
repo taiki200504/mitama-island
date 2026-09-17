@@ -58,6 +58,8 @@ struct IslandPanelView: View {
     @State var showingQuitConfirmation = false
     @State private var keepsOpenedSurfaceMounted = false
     @State private var openedSurfaceMountGeneration: UInt64 = 0
+    /// The session ID currently showing its conversation log, if any.
+    @State private var conversationLogSessionID: String? = nil
 
     private var isOpened: Bool {
         model.notchStatus == .opened

@@ -40,6 +40,8 @@ struct IslandSessionRow: View {
     var onReply: ((String) -> Void)?
     let onJump: () -> Void
     var onDismiss: (() -> Void)?
+    /// Opens the conversation log for this session (Claude only).
+    var onOpenConversationLog: (() -> Void)?
     /// Adds a rule that keeps this kind of session off the island for good.
     var onHide: ((SilenceRule) -> Void)?
     /// Adds a rule that answers this kind of session's permission requests.
@@ -195,6 +197,17 @@ struct IslandSessionRow: View {
     /// only silenced today's would look broken.
     @ViewBuilder
     private var hideSessionMenuItems: some View {
+        // Conversation log button for Claude sessions with a transcript
+        if onOpenConversationLog != nil,
+           session.agentType == "claude",
+           session.claudeSessionMetadata?.transcriptPath != nil {
+            Button {
+                onOpenConversationLog?()
+            } label: {
+                Text("View Conversation")
+            }
+        }
+
         if onHide != nil, let directory = session.jumpTarget?.workingDirectory, !directory.isEmpty {
             Button(
                 LanguageManager.shared.t("island.session.hideFolder")

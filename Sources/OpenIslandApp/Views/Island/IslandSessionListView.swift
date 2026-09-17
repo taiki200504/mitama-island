@@ -186,6 +186,7 @@ extension IslandPanelView {
                     onReply: TerminalTextSender.canReply(to: session, enabled: model.completionReplyEnabled)
                         ? { model.replyToSession(session, text: $0) } : nil,
                     onJump: { model.jumpToSession(session) },
+                    onOpenConversationLog: { conversationLogSessionID = session.id },
                     onHide: { model.hideSessions(matching: $0) },
                     onAutoApprove: { model.autoAnswerSessions(matching: $0) },
                     agentIconStyle: model.agentIconStyle,
@@ -236,6 +237,7 @@ extension IslandPanelView {
                                 onReply: TerminalTextSender.canReply(to: session, enabled: model.completionReplyEnabled)
                                     ? { model.replyToSession(session, text: $0) } : nil,
                                 onJump: { model.jumpToSession(session) },
+                                onOpenConversationLog: { conversationLogSessionID = session.id },
                                 onDismiss: session.isRemote ? { model.dismissSession(session.id) } : nil,
                                 onHide: { model.hideSessions(matching: $0) },
                     onAutoApprove: { model.autoAnswerSessions(matching: $0) },
@@ -296,6 +298,7 @@ extension IslandPanelView {
                         onReply: TerminalTextSender.canReply(to: session, enabled: model.completionReplyEnabled)
                             ? { model.replyToSession(session, text: $0) } : nil,
                         onJump: { model.jumpToSession(session) },
+                        onOpenConversationLog: { conversationLogSessionID = session.id },
                         onDismiss: session.isRemote ? { model.dismissSession(session.id) } : nil,
                         onHide: { model.hideSessions(matching: $0) },
                     onAutoApprove: { model.autoAnswerSessions(matching: $0) },

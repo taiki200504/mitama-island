@@ -18,6 +18,8 @@ enum IslandOpenedRoute: Equatable {
     case switcher
     /// The moment right after launch, before there is anything to show yet.
     case bootSplash
+    /// Show the conversation log (transcript) for a specific session.
+    case conversationLog(sessionID: String)
 }
 
 enum IslandOpenedRouting {
@@ -47,7 +49,12 @@ enum IslandOpenedRouting {
 extension IslandPanelView {
     /// What this open of the island should lead with.
     var openedRoute: IslandOpenedRoute {
-        IslandOpenedRouting.route(
+        // Show conversation log if one is open
+        if let sessionID = conversationLogSessionID {
+            return .conversationLog(sessionID: sessionID)
+        }
+
+        return IslandOpenedRouting.route(
             reason: model.notchOpenReason,
             surface: model.islandSurface,
             firstActionableID: model.islandListSessions.first(where: \.phase.requiresAttention)?.id
