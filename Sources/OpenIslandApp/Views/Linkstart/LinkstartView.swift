@@ -104,7 +104,8 @@ struct LinkstartView: View {
     /// Near-black while diving so the light has something to cut through,
     /// easing back to the usual dim once you have arrived.
     private static func backdropDarkness(at elapsed: TimeInterval) -> Double {
-        elapsed < LinkstartSequence.calibrationStart ? 0.94 : 0.62
+        let t = min(max((elapsed - LinkstartSequence.calibrationStart) / 0.3, 0), 1)
+        return 0.94 - 0.32 * t
     }
 
     // MARK: - Pieces
@@ -162,6 +163,7 @@ struct LinkstartView: View {
                 .foregroundStyle(.white)
                 .shadow(color: theme.accent, radius: theme.glowRadius * 4)
         }
+        .compositingGroup()
         .blendMode(.plusLighter)
         .scaleEffect(frame.scale)
         .opacity(frame.opacity)
@@ -284,7 +286,8 @@ struct LinkstartView: View {
     @ViewBuilder
     private func trailer(elapsed: TimeInterval, phase: LinkstartPhase, theme: SAOTheme, reducesMotion: Bool) -> some View {
         VStack(spacing: 10) {
-            syncMeter(rate: LinkstartSequence.syncRate(at: elapsed), theme: theme)
+            // A bar filling every frame is motion too: held full under Reduce Motion.
+            syncMeter(rate: reducesMotion ? 100 : LinkstartSequence.syncRate(at: elapsed), theme: theme)
 
             switch phase {
             case .awakening, .ignition, .warp, .flash, .calibration, .senses:
@@ -341,6 +344,12 @@ struct LinkstartView: View {
 private struct LinkstartTunnelView: View {
     let elapsed: TimeInterval
 
+    /// Half the diagonal of a 14" laptop screen in points: the size the
+    /// line widths were tuned on.
+    private static let referenceHalfDiagonal: CGFloat = 900
+    private static let hueBuckets = 8
+    private static let depthBuckets = 4
+
     var body: some View {
         let streaks = LinkstartSequence.streaks(at: elapsed)
         let glow = LinkstartSequence.coreGlow(at: elapsed)
@@ -351,21 +360,42 @@ private struct LinkstartTunnelView: View {
             let halfDiagonal = (size.width * size.width + size.height * size.height).squareRoot() / 2
             context.blendMode = .plusLighter
 
+            // Line widths follow the screen like everything else here, so a
+            // 6K display gets the same tunnel as a laptop rather than a thinner one.
+            let widthScale = halfDiagonal / Self.referenceHalfDiagonal
+
+            // Batched: one path per hue × depth bucket instead of one stroke
+            // per streak, so a frame is a few dozen draw calls, not hundreds,
+            // on every screen at display refresh rate.
+            var buckets: [Int: (path: Path, opacity: Double, width: Double, hue: Double, count: Int)] = [:]
             for streak in streaks where streak.opacity > 0.01 && streak.outer > streak.inner {
+                let hueBucket = min(Int(streak.hue * Double(Self.hueBuckets)), Self.hueBuckets - 1)
+                let depthBucket = min(Int(streak.outer / 1.15 * Double(Self.depthBuckets)), Self.depthBuckets - 1)
+                let key = hueBucket * Self.depthBuckets + depthBucket
                 let direction = CGVector(dx: cos(streak.angle), dy: sin(streak.angle))
-                var path = Path()
-                path.move(to: CGPoint(
+                var entry = buckets[key] ?? (Path(), 0, 0, 0, 0)
+                entry.path.move(to: CGPoint(
                     x: center.x + direction.dx * halfDiagonal * streak.inner,
                     y: center.y + direction.dy * halfDiagonal * streak.inner
                 ))
-                path.addLine(to: CGPoint(
+                entry.path.addLine(to: CGPoint(
                     x: center.x + direction.dx * halfDiagonal * streak.outer,
                     y: center.y + direction.dy * halfDiagonal * streak.outer
                 ))
-                let colour = Color(hue: streak.hue, saturation: 0.7, brightness: 1)
-                let width = CGFloat(streak.width)
-                context.stroke(path, with: .color(colour.opacity(streak.opacity * 0.25)), style: StrokeStyle(lineWidth: width * 6, lineCap: .round))
-                context.stroke(path, with: .color(.white.opacity(streak.opacity * 0.9)), style: StrokeStyle(lineWidth: width, lineCap: .round))
+                entry.opacity += streak.opacity
+                entry.width += streak.width
+                entry.hue += streak.hue
+                entry.count += 1
+                buckets[key] = entry
+            }
+
+            for entry in buckets.values {
+                let n = Double(entry.count)
+                let opacity = entry.opacity / n
+                let width = CGFloat(entry.width / n) * widthScale
+                let colour = Color(hue: entry.hue / n, saturation: 0.7, brightness: 1)
+                context.stroke(entry.path, with: .color(colour.opacity(opacity * 0.25)), style: StrokeStyle(lineWidth: width * 6, lineCap: .round))
+                context.stroke(entry.path, with: .color(.white.opacity(opacity * 0.9)), style: StrokeStyle(lineWidth: width, lineCap: .round))
             }
 
             let radius = halfDiagonal * 0.35 * CGFloat(0.4 + glow)

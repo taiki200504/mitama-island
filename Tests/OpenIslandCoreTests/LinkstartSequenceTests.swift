@@ -134,6 +134,8 @@ struct LinkstartSequenceTests {
             #expect((0...1).contains(streak.hue))
             #expect((0...1).contains(streak.opacity))
         }
+        // Actually moving: a later moment is a different frame.
+        #expect(LinkstartSequence.streaks(at: 1.0) != LinkstartSequence.streaks(at: 2.0))
         // Not all piled up in one place.
         #expect(Set(mid.map { Int($0.angle * 10) }).count > 40)
     }
