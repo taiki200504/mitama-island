@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import OpenIslandCore
 import SwiftUI
 
 /// Puts the completion banner on screen and takes it away again.
@@ -18,6 +19,13 @@ final class CompletionBannerController {
     static let notchGap: CGFloat = 8
 
     private var panel: NSPanel?
+    /// The one-second burst of light that goes with the banner's arrival.
+    /// A window of its own that never takes the mouse, so the wide area it
+    /// draws over stays clickable.
+    private var burstPanel: NSPanel?
+    private let burstTimer = RepeatingTimerBox()
+    /// How much room the burst gets under the notch.
+    static let burstSize = CGSize(width: 560, height: 220)
     private var phase = CompletionBannerPhase()
     private let dismissTimer = RepeatingTimerBox()
 
@@ -36,6 +44,49 @@ final class CompletionBannerController {
         self.panel = panel
         panel.orderFrontRegardless()
         startDismissCountdown()
+        presentBurst(on: screen)
+    }
+
+    /// Plays the burst under the notch. Skipped entirely under Reduce Motion:
+    /// shards flying across the screen are exactly what that setting removes.
+    private func presentBurst(on screen: NSScreen) {
+        dismissBurst()
+        guard !IslandMotion.reducesMotion else { return }
+
+        let size = Self.burstSize
+        let frame = NSRect(
+            x: screen.frame.midX - size.width / 2,
+            y: screen.frame.maxY - screen.notchSize.height - size.height,
+            width: size.width,
+            height: size.height
+        )
+        let burst = NSPanel(contentRect: frame, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        burst.contentView = NSHostingView(rootView: CompletionBurstView(
+            startedAt: Date(),
+            accent: IslandThemes.current.statusTints.completed
+        ))
+        burst.isFloatingPanel = true
+        burst.level = .statusBar
+        burst.backgroundColor = .clear
+        burst.isOpaque = false
+        burst.hasShadow = false
+        burst.ignoresMouseEvents = true
+        burst.hidesOnDeactivate = false
+        burst.collectionBehavior = [.fullScreenAuxiliary, .canJoinAllSpaces, .ignoresCycle, .stationary]
+        burst.orderFrontRegardless()
+        // Banner back on top, so the shards fall from behind it.
+        panel?.orderFrontRegardless()
+        burstPanel = burst
+
+        burstTimer.timer = Timer.scheduledTimer(withTimeInterval: CompletionBurst.duration + 0.1, repeats: false) { [weak self] _ in
+            Task { @MainActor in self?.dismissBurst() }
+        }
+    }
+
+    private func dismissBurst() {
+        burstTimer.invalidate()
+        burstPanel?.orderOut(nil)
+        burstPanel = nil
     }
 
     /// Restarts the countdown. Called on arrival, and again when the pointer
