@@ -795,7 +795,6 @@
 "statusItem.state.idle" = "待機中";
 "statusItem.state.running" = "実行中";
 "statusItem.state.attention" = "あなたの操作待ち";
-<<<<<<< HEAD
 "island.session.openLog" = "会話ログを見る";
 "conversation.title" = "会話ログ";
 "conversation.empty" = "まだ表示できる会話がありません";
@@ -804,7 +803,5 @@
 "conversation.showLess" = "折りたたむ";
 "conversation.back" = "一覧へ戻る";
 "conversation.you" = "あなた";
-=======
 "approval.risk.elevated" = "ファイルやコマンドでマシンを変更する操作です";
 "approval.risk.ordinary" = "読み取りのみ";
->>>>>>> d0c0fb1 (feat(approval): マシンを変える承認は赤い警告ウィンドウで出す)

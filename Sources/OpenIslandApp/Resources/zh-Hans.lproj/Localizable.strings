@@ -795,7 +795,6 @@
 "statusItem.state.idle" = "空闲";
 "statusItem.state.running" = "运行中";
 "statusItem.state.attention" = "等待你的操作";
-<<<<<<< HEAD
 "island.session.openLog" = "查看对话记录";
 "conversation.title" = "对话记录";
 "conversation.empty" = "暂无可显示的对话";
@@ -804,7 +803,5 @@
 "conversation.showLess" = "收起";
 "conversation.back" = "返回列表";
 "conversation.you" = "你";
-=======
 "approval.risk.elevated" = "此操作会修改文件或运行命令";
 "approval.risk.ordinary" = "仅读取";
->>>>>>> d0c0fb1 (feat(approval): マシンを変える承認は赤い警告ウィンドウで出す)
