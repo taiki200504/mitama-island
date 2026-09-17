@@ -795,6 +795,7 @@
 "statusItem.state.idle" = "Idle";
 "statusItem.state.running" = "Working";
 "statusItem.state.attention" = "Waiting for you";
+<<<<<<< HEAD
 "island.session.openLog" = "View conversation";
 "conversation.title" = "Conversation";
 "conversation.empty" = "Nothing to show yet";
@@ -803,3 +804,7 @@
 "conversation.showLess" = "Show less";
 "conversation.back" = "Back to list";
 "conversation.you" = "You";
+=======
+"approval.risk.elevated" = "This changes files or runs commands";
+"approval.risk.ordinary" = "Read only";
+>>>>>>> d0c0fb1 (feat(approval): マシンを変える承認は赤い警告ウィンドウで出す)

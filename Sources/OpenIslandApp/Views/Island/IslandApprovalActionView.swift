@@ -4,6 +4,10 @@ import OpenIslandCore
 extension IslandSessionRow {
     var approvalActionBody: some View {
         VStack(alignment: .leading, spacing: 8) {
+            if !isPlanApproval {
+                riskBanner(PermissionRisk.of(toolName: session.permissionRequest?.toolName))
+            }
+
             HStack(spacing: 6) {
                 Text(lang.t(isPlanApproval ? "approval.planReady" : "approval.toolPermissionRequested"))
                     .saoCaps(size: 12.5, text: lang.t(isPlanApproval ? "approval.planReady" : "approval.toolPermissionRequested"))
@@ -82,7 +86,64 @@ extension IslandSessionRow {
         }
         .padding(10)
         .saoCard()
+        // A red halo outside the card for anything that changes the machine,
+        // so the difference reads before a single word does.
+        .shadow(color: approvalIsElevated ? SAOGrammar.Palette.danger.opacity(0.55) : .clear, radius: 10)
     }
+
+    private var approvalIsElevated: Bool {
+        !isPlanApproval && PermissionRisk.of(toolName: session.permissionRequest?.toolName) == .elevated
+    }
+
+    /// The system-message strip across the top of the card: hazard stripes and
+    /// a caution for anything that writes, runs or deletes; a quiet tag for
+    /// tools that only look. Same classification the voice gate uses, so the
+    /// card and the second "yes" never disagree about what is dangerous.
+    @ViewBuilder
+    private func riskBanner(_ risk: PermissionRisk) -> some View {
+        switch risk {
+        case .elevated:
+            HStack(spacing: 7) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 11, weight: .bold))
+                Text("WARNING")
+                    .saoCaps(size: 11.5, text: "WARNING")
+                Text(lang.t("approval.risk.elevated"))
+                    .font(.islandText(size: 10.5, weight: .semibold))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
+            .background(
+                ZStack {
+                    SAOGrammar.Palette.danger
+                    HazardStripes()
+                        .fill(Color.black.opacity(0.16))
+                }
+                .clipShape(Self.bannerShape)
+            )
+            .overlay(Self.bannerShape.stroke(Color.black.opacity(0.35), lineWidth: 1))
+            .accessibilityElement(children: .combine)
+        case .ordinary:
+            HStack(spacing: 5) {
+                Image(systemName: "eye")
+                    .font(.system(size: 9, weight: .semibold))
+                Text(lang.t("approval.risk.ordinary"))
+                    .font(.islandMono(size: 9.5, weight: .semibold))
+            }
+            .foregroundStyle(SAOGrammar.Palette.systemCyan)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 2.5)
+            .background(Self.bannerShape.fill(SAOGrammar.Palette.systemCyan.opacity(0.12)))
+            .overlay(Self.bannerShape.stroke(SAOGrammar.Palette.systemCyan.opacity(0.4), lineWidth: 0.75))
+            .accessibilityElement(children: .combine)
+        }
+    }
+
+    private static let bannerShape = SAOPanelShape(cornerRadius: 3, cuts: [.topLeading, .bottomTrailing], cutDepth: 6)
 
     /// Appends the key that also triggers this button, but only while the
     /// modifier is held — a permanent "⌃Y" on every button is clutter, and one
@@ -155,4 +216,24 @@ extension IslandSessionRow {
         session.permissionRequest?.toolName == "ExitPlanMode"
     }
 
+}
+
+/// Diagonal warning stripes, drawn once as a path rather than repeated views.
+private struct HazardStripes: Shape {
+    var spacing: CGFloat = 9
+    var width: CGFloat = 4.5
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        var x = -rect.height
+        while x < rect.width {
+            path.move(to: CGPoint(x: x, y: rect.maxY))
+            path.addLine(to: CGPoint(x: x + width, y: rect.maxY))
+            path.addLine(to: CGPoint(x: x + width + rect.height, y: rect.minY))
+            path.addLine(to: CGPoint(x: x + rect.height, y: rect.minY))
+            path.closeSubpath()
+            x += spacing
+        }
+        return path
+    }
 }

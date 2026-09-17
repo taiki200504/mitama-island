@@ -862,11 +862,16 @@ final class OverlayPanelController {
         return cappedListHeight + Self.openedContentVerticalInsets
     }
 
+    /// The warning or read-only strip `approvalActionBody` puts above the title.
+    private static let approvalRiskBannerHeight: CGFloat = 32
+
     /// Additional height for the actionable session's inline action area.
     private func actionableBodyHeight(for session: AgentSession, model: AppModel) -> CGFloat {
         switch session.phase {
         case .waitingForApproval:
-            return 118
+            // 118 for the card itself, plus the risk strip across its top —
+            // under-estimating here is what pushes Allow/Deny out of reach.
+            return 118 + Self.approvalRiskBannerHeight
         case .waitingForAnswer:
             return questionCardHeight(for: session.questionPrompt) - 44
         case .completed:
