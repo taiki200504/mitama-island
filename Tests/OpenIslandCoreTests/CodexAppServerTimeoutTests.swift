@@ -24,10 +24,12 @@ struct CodexAppServerTimeoutTests {
             _ = try await client.listLoadedThreads()
         }
 
-        // Should fail fast relative to the configured timeout, not hang on the
-        // global test timeout. Leave room for CI runner scheduling jitter.
+        // Should fail on the configured timeout, not hang on the global test
+        // timeout. The bound only has to tell those apart: a busy CI runner
+        // has taken 2.1–2.3s here, which failed a tighter 2s bound on runs
+        // where nothing was wrong.
         let elapsed = Date().timeIntervalSince(start)
-        #expect(elapsed < max(2.0, client.requestTimeoutSeconds * 20))
+        #expect(elapsed < 10)
     }
 
     @Test
