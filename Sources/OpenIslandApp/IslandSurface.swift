@@ -8,12 +8,16 @@ enum IslandSurface: Equatable {
     case nowPlaying
     case clipboard
     case timer
+    /// One session's conversation, read from its transcript.
+    case conversation(sessionID: String)
 
     var sessionID: String? {
         switch self {
         case let .sessionList(actionableSessionID):
             actionableSessionID
-        case .nowPlaying, .clipboard, .timer:
+        // Not `actionableSessionID`: the log is something you asked to read,
+        // not a notification card that dismisses itself.
+        case .nowPlaying, .clipboard, .timer, .conversation:
             nil
         }
     }

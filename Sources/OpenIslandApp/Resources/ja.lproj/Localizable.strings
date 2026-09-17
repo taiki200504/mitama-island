@@ -795,3 +795,11 @@
 "statusItem.state.idle" = "待機中";
 "statusItem.state.running" = "実行中";
 "statusItem.state.attention" = "あなたの操作待ち";
+"island.session.openLog" = "会話ログを見る";
+"conversation.title" = "会話ログ";
+"conversation.empty" = "まだ表示できる会話がありません";
+"conversation.hidden" = "画面を共有中なので本文を隠しています";
+"conversation.showAll" = "すべて表示";
+"conversation.showLess" = "折りたたむ";
+"conversation.back" = "一覧へ戻る";
+"conversation.you" = "あなた";
