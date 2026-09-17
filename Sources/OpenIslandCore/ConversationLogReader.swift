@@ -33,7 +33,7 @@ public enum ConversationLogReader {
             let seekOffset = max(0, Int(fileSize) - readSize)
 
             try fileHandle.seek(toOffset: UInt64(seekOffset))
-            let data = try fileHandle.readToEndOfFile()
+            let data = fileHandle.availableData
 
             guard let content = String(data: data, encoding: .utf8) else { return [] }
 

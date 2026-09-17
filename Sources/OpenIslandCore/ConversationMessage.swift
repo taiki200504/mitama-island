@@ -2,7 +2,7 @@ import Foundation
 
 /// A single message in a Claude Code conversation transcript.
 public struct ConversationMessage: Equatable, Sendable, Identifiable {
-    public var id: String { "\(timestamp.timeIntervalSince1970)-\(role)-\(hashValue)" }
+    public let id: String
 
     /// Either "user" or "assistant".
     public let role: Role
@@ -29,6 +29,7 @@ public struct ConversationMessage: Equatable, Sendable, Identifiable {
         self.text = text
         self.timestamp = timestamp
         self.toolSummary = toolSummary
+        self.id = "\(timestamp.timeIntervalSince1970)-\(role.rawValue)-\(UUID().uuidString)"
     }
 }
 
