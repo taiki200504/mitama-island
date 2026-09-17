@@ -12,6 +12,7 @@ import SwiftUI
 final class StatusItemController: NSObject, NSMenuDelegate {
     private let model: AppModel
     private var statusItem: NSStatusItem?
+    private var lastIconState: MenuBarIconRenderer.State?
 
     /// Closures for the menu currently on screen, indexed by `NSMenuItem.tag`.
     /// Rebuilt on every `menuNeedsUpdate`, so a stale entry is never one
@@ -26,12 +27,12 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     func show() {
         guard statusItem == nil else { return }
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        item.button?.image = Self.makeTemplateImage()
         item.button?.imagePosition = .imageOnly
         let menu = NSMenu()
         menu.delegate = self
         item.menu = menu
         statusItem = item
+        updateIconImage()
     }
 
     func hide() {
@@ -43,6 +44,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     // MARK: - NSMenuDelegate
 
     func menuNeedsUpdate(_ menu: NSMenu) {
+        // Update icon before building menu, in case state changed
+        updateIconImage()
+
         menu.removeAllItems()
         actions.removeAll()
 
@@ -145,6 +149,39 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     // MARK: - Private
 
+    /// Determines the current menu bar icon state from the app model and updates
+    /// the status item's image if the state has changed.
+    private func updateIconImage() {
+        let newState = computeIconState()
+        guard newState != lastIconState else { return }
+
+        lastIconState = newState
+        statusItem?.button?.image = MenuBarIconRenderer.image(for: newState)
+    }
+
+    /// Determines the icon state based on the current island state.
+    /// Priority: approval needed > running > waiting > idle
+    private func computeIconState() -> MenuBarIconRenderer.State {
+        let inputs = model.statusMenuInputs
+
+        // Check for approval/question needed first (highest priority)
+        if inputs.hasPendingApprovals || inputs.hasPendingQuestions {
+            return .approvalNeeded
+        }
+
+        // Check for running sessions
+        if inputs.hasRunning {
+            return .running
+        }
+
+        // Check for waiting sessions
+        if inputs.hasWaiting {
+            return .waiting
+        }
+
+        return .idle
+    }
+
     private func addItem(_ title: String, to menu: NSMenu, action: @escaping () -> Void) {
         let item = NSMenuItem(title: title, action: #selector(runAction(_:)), keyEquivalent: "")
         item.target = self
@@ -159,24 +196,4 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         actions[sender.tag]()
     }
 
-    /// Renders the brand mark's `.template` style — drawn expressly for this
-    /// use, per its own doc comment — into the monochrome image a status item
-    /// needs. Falls back to an SF Symbol if rendering ever comes back empty,
-    /// so a status item still appears rather than silently not showing one.
-    private static func makeTemplateImage() -> NSImage {
-        let width: CGFloat = 18
-        let height = width * 64 / 160
-        let renderer = ImageRenderer(content: OpenIslandBrandMark(size: width, style: .template))
-        renderer.scale = NSScreen.main?.backingScaleFactor ?? 2
-
-        guard let image = renderer.nsImage else {
-            let fallback = NSImage(systemSymbolName: "circle.lefthalf.filled", accessibilityDescription: nil)
-                ?? NSImage()
-            fallback.isTemplate = true
-            return fallback
-        }
-        image.size = NSSize(width: width, height: height)
-        image.isTemplate = true
-        return image
-    }
 }

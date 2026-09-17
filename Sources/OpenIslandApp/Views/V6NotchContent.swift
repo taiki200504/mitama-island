@@ -171,6 +171,7 @@ private struct AgentsGridWaitingTile: View {
     let size: CGFloat
     let radius: CGFloat
     @State private var pulse = false
+    @State private var animationTimer: Timer?
 
     var body: some View {
         RoundedRectangle(cornerRadius: radius, style: .continuous)
@@ -181,6 +182,16 @@ private struct AgentsGridWaitingTile: View {
                 withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) {
                     pulse = true
                 }
+                // Cap animation to 12 seconds to reduce CPU during extended waits
+                animationTimer?.invalidate()
+                animationTimer = Timer.scheduledTimer(withTimeInterval: 12, repeats: false) { _ in
+                    pulse = false
+                    animationTimer = nil
+                }
+            }
+            .onDisappear {
+                animationTimer?.invalidate()
+                animationTimer = nil
             }
     }
 }
@@ -561,6 +572,7 @@ struct SAOPeekGaugeView: View {
     var showsEventTitle: Bool = false
 
     @State private var urgentPulse = false
+    @State private var urgentAnimationTimer: Timer?
 
     var body: some View {
         if let islandBody = content.body {
@@ -588,6 +600,12 @@ struct SAOPeekGaugeView: View {
                             withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
                                 urgentPulse = true
                             }
+                            // Cap animation to 12 seconds to reduce CPU usage during extended urgent waits
+                            urgentAnimationTimer?.invalidate()
+                            urgentAnimationTimer = Timer.scheduledTimer(withTimeInterval: 12, repeats: false) { _ in
+                                urgentPulse = false
+                                urgentAnimationTimer = nil
+                            }
                         }
                 }
                 .frame(width: 44, height: 6)
@@ -611,6 +629,10 @@ struct SAOPeekGaugeView: View {
             }
             .lineLimit(1)
             .fixedSize(horizontal: true, vertical: false)
+            .onDisappear {
+                urgentAnimationTimer?.invalidate()
+                urgentAnimationTimer = nil
+            }
         }
     }
 }
@@ -622,6 +644,7 @@ private struct SAOPeekTailStrip: View {
     let count: Int
     let isWaiting: Bool
     @State private var breathe = false
+    @State private var breatheTimer: Timer?
 
     var body: some View {
         SAOBlockStrip(
@@ -636,6 +659,16 @@ private struct SAOPeekTailStrip: View {
             withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) {
                 breathe = true
             }
+            // Cap animation to 12 seconds to reduce CPU during extended waits
+            breatheTimer?.invalidate()
+            breatheTimer = Timer.scheduledTimer(withTimeInterval: 12, repeats: false) { _ in
+                breathe = false
+                breatheTimer = nil
+            }
+        }
+        .onDisappear {
+            breatheTimer?.invalidate()
+            breatheTimer = nil
         }
     }
 }
@@ -785,6 +818,7 @@ struct IslandClosedAccessoryView: View {
 private struct NowPlayingVisualiser: View {
     let isPlaying: Bool
     @State private var animate = false
+    @State private var animateTimer: Timer?
 
     private static let barHeights: [CGFloat] = [4, 8, 5]
 
@@ -802,6 +836,16 @@ private struct NowPlayingVisualiser: View {
             withAnimation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true)) {
                 animate = true
             }
+            // Cap animation to 12 seconds to reduce CPU during extended playback
+            animateTimer?.invalidate()
+            animateTimer = Timer.scheduledTimer(withTimeInterval: 12, repeats: false) { _ in
+                animate = false
+                animateTimer = nil
+            }
+        }
+        .onDisappear {
+            animateTimer?.invalidate()
+            animateTimer = nil
         }
     }
 }

@@ -191,7 +191,9 @@ struct UnifiedBars: View {
             animation.keyTimes = [0, 0.5, 1]
             animation.duration = 0.9
             animation.beginTime = CACurrentMediaTime() + column.waveDelay
-            animation.repeatCount = .infinity
+            // Cap animation to 12 seconds to reduce CPU usage during extended runs
+            animation.repeatCount = Float(ceil(12.0 / animation.duration))
+            animation.fillMode = .forwards
             animation.timingFunctions = [
                 CAMediaTimingFunction(name: .easeInEaseOut),
                 CAMediaTimingFunction(name: .easeInEaseOut),
@@ -205,7 +207,9 @@ struct UnifiedBars: View {
             animation.keyTimes = [0, 0.5, 1]
             animation.duration = 1.8
             animation.beginTime = CACurrentMediaTime() + (column.x < UnifiedBars.center ? 0 : 0.9)
-            animation.repeatCount = .infinity
+            // Cap animation to 12 seconds to reduce CPU usage during extended waits
+            animation.repeatCount = Float(ceil(12.0 / animation.duration))
+            animation.fillMode = .forwards
             animation.timingFunctions = [
                 CAMediaTimingFunction(name: .easeInEaseOut),
                 CAMediaTimingFunction(name: .easeInEaseOut),
