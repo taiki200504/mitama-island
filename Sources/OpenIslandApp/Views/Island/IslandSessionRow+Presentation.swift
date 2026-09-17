@@ -17,7 +17,7 @@ extension IslandSessionRow {
     /// amber on a chamfered tile, so it reads as a condition on the session
     /// rather than as another label.
     var stallBadge: some View {
-        let tint = V6Palette.statusYellow
+        let tint = SAOGrammar.Palette.accentAmber
         let shape = SAOPanelShape(cornerRadius: 2, cuts: [.topLeading, .bottomTrailing], cutDepth: 4)
         return HStack(spacing: 3) {
             Image(systemName: "hourglass")
