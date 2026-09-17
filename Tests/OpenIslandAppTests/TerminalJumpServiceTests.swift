@@ -655,7 +655,8 @@ final class TerminalJumpServiceTests: XCTestCase {
     func testTmuxJumpFallbackActivatesTheResolvedBundleIdentifier() throws {
         // A Zed Preview-only installation resolves to `dev.zed.Zed-Preview`,
         // which the switch does not handle — the fallback must activate that
-        // same identifier instead of the descriptor's default bundle ID.
+        // same identifier instead of the descriptor's default bundle ID. The
+        // app has to be running: the tmux branch never launches a stopped app.
         let openedArguments = OpenedArgumentsBox()
         let service = TerminalJumpService(
             applicationResolver: { bundleIdentifier in
@@ -663,7 +664,7 @@ final class TerminalJumpServiceTests: XCTestCase {
                     ? URL(fileURLWithPath: "/Applications/Zed Preview.app")
                     : nil
             },
-            appRunningChecker: { _ in false },
+            appRunningChecker: { $0 == "dev.zed.Zed-Preview" },
             openAction: { arguments in
                 openedArguments.values.append(arguments)
             },
@@ -683,6 +684,91 @@ final class TerminalJumpServiceTests: XCTestCase {
 
         XCTAssertTrue(result == "Activated Zed. tmux pane targeting failed.")
         XCTAssertTrue(openedArguments.values == [["-b", "dev.zed.Zed-Preview"]])
+    }
+
+    func testTmuxJumpDoesNotActivateStoppedApps() throws {
+        // The tmux branch focuses a pane; it must never `open -b` a stopped
+        // app, because that launches a terminal the user had quit. Both the
+        // VS Code-family activation and the fallback activation are gated on
+        // the resolved app actually running.
+        let cases = [
+            ("iTerm", "com.googlecode.iterm2"),
+            ("Ghostty", "com.mitchellh.ghostty"),
+            ("Terminal", "com.apple.Terminal"),
+            ("VS Code", "com.microsoft.VSCode"),
+        ]
+
+        for (terminalApp, bundleIdentifier) in cases {
+            let openedArguments = OpenedArgumentsBox()
+            let recordedScripts = RecordedScriptsBox()
+            let service = TerminalJumpService(
+                applicationResolver: { id in
+                    id == bundleIdentifier
+                        ? URL(fileURLWithPath: "/Applications/\(terminalApp).app")
+                        : nil
+                },
+                appRunningChecker: { _ in false },
+                openAction: { arguments in
+                    openedArguments.values.append(arguments)
+                },
+                appleScriptRunner: { script in
+                    recordedScripts.values.append(script)
+                    return "matched"
+                }
+            )
+
+            let result = try service.jump(
+                to: JumpTarget(
+                    terminalApp: terminalApp,
+                    workspaceName: "open-island",
+                    paneTitle: "",
+                    workingDirectory: "/tmp",
+                    tmuxTarget: "open-island-test-nonexistent:9.9"
+                )
+            )
+
+            XCTAssertTrue(
+                openedArguments.values.isEmpty,
+                "\(terminalApp) is stopped: the tmux jump must not activate it (opened: \(openedArguments.values))"
+            )
+            XCTAssertTrue(
+                recordedScripts.values.isEmpty,
+                "\(terminalApp) is stopped: osascript must not run (calls: \(recordedScripts.values.count))"
+            )
+            XCTAssertTrue(
+                result == "\(terminalApp) is not running. tmux pane targeting failed.",
+                "\(terminalApp) is stopped: unexpected result \(result)"
+            )
+        }
+    }
+
+    func testTmuxJumpStillActivatesARunningVSCodeApp() throws {
+        // Control for the stopped-app gate: a running VS Code is activated
+        // after the pane selection, exactly as before.
+        let openedArguments = OpenedArgumentsBox()
+        let service = TerminalJumpService(
+            applicationResolver: { id in
+                id == "com.microsoft.VSCode" ? URL(fileURLWithPath: "/Applications/Visual Studio Code.app") : nil
+            },
+            appRunningChecker: { $0 == "com.microsoft.VSCode" },
+            openAction: { arguments in
+                openedArguments.values.append(arguments)
+            },
+            appleScriptRunner: { _ in "" }
+        )
+
+        let result = try service.jump(
+            to: JumpTarget(
+                terminalApp: "VS Code",
+                workspaceName: "open-island",
+                paneTitle: "",
+                workingDirectory: "/tmp",
+                tmuxTarget: "open-island-test-nonexistent:9.9"
+            )
+        )
+
+        XCTAssertTrue(openedArguments.values == [["-b", "com.microsoft.VSCode"]])
+        XCTAssertTrue(result == "Activated VS Code. tmux pane targeting failed.")
     }
 
     func testUnclassifiedTerminalNameDoesNotActivateFirstInstalledTerminal() throws {
