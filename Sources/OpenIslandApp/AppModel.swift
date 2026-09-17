@@ -585,6 +585,8 @@ final class AppModel {
 
     /// Reads the battery, the heat and the lid. Holds the camera to account.
     @ObservationIgnored let power = PowerMonitor()
+    @ObservationIgnored let keepAwake = KeepAwakeController()
+    @ObservationIgnored let keepAwakeTimer = RepeatingTimerBox()
     /// The last thing power said no to, so the sentence is said once rather
     /// than on every card that arrives.
     @ObservationIgnored private var lastPowerRefusal: CameraPowerPolicy.Refusal?
@@ -1627,7 +1629,11 @@ final class AppModel {
         shelf.load()
         shelf.pruneExpired()
         power.start()
-        power.onChange = { [weak self] in self?.refreshSustainedCamera() }
+        power.onChange = { [weak self] in
+            self?.refreshSustainedCamera()
+            self?.refreshKeepAwake()
+        }
+        configureKeepAwake()
 
         // Typing in the island borrows application focus and gives it back when
         // the island closes. Leaving by any other route — the user switching
