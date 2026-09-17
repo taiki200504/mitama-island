@@ -803,3 +803,5 @@
 "conversation.showLess" = "收起";
 "conversation.back" = "返回列表";
 "conversation.you" = "你";
+"approval.risk.elevated" = "此操作会修改文件或运行命令";
+"approval.risk.ordinary" = "仅读取";

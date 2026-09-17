@@ -802,3 +802,5 @@
 "conversation.showLess" = "收合";
 "conversation.back" = "返回列表";
 "conversation.you" = "你";
+"approval.risk.elevated" = "此操作會修改檔案或執行指令";
+"approval.risk.ordinary" = "僅讀取";

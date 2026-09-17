@@ -803,3 +803,5 @@
 "conversation.showLess" = "Show less";
 "conversation.back" = "Back to list";
 "conversation.you" = "You";
+"approval.risk.elevated" = "This changes files or runs commands";
+"approval.risk.ordinary" = "Read only";

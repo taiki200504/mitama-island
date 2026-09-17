@@ -803,3 +803,5 @@
 "conversation.showLess" = "折りたたむ";
 "conversation.back" = "一覧へ戻る";
 "conversation.you" = "あなた";
+"approval.risk.elevated" = "ファイルやコマンドでマシンを変更する操作です";
+"approval.risk.ordinary" = "読み取りのみ";
