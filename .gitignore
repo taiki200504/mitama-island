@@ -37,3 +37,4 @@ Assets/AgentIcons/
 # MediaRemoteAdapter framework, fetched+built by scripts/fetch-mediaremote-adapter.sh
 # (BSD-3-Clause source vendored, framework binary never committed)
 vendor/
+__pycache__/
