@@ -125,16 +125,19 @@ enum HarnessArtifactRecorder {
         try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
 
         var windows: [HarnessArtifactReport.WindowArtifact] = []
+        var kindCounts: [String: Int] = [:]
         for window in orderedVisibleWindows() {
             guard let imageData = snapshotPNGData(for: window) else {
                 continue
             }
 
-            let imageName = imageFileName(for: window, ordinal: windows.count + 1)
+            let kind = windowKind(for: window)
+            let baseName = artifactBaseName(kind: kind, counts: &kindCounts)
+            let imageName = "\(baseName).png"
             let imageURL = directoryURL.appendingPathComponent(imageName)
             try imageData.write(to: imageURL)
 
-            let accessibilityFileName = accessibilityFileName(for: window, ordinal: windows.count + 1)
+            let accessibilityFileName = "\(baseName).ax.json"
             let viewAccessibilitySnapshot = snapshotViewAccessibilityTree(for: window)
             let accessibilitySnapshot = snapshotAXTree(for: window) ?? viewAccessibilitySnapshot
             if let accessibilitySnapshot {
@@ -146,7 +149,7 @@ enum HarnessArtifactRecorder {
 
             windows.append(
                 HarnessArtifactReport.WindowArtifact(
-                    kind: windowKind(for: window),
+                    kind: kind,
                     title: window.title,
                     frame: .init(window.frame),
                     imagePath: imageName,
@@ -266,32 +269,13 @@ enum HarnessArtifactRecorder {
         return bitmap.representation(using: .png, properties: [:])
     }
 
-    private static func imageFileName(for window: NSWindow, ordinal: Int) -> String {
-        let baseName: String
-        switch recognizedWindowKind(for: window) ?? "window" {
-        case "overlay":
-            baseName = "overlay"
-        case "linkstart":
-            baseName = "linkstart"
-        default:
-            baseName = "window-\(ordinal)"
-        }
-
-        return "\(baseName).png"
-    }
-
-    private static func accessibilityFileName(for window: NSWindow, ordinal: Int) -> String {
-        let baseName: String
-        switch recognizedWindowKind(for: window) ?? "window" {
-        case "overlay":
-            baseName = "overlay"
-        case "linkstart":
-            baseName = "linkstart"
-        default:
-            baseName = "window-\(ordinal)"
-        }
-
-        return "\(baseName).ax.json"
+    /// Names artifacts after the window kind so they stay stable golden keys
+    /// regardless of window order. Only a repeated kind gets a suffix
+    /// (`settings.png`, `settings-2.png`).
+    private static func artifactBaseName(kind: String, counts: inout [String: Int]) -> String {
+        let seen = (counts[kind] ?? 0) + 1
+        counts[kind] = seen
+        return seen == 1 ? kind : "\(kind)-\(seen)"
     }
 
     private static func windowKind(for window: NSWindow) -> String {

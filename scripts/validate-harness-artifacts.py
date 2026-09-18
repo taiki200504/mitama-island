@@ -5,7 +5,9 @@ from __future__ import annotations
 import json
 import pathlib
 import re
+import struct
 import sys
+import zlib
 
 
 def fail(message: str) -> None:
@@ -21,6 +23,123 @@ def load_json(path: pathlib.Path) -> dict:
 def require_path(path: pathlib.Path, context: str) -> None:
     if not path.exists():
         fail(f"missing {context} at {path}")
+
+
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+# Bytes per pixel for 8-bit samples, keyed by PNG colour type.
+PNG_CHANNELS = {0: 1, 2: 3, 4: 2, 6: 4}
+
+
+def _paeth(a: int, b: int, c: int) -> int:
+    p = a + b - c
+    pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+    if pa <= pb and pa <= pc:
+        return a
+    return b if pb <= pc else c
+
+
+def _unfilter_row(kind: int, payload: bytes, prev: bytes, bpp: int) -> bytes:
+    if kind == 0:
+        return payload
+    # Rows that encode "same as the row above" are the common case in a blank
+    # capture; skip the byte loop for them.
+    if not any(payload):
+        if kind == 1:
+            return payload
+        if kind == 2 or (kind == 4 and prev[:bpp] * (len(prev) // bpp) == prev):
+            return prev
+    row = bytearray(payload)
+    for i in range(len(row)):
+        left = row[i - bpp] if i >= bpp else 0
+        up = prev[i]
+        if kind == 1:
+            row[i] = (row[i] + left) & 0xFF
+        elif kind == 2:
+            row[i] = (row[i] + up) & 0xFF
+        elif kind == 3:
+            row[i] = (row[i] + ((left + up) >> 1)) & 0xFF
+        elif kind == 4:
+            upper_left = prev[i - bpp] if i >= bpp else 0
+            row[i] = (row[i] + _paeth(left, up, upper_left)) & 0xFF
+        else:
+            raise ValueError(f"unknown PNG filter type {kind}")
+    return bytes(row)
+
+
+def png_blank_reason(data: bytes) -> str | None:
+    """Why a capture holds no picture, or None when it has content.
+
+    A locked screen hands back a window image with every pixel transparent,
+    which the rest of the smoke checks happily accept. Formats this decoder
+    does not cover (palette, interlaced, sub-byte depths) are never reported
+    as blank.
+    """
+    if not data.startswith(PNG_SIGNATURE):
+        raise ValueError("not a PNG file")
+
+    offset = len(PNG_SIGNATURE)
+    header = None
+    compressed = bytearray()
+    while offset + 8 <= len(data):
+        length, chunk_type = struct.unpack(">I4s", data[offset:offset + 8])
+        body = data[offset + 8:offset + 8 + length]
+        if chunk_type == b"IHDR":
+            header = struct.unpack(">IIBBBBB", body)
+        elif chunk_type == b"IDAT":
+            compressed += body
+        elif chunk_type == b"IEND":
+            break
+        offset += 12 + length
+
+    if header is None:
+        raise ValueError("PNG is missing IHDR")
+    width, height, depth, colour, _, _, interlace = header
+    if colour not in PNG_CHANNELS or depth not in (8, 16) or interlace:
+        return None
+
+    bpp = PNG_CHANNELS[colour] * depth // 8
+    stride = width * bpp
+    raw = zlib.decompress(bytes(compressed))
+    has_alpha = colour in (4, 6)
+    alpha_width = depth // 8
+
+    first_pixel = None
+    any_visible = not has_alpha
+    single_colour = True
+    prev = bytes(stride)
+    for y in range(height):
+        start = y * (stride + 1)
+        row = _unfilter_row(raw[start], raw[start + 1:start + 1 + stride], prev, bpp)
+        prev = row
+        if first_pixel is None:
+            first_pixel = row[:bpp]
+        if single_colour and row != first_pixel * width:
+            single_colour = False
+        if has_alpha and not any_visible:
+            any_visible = any(
+                row[x + bpp - alpha_width:x + bpp] != bytes(alpha_width)
+                for x in range(0, stride, bpp)
+            )
+        if any_visible and not single_colour:
+            return None
+
+    if not any_visible:
+        return "every pixel is fully transparent"
+    return "the whole image is a single solid colour"
+
+
+def validate_capture_image(report_path: pathlib.Path, window: dict) -> None:
+    image_path = window.get("imagePath")
+    if not image_path:
+        fail(f"{window.get('kind')} window is missing imagePath")
+    path = report_path.parent / image_path
+    require_path(path, "window capture")
+    try:
+        reason = png_blank_reason(path.read_bytes())
+    except (ValueError, zlib.error, struct.error) as error:
+        fail(f"{image_path} is not a readable PNG: {error}")
+    if reason:
+        fail(f"{image_path} captured nothing ({reason}); is the screen locked?")
 
 
 def find_window_by_kind(report: dict, kind: str) -> dict | None:
@@ -205,6 +324,7 @@ def main() -> None:
     # HarnessArtifactRecorder.recognizedWindowKind) rather than the plain
     # island overlay every other scenario uses.
     overlay = find_linkstart_window(report) if scenario == "linkstart" else find_overlay_window(report)
+    validate_capture_image(report_path, overlay)
 
     accessibility_path = overlay.get("accessibilityPath")
     if not accessibility_path:
