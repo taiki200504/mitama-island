@@ -47,7 +47,7 @@
 "settings.general.languageTraditionalChinese" = "Chinese (Traditional)";
 
 /* Settings - Personalization (v6) */
-"settings.tab.appearance" = "Personalization";
+"settings.display.section.appearance" = "Personalization";
 "settings.appearance.preview" = "Preview";
 "settings.appearance.preview.external" = "External";
 "settings.appearance.preview.macbook" = "MacBook";
@@ -249,7 +249,7 @@
 "settings.tab.usage" = "Usage";
 "settings.tab.sshRemote" = "SSH Remote";
 "settings.tab.labs" = "Labs";
-"settings.tab.watch" = "Watch";
+"settings.watch.section" = "Watch";
 "settings.tab.mitama" = "mitama";
 "settings.value.defaultMarker" = "· Default";
 "settings.value.reset" = "Reset to default";
@@ -523,6 +523,15 @@
 "setup.uninstallHooksMessage" = "Removes this app's hooks from %@.";
 "settings.watch.notifications" = "Watch notifications";
 "settings.watch.notifications.help" = "Broadcasts a Bonjour service your iPhone can find on the same network.";
+"settings.tab.island" = "Island";
+"settings.watch.pairing" = "Pairing";
+"settings.watch.pairingCode" = "Pairing Code";
+"settings.watch.pairingCode.help" = "Enter this code on your iPhone app to pair. Code expires after 2 minutes.";
+"settings.watch.refreshCode" = "Refresh Code";
+"settings.watch.pairedDevices" = "Paired Devices";
+"settings.watch.connected" = "Connected";
+"settings.watch.noDevices" = "No devices paired";
+"settings.watch.revokeAll" = "Revoke All Pairings";
 "settings.section.general" = "General";
 "setup.binaryPath" = "Binary: %@";
 
