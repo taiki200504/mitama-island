@@ -489,6 +489,10 @@ struct DisplaySettingsPane: View {
             SettingsToggleRow(
                 title: lang.t("settings.nowPlaying.sneakPeekOnTrackChange"),
                 isOn: Binding(get: { nowPlaying.sneakPeekOnTrackChange }, set: { nowPlaying.sneakPeekOnTrackChange = $0 })
+            )
+        }
+    }
+
     // MARK: System HUD
 
     private var hudAccessibilityDenied: Bool {
