@@ -230,6 +230,15 @@ struct ConversationSurfaceView: View {
     // MARK: - Loading
 
     private func load() async {
+        // A session mid-answer updates several times a second. `.task(id:)`
+        // cancels the previous run on each change, so waiting here first means
+        // a burst of updates costs one read at the end of it rather than one
+        // read per update. Skipped on the first load, which has nothing to
+        // coalesce and should put the log on screen at once.
+        if hasLoaded {
+            try? await Task.sleep(for: .milliseconds(600))
+            guard !Task.isCancelled else { return }
+        }
         guard let path = session?.claudeMetadata?.transcriptPath else {
             days = []
             hasLoaded = true
