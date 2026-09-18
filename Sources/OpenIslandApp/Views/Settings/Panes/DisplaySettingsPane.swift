@@ -1,5 +1,6 @@
 import AppKit
 import AVFoundation
+import OpenIslandCore
 import SwiftUI
 
 /// The display pane: where the island sits, how big it gets, and which facts a
@@ -182,6 +183,31 @@ struct DisplaySettingsPane: View {
                 .fixedSize()
             }
 
+            SettingsRow(
+                title: lang.t("settings.display.ambientBackdrop"),
+                help: lang.t("settings.display.ambientBackdrop.help")
+            ) {
+                Picker("", selection: Binding(
+                    get: { model.ambientBackdropPreference },
+                    set: { model.ambientBackdropPreference = $0 }
+                )) {
+                    ForEach(AmbientBackdropPreference.allCases, id: \.self) { preference in
+                        Text(lang.t(preference.labelKey)).tag(preference)
+                    }
+                }
+                .labelsHidden()
+                .fixedSize()
+            }
+
+            SettingsRow(
+                title: lang.t("settings.display.ambientVideoFolder"),
+                help: lang.t("settings.display.ambientVideoFolder.help")
+            ) {
+                Button(ambientVideoFolderButtonTitle) {
+                    chooseAmbientVideoFolder()
+                }
+            }
+
             SettingsToggleRow(
                 title: lang.t("settings.display.showsNextEvent"),
                 help: lang.t(
@@ -237,6 +263,27 @@ struct DisplaySettingsPane: View {
                 format: points
             )
         }
+    }
+
+    // MARK: Ambient video folder
+
+    private var ambientVideoFolderButtonTitle: String {
+        display.ambientVideoFolderPath.isEmpty
+            ? lang.t("settings.display.ambientVideoFolder.choose")
+            : (display.ambientVideoFolderPath as NSString).lastPathComponent
+    }
+
+    private func chooseAmbientVideoFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.allowsMultipleSelection = false
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        // No security-scoped bookmark to save: the app isn't sandboxed, so a
+        // plain path keeps working across launches the way every other path
+        // setting here already does.
+        display.ambientVideoFolderPath = url.path
+        model.refreshAmbientVideoCache()
     }
 
     /// Zero reads as "leave it to macOS" rather than a 0pt notch.

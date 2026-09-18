@@ -24,4 +24,28 @@ struct DisplaySettingsTests {
         DisplaySettings(store: store).alertsWhenEventStarts = false
         #expect(!DisplaySettings(store: store).alertsWhenEventStarts)
     }
+
+    @Test("The ambient backdrop defaults to the gradient")
+    func ambientBackdropDefaultsToGradient() {
+        let display = makeSettings().display
+        #expect(display.ambientBackdropRawValue == "gradient")
+    }
+
+    @Test("The ambient video folder path defaults to empty, meaning the built-in folder")
+    func ambientVideoFolderPathDefaultsToEmpty() {
+        let display = makeSettings().display
+        #expect(display.ambientVideoFolderPath.isEmpty)
+    }
+
+    @Test("Both new ambient settings persist across a fresh read of the same store")
+    func ambientBackdropSettingsPersist() {
+        let store = PreferenceStore(suite: UserDefaults(suiteName: "display-persist-\(UUID().uuidString)")!)
+        let first = DisplaySettings(store: store)
+        first.ambientBackdropRawValue = "video"
+        first.ambientVideoFolderPath = "/Users/example/Movies/Ambient"
+
+        let second = DisplaySettings(store: store)
+        #expect(second.ambientBackdropRawValue == "video")
+        #expect(second.ambientVideoFolderPath == "/Users/example/Movies/Ambient")
+    }
 }

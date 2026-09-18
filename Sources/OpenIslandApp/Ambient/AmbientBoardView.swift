@@ -4,9 +4,10 @@ import SwiftUI
 /// The idle screen: a clock, what is next, and who is waiting.
 ///
 /// Laid out the way Aerial puts information over a moving background — a large
-/// centre and quiet corners — but with the wallpaper left where it is instead
-/// of a video on top of it. The video was the part that needed a download
-/// pipeline and a cache; the layer discipline is the part worth having.
+/// centre and quiet corners. The backdrop itself defaults to a time-of-day
+/// gradient rather than a bundled video: Apple's own Aerial clips are not
+/// redistributable, so a real video is something the owner drops in
+/// themselves (`AmbientBackdrop`, `AmbientVideoLayerView`).
 struct AmbientBoardView: View {
     let board: AmbientBoard
     let nextEvent: UpcomingCalendarEvent.Band?
@@ -15,17 +16,30 @@ struct AmbientBoardView: View {
     /// readout from this against the board's own once-a-second clock, the
     /// same way `nextEventRow` does from `event.startsAt`.
     var timer: FocusTimerState = .idle
+    /// What sits behind everything else: a time-of-day gradient, or a video
+    /// the owner dropped into the ambient folder.
+    var backdrop: AmbientBackdrop = .gradient(.night)
     let lang: LanguageManager
+
+    private var isVideoBackdrop: Bool {
+        if case .video = backdrop { return true }
+        return false
+    }
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             let reducesMotion = IslandMotion.reducesMotion
 
             ZStack {
+                backdropView
+                    .ignoresSafeArea()
+
                 // Dark enough to read white type over any wallpaper, light
                 // enough that the desktop is still visibly there — this is the
-                // machine resting, not the machine off.
-                V6Palette.ink.opacity(0.88)
+                // machine resting, not the machine off. Lighter over a video:
+                // the video is already doing the visual-interest job the
+                // gradient's mid-tone was standing in for.
+                V6Palette.ink.opacity(isVideoBackdrop ? 0.55 : 0.88)
                     .ignoresSafeArea()
 
                 // A faint pulse behind the clock, echoing the login sequence's
@@ -61,6 +75,10 @@ struct AmbientBoardView: View {
                             .padding(.top, 8)
                     }
 
+                    // ponytail: a now-playing row belongs here too, but there
+                    // is no `AppModel.nowPlaying` to read from on `main` yet
+                    // (tracked separately). Add it once that lands.
+
                     Spacer(minLength: 0)
 
                     if !board.isQuiet {
@@ -75,6 +93,18 @@ struct AmbientBoardView: View {
                 }
                 .padding(.horizontal, 48)
             }
+        }
+    }
+
+    // MARK: - Backdrop
+
+    @ViewBuilder
+    private var backdropView: some View {
+        switch backdrop {
+        case .gradient(let phase):
+            AmbientGradientBackdrop(phase: phase)
+        case .video(let url):
+            AmbientVideoLayerView(url: url)
         }
     }
 
