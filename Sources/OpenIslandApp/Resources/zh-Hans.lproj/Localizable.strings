@@ -47,7 +47,7 @@
 "settings.general.languageTraditionalChinese" = "繁體中文";
 
 /* Settings - Personalization (v6) */
-"settings.tab.appearance" = "个性化";
+"settings.display.section.appearance" = "个性化";
 "settings.appearance.preview" = "预览";
 "settings.appearance.preview.external" = "外接屏";
 "settings.appearance.preview.macbook" = "MacBook";
@@ -249,7 +249,7 @@
 "settings.tab.usage" = "用量";
 "settings.tab.sshRemote" = "SSH 远程";
 "settings.tab.labs" = "实验室";
-"settings.tab.watch" = "Watch";
+"settings.watch.section" = "Watch";
 "settings.tab.mitama" = "mitama";
 "settings.value.defaultMarker" = "· 默认";
 "settings.value.reset" = "恢复默认值";
@@ -523,6 +523,15 @@
 "setup.uninstallHooksMessage" = "将从 %@ 移除本应用的钩子。";
 "settings.watch.notifications" = "Watch 通知";
 "settings.watch.notifications.help" = "通过 Bonjour 广播，使同一网络中的 iPhone 可以发现。";
+"settings.tab.island" = "灵动岛";
+"settings.watch.pairing" = "配对";
+"settings.watch.pairingCode" = "配对码";
+"settings.watch.pairingCode.help" = "在 iPhone App 中输入此代码即可配对。代码 2 分钟后失效。";
+"settings.watch.refreshCode" = "刷新代码";
+"settings.watch.pairedDevices" = "已配对设备";
+"settings.watch.connected" = "已连接";
+"settings.watch.noDevices" = "没有已配对的设备";
+"settings.watch.revokeAll" = "撤销所有配对";
 "settings.section.general" = "常规";
 "setup.binaryPath" = "可执行文件：%@";
 

@@ -33,7 +33,7 @@ struct SettingsView: View {
         .frame(minWidth: 720, idealWidth: 820, minHeight: 520, idealHeight: 620)
         .preferredColorScheme(.dark)
         // One line, and every switch, slider, picker and selection in the
-        // window follows the island. Rebuilding thirteen panes out of custom
+        // window follows the island. Rebuilding twelve panes out of custom
         // containers would look the same and cost a hundred times more.
         .tint(IslandThemes.current.accent)
         .settingsThemeGround()
@@ -90,14 +90,12 @@ struct SettingsView: View {
                 GeneralSettingsPane(model: model)
             case .integrations:
                 SetupSettingsPane(model: model)
-            case .appearance:
-                AppearanceSettingsPane(model: model)
             case .display:
                 DisplaySettingsPane(model: model)
+            case .island:
+                IslandSettingsPane(model: model)
             case .sound:
                 SoundSettingsPane(model: model)
-            case .watch:
-                WatchSettingsPane(model: model)
             case .about:
                 AboutSettingsPane(model: model)
             case .shortcuts:
@@ -505,6 +503,8 @@ struct SetupSettingsPane: View {
 
             RemoteConnectionSection(model: model)
 
+            WatchPairingSections(model: model)
+
             Section {
                 Button(lang.t("setup.installAll")) {
                     if !model.claudeHooksInstalled { model.installClaudeHooks() }
@@ -856,7 +856,9 @@ struct SetupSettingsPane: View {
 
 // MARK: - Watch
 
-struct WatchSettingsPane: View {
+/// The iPhone/Watch relay, shown as the last groups of the integrations pane:
+/// it is one more thing the island talks to, not a pane of its own.
+struct WatchPairingSections: View {
     var model: AppModel
 
     private var lang: LanguageManager { model.lang }
@@ -864,73 +866,69 @@ struct WatchSettingsPane: View {
     @State private var pairingCode: String = "----"
 
     var body: some View {
-        Form {
-            Section {
-                Toggle(lang.t("settings.watch.notifications"), isOn: Binding(
-                    get: { model.watchNotificationEnabled },
-                    set: { model.watchNotificationEnabled = $0 }
-                ))
-
-                if model.watchNotificationEnabled {
-                    Text(lang.t("settings.watch.notifications.help"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            } header: {
-                Text(lang.t("settings.section.general"))
-            }
+        Section {
+            Toggle(lang.t("settings.watch.notifications"), isOn: Binding(
+                get: { model.watchNotificationEnabled },
+                set: { model.watchNotificationEnabled = $0 }
+            ))
 
             if model.watchNotificationEnabled {
-                Section("Pairing") {
-                    HStack {
-                        Text("Pairing Code")
-                        Spacer()
-                        Text(pairingCode)
-                            .font(.islandMono(size: 24, weight: .bold))
-                            .foregroundStyle(.blue)
-                    }
+                Text(lang.t("settings.watch.notifications.help"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        } header: {
+            Text(lang.t("settings.watch.section"))
+        }
+        .onAppear {
+            pairingCode = model.watchPairingCode
+        }
 
-                    Text("Enter this code on your iPhone app to pair. Code expires after 2 minutes.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    Button("Refresh Code") {
-                        model.watchRelay?.endpoint.regeneratePairingCode()
-                        pairingCode = model.watchPairingCode
-                    }
+        if model.watchNotificationEnabled {
+            Section(lang.t("settings.watch.pairing")) {
+                HStack {
+                    Text(lang.t("settings.watch.pairingCode"))
+                    Spacer()
+                    Text(pairingCode)
+                        .font(.islandMono(size: 24, weight: .bold))
+                        .foregroundStyle(.blue)
                 }
 
-                Section("Paired Devices") {
-                    if model.watchConnectedDevices > 0 {
-                        HStack {
-                            Label("iPhone", systemImage: "iphone")
-                            Spacer()
-                            HStack(spacing: 4) {
-                                Circle()
-                                    .fill(.green)
-                                    .frame(width: 7, height: 7)
-                                Text("Connected")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    } else {
-                        HStack {
-                            Label("No devices paired", systemImage: "iphone.slash")
+                Text(lang.t("settings.watch.pairingCode.help"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Button(lang.t("settings.watch.refreshCode")) {
+                    model.watchRelay?.endpoint.regeneratePairingCode()
+                    pairingCode = model.watchPairingCode
+                }
+            }
+
+            Section(lang.t("settings.watch.pairedDevices")) {
+                if model.watchConnectedDevices > 0 {
+                    HStack {
+                        Label("iPhone", systemImage: "iphone")
+                        Spacer()
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(.green)
+                                .frame(width: 7, height: 7)
+                            Text(lang.t("settings.watch.connected"))
+                                .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                     }
-
-                    Button("Revoke All Pairings", role: .destructive) {
-                        model.watchRelay?.endpoint.revokeAllTokens()
+                } else {
+                    HStack {
+                        Label(lang.t("settings.watch.noDevices"), systemImage: "iphone.slash")
+                            .foregroundStyle(.secondary)
                     }
                 }
+
+                Button(lang.t("settings.watch.revokeAll"), role: .destructive) {
+                    model.watchRelay?.endpoint.revokeAllTokens()
+                }
             }
-        }
-        .formStyle(.grouped)
-        .navigationTitle("Watch")
-        .onAppear {
-            pairingCode = model.watchPairingCode
         }
     }
 }

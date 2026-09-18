@@ -4,19 +4,20 @@ import SwiftUI
 ///
 /// The ordering and grouping mirror the reference product's own settings window
 /// so the two can be compared pane by pane, with the Mitama-only panes
-/// (appearance, watch, mitama) slotted in where they fit rather than appended.
+/// (island, mitama) slotted in where they fit rather than appended. Appearance
+/// lives inside display and the watch pairing inside integrations, so the
+/// sidebar stays at twelve entries.
 enum SettingsTab: String, CaseIterable, Identifiable {
     case general
     case integrations
     case notifications
     case display
-    case appearance
+    case island
     case sound
     case usage
 
     case shortcuts
     case sshRemote
-    case watch
     case labs
 
     case mitama
@@ -34,12 +35,11 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         case .integrations:  "puzzlepiece.extension.fill"
         case .notifications: "bell.fill"
         case .display:       "textformat.size"
-        case .appearance:    "paintbrush.fill"
+        case .island:        "capsule.fill"
         case .sound:         "speaker.wave.2.fill"
         case .usage:         "gauge.with.needle.fill"
         case .shortcuts:     "keyboard.fill"
         case .sshRemote:     "globe"
-        case .watch:         "applewatch"
         case .labs:          "flask.fill"
         case .mitama:        "antenna.radiowaves.left.and.right"
         case .about:         "info.circle.fill"
@@ -52,12 +52,11 @@ enum SettingsTab: String, CaseIterable, Identifiable {
         case .integrations:  .teal
         case .notifications: .red
         case .display:       .purple
-        case .appearance:    .indigo
+        case .island:        .indigo
         case .sound:         .green
         case .usage:         .pink
         case .shortcuts:     Color(red: 0.85, green: 0.35, blue: 0.85)
         case .sshRemote:     .blue
-        case .watch:         .cyan
         case .labs:          .orange
         case .mitama:        .mint
         case .about:         .blue
@@ -66,9 +65,9 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 
     var section: SettingsSection {
         switch self {
-        case .general, .integrations, .notifications, .display, .appearance, .sound, .usage:
+        case .general, .integrations, .notifications, .display, .island, .sound, .usage:
             .main
-        case .shortcuts, .sshRemote, .watch, .labs:
+        case .shortcuts, .sshRemote, .labs:
             .advanced
         case .mitama, .about:
             .app

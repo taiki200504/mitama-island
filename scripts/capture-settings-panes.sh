@@ -22,8 +22,8 @@ mkdir -p "$root_dir"
 
 # Kept in step with SettingsTab.allCases; the check below fails if they drift.
 panes=(
-    general integrations notifications display appearance sound usage
-    shortcuts sshRemote watch labs mitama about
+    general integrations notifications display island sound usage
+    shortcuts sshRemote labs mitama about
 )
 
 # Only the SettingsTab block; SettingsSection lives further down the same file.

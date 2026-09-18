@@ -32,7 +32,7 @@ struct SettingsPane<Content: View>: View {
             //
             // The Section slabs on top of it keep the system's own material:
             // `listRowBackground` does not reach them through `.grouped`, and
-            // restyling them would mean touching every Section in thirteen
+            // restyling them would mean touching every Section in twelve
             // panes to change something already dark enough to sit here.
             .scrollContentBackground(.hidden)
         }

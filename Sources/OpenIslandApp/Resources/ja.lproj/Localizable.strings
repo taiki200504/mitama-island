@@ -48,7 +48,7 @@
 "settings.general.languageJapanese" = "日本語";
 
 /* Settings - Personalization (v6) */
-"settings.tab.appearance" = "外観";
+"settings.display.section.appearance" = "外観";
 "settings.appearance.preview" = "プレビュー";
 "settings.appearance.preview.external" = "外部ディスプレイ";
 "settings.appearance.preview.macbook" = "MacBook";
@@ -249,7 +249,7 @@
 "settings.tab.usage" = "使用量";
 "settings.tab.sshRemote" = "SSHリモート";
 "settings.tab.labs" = "ラボ";
-"settings.tab.watch" = "Watch";
+"settings.watch.section" = "Watch";
 "settings.tab.mitama" = "mitama";
 "settings.value.defaultMarker" = "・既定";
 "settings.value.reset" = "既定値に戻す";
@@ -523,6 +523,15 @@
 "setup.uninstallHooksMessage" = "このアプリのフックを %@ から取り除く。";
 "settings.watch.notifications" = "Watch への通知";
 "settings.watch.notifications.help" = "同じネットワークにいる iPhone から見つけられるよう Bonjour で知らせる。";
+"settings.tab.island" = "島";
+"settings.watch.pairing" = "ペアリング";
+"settings.watch.pairingCode" = "ペアリングコード";
+"settings.watch.pairingCode.help" = "iPhone アプリにこのコードを入れるとペアリングできる。コードは 2 分で切れる。";
+"settings.watch.refreshCode" = "コードを作り直す";
+"settings.watch.pairedDevices" = "ペアリング済みの端末";
+"settings.watch.connected" = "接続中";
+"settings.watch.noDevices" = "ペアリング済みの端末はない";
+"settings.watch.revokeAll" = "すべてのペアリングを取り消す";
 "settings.section.general" = "一般";
 "setup.binaryPath" = "実行ファイル: %@";
 
