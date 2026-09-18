@@ -26,6 +26,7 @@ final class SettingsStore: Sendable {
     let timer: TimerSettings
     let clipboard: ClipboardSettings
     let nowPlaying: NowPlayingSettings
+    let hud: HUDSettings
 
     init(store: PreferenceStore = .standard) {
         behaviour = BehaviourSettings(store: store)
@@ -41,6 +42,7 @@ final class SettingsStore: Sendable {
         timer = TimerSettings(store: store)
         clipboard = ClipboardSettings(store: store)
         nowPlaying = NowPlayingSettings(store: store)
+        hud = HUDSettings(store: store)
 
         DisplaySettings.migrateLegacyTheme(in: store)
     }

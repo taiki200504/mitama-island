@@ -90,7 +90,7 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
     case clipboardSurface
     case nowPlayingClosed
     case nowPlayingSurface
-
+        case hudVolume
     var id: String { rawValue }
 
     var title: String {
@@ -143,6 +143,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Closed + Now Playing Accessory"
         case .nowPlayingSurface:
             "Now Playing Surface"
+        case .hudVolume:
+            "System HUD (Volume)"
         }
     }
 
@@ -194,6 +196,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Closed island with a waiting agent body and a now-playing accessory alongside it."
         case .nowPlayingSurface:
             "The opened now-playing surface with a fixture track, artwork placeholder, seek bar and transport controls."
+        case .hudVolume:
+            "The closed island's HUD gauge, pinned at 9 of 16 segments after a volume-up press."
         }
     }
 
@@ -591,6 +595,30 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                 selectedSessionID: sessions.first?.id,
                 debugNowPlayingState: nowPlayingState
             )
+
+        case .hudVolume:
+            let sessions = DebugSessionFactory.listSessions(now: now)
+            return IslandDebugSnapshot(
+                title: title,
+                summary: summary,
+                previewHeight: 78,
+                notchStatus: .closed,
+                notchOpenReason: nil,
+                islandSurface: .sessionList(),
+                sessions: sessions,
+                selectedSessionID: sessions.first?.id,
+                debugSneakPeek: IslandSneakPeek(
+                    kind: .hudGauge,
+                    // 9 of 16 segments (0.5625) rounds to the odd 56% a real
+                    // volume-up press would leave the level at, rather than a
+                    // round number a fixture could be confused with.
+                    text: "56%",
+                    icon: "speaker.wave.2.fill",
+                    gauge: 0.5625,
+                    // Set well past the kind's real 1.2s so a headless
+                    // capture always lands while it's still showing.
+                    until: now.addingTimeInterval(30)
+                )            )
         }
     }
 }
