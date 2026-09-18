@@ -42,7 +42,9 @@ Each smoke artifact directory now includes a minimal observability slice:
 - `report.json` for the scenario summary and runtime artifact index
 - `timeline.json` for ordered launch milestones and harness log events
 - `runtime.log` for a grep-friendly textual event stream
-- `*.png` and `*.ax.json` for visual and semantic UI evidence
+- `*.png` and `*.ax.json` for visual and semantic UI evidence, named after the window kind (`overlay.png`, `settings.ax.json`; a `-2` suffix only for a repeated kind)
+
+The validator decodes the primary capture and fails when every pixel is transparent or the image is one solid colour, which is what a locked screen produces.
 
 The validator also checks that launch reaches a complete bootstrap milestone, that overlay presentation is observed for overlay runs, and that bootstrap and capture timings stay inside a conservative local threshold.
 
