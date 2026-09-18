@@ -57,6 +57,25 @@ CLI coding agents are powerful, but they pull attention away from the editor and
 - **DMG packaging** — signing, notarization, GitHub Actions release workflow
 - **Auto-update** — Sparkle-based automatic updates with appcast
 
+## Island Utilities
+
+The closed-island notch surface also hosts a small set of opt-in utilities
+that reuse the same real estate as agent monitoring: now-playing controls, a
+focus timer (with Pomodoro and eye-break modes), upcoming-calendar awareness,
+a file shelf, clipboard history, and a system HUD that can replace the
+volume/brightness key indicators. See
+[docs/island-modules.md](./island-modules.md) for how they are prioritized
+against each other and against agent events for the island's one body slot
+and one accessory slot.
+
+**Product boundary**: coding-agent monitoring is the primary job this app
+does. The island utilities above are secondary — they exist because the
+notch surface is already there, not because this app is becoming a
+general-purpose menu-bar utility suite. Whenever a utility would compete with
+agent monitoring for the same slot, agent monitoring wins (see the
+body-priority order in docs/island-modules.md). Utilities that ship
+default-off stay default-off.
+
 ## Success Criteria
 
 - Agent events appear in the overlay with low latency

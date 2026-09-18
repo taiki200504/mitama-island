@@ -69,3 +69,37 @@ The script accepts these environment variables:
 - `OPEN_ISLAND_ZIP_PATH`
 - `OPEN_ISLAND_SIGN_IDENTITY`
 - `OPEN_ISLAND_NOTARY_PROFILE`
+
+## Personal Build ("Mitama Island")
+
+`zsh scripts/package-mitama-island.sh` wraps `package-app.sh` to produce and
+install a personally branded build (own name, bundle identifier
+`dev.mitama.island`, own entitlements, Sparkle automatic-update checks
+disabled) instead of the upstream `Open Island` product. It signs with the
+local `Open Island Dev Local` identity created by `setup-dev-signing.sh`, so
+Accessibility/Automation TCC grants survive reinstalls.
+
+**`MITAMA_ISLAND_VERSION` should always be set explicitly.** If it is left
+unset, the script falls back to `git describe --tags --abbrev=0`, which
+resolves to the nearest upstream release tag (for example `v1.1.7`) — not a
+version tracking this fork's own history — so an unset variable silently
+ships an upstream version string on the personal build.
+
+```bash
+MITAMA_ISLAND_VERSION=2.27.0 zsh scripts/package-mitama-island.sh
+```
+
+Set `MITAMA_ISLAND_INSTALL=false` to build without replacing the installed
+copy at `/Applications/Mitama Island.app`.
+
+## Dev Quick Launch
+
+`zsh scripts/launch-dev-app.sh` rebuilds `~/Applications/Open Island Dev.app`
+from a debug build and always re-runs `OpenIslandSetup install` first, which
+(re-)writes every supported agent's hook config. Pass `--skip-setup` to skip
+that step on a plain rebuild-and-relaunch cycle — useful when iterating
+quickly and the hook configs are already known to be current:
+
+```bash
+zsh scripts/launch-dev-app.sh --skip-setup
+```
