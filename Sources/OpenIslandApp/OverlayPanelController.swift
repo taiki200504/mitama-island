@@ -797,7 +797,7 @@ final class OverlayPanelController {
     /// for them too, sized to their tallest state (artwork + seek bar +
     /// transport for now-playing; the ring + digits + presets for timer).
     private static let nowPlayingContentHeight: CGFloat = 280
-    private static let timerPlaceholderHeight: CGFloat = 190
+    private static let timerPlaceholderHeight: CGFloat = 300
     private static let clipboardPlaceholderHeight: CGFloat = 360
     /// Fixed rather than measured: the log scrolls inside a frame of its own,
     /// so the window never jumps as messages load.

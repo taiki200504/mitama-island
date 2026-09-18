@@ -174,6 +174,10 @@ struct ClipboardSurfaceView: View {
     private func relativeTime(for date: Date) -> String {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: date, relativeTo: .now)
+        formatter.dateTimeStyle = .named
+        // A copy stamped a moment ago can read a hair ahead of `.now`
+        // ("0秒後"); clamp so it says "now" instead.
+        let now = Date.now
+        return formatter.localizedString(for: min(date, now), relativeTo: now)
     }
 }
