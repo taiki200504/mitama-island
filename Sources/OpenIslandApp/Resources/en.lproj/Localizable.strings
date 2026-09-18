@@ -51,6 +51,9 @@
 "settings.appearance.preview" = "Preview";
 "settings.appearance.preview.external" = "External";
 "settings.appearance.preview.macbook" = "MacBook";
+"settings.appearance.preview.closed" = "Closed";
+"settings.appearance.preview.opened" = "Open";
+"settings.appearance.preview.surface" = "Preview state";
 "settings.appearance.state.idle" = "idle";
 "settings.appearance.state.running" = "running";
 "settings.appearance.state.waiting" = "waiting";

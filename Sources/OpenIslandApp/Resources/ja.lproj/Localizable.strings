@@ -52,6 +52,9 @@
 "settings.appearance.preview" = "プレビュー";
 "settings.appearance.preview.external" = "外部ディスプレイ";
 "settings.appearance.preview.macbook" = "MacBook";
+"settings.appearance.preview.closed" = "閉じた状態";
+"settings.appearance.preview.opened" = "開いた状態";
+"settings.appearance.preview.surface" = "プレビューの状態";
 "settings.appearance.state.idle" = "待機";
 "settings.appearance.state.running" = "実行中";
 "settings.appearance.state.waiting" = "確認待ち";

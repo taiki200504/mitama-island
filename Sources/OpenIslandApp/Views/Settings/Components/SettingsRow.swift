@@ -126,14 +126,27 @@ struct SettingsPickerRow<Value: Hashable, Content: View>: View {
 /// reach the rows through `.grouped` when it is set on the group, which is why
 /// the first attempt at this looked like it had done nothing.
 struct SettingsRowGround: ViewModifier {
+    /// The row's cut is shallower than a card's: a settings list stacks a
+    /// dozen of these, and a full-depth chamfer on each reads as noise.
+    private static let panel = SAOPanelShape(cutDepth: 5)
+
     func body(content: Content) -> some View {
         let theme = IslandThemes.current
         content
             .listRowBackground(
-                theme.shape(cornerRadius: 7)
+                Self.panel
                     .fill(theme.paper.opacity(0.045))
+                    // The dark hairline is the outermost edge, the same as on
+                    // the island's cards: with Increase Contrast or a greyscale
+                    // display the accent ring inside it can fade, the hairline
+                    // cannot.
                     .overlay(
-                        theme.shape(cornerRadius: 7)
+                        Self.panel
+                            .strokeBorder(SAOGrammar.Palette.hairline, lineWidth: 1)
+                    )
+                    .overlay(
+                        Self.panel
+                            .inset(by: 1)
                             .strokeBorder(theme.accent.opacity(0.12), lineWidth: 1)
                     )
                     .padding(.vertical, 1)

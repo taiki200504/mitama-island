@@ -51,6 +51,9 @@
 "settings.appearance.preview" = "預覽";
 "settings.appearance.preview.external" = "外接螢幕";
 "settings.appearance.preview.macbook" = "MacBook";
+"settings.appearance.preview.closed" = "收合";
+"settings.appearance.preview.opened" = "展開";
+"settings.appearance.preview.surface" = "預覽狀態";
 "settings.appearance.state.idle" = "閒置";
 "settings.appearance.state.running" = "執行";
 "settings.appearance.state.waiting" = "等待";
