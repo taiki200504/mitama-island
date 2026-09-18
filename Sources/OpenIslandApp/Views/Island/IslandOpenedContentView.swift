@@ -53,13 +53,24 @@ extension IslandPanelView {
             sessionListRoutedContent
         case .nowPlaying:
             NowPlayingSurfaceView(model: model)
+                .padding(.horizontal, surfaceSideInset)
         case .clipboard:
             ClipboardSurfaceView(model: model)
+                .padding(.horizontal, surfaceSideInset)
         case .timer:
             FocusTimerSurfaceView(model: model)
+                .padding(.horizontal, surfaceSideInset)
         case let .conversation(sessionID):
             ConversationSurfaceView(model: model, sessionID: sessionID)
         }
+    }
+
+    /// The notch profile draws its sides `NotchShape.openedTopRadius` in from
+    /// the frame at every height, not only at the top curve. These surfaces
+    /// pad for a plain rectangle, so without this their edges sat under the
+    /// clip and every row ran flush into the side of the panel.
+    private var surfaceSideInset: CGFloat {
+        usesNotchAwareOpenedHeader ? NotchShape.openedTopRadius : 0
     }
 
     @ViewBuilder
