@@ -934,27 +934,3 @@ private enum RightSlotKey: Hashable {
         }
     }
 }
-
-// MARK: - Settings-tab live preview
-
-/// Fixed-width pill that mimics the real island inside the settings-tab
-/// preview stage. Parameters match what the tab exposes.
-struct IslandPreviewPill: View {
-    let mode: UnifiedBars.Mode
-    let label: String?
-    let rightSlot: IslandRightSlotContent?
-    let layout: V6ClosedLayout
-    let physicalNotchWidth: CGFloat
-    let now: Date
-
-    var body: some View {
-        V6ClosedPill(
-            mode: mode,
-            label: label,
-            rightSlot: rightSlot,
-            layout: layout,
-            physicalNotchWidth: physicalNotchWidth
-        )
-        .frame(maxWidth: .infinity, alignment: .center)
-    }
-}

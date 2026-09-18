@@ -154,32 +154,17 @@ struct DisplayIslandSection: View {
     }
 
     private var previewStage: some View {
-        let physicalNotchW: CGFloat = 180
-        let pillHeight: CGFloat = 32
-
-        return ZStack(alignment: .top) {
-            if previewLayout == .macbook {
-                // Physical hardware notch mock — pinned to the TOP of the
-                // frame, same as the real physical cutout would sit at the
-                // top of the display.
-                V6ClosedPillShape()
-                    .fill(Color.black)
-                    .frame(width: physicalNotchW, height: pillHeight)
-            }
-
-            TimelineView(.periodic(from: .now, by: 0.25)) { context in
-                IslandPreviewPill(
-                    mode: previewMode,
-                    label: previewLabel,
-                    rightSlot: previewRightContent,
-                    layout: previewLayout,
-                    physicalNotchWidth: physicalNotchW,
-                    now: context.date
-                )
-            }
-        }
-        .frame(height: pillHeight)
-        .frame(maxWidth: .infinity, alignment: .center)
+        IslandLivePreview(
+            mode: previewMode,
+            label: previewLabel,
+            rightSlot: previewRightContent,
+            layout: previewLayout,
+            sections: previewSessionSections,
+            showsSections: editingPreferences.sessionGroup != .none,
+            indicator: editingPreferences.sessionStateIndicator,
+            profile: editingProfile,
+            lang: lang
+        )
     }
 
     private var previewControls: some View {
