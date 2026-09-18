@@ -2,6 +2,34 @@ import SwiftUI
 import OpenIslandCore
 
 extension IslandSessionRow {
+    /// A party member's health bar: full when the request has just arrived,
+    /// draining while it waits. Only for rows that are actually waiting on an
+    /// answer — a running session has nothing to drain.
+    @ViewBuilder
+    var vitalsGauge: some View {
+        if session.phase.requiresAttention {
+            let hp = SessionVitals.hp(waitingFor: referenceDate.timeIntervalSince(session.updatedAt))
+            let tint = Self.vitalsTint(hp.band)
+            ZStack(alignment: .leading) {
+                SAOGaugeShape(fraction: 1, isTrack: true)
+                    .fill(V6Palette.paper.opacity(0.14))
+                SAOGaugeShape(fraction: hp.fraction)
+                    .fill(tint)
+                    .shadow(color: tint.opacity(0.5), radius: IslandThemes.current.glowRadius)
+            }
+            .frame(width: 58, height: 5)
+            .accessibilityHidden(true)
+        }
+    }
+
+    static func vitalsTint(_ band: SessionVitals.Band) -> Color {
+        switch band {
+        case .fresh: SAOGrammar.Palette.hpLimeEnd
+        case .overdue: SAOGrammar.Palette.accentOrange
+        case .critical: SAOGrammar.Palette.danger
+        }
+    }
+
     /// Whether this row carries the "gone quiet" status mark: running, but
     /// nothing heard from it for `SessionActivityStatus.stallThreshold`.
     /// List rows only — a notification card is already about something happening.
