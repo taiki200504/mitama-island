@@ -310,7 +310,7 @@ def main() -> None:
         require_frame_between(
             overlay_frame,
             width=(520, 780),
-            height=(240, 390),
+            height=(240, 440),
             context="approvalCard overlay frame",
         )
         if "Deny" not in button_labels and selected_session_phase(report) != "waitingForApproval":

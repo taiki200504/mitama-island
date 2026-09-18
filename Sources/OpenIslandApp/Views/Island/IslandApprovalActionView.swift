@@ -86,9 +86,14 @@ extension IslandSessionRow {
         }
         .padding(10)
         .saoCard()
-        // A red halo outside the card for anything that changes the machine,
-        // so the difference reads before a single word does.
-        .shadow(color: approvalIsElevated ? SAOGrammar.Palette.danger.opacity(0.55) : .clear, radius: 10)
+        // A red edge for anything that changes the machine. A soft halo was
+        // the first try and it bled through the white card until the whole
+        // thing read pink; a line stays outside the paper.
+        .overlay(
+            SAOPanelShape(cornerRadius: 10, cutDepth: 14)
+                .stroke(SAOGrammar.Palette.danger.opacity(approvalIsElevated ? 0.7 : 0), lineWidth: 1.5)
+        )
+        .shadow(color: approvalIsElevated ? SAOGrammar.Palette.danger.opacity(0.28) : .clear, radius: 6)
     }
 
     private var approvalIsElevated: Bool {

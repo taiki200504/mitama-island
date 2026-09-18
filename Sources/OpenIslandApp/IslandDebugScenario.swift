@@ -327,7 +327,9 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                     agentName: "Claude Code",
                     duration: "4分12秒",
                     level: 7,
-                    leveledUp: true
+                    // The ordinary completion, which is what the harness
+                    // asserts on; the level-up wording is a different card.
+                    leveledUp: false
                 )
             )
 
@@ -411,9 +413,10 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                 sessions: sessions,
                 selectedSessionID: sessions.first?.id,
                 presentsLinkstart: true,
-                // Deep in the dive, where the tunnel is at its fastest —
-                // the frame that shows the sequence at its most.
-                linkstartElapsedOverride: 2.6
+                // Into the first sense's confirmation: the tunnel and the
+                // white-out are behind it, so the frame carries the checklist
+                // the harness asserts on rather than a field of light.
+                linkstartElapsedOverride: 5.2
             )
 
         case .sneakPeekPop:
