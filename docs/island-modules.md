@@ -17,7 +17,7 @@ independent slot for a timer, now-playing, the camera, or the shelf.
 | Clipboard history | Merged |
 | Now playing | Merged |
 | Ambient backdrop | Merged |
-| System HUD (volume/brightness key capture) | In progress — PR #56 `feat/system-hud` |
+| System HUD (volume/brightness key capture) | Shipped (#56) |
 | Settings reorganization (12-pane, appearance folded into display) | In progress — PR #57 `feat/settings-sao` |
 
 ## Problem
