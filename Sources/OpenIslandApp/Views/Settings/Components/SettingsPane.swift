@@ -13,10 +13,19 @@ struct SettingsPane<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 10) {
-                SettingsIconChip(systemImage: tab.icon, tint: tab.tint, size: 24)
-                Text(tab.label(lang))
-                    .font(.title2.weight(.semibold))
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 10) {
+                    SettingsIconChip(systemImage: tab.icon, tint: tab.tint, size: 24)
+                    // The text-aware variant: a Japanese or Chinese label falls
+                    // back to the system face instead of vanishing into a
+                    // display font that has no CJK glyphs.
+                    Text(tab.label(lang))
+                        .saoCaps(size: 18, text: tab.label(lang))
+                }
+                SAOGaugeShape(fraction: 1)
+                    .fill(SAOGrammar.selectionGradient)
+                    .frame(width: 96, height: 2)
+                    .accessibilityHidden(true)
             }
             .padding(.horizontal, 20)
             .padding(.top, 18)
@@ -35,6 +44,7 @@ struct SettingsPane<Content: View>: View {
             // restyling them would mean touching every Section in twelve
             // panes to change something already dark enough to sit here.
             .scrollContentBackground(.hidden)
+            .tint(IslandThemes.current.accent)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .navigationTitle(tab.label(lang))
