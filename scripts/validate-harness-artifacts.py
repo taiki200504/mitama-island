@@ -154,13 +154,30 @@ def find_overlay_window(report: dict) -> dict:
     return overlay
 
 
-def find_linkstart_window(report: dict) -> dict:
-    # Its own window kind, distinct from the plain island overlay — see
-    # HarnessArtifactRecorder.recognizedWindowKind.
-    window = find_window_by_kind(report, "linkstart")
-    if window is None:
-        fail("linkstart scenario captured no full-screen linkstart window")
-    return window
+# Full-screen scenarios capture under their own window kind (see
+# HarnessArtifactRecorder.recognizedWindowKind), not the plain island overlay.
+FULL_SCREEN_KINDS = {
+    "linkstart": "linkstart",
+    "ambientBoard": "ambient-board",
+    "ambientBoardNight": "ambient-board",
+}
+
+
+def find_full_screen_window(report_path: pathlib.Path, report: dict, kind: str) -> dict:
+    # One panel per display, but only one may carry the content; the others
+    # can be a dimmed backdrop, a legitimately single colour. Validate the
+    # one that drew.
+    windows = [w for w in report.get("windows") or [] if w.get("kind") == kind]
+    if not windows:
+        fail(f"captured no full-screen {kind} window (a key press or click dismisses it)")
+    for window in windows:
+        path = report_path.parent / (window.get("imagePath") or "")
+        try:
+            if path.is_file() and png_blank_reason(path.read_bytes()) is None:
+                return window
+        except (ValueError, zlib.error, struct.error):
+            continue
+    return windows[0]
 
 
 def collect_ax_strings(node: dict, labels: set[str], button_labels: set[str], text_values: set[str]) -> None:
@@ -320,10 +337,12 @@ def main() -> None:
     if not isinstance(scenario, str) or not scenario:
         fail("report is missing scenario")
 
-    # The login sequence captures under its own window kind (see
-    # HarnessArtifactRecorder.recognizedWindowKind) rather than the plain
-    # island overlay every other scenario uses.
-    overlay = find_linkstart_window(report) if scenario == "linkstart" else find_overlay_window(report)
+    full_screen_kind = FULL_SCREEN_KINDS.get(scenario)
+    overlay = (
+        find_full_screen_window(report_path, report, full_screen_kind)
+        if full_screen_kind
+        else find_overlay_window(report)
+    )
     validate_capture_image(report_path, overlay)
 
     accessibility_path = overlay.get("accessibilityPath")
@@ -698,13 +717,15 @@ def main() -> None:
             height=(180, 480),
             context="clipboardSurface overlay frame",
         )
+        # Each row is one button whose label reads "<preview>, <time>", so
+        # the preview text lives in labels rather than in a text value.
         assert_contains_any(
-            text_values,
+            text_values | labels,
             ["mitama-island clipboard fixture"],
             "clipboardSurface text values (text item)",
         )
         assert_contains_any(
-            text_values,
+            text_values | labels,
             ["quarterly-report.pdf"],
             "clipboardSurface text values (file item)",
         )

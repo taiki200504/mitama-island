@@ -36,7 +36,13 @@ struct FocusTimerSurfaceView: View {
                 .frame(width: 148, height: 148)
                 .opacity(state.phase == .idle ? 0.25 : 0.9)
 
+                // The cards are translucent; without a plate the growing
+                // rings draw straight through the digits.
                 FlipClockView(digits: clockDigits(for: state, at: now), cardHeight: 46)
+                    // Read as one "12:34", not five cards one by one.
+                    .accessibilityRepresentation { Text(clockDigits(for: state, at: now)) }
+                    .padding(6)
+                    .background(V6Palette.ink, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             }
             .frame(height: 148)
 

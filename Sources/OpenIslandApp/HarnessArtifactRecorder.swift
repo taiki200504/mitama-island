@@ -295,6 +295,12 @@ enum HarnessArtifactRecorder {
             if window.contentView is NSHostingView<LinkstartView> {
                 return "linkstart"
             }
+            // The idle board too: its full-screen panel shares its top edge
+            // with the island, so under "overlay" the two traded places in
+            // the sort and the check read whichever came first.
+            if window.contentView is NSHostingView<AmbientBoardView> {
+                return "ambient-board"
+            }
             return window.frame.width >= 120 ? "overlay" : nil
         }
 
