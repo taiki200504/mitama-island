@@ -155,7 +155,7 @@ struct IslandClosedArbiterTests {
 
     @Test("Now-playing alone becomes the accessory")
     func nowPlayingAlone() {
-        let content = IslandClosedArbiter.resolve(IslandClosedInputs(nowPlayingIsPlaying: true, now: epoch))
+        let content = IslandClosedArbiter.resolve(IslandClosedInputs(nowPlaying: .init(isPlaying: true), now: epoch))
         #expect(content.accessory == .nowPlaying(isPlaying: true))
     }
 
@@ -184,7 +184,7 @@ struct IslandClosedArbiterTests {
         let content = IslandClosedArbiter.resolve(
             IslandClosedInputs(
                 timer: IslandClosedInputs.Timer(remainingMinutes: 5, label: "Focus"),
-                nowPlayingIsPlaying: true,
+                nowPlaying: .init(isPlaying: true),
                 cameraIsWatching: true,
                 shelfCount: 2,
                 now: epoch
@@ -196,7 +196,7 @@ struct IslandClosedArbiterTests {
     @Test("Now-playing outranks camera and the shelf")
     func nowPlayingOutranksCameraAndShelf() {
         let content = IslandClosedArbiter.resolve(
-            IslandClosedInputs(nowPlayingIsPlaying: false, cameraIsWatching: true, shelfCount: 2, now: epoch)
+            IslandClosedInputs(nowPlaying: .init(isPlaying: false), cameraIsWatching: true, shelfCount: 2, now: epoch)
         )
         #expect(content.accessory == .nowPlaying(isPlaying: false))
     }
@@ -236,7 +236,7 @@ struct IslandClosedArbiterTests {
     func waitingBodyNeverHiddenByAccessory() {
         for accessoryInputs in [
             IslandClosedInputs(waiting: peek("CLAUDE"), timer: IslandClosedInputs.Timer(remainingMinutes: 1, label: "x"), now: epoch),
-            IslandClosedInputs(waiting: peek("CLAUDE"), nowPlayingIsPlaying: true, now: epoch),
+            IslandClosedInputs(waiting: peek("CLAUDE"), nowPlaying: .init(isPlaying: true), now: epoch),
             IslandClosedInputs(waiting: peek("CLAUDE"), cameraIsWatching: true, now: epoch),
             IslandClosedInputs(waiting: peek("CLAUDE"), shelfCount: 9, now: epoch),
             IslandClosedInputs(waiting: peek("CLAUDE"), now: epoch),

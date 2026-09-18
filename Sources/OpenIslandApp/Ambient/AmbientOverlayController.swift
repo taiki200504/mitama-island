@@ -37,6 +37,10 @@ final class AmbientOverlayController {
     /// up for hours, but the gradient only needs to catch up with the clock
     /// the next time it's shown, not while it's already showing.
     @ObservationIgnored var backdrop: () -> AmbientBackdrop = { .gradient(.night) }
+    /// `(title, artist)` for whatever is currently playing, or `nil` — the
+    /// same "ask fresh at presentation time" reasoning as `timer()`, since
+    /// the board can stay up long after this closure was captured.
+    @ObservationIgnored var nowPlaying: () -> (title: String, artist: String?)? = { nil }
     @ObservationIgnored var lang: LanguageManager = .shared
     /// Called when the board goes away, so the idle count restarts from zero
     /// instead of re-presenting on the next tick.
@@ -74,6 +78,7 @@ final class AmbientOverlayController {
                     currentEvent: currentEvent(),
                     timer: timer(),
                     backdrop: screen == primaryScreen ? primaryBackdrop : secondaryBackdrop,
+                    nowPlaying: nowPlaying(),
                     lang: lang
                 ),
                 onDismiss: { [weak self] in self?.dismiss() }

@@ -25,6 +25,7 @@ final class SettingsStore: Sendable {
     let lockScan: LockScanSettings
     let timer: TimerSettings
     let clipboard: ClipboardSettings
+    let nowPlaying: NowPlayingSettings
 
     init(store: PreferenceStore = .standard) {
         behaviour = BehaviourSettings(store: store)
@@ -39,6 +40,7 @@ final class SettingsStore: Sendable {
         lockScan = LockScanSettings(store: store)
         timer = TimerSettings(store: store)
         clipboard = ClipboardSettings(store: store)
+        nowPlaying = NowPlayingSettings(store: store)
 
         DisplaySettings.migrateLegacyTheme(in: store)
     }

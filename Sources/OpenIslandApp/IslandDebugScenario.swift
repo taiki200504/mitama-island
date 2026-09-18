@@ -57,6 +57,13 @@ struct IslandDebugSnapshot {
     /// layout regardless of the real display, so a harness scenario can
     /// capture that layout on any machine — see `closedFloating`.
     var forcesExternalLayout = false
+    /// Forces a now-playing accessory onto the closed island, independent of
+    /// whether a real adapter process is running — how `nowPlayingClosed`
+    /// exercises the accessory in isolation.
+    var debugAccessoryNowPlaying: IslandClosedInputs.NowPlaying?
+    /// Poses `NowPlayingCoordinator` directly for the `nowPlayingSurface`
+    /// scenario, bypassing the perl adapter process entirely.
+    var debugNowPlayingState: NowPlayingState?
 }
 
 enum IslandDebugScenario: String, CaseIterable, Identifiable {
@@ -81,6 +88,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
     case timerSurface
     case eventInProgress
     case clipboardSurface
+    case nowPlayingClosed
+    case nowPlayingSurface
 
     var id: String { rawValue }
 
@@ -130,6 +139,10 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Event In Progress"
         case .clipboardSurface:
             "Clipboard Surface"
+        case .nowPlayingClosed:
+            "Closed + Now Playing Accessory"
+        case .nowPlayingSurface:
+            "Now Playing Surface"
         }
     }
 
@@ -177,6 +190,10 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Closed island body while a calendar entry that just started is still fresh."
         case .clipboardSurface:
             "Opened island with three fixture clipboard items: text, a file, and an image."
+        case .nowPlayingClosed:
+            "Closed island with a waiting agent body and a now-playing accessory alongside it."
+        case .nowPlayingSurface:
+            "The opened now-playing surface with a fixture track, artwork placeholder, seek bar and transport controls."
         }
     }
 
@@ -435,6 +452,20 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                 debugAccessoryTimer: IslandClosedInputs.Timer(remainingMinutes: 12, label: "Focus")
             )
 
+        case .nowPlayingClosed:
+            let waiting = DebugSessionFactory.approvalSession(now: now.addingTimeInterval(-8 * 60))
+            return IslandDebugSnapshot(
+                title: title,
+                summary: summary,
+                previewHeight: 78,
+                notchStatus: .closed,
+                notchOpenReason: nil,
+                islandSurface: .sessionList(),
+                sessions: DebugSessionFactory.notificationSessions(lead: waiting, now: now),
+                selectedSessionID: waiting.id,
+                debugAccessoryNowPlaying: IslandClosedInputs.NowPlaying(isPlaying: true)
+            )
+
         case .shelfSurface:
             return IslandDebugSnapshot(
                 title: title,
@@ -529,6 +560,33 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                 sessions: [],
                 selectedSessionID: nil,
                 debugClipboardItems: DebugSessionFactory.clipboardFixtureItems(now: now)
+            )
+
+        case .nowPlayingSurface:
+            let sessions = DebugSessionFactory.listSessions(now: now)
+            // 1:23 into a 4:56 track — odd, specific numbers so a screenshot
+            // can't be confused with a fixture that just started or one
+            // that's mid-playback by coincidence.
+            let nowPlayingState = NowPlayingState(
+                title: "Demo Track",
+                artist: "Demo Artist",
+                album: "Demo Album",
+                isPlaying: true,
+                elapsed: 83,
+                duration: 296,
+                timestamp: now,
+                playbackRate: 1.0
+            )
+            return IslandDebugSnapshot(
+                title: title,
+                summary: summary,
+                previewHeight: 280,
+                notchStatus: .opened,
+                notchOpenReason: .click,
+                islandSurface: .nowPlaying,
+                sessions: sessions,
+                selectedSessionID: sessions.first?.id,
+                debugNowPlayingState: nowPlayingState
             )
         }
     }

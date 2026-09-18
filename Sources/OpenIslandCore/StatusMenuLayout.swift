@@ -18,6 +18,19 @@ public struct StatusMenuInputs: Sendable {
     /// so the menu carries no clipboard row for anyone who never turned the
     /// feature on.
     public var clipboardIsEnabled: Bool
+    /// What's playing, or `nil` while nothing is (or the adapter has no
+    /// title to report yet) — nil is what hides the row entirely.
+    public var nowPlayingTrack: NowPlayingTrack?
+
+    public struct NowPlayingTrack: Equatable, Sendable {
+        public var title: String
+        public var isPlaying: Bool
+
+        public init(title: String, isPlaying: Bool) {
+            self.title = title
+            self.isPlaying = isPlaying
+        }
+    }
 
     public init(
         isMuted: Bool,
@@ -25,7 +38,8 @@ public struct StatusMenuInputs: Sendable {
         shelfItemNames: [String],
         waitingCount: Int,
         timerRunningLabel: String? = nil,
-        clipboardIsEnabled: Bool = false
+        clipboardIsEnabled: Bool = false,
+        nowPlayingTrack: NowPlayingTrack? = nil
     ) {
         self.isMuted = isMuted
         self.cameraIsWatching = cameraIsWatching
@@ -33,6 +47,7 @@ public struct StatusMenuInputs: Sendable {
         self.waitingCount = waitingCount
         self.timerRunningLabel = timerRunningLabel
         self.clipboardIsEnabled = clipboardIsEnabled
+        self.nowPlayingTrack = nowPlayingTrack
     }
 }
 
@@ -46,6 +61,7 @@ public enum StatusMenuEntry: Equatable, Sendable {
     case timerRunning(label: String)
     case stopTimer
     case openClipboard
+    case nowPlayingTrack(title: String, isPlaying: Bool)
     case shelfHeader(count: Int)
     case shelfItem(name: String)
     case clearShelf
@@ -83,6 +99,10 @@ public enum StatusMenuLayout {
 
         if inputs.clipboardIsEnabled {
             entries.append(.openClipboard)
+        }
+
+        if let track = inputs.nowPlayingTrack {
+            entries.append(.nowPlayingTrack(title: track.title, isPlaying: track.isPlaying))
         }
 
         if !inputs.shelfItemNames.isEmpty {

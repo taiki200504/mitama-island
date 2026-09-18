@@ -33,3 +33,7 @@ output/
 # Vendor logos fetched by scripts/fetch-agent-icons.sh — trademarks, never committed
 Assets/AgentIcons/
 .gstack/
+
+# MediaRemoteAdapter framework, fetched+built by scripts/fetch-mediaremote-adapter.sh
+# (BSD-3-Clause source vendored, framework binary never committed)
+vendor/
