@@ -202,7 +202,7 @@ struct IslandSettingsPane: View {
                             return
                         }
                         // Asking here and nowhere else, the same rule
-                        // `showsNextEvent` follows above: a permission dialog
+                        // `showsNextEvent` follows in the display pane: a permission dialog
                         // only makes sense right after the switch that caused it.
                         //
                         // `kAXTrustedCheckOptionPrompt` itself is a global
