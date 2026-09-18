@@ -14,6 +14,8 @@ extension AgentSession {
         // Base: vertical padding (22) + headline (~17) + divider rounding.
         var height: CGFloat = 40
         guard presence != .inactive else { return height }
+        // The waiting row's health bar (5) and the gap above it (3).
+        if phase.requiresAttention { height += 8 }
         if spotlightPromptLineText != nil { height += 17 }
         if fields.showsAgentActivity, spotlightActivityLineText != nil { height += 20 }
         if fields.showsSubagents,

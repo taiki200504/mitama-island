@@ -259,6 +259,10 @@ struct IslandSessionRow: View {
                     .lineLimit(1)
                     .truncationMode(.tail)
 
+                if showsDetail {
+                    vitalsGauge
+                }
+
                 if showsDetail,
                    let promptLine = summaryPromptLineText {
                     Text(promptLine)
