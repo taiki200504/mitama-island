@@ -74,7 +74,11 @@ struct BrowserAutomationActivityTests {
 
     @Test("Boundary: exactly at freshness limit")
     func boundaryFreshness() {
-        let now = Date()
+        // A whole second: the JSON below is written without milliseconds, so a
+        // `Date()` with a fractional part would put the boundary a few
+        // hundredths past the limit and the test would be measuring its own
+        // serialisation rather than the rule.
+        let now = Date(timeIntervalSince1970: 1_789_000_000)
         let boundaryTime = now.addingTimeInterval(-600) // Exactly 10 min ago
         let json = """
         {

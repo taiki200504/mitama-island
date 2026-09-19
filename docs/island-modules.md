@@ -18,6 +18,7 @@ independent slot for a timer, now-playing, the camera, or the shelf.
 | Now playing | Merged |
 | Ambient backdrop | Merged |
 | System HUD (volume/brightness key capture) | Shipped (#56) |
+| mitama ecosystem signals (browser automation lamp, job queue counts, Codex gate) | Merged — accessory `automation` plus a three-line strip above the session list |
 | Settings reorganization (12-pane, appearance folded into display) | In progress — PR #57 `feat/settings-sao` |
 
 ## Problem
@@ -57,6 +58,10 @@ soon that entry starts.
 ### Accessory priority
 
 1. `timer` — a running timer's remaining minutes.
+1a. `automation` — mitama is driving mitama Browser right now (a CDP client is
+   attached to its DevTools port). Above now-playing because it is the island
+   saying what *it* is doing on the owner's behalf, and it disappears on its own
+   as soon as the automation detaches.
 2. `nowPlaying` — whether something is currently playing.
 3. `cameraWatching` — the camera is open and waiting for the raised-palm
    gesture. macOS lights its own indicator for as long as that's true; this is

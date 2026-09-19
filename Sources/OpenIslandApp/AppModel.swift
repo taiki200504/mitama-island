@@ -549,7 +549,11 @@ final class AppModel {
         }
     }
 
-    let ecosystemSignals = EcosystemSignalsCoordinator()
+    /// Not observed from here — the views read `ecosystemSignals.state`,
+    /// which is `@Observable` in its own right. Registering this reference
+    /// with the observation machinery only costs the AppModel init, and that
+    /// path has a 200ms budget a bridge notification has to fit inside.
+    @ObservationIgnored let ecosystemSignals = EcosystemSignalsCoordinator()
 
     /// Built at startup, but it holds no camera until someone presses the key.
     ///

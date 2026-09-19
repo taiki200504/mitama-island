@@ -33,6 +33,11 @@ final class EcosystemSignalsCoordinator {
     /// probe looks at; without the PID a listening socket of the browser
     /// itself would read as a client.
     static let browserBundleID = "dev.mitama.browser"
+    /// Nothing is polled for the first few seconds of a launch. The island's
+    /// first job is to be on screen when a bridge notification arrives (there
+    /// is a 200ms budget for that, and a test that guards it); forking `lsof`
+    /// while that is happening is exactly the kind of work that eats it.
+    private static let warmUp: TimeInterval = 3
     private static let automationInterval: TimeInterval = 5
     private static let codexInterval: TimeInterval = 30
     /// Only the tail matters, and the log grows for the life of the machine.
@@ -87,6 +92,7 @@ final class EcosystemSignalsCoordinator {
     // MARK: - Automation
 
     private func pollAutomation() async {
+        try? await Task.sleep(for: .seconds(Self.warmUp))
         while !Task.isCancelled {
             let pid = NSWorkspace.shared.runningApplications
                 .first { $0.bundleIdentifier == Self.browserBundleID }?
@@ -143,6 +149,7 @@ final class EcosystemSignalsCoordinator {
     // MARK: - Codex gate
 
     private func pollCodexGate() async {
+        try? await Task.sleep(for: .seconds(Self.warmUp))
         while !Task.isCancelled {
             let lines = await Task.detached(priority: .utility) { Self.codexTailLines() }.value
             let failures = CodexGateLog.latestFailure(lines: lines, now: .now)
