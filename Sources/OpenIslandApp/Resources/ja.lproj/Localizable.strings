@@ -862,3 +862,6 @@
 "island.signal.codex.hint" = "押すと指摘の中身を開く";
 "island.signal.codex.noDetail" = "指摘の本文は残っていない";
 "island.signal.jobDone" = "仕事がひとつ終わった";
+
+/* link start */
+"linkstart.ok" = "OK";

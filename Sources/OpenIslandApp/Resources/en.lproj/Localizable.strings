@@ -862,3 +862,6 @@
 "island.signal.codex.hint" = "Open the findings";
 "island.signal.codex.noDetail" = "The findings are no longer on disk";
 "island.signal.jobDone" = "A job finished";
+
+/* link start */
+"linkstart.ok" = "OK";

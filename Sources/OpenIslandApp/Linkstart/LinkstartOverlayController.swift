@@ -95,6 +95,17 @@ final class LinkstartOverlayController {
         }
     }
 
+    /// Freezes the picture at `elapsed` without opening a window.
+    ///
+    /// Screen capture goes black whenever the display is asleep or locked,
+    /// which makes "does the sequence look right" unanswerable at exactly the
+    /// times a long build finishes. Rendering the view offscreen instead
+    /// needs a controller already in `.pinned`, and nothing else.
+    func pinForOffscreenRender(elapsed: TimeInterval) {
+        heard = nil
+        stage = .pinned(elapsed: elapsed)
+    }
+
     /// Presents the sequence already partway through, for the harness only:
     /// skips the phrase-listening step entirely and pins the picture — and
     /// fast-forwards any cue that would already have played — to

@@ -8,7 +8,7 @@ import SwiftUI
 /// frame here changes what one frame looks like instead of putting the sequence
 /// out of step with itself.
 ///
-/// The SAO (Sword Art Online) NerveGear boot sequence aesthetic: a white field
+/// A white field
 /// with radiating light wedges, then a light HUD that scales up with concentric
 /// rings as each sense confirms.
 struct LinkstartView: View {
@@ -75,8 +75,12 @@ struct LinkstartView: View {
         let reducesMotion = IslandMotion.reducesMotion
 
         return ZStack {
-            // White/pale ground throughout the entire sequence
-            Color(hex: 0xF5F8FA)
+            // The ground: white while the tunnel runs, tinting to the HUD's
+            // blue-white as the rings arrive — the reference is never a flat
+            // paper white behind the interface.
+            Color.white
+            SAOGrammar.Palette.linkstartPale2
+                .opacity(elapsed < LinkstartSequence.calibrationStart ? 0 : 1)
 
             // Wedge tunnel (0-3.5s: ignition + warp + flash)
             LinkstartWedgeTunnelView(elapsed: elapsed, reducesMotion: reducesMotion)
@@ -101,81 +105,98 @@ struct LinkstartView: View {
 }
 
 /// The wedge tunnel: multicolored wedges radiating from the center, growing
-/// from tiny slivers to large wedges, mimicking the NerveGear boot sequence.
+/// from tiny slivers to streaks rushing past the viewer.
 private struct LinkstartWedgeTunnelView: View {
     let elapsed: TimeInterval
     let reducesMotion: Bool
 
-    private static let wedgeCount = 8
-    private static let colors: [Color] = [
-        .red,
-        Color(hex: 0xFF00FF),  // magenta
-        .cyan,
-        .green,
-        .black,
-        Color(hex: 0xFFFF00),  // yellow
-        Color(hex: 0xFF7F00),  // orange
-        Color(hex: 0x7F00FF)   // violet
+    /// Many thin slivers, not a few fat pie slices: the reference is a field
+    /// of streaks of different widths and lengths rushing past the viewer,
+    /// and an even eight-way split reads as a colour wheel instead.
+    private static let wedgeCount = 46
+    private static let palette: [Color] = [
+        Color(hex: 0xE8253B),   // red
+        Color(hex: 0x00C8E0),   // cyan
+        Color(hex: 0xE81DC8),   // magenta
+        Color(hex: 0x14C850),   // green
+        Color(hex: 0x111111),   // black
+        Color(hex: 0xF0D000),   // yellow
+        Color(hex: 0xFF7A00),   // orange
+        Color(hex: 0x7B3BE8),   // violet
     ]
+
+    /// Fixed per-wedge angle, width, length and speed. Seeded, so the same
+    /// elapsed time always draws the same frame — the harness pins frames and
+    /// a random field would make every capture a different picture.
+    private struct Sliver {
+        let angle: Double
+        let width: Double
+        let lengthScale: Double
+        let speed: Double
+        let delay: Double
+        let colour: Color
+    }
+
+    private static let slivers: [Sliver] = {
+        var seed: UInt64 = 0x5A0_1EAD
+        func next() -> Double {
+            seed = seed &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407
+            return Double((seed >> 33) & 0xFFFFFF) / Double(0xFFFFFF)
+        }
+        return (0..<wedgeCount).map { index in
+            Sliver(
+                angle: (Double(index) / Double(wedgeCount) + next() * 0.018) * 2 * .pi,
+                width: (0.9 + next() * 3.6) * .pi / 180,
+                lengthScale: 0.45 + next() * 0.75,
+                speed: 0.75 + next() * 0.7,
+                delay: next() * 0.28,
+                colour: palette[index % palette.count]
+            )
+        }
+    }()
 
     var body: some View {
         Canvas { context, size in
             let center = CGPoint(x: size.width / 2, y: size.height / 2)
-            let maxRadius = (size.width * size.width + size.height * size.height).squareRoot() / 2
-
-            // Map the existing sequence phases to visual progression:
-            // Phase 1 (0-0.5s / ignition): tiny slivers at center growing slowly
-            // Phase 2 (0.5-3.0s / warp): slivers become thick wedges radiating outward
-            // Phase 3 (3.0-3.5s / flash): white-out (wedges fade to white opacity)
-
-            let ignitionEnd = LinkstartSequence.ignitionDuration
+            let reach = (size.width * size.width + size.height * size.height).squareRoot() / 2
             let warpEnd = LinkstartSequence.warpEnd
             let calibrationStart = LinkstartSequence.calibrationStart
+            guard elapsed < calibrationStart else { return }
 
-            if elapsed < calibrationStart {
-                for (index, color) in Self.colors.enumerated() {
-                    let angle = Double(index) / Double(Self.colors.count) * 2 * .pi
-                    let nextAngle = Double(index + 1) / Double(Self.colors.count) * 2 * .pi
+            // 0 → the slivers are a speck at the centre; 1 → they have left
+            // the screen. Cubed, because the reference accelerates: barely
+            // moving for the first second, gone in the last half.
+            let travel = pow(max(0, min(elapsed / warpEnd, 1)), 2.6)
+            let fade = elapsed <= warpEnd
+                ? 1
+                : max(0, 1 - (elapsed - warpEnd) / max(LinkstartSequence.flashDuration, 0.001) * 1.6)
 
-                    // Calculate wedge size based on phase
-                    var progress: Double
-                    var opacity: Double = 1.0
+            for sliver in Self.slivers {
+                let own = max(0, travel - sliver.delay * 0.35) * sliver.speed
+                guard own > 0.0005 else { continue }
+                // Tail and head both travel; the gap between them is the
+                // streak, and it stretches as the thing speeds up.
+                let head = min(own * 1.6, 1.9) * reach * sliver.lengthScale + 6
+                let tail = max(0, own - 0.16 * sliver.speed) * reach * sliver.lengthScale
+                guard head > tail else { continue }
 
-                    if elapsed < ignitionEnd {
-                        // Phase 1 (ignition): tiny slivers growing
-                        progress = elapsed / ignitionEnd * 0.15
-                    } else if elapsed < warpEnd {
-                        // Phase 2 (warp): wedges expanding outward
-                        let warpProgress = (elapsed - ignitionEnd) / LinkstartSequence.warpDuration
-                        progress = 0.15 + warpProgress * 0.85
-                    } else {
-                        // Phase 3 (flash): wedges fade out as white-out comes in
-                        let flashProgress = (elapsed - warpEnd) / LinkstartSequence.flashDuration
-                        progress = 1.0
-                        opacity = max(0, 1 - flashProgress * 1.5)
-                    }
+                let half = sliver.width / 2
+                let a0 = sliver.angle - half
+                let a1 = sliver.angle + half
+                // Pointed at the centre, wide at the leading edge — the
+                // reference's wedges are triangles aimed inwards.
+                var path = Path()
+                path.move(to: CGPoint(x: center.x + cos(sliver.angle) * tail,
+                                      y: center.y + sin(sliver.angle) * tail))
+                path.addLine(to: CGPoint(x: center.x + cos(a0) * head, y: center.y + sin(a0) * head))
+                path.addLine(to: CGPoint(x: center.x + cos(a1) * head, y: center.y + sin(a1) * head))
+                path.closeSubpath()
 
-                    let radius = maxRadius * progress
-                    if radius <= 0 || opacity <= 0.01 { continue }
-
-                    let startAngle = angle
-                    let endAngle = nextAngle
-                    let dx1 = cos(startAngle)
-                    let dy1 = sin(startAngle)
-                    let dx2 = cos(endAngle)
-                    let dy2 = sin(endAngle)
-
-                    var path = Path()
-                    path.move(to: center)
-                    path.addLine(to: CGPoint(x: center.x + dx1 * radius, y: center.y + dy1 * radius))
-                    path.addLine(to: CGPoint(x: center.x + dx2 * radius, y: center.y + dy2 * radius))
-                    path.closeSubpath()
-
-                    context.fill(path, with: .color(color.opacity(opacity)))
-                }
+                context.fill(path, with: .color(sliver.colour.opacity(fade)))
             }
         }
         .allowsHitTesting(false)
+        .opacity(reducesMotion ? 0.35 : 1)
     }
 }
 
@@ -226,123 +247,128 @@ private struct LinkstartLightHUDView: View {
     }
 }
 
-/// The HUD content: rings, sense indicators, and OK button.
+/// The HUD: concentric arc rings filling the screen, with one ring segment
+/// per sense and the OK pill at the centre. Sized from the frame rather than
+/// a fixed 240pt box — the reference fills the screen edge to edge.
 private struct LinkstartHUDContent: View {
     let elapsed: TimeInterval
     let confirmedCount: Int
     let reducesMotion: Bool
 
     var body: some View {
-        ZStack {
-            LinkstartHUDRings(confirmedCount: confirmedCount)
-
-            // Sense checklist inside the HUD
-            VStack(spacing: 8) {
-                ForEach(Array(LinkstartSequence.senses.enumerated()), id: \.element) { index, sense in
-                    senseIndicator(index: index, sense: sense, isConfirmed: index < confirmedCount)
-                }
-
-                Spacer()
-                    .frame(height: 20)
-
-                // OK button at bottom
-                Button(action: {}) {
-                    Text("OK")
-                        .font(IslandTypography.mono(size: 20, weight: .bold))
-                        .foregroundStyle(SAOGrammar.Palette.linkstartCyan1)
-                        .padding(.horizontal, 40)
-                        .padding(.vertical, 12)
-                        .background(Color.white.opacity(0.1))
-                        .border(SAOGrammar.Palette.linkstartCyan1, width: 1)
-                }
-                .buttonStyle(.plain)
+        GeometryReader { geometry in
+            let side = min(geometry.size.width, geometry.size.height)
+            ZStack {
+                LinkstartHUDRings(confirmedCount: confirmedCount, elapsed: elapsed)
+                okPill(side: side)
             }
-            .padding(40)
-            .frame(width: 240, height: 280)
+            .frame(width: geometry.size.width, height: geometry.size.height)
         }
-        .frame(width: 240, height: 280)
     }
 
-    private func senseIndicator(index: Int, sense: LinkstartSense, isConfirmed: Bool) -> some View {
-        HStack(spacing: 12) {
-            Circle()
-                .fill(isConfirmed ? SAOGrammar.Palette.linkstartCyan2 : SAOGrammar.Palette.linkstartPale2.opacity(0.3))
-                .frame(width: 8, height: 8)
-
-            Text(LanguageManager.shared.t(sense.labelKey))
-                .font(IslandTypography.mono(size: 12))
-                .foregroundStyle(isConfirmed ? SAOGrammar.Palette.linkstartCyan2 : SAOGrammar.Palette.linkstartPale2.opacity(0.5))
-                .tracking(1)
-
-            Spacer()
-
-            if isConfirmed {
-                Image(systemName: "checkmark")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(SAOGrammar.Palette.linkstartCyan2)
-            }
-        }
-        .frame(height: 20)
+    /// The one piece of the HUD that is a control rather than decoration.
+    /// Not a Button: the sequence takes no input, and a focusable control
+    /// inside a full-screen overlay steals the keystroke that dismisses it.
+    private func okPill(side: CGFloat) -> some View {
+        let confirmed = confirmedCount >= LinkstartSequence.senses.count
+        return Text(LanguageManager.shared.t("linkstart.ok"))
+            .font(IslandTypography.mono(size: side * 0.075, weight: .bold))
+            .tracking(side * 0.03)
+            .foregroundStyle(.white)
+            .padding(.horizontal, side * 0.075)
+            .padding(.vertical, side * 0.028)
+            .background(
+                Capsule().fill(
+                    confirmed
+                        ? SAOGrammar.Palette.linkstartCyan1
+                        : SAOGrammar.Palette.linkstartCyan3
+                )
+            )
+            .overlay(Capsule().strokeBorder(.white.opacity(0.85), lineWidth: 2))
+            .shadow(color: SAOGrammar.Palette.linkstartCyan2.opacity(0.5), radius: side * 0.03)
+            .opacity(confirmed ? 1 : 0.75)
     }
 }
 
-/// The HUD rings and arc segments drawn on Canvas.
+/// The rings themselves. Each ring is a run of arc segments with gaps, drawn
+/// thick enough to read as a solid band of colour from across the room, the
+/// way the reference does. One ring belongs to each sense and fills in as
+/// that sense is confirmed; the rest are scenery.
 private struct LinkstartHUDRings: View {
     let confirmedCount: Int
+    let elapsed: TimeInterval
 
-    private static let ringCount = 5
-    private static let segmentCount = 12
+    /// Radius fraction, thickness fraction, segment count, gap in degrees,
+    /// whether the ring belongs to a sense, and its colour.
+    private struct Ring {
+        let radius: Double
+        let thickness: Double
+        let segments: Int
+        let gap: Double
+        let senseIndex: Int?
+        let lavender: Bool
+    }
+
+    private static let rings: [Ring] = [
+        Ring(radius: 0.20, thickness: 0.030, segments: 3, gap: 26, senseIndex: 0, lavender: false),
+        Ring(radius: 0.27, thickness: 0.018, segments: 14, gap: 8, senseIndex: nil, lavender: true),
+        Ring(radius: 0.33, thickness: 0.038, segments: 4, gap: 20, senseIndex: 1, lavender: false),
+        Ring(radius: 0.41, thickness: 0.014, segments: 30, gap: 4, senseIndex: nil, lavender: false),
+        Ring(radius: 0.47, thickness: 0.042, segments: 5, gap: 16, senseIndex: 2, lavender: true),
+        Ring(radius: 0.55, thickness: 0.020, segments: 9, gap: 12, senseIndex: nil, lavender: false),
+        Ring(radius: 0.62, thickness: 0.046, segments: 6, gap: 14, senseIndex: 3, lavender: false),
+        Ring(radius: 0.71, thickness: 0.016, segments: 22, gap: 6, senseIndex: nil, lavender: true),
+        Ring(radius: 0.80, thickness: 0.050, segments: 7, gap: 12, senseIndex: 4, lavender: false),
+        Ring(radius: 0.90, thickness: 0.012, segments: 40, gap: 3, senseIndex: nil, lavender: false),
+    ]
 
     var body: some View {
         Canvas { context, size in
-            let center = CGPoint(x: size.width / 2, y: size.height / 2)
+            let centre = CGPoint(x: size.width / 2, y: size.height / 2)
+            let side = min(size.width, size.height)
+            // Slow drift, opposite directions per ring — enough to read as
+            // alive, not enough to look like a loading spinner.
+            let drift = elapsed * 9
 
-            for ringIndex in 0..<Self.ringCount {
-                let progress = Double(ringIndex) / Double(Self.ringCount)
-                let radius = size.width / 2 * (0.2 + progress * 0.7)
+            for (index, ring) in Self.rings.enumerated() {
+                let radius = side * ring.radius
+                let lineWidth = side * ring.thickness
+                let confirmed = ring.senseIndex.map { $0 < confirmedCount } ?? true
+                let base = ring.lavender
+                    ? SAOGrammar.Palette.linkstartLavender1
+                    : SAOGrammar.Palette.linkstartCyan1
+                // Not yet confirmed is still part of the HUD: a pale version of
+                // its own colour. Grey reads as broken rather than as waiting.
+                let colour = confirmed ? base : base.opacity(0.28)
+                let direction: Double = index.isMultiple(of: 2) ? 1 : -1
+                let step = 360.0 / Double(ring.segments)
 
-                // Alternate between cyan and lavender
-                let ringColor = ringIndex % 2 == 0
-                    ? SAOGrammar.Palette.linkstartCyan2
-                    : SAOGrammar.Palette.linkstartLavender1
-
-                // Draw ring as arc segments with gaps
-                var path = Path()
-                let segmentAngle = 2 * .pi / Double(Self.segmentCount)
-                let gapAngle = segmentAngle * 0.3
-
-                for segIndex in 0..<Self.segmentCount {
-                    let startAngle = Double(segIndex) * segmentAngle
-                    let endAngle = startAngle + segmentAngle - gapAngle
-
-                    let arcStart = CGPoint(
-                        x: center.x + cos(startAngle) * radius,
-                        y: center.y + sin(startAngle) * radius
-                    )
-
-                    if segIndex == 0 {
-                        path.move(to: arcStart)
-                    } else {
-                        path.addLine(to: arcStart)
-                    }
-
-                    path.addArc(center: center, radius: radius, startAngle: Angle(radians: startAngle), endAngle: Angle(radians: endAngle), clockwise: false)
+                for segment in 0..<ring.segments {
+                    let start = Angle.degrees(Double(segment) * step + drift * direction + ring.gap / 2)
+                    let end = Angle.degrees(Double(segment + 1) * step + drift * direction - ring.gap / 2)
+                    var path = Path()
+                    path.addArc(center: centre, radius: radius, startAngle: start, endAngle: end, clockwise: false)
+                    context.stroke(path, with: .color(colour), style: StrokeStyle(lineWidth: lineWidth, lineCap: .butt))
                 }
 
-                context.stroke(path, with: .color(ringColor.opacity(0.6)), style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
-            }
-
-            // Draw small square markers at regular intervals
-            for i in 0..<Self.segmentCount {
-                let angle = Double(i) / Double(Self.segmentCount) * 2 * .pi
-                let distance = size.width / 2 * 0.4
-                let x = center.x + cos(angle) * distance
-                let y = center.y + sin(angle) * distance
-                let rect = CGRect(x: x - 2, y: y - 2, width: 4, height: 4)
-                context.fill(
-                    Path(roundedRect: rect, cornerRadius: 0.5),
-                    with: .color(SAOGrammar.Palette.linkstartCyan2.opacity(0.5))
-                )
+                // The small blocks riding the ring — the reference is dense
+                // with them, and they are what stops it reading as a target.
+                if ring.segments <= 9 {
+                    for marker in 0..<ring.segments {
+                        let angle = Angle.degrees(Double(marker) * step + drift * direction + step / 2).radians
+                        let point = CGPoint(x: centre.x + cos(angle) * radius, y: centre.y + sin(angle) * radius)
+                        let block = CGRect(
+                            x: point.x - side * 0.012,
+                            y: point.y - side * 0.008,
+                            width: side * 0.024,
+                            height: side * 0.016
+                        )
+                        context.fill(
+                            Path(roundedRect: block, cornerRadius: side * 0.004),
+                            with: .color(confirmed ? base : base.opacity(0.3))
+                        )
+                    }
+                }
             }
         }
         .allowsHitTesting(false)
