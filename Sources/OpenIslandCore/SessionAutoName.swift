@@ -24,7 +24,7 @@ public enum SessionAutoName {
     /// Returns a name, or `nil` when the prompt carries nothing worth showing —
     /// the caller then keeps the workspace name rather than displaying a blank.
     public static func derive(from prompt: String?) -> String? {
-        guard let prompt else { return nil }
+        guard let prompt = ClaudeInjectedPrompt.userText(prompt) else { return nil }
 
         // A pasted stack trace or file dump: the first line is the only part
         // that reads as a request, and the rest would be noise.
