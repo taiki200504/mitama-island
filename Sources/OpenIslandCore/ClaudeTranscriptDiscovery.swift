@@ -296,7 +296,7 @@ public final class ClaudeTranscriptDiscovery: @unchecked Sendable {
 
     private func promptText(from content: Any?) -> String? {
         if let text = content as? String {
-            return normalizedText(text)
+            return ClaudeInjectedPrompt.userText(normalizedText(text))
         }
 
         guard let blocks = content as? [[String: Any]] else {
@@ -306,7 +306,8 @@ public final class ClaudeTranscriptDiscovery: @unchecked Sendable {
         for block in blocks {
             if block["type"] as? String == "text",
                let text = block["text"] as? String,
-               let normalized = normalizedText(text) {
+               let normalized = normalizedText(text),
+               !ClaudeInjectedPrompt.isInjected(normalized) {
                 return normalized
             }
         }
