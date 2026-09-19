@@ -614,6 +614,8 @@ final class AppModel {
 
     /// What you put down in the island on the way somewhere else.
     @ObservationIgnored let shelf = ShelfStore()
+    /// Saved interruption points for quick resume without losing context.
+    @ObservationIgnored let focusCardStore = ResumeCardStore()
     /// Debug/harness only: shows the shelf's chips without needing a real
     /// hover, so a scenario can put items on screen for a screenshot.
     var debugShelfBadgeForcedExpanded = false
@@ -951,6 +953,17 @@ final class AppModel {
         startIdleSessionCleanup()
         shelf.expiryProvider = { [weak self] in self?.shelfExpiresAfter.ttl }
         startShelfExpiryPruning()
+
+        // Load Resume Cards from disk on startup
+        Task {
+            do {
+                try await focusCardStore.load()
+            } catch {
+                Logger(subsystem: "com.mitama.island", category: "focus-card")
+                    .error("Failed to load Resume Cards: \(error, privacy: .public)")
+            }
+        }
+
         hooks.onUsageSnapshotChanged = { [weak self] in
             self?.checkUsageThreshold()
         }

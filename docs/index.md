@@ -33,6 +33,7 @@ This index is the repository map for humans and coding agents. Read these files 
 - [docs/notch-surface-model.md](./notch-surface-model.md) for the island surface routing model and debug harness intent
 - [docs/peek-band-design.md](./peek-band-design.md) for the closed-island peek band that keeps a pending request visible until it is answered
 - [docs/island-modules.md](./island-modules.md) for the closed-island arbiter (one body + one accessory), sneak-peek rules, and the contract later timer/now-playing/calendar/lock/HUD modules build against
+- [docs/manus-integration.md](./manus-integration.md) for the Manus spec audit, phased implementation plan, and Focus Card / Resume Card requirements
 - [docs/app-ghostty-codex-chain.md](./app-ghostty-codex-chain.md) for terminal environment findings across the current supported chain
 - [docs/sound-design.md](./sound-design.md) for the bundled cue catalog, format, regeneration, and override precedence
 
