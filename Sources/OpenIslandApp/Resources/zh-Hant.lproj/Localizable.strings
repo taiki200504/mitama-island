@@ -861,3 +861,6 @@
 "island.signal.codex.hint" = "點擊查看問題內容";
 "island.signal.codex.noDetail" = "問題內容已不在磁碟上";
 "island.signal.jobDone" = "一件工作已完成";
+
+/* link start */
+"linkstart.ok" = "OK";

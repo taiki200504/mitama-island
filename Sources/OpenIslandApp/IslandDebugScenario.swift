@@ -420,7 +420,11 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                 // Into the first sense's confirmation: the tunnel and the
                 // white-out are behind it, so the frame carries the checklist
                 // the harness asserts on rather than a field of light.
-                linkstartElapsedOverride: 5.2
+                // A capture run can ask for another moment of the sequence
+                // (OPEN_ISLAND_HARNESS_LINKSTART_ELAPSED), which is how the
+                // tunnel and the HUD get checked against their reference
+                // without launching the app on someone's screen.
+                linkstartElapsedOverride: Self.harnessLinkstartElapsed ?? 5.2
             )
 
         case .sneakPeekPop:
@@ -1065,5 +1069,16 @@ private enum DebugSessionFactory {
 """
             )
         )
+    }
+}
+
+
+extension IslandDebugScenario {
+    /// Which moment of the login sequence a harness capture should freeze on.
+    /// Unset means the scenario's own default.
+    static var harnessLinkstartElapsed: TimeInterval? {
+        guard let raw = ProcessInfo.processInfo.environment["OPEN_ISLAND_HARNESS_LINKSTART_ELAPSED"],
+              let value = TimeInterval(raw) else { return nil }
+        return value
     }
 }
