@@ -847,3 +847,18 @@
 "approval.risk.ordinary" = "仅读取";
 "settings.general.keepAwake" = "代理工作时不进入睡眠";
 "settings.general.keepAwake.help" = "仅在接通电源、盖子打开且温度正常时生效。屏幕仍可关闭，工作不会中断。";
+
+/* mitama ecosystem signals */
+"settings.mitama.section.signals" = "mitama 的动态";
+"settings.mitama.signal.automation" = "自动操作时在灵动岛显示";
+"settings.mitama.signal.automation.help" = "mitama 操作浏览器时点亮收起的岛，展开后显示使用的账户与页面。";
+"settings.mitama.signal.jobs" = "显示 mitama 的任务数";
+"settings.mitama.signal.jobs.help" = "显示进行中、排队中与今日完成的数量，每完成一件在岛上提示一次。";
+"settings.mitama.signal.codex" = "显示 Codex 的问题";
+"settings.mitama.signal.codex.help" = "最近一次 Codex 审查出现 [P1] 的项目会标红，点击可查看内容。";
+"island.signal.automation" = "自动操作中";
+"island.signal.jobs" = "mitama · 进行中 %1$d ・排队 %2$d ・今日完成 %3$d";
+"island.signal.codex" = "Codex P1 · %1$@ (%2$@) %3$d 项";
+"island.signal.codex.hint" = "点击查看问题内容";
+"island.signal.codex.noDetail" = "问题内容已不在磁盘上";
+"island.signal.jobDone" = "一件任务已完成";

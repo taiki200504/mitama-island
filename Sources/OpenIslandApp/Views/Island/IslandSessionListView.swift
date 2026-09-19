@@ -319,17 +319,23 @@ extension IslandPanelView {
     private func sessionPanelHeader(referenceDate: Date) -> some View {
         let overview = sessionOverviewItems(referenceDate: referenceDate)
 
-        return HStack(spacing: 8) {
-            ViewThatFits(in: .horizontal) {
-                sessionOverviewView(overview, compact: false)
-                sessionOverviewView(overview, compact: true)
-            }
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 8) {
+                ViewThatFits(in: .horizontal) {
+                    sessionOverviewView(overview, compact: false)
+                    sessionOverviewView(overview, compact: true)
+                }
 
-            Spacer(minLength: 0)
+                Spacer(minLength: 0)
+            }
+            .padding(.leading, sessionListSideInset)
+            .padding(.trailing, sessionListSideInset)
+            .frame(height: 24)
+
+            // The rest of mitama — drawn only when it has something to say,
+            // so an idle machine keeps the list exactly where it was.
+            IslandEcosystemSignalsStrip(model: model, sideInset: sessionListSideInset)
         }
-        .padding(.leading, sessionListSideInset)
-        .padding(.trailing, sessionListSideInset)
-        .frame(height: 24)
     }
 
     private var sessionPanelFooter: some View {

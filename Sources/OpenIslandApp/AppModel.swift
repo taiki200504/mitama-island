@@ -516,6 +516,41 @@ final class AppModel {
 
     let mitamaFeed = MitamaFeedCoordinator()
 
+    // MARK: - mitama ecosystem signals
+
+    private static let automationSignalKey = "mitama.signals.automation.enabled"
+    private static let jobSignalKey = "mitama.signals.jobs.enabled"
+    private static let codexSignalKey = "mitama.signals.codex.enabled"
+
+    /// The island's window onto the rest of mitama: the browser being driven,
+    /// the job queue, the Codex gate. On by default — each one costs a local
+    /// poll, and the job counts ride the feed's existing query.
+    var automationSignalEnabled: Bool = true {
+        didSet {
+            guard automationSignalEnabled != oldValue else { return }
+            UserDefaults.standard.set(automationSignalEnabled, forKey: Self.automationSignalKey)
+            ecosystemSignals.automationEnabled = automationSignalEnabled
+        }
+    }
+
+    var jobSignalEnabled: Bool = true {
+        didSet {
+            guard jobSignalEnabled != oldValue else { return }
+            UserDefaults.standard.set(jobSignalEnabled, forKey: Self.jobSignalKey)
+            mitamaFeed.jobSummaryEnabled = jobSignalEnabled
+        }
+    }
+
+    var codexSignalEnabled: Bool = true {
+        didSet {
+            guard codexSignalEnabled != oldValue else { return }
+            UserDefaults.standard.set(codexSignalEnabled, forKey: Self.codexSignalKey)
+            ecosystemSignals.codexEnabled = codexSignalEnabled
+        }
+    }
+
+    let ecosystemSignals = EcosystemSignalsCoordinator()
+
     /// Built at startup, but it holds no camera until someone presses the key.
     ///
     /// Deliberately not `lazy`. Declaring it that way — even `@ObservationIgnored`
@@ -858,6 +893,19 @@ final class AppModel {
         notchAppearancePreferences = Self.loadAppearancePreferences(for: .notch)
         topBarAppearancePreferences = Self.loadAppearancePreferences(for: .topBar)
         mitamaFeedEnabled = UserDefaults.standard.bool(forKey: Self.mitamaFeedEnabledKey)
+        // Default ON: `bool(forKey:)` answers false for a key nobody has
+        // written yet, so the absence of the key has to be asked about first.
+        let defaults = UserDefaults.standard
+        automationSignalEnabled = defaults.object(forKey: Self.automationSignalKey) as? Bool ?? true
+        jobSignalEnabled = defaults.object(forKey: Self.jobSignalKey) as? Bool ?? true
+        codexSignalEnabled = defaults.object(forKey: Self.codexSignalKey) as? Bool ?? true
+        mitamaFeed.jobSummaryEnabled = jobSignalEnabled
+        ecosystemSignals.automationEnabled = automationSignalEnabled
+        ecosystemSignals.codexEnabled = codexSignalEnabled
+        ecosystemSignals.start()
+        mitamaFeed.onJobCompleted = { [weak self] completion in
+            self?.presentJobCompletedPeek(completion)
+        }
         if mitamaFeedEnabled {
             mitamaFeed.start()
         }
@@ -1512,6 +1560,8 @@ final class AppModel {
             nextEvent: calendar.band,
             showsNextEvent: settings.display.showsNextEvent,
             timer: focusTimerAccessoryInput(now: now),
+            // mitama が裏でブラウザを操作している間だけ点く
+            automationIsRunning: automationSignalEnabled && ecosystemSignals.state.automationIsRunning,
             nowPlaying: nowPlayingAccessoryInput(),
             // macOS lights the camera indicator for as long as the device
             // runs, and the island is the only thing that can say why.
@@ -2067,6 +2117,25 @@ final class AppModel {
     ///
     /// A presentation, not a security check: macOS has already unlocked the
     /// screen by the time this runs. Nothing here decides whether to let
+    /// A job the owner queued finished. Says so for a few seconds on the
+    /// closed island and nothing more — the Hub has the details.
+    private func presentJobCompletedPeek(_ completion: MitamaJobCompletion) {
+        guard jobSignalEnabled else { return }
+        let objective = completion.objective.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = objective.count > 40 ? String(objective.prefix(40)) + "…" : objective
+        overlay.presentSneakPeek(
+            IslandSneakPeek(
+                kind: .jobDone,
+                text: text.isEmpty ? lang.t("island.signal.jobDone") : text,
+                icon: "checkmark.circle",
+                gauge: nil,
+                until: Date.now.addingTimeInterval(
+                    IslandSneakPeekPolicy.duration(for: .jobDone)
+                )
+            )
+        )
+    }
+
     /// anyone in.
     private func presentLockScanGreeting() {
         guard settings.lockScan.enabled else { return }

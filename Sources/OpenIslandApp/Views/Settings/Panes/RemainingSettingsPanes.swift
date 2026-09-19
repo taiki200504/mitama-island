@@ -200,6 +200,33 @@ struct MitamaSettingsPane: View {
                 )
             }
 
+            Section(lang.t("settings.mitama.section.signals")) {
+                SettingsToggleRow(
+                    title: lang.t("settings.mitama.signal.automation"),
+                    help: lang.t("settings.mitama.signal.automation.help"),
+                    isOn: Binding(
+                        get: { model.automationSignalEnabled },
+                        set: { model.automationSignalEnabled = $0 }
+                    )
+                )
+                SettingsToggleRow(
+                    title: lang.t("settings.mitama.signal.jobs"),
+                    help: lang.t("settings.mitama.signal.jobs.help"),
+                    isOn: Binding(
+                        get: { model.jobSignalEnabled },
+                        set: { model.jobSignalEnabled = $0 }
+                    )
+                )
+                SettingsToggleRow(
+                    title: lang.t("settings.mitama.signal.codex"),
+                    help: lang.t("settings.mitama.signal.codex.help"),
+                    isOn: Binding(
+                        get: { model.codexSignalEnabled },
+                        set: { model.codexSignalEnabled = $0 }
+                    )
+                )
+            }
+
             Section(lang.t("settings.mitama.section.credentials")) {
                 SettingsRow(
                     title: lang.t("settings.mitama.source"),
