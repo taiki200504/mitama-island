@@ -29,6 +29,8 @@ public enum IslandClosedAccessory: Equatable, Hashable, Sendable {
     /// Minutes only — a closed pill that re-ticks every second to show
     /// seconds would redraw a background app sixty times a minute.
     case timer(remainingMinutes: Int, label: String)
+    /// Automation is running — mitama Browser is driving a page.
+    case automation
     /// `artworkThumbnailPNG` is whatever image data the source app handed
     /// MediaRemote, already small — the accessory only ever draws it at
     /// 14pt. `nil` while artwork hasn't loaded yet, which the visualiser
@@ -87,6 +89,7 @@ public struct IslandClosedInputs: Sendable {
     public var nextEvent: UpcomingCalendarEvent.Band?
     public var showsNextEvent: Bool
     public var timer: Timer?
+    public var automationIsRunning: Bool
     public var nowPlaying: NowPlaying?
     public var cameraIsWatching: Bool
     public var shelfCount: Int
@@ -99,6 +102,7 @@ public struct IslandClosedInputs: Sendable {
         nextEvent: UpcomingCalendarEvent.Band? = nil,
         showsNextEvent: Bool = false,
         timer: Timer? = nil,
+        automationIsRunning: Bool = false,
         nowPlaying: NowPlaying? = nil,
         cameraIsWatching: Bool = false,
         shelfCount: Int = 0,
@@ -110,6 +114,7 @@ public struct IslandClosedInputs: Sendable {
         self.nextEvent = nextEvent
         self.showsNextEvent = showsNextEvent
         self.timer = timer
+        self.automationIsRunning = automationIsRunning
         self.nowPlaying = nowPlaying
         self.cameraIsWatching = cameraIsWatching
         self.shelfCount = shelfCount
@@ -137,8 +142,8 @@ private let eventStartedFreshness: TimeInterval = 3 * 60
 public enum IslandClosedArbiter {
     /// Body priority: a mitama alert beats a waiting agent beats a calendar
     /// entry that just started beats what's next. Accessory priority: a
-    /// running timer beats now-playing beats "the camera is watching" beats
-    /// the shelf having something on it.
+    /// running timer beats automation beats now-playing beats "the camera is
+    /// watching" beats the shelf having something on it.
     public static func resolve(_ inputs: IslandClosedInputs) -> IslandClosedContent {
         IslandClosedContent(body: resolveBody(inputs), accessory: resolveAccessory(inputs))
     }
@@ -165,6 +170,9 @@ public enum IslandClosedArbiter {
     private static func resolveAccessory(_ inputs: IslandClosedInputs) -> IslandClosedAccessory? {
         if let timer = inputs.timer {
             return .timer(remainingMinutes: timer.remainingMinutes, label: timer.label)
+        }
+        if inputs.automationIsRunning {
+            return .automation
         }
         if let nowPlaying = inputs.nowPlaying {
             return .nowPlaying(isPlaying: nowPlaying.isPlaying, artworkThumbnailPNG: nowPlaying.artworkThumbnailPNG)

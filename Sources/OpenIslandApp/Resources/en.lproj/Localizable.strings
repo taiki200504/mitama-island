@@ -847,3 +847,18 @@
 "approval.risk.ordinary" = "Read only";
 "settings.general.keepAwake" = "Stay awake while an agent is working";
 "settings.general.keepAwake.help" = "Only on power, lid open and not running hot. The display can still sleep; the work keeps going.";
+
+/* mitama ecosystem signals */
+"settings.mitama.section.signals" = "What mitama is doing";
+"settings.mitama.signal.automation" = "Show when the browser is being driven";
+"settings.mitama.signal.automation.help" = "Lights the closed island while mitama drives mitama Browser, and names the account and page once opened.";
+"settings.mitama.signal.jobs" = "Show mitama’s job counts";
+"settings.mitama.signal.jobs.help" = "Running, queued and finished-today counts, plus a short note on the island each time one finishes.";
+"settings.mitama.signal.codex" = "Show Codex review findings";
+"settings.mitama.signal.codex.help" = "Flags projects whose latest Codex review reported [P1]. Tap the line to read the findings.";
+"island.signal.automation" = "Driving";
+"island.signal.jobs" = "mitama · %1$d running · %2$d queued · %3$d done today";
+"island.signal.codex" = "Codex P1 · %1$@ (%2$@) ×%3$d";
+"island.signal.codex.hint" = "Open the findings";
+"island.signal.codex.noDetail" = "The findings are no longer on disk";
+"island.signal.jobDone" = "A job finished";

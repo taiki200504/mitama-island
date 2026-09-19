@@ -1,5 +1,33 @@
 import Foundation
 
+/// Summary of mitama job queue state.
+public struct MitamaJobSummary: Equatable, Sendable {
+    /// Number of jobs currently running
+    public let runningCount: Int
+    /// Number of jobs waiting in the queue
+    public let enqueuedCount: Int
+    /// Number of jobs completed since local midnight
+    public let completedTodayCount: Int
+    /// Objective of the most recently completed job
+    public let lastCompletedObjective: String?
+    /// Timestamp of the most recently completed job
+    public let lastCompletedAt: Date?
+
+    public init(
+        runningCount: Int,
+        enqueuedCount: Int,
+        completedTodayCount: Int,
+        lastCompletedObjective: String?,
+        lastCompletedAt: Date?
+    ) {
+        self.runningCount = runningCount
+        self.enqueuedCount = enqueuedCount
+        self.completedTodayCount = completedTodayCount
+        self.lastCompletedObjective = lastCompletedObjective
+        self.lastCompletedAt = lastCompletedAt
+    }
+}
+
 /// One finished session, as mitama counts it.
 ///
 /// mitama's scoreboard measures how much its owner actually built, and the
@@ -173,6 +201,121 @@ public struct MitamaWorkLogClient: Sendable {
         }
 
         return (rows.count, rows.reduce(0) { $0 + (($1["duration_seconds"] as? Int) ?? 0) })
+    }
+
+    /// Fetches current job queue state: running, enqueued, completed today,
+    /// and details of the most recent completion.
+    ///
+    /// Returns `nil` if the query fails or authorization is not available.
+    /// The island keeps drawing if this returns `nil`.
+    public func jobSummary() async -> MitamaJobSummary? {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+
+        let now = Date()
+        let todayStart = Calendar.current.startOfDay(for: now)
+
+        // Query running jobs
+        guard let runningCount = await queryStatusCount(status: "running") else { return nil }
+
+        // Query enqueued jobs
+        guard let enqueuedCount = await queryStatusCount(status: "enqueued") else { return nil }
+
+        // Query completed jobs today
+        guard let completedToday = await queryCompletedSince(date: todayStart) else { return nil }
+
+        return MitamaJobSummary(
+            runningCount: runningCount,
+            enqueuedCount: enqueuedCount,
+            completedTodayCount: completedToday.count,
+            lastCompletedObjective: completedToday.first?.objective,
+            lastCompletedAt: completedToday.first?.completedAt
+        )
+    }
+
+    private func queryStatusCount(status: String) async -> Int? {
+        guard let url = environment.endpoint(
+            "mos_job_queue",
+            queryItems: [
+                URLQueryItem(name: "select", value: "count"),
+                URLQueryItem(name: "status", value: "eq.\(status)"),
+            ]
+        ) else { return nil }
+
+        var request = environment.authorized(URLRequest(url: url))
+        // Ask for exact count to get Content-Range header
+        request.setValue("count=exact", forHTTPHeaderField: "Prefer")
+
+        guard let (data, response) = try? await session.data(for: request),
+              let httpResponse = response as? HTTPURLResponse,
+              (200..<300).contains(httpResponse.statusCode) else {
+            return nil
+        }
+
+        // Try to extract count from Content-Range header (format: "0-0/N")
+        if let contentRange = httpResponse.value(forHTTPHeaderField: "Content-Range"),
+           let match = contentRange.range(of: "/(\\d+)", options: .regularExpression) {
+            let numberStr = String(contentRange[match]).dropFirst().dropLast()
+            if let count = Int(numberStr) {
+                return count
+            }
+        }
+
+        // Fallback: count array length from JSON response (when header is missing)
+        if let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+            return arr.count
+        }
+
+        return nil
+    }
+
+    private func queryCompletedSince(date: Date) async -> [(objective: String, completedAt: Date)]? {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+
+        guard let url = environment.endpoint(
+            "mos_job_queue",
+            queryItems: [
+                URLQueryItem(name: "select", value: "input,completed_at"),
+                URLQueryItem(name: "status", value: "eq.completed"),
+                URLQueryItem(name: "completed_at", value: "gte.\(formatter.string(from: date))"),
+                URLQueryItem(name: "order", value: "completed_at.desc"),
+                URLQueryItem(name: "limit", value: "100"),
+            ]
+        ) else { return nil }
+
+        guard let (data, response) = try? await session.data(for: environment.authorized(URLRequest(url: url))),
+              let httpResponse = response as? HTTPURLResponse,
+              (200..<300).contains(httpResponse.statusCode),
+              let rows = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+            return nil
+        }
+
+        var results: [(objective: String, completedAt: Date)] = []
+        for row in rows {
+            var objective = "Unknown"
+            if let input = row["input"] as? [String: Any],
+               let obj = input["objective"] as? String {
+                objective = obj
+            } else if let input = row["input"] as? String {
+                // input might be a JSON string
+                if let inputData = input.data(using: .utf8),
+                   let inputObj = try? JSONSerialization.jsonObject(with: inputData) as? [String: Any],
+                   let obj = inputObj["objective"] as? String {
+                    objective = obj
+                }
+            }
+
+            var completedAt = Date()
+            if let completedAtStr = row["completed_at"] as? String,
+               let parsed = formatter.date(from: completedAtStr) {
+                completedAt = parsed
+            }
+
+            results.append((objective, completedAt))
+        }
+
+        return results
     }
 
     private func post(table: String, body: [String: Any], preferences: String? = nil) async -> Bool {

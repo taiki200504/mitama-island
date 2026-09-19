@@ -847,3 +847,18 @@
 "approval.risk.ordinary" = "読み取りのみ";
 "settings.general.keepAwake" = "エージェントの作業中はスリープさせない";
 "settings.general.keepAwake.help" = "電源につながっていて、ふたが開いていて、熱くないときだけ。画面は消えても作業は止まりません。";
+
+/* mitama ecosystem signals */
+"settings.mitama.section.signals" = "mitama の様子";
+"settings.mitama.signal.automation" = "自動操作中は島に出す";
+"settings.mitama.signal.automation.help" = "mitama がブラウザを操作している間、閉じた島にランプを出し、開くとどのアカウントで何を開いているかを出す";
+"settings.mitama.signal.jobs" = "mitama の仕事の数を出す";
+"settings.mitama.signal.jobs.help" = "実行中・待ち・今日終わった件数を出し、1件終わるたびに島でひと言知らせる";
+"settings.mitama.signal.codex" = "Codex の指摘を出す";
+"settings.mitama.signal.codex.help" = "コードレビューで [P1] が出たプロジェクトを赤く出す。押すと指摘の中身が読める";
+"island.signal.automation" = "自動操作中";
+"island.signal.jobs" = "mitama · 実行中 %1$d ・待ち %2$d ・今日 %3$d 件完了";
+"island.signal.codex" = "Codex P1 · %1$@ (%2$@) %3$d件";
+"island.signal.codex.hint" = "押すと指摘の中身を開く";
+"island.signal.codex.noDetail" = "指摘の本文は残っていない";
+"island.signal.jobDone" = "仕事がひとつ終わった";

@@ -29,6 +29,17 @@ final class MitamaFeedCoordinator {
     private(set) var isConfigured = false
     private(set) var credentialSource: MitamaEnvironment.Source?
 
+    /// The job queue's own numbers, refreshed on the same loop as the feed —
+    /// a second timer would double the traffic for the same answer.
+    private(set) var jobSummary: MitamaJobSummary?
+    /// Off until the owner turns the signal on, so a disabled signal costs
+    /// no query at all.
+    @ObservationIgnored var jobSummaryEnabled = false
+    /// Called once per job that finished since the previous poll. The first
+    /// poll never fires — see `MitamaJobCompletionDetector`.
+    @ObservationIgnored var onJobCompleted: ((MitamaJobCompletion) -> Void)?
+    @ObservationIgnored private var lastJobPollAt: Date?
+
     @ObservationIgnored private var client: MitamaNotificationClient?
     @ObservationIgnored private(set) var workLog: MitamaWorkLogClient?
     @ObservationIgnored private var pollTask: Task<Void, Never>?
@@ -89,6 +100,8 @@ final class MitamaFeedCoordinator {
         pollTask = nil
         workLog = nil
         notifications = []
+        jobSummary = nil
+        lastJobPollAt = nil
     }
 
     /// Counts a finished session towards mitama's measure of how much its owner
@@ -116,11 +129,34 @@ final class MitamaFeedCoordinator {
                 watchRelay?.notifyMitamaAlert(alert)
             }
             currentInterval = Self.pollInterval
+            await refreshJobSummary()
         } catch {
             // Back off instead of hammering: the usual failure here is being
             // offline, and that can last hours.
             currentInterval = min(currentInterval * 2, Self.maxPollInterval)
         }
+    }
+
+    /// The queue's counts, plus a sneak peek for each job that finished since
+    /// the previous poll.
+    private func refreshJobSummary() async {
+        guard jobSummaryEnabled, let workLog else {
+            jobSummary = nil
+            return
+        }
+        guard let summary = await workLog.jobSummary() else { return }
+        jobSummary = summary
+
+        let completions: [MitamaJobCompletion]
+        if let objective = summary.lastCompletedObjective, let at = summary.lastCompletedAt {
+            completions = [MitamaJobCompletion(objective: objective, completedAt: at)]
+        } else {
+            completions = []
+        }
+        for completion in MitamaJobCompletionDetector.detectNew(current: completions, since: lastJobPollAt) {
+            onJobCompleted?(completion)
+        }
+        lastJobPollAt = .now
     }
 
     func markRead(_ notification: MitamaNotification) {

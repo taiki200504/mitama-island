@@ -5,6 +5,8 @@ import Foundation
 public enum IslandSneakPeekKind: Int, Comparable, Hashable, Sendable {
     case shelf = 10
     case trackChanged = 20
+    /// A mitama job finished while nobody was looking at the Hub.
+    case jobDone = 25
     case eventStarting = 30
     case timerDone = 40
     case lockScan = 50
@@ -53,6 +55,7 @@ public enum IslandSneakPeekPolicy {
         case .lockScan: LockScanSequence.duration
         case .timerDone: 4
         case .eventStarting: 4
+        case .jobDone: 3
         case .trackChanged: 1.8
         case .shelf: 1.2
         }

@@ -785,6 +785,11 @@ struct IslandClosedAccessoryView: View {
                     }
                     NowPlayingVisualiser(isPlaying: isPlaying)
                 }
+            case .automation:
+                // mitama Browser is driving a page — show a small automation lamp
+                Image(systemName: "bolt.circle.fill")
+                    .font(.islandMono(size: 9, weight: .semibold))
+                    .foregroundStyle(IslandThemes.current.statusTints.running.opacity(0.92))
             case .cameraWatching:
                 // The same glyph the peek band used to draw for this — macOS
                 // lights its own camera indicator for as long as the device
@@ -816,6 +821,8 @@ struct IslandClosedAccessoryView: View {
             return CGFloat("\(remainingMinutes)m".count) * charWidth
         case .nowPlaying(_, let artworkThumbnailPNG):
             return artworkThumbnailPNG != nil ? 14 + 4 + 14 : 14
+        case .automation:
+            return 11
         case .cameraWatching:
             return 11
         case .shelf(let count):
