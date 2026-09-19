@@ -25,6 +25,15 @@ enum SAOGrammar {
         static let outlineGlow = Color(red: 1, green: 1, blue: 60 / 255).opacity(0.81)
         static let outlineDark = Color(hex: 0x565653)
         static let hairline = Color(hex: 0x565653)
+
+        // Link-start light HUD palette (NerveGear boot sequence aesthetic)
+        static let linkstartCyan1 = Color(hex: 0x48A4C8)
+        static let linkstartCyan2 = Color(hex: 0x5FA6CA)
+        static let linkstartCyan3 = Color(hex: 0x7AC8D6)
+        static let linkstartLavender1 = Color(hex: 0xA697D7)
+        static let linkstartLavender2 = Color(hex: 0xAE91D5)
+        static let linkstartPale1 = Color(hex: 0xB6DEE2)
+        static let linkstartPale2 = Color(hex: 0xCDD4D7)
     }
 
     enum Metric {
