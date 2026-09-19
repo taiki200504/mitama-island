@@ -649,8 +649,13 @@ final class OverlayPanelController {
 
     /// Hit-area width of the closed pill.
     ///
-    /// - On a MacBook (physical notch present) the pill is locked to
-    ///   `bleed + notchWidth + bleed`.
+    /// - On a MacBook (physical notch present) the pill is at least
+    ///   `bleed + notchWidth + bleed`, and as wide as `notchedContentWidth`
+    ///   — the outer width `V6ClosedPill.macbookLayout` actually renders
+    ///   with. A waiting agent, a peek gauge or a right-slot counter widens
+    ///   both sides past the bleed; a hit area locked to the bleed left the
+    ///   visible ends of the pill dead to hover and click, so the island
+    ///   could not be opened from them.
     /// - On a non-notched display the floating capsule is content-driven, so
     ///   the hit area follows `intrinsicContentWidth` (the same width math
     ///   `V6ClosedPill.externalIntrinsicWidth` renders with) plus a little
@@ -663,12 +668,13 @@ final class OverlayPanelController {
         notchWidth: CGFloat,
         isNotchedDisplay: Bool,
         intrinsicContentWidth: CGFloat = 0,
+        notchedContentWidth: CGFloat = 0,
         maxWidth: CGFloat = .infinity,
         notchStatus: NotchStatus
     ) -> CGFloat {
         let popBonus: CGFloat = notchStatus == .popping ? 18 : 0
         if isNotchedDisplay {
-            return notchWidth + (closedPillSideBleed * 2) + popBonus
+            return max(notchWidth + (closedPillSideBleed * 2), notchedContentWidth) + popBonus
         }
         let hitWidth = max(
             IslandChromeMetrics.floatingPillMinWidth,
@@ -763,6 +769,9 @@ final class OverlayPanelController {
         let notchWidth = screen.notchSize.width
         let isNotched = screen.safeAreaInsets.top > 0
         let intrinsicContentWidth = isNotched ? 0 : closedFloatingIntrinsicWidth(for: model)
+        let notchedContentWidth = isNotched
+            ? closedNotchedOuterWidth(for: model, notchWidth: notchWidth, pillHeight: screen.islandClosedHeight)
+            : 0
         let maxWidth = isNotched
             ? .infinity
             : V6ClosedPill.externalMaxWidth(
@@ -773,9 +782,23 @@ final class OverlayPanelController {
             notchWidth: notchWidth,
             isNotchedDisplay: isNotched,
             intrinsicContentWidth: intrinsicContentWidth,
+            notchedContentWidth: notchedContentWidth,
             maxWidth: maxWidth,
             notchStatus: model.notchStatus
         )
+    }
+
+    /// The MacBook pill's rendered outer width — the same inputs
+    /// `IslandPanelView` hands `V6ClosedPill` (whose `pad` is half its
+    /// height), so the hit area and the drawn pill share one formula.
+    private func closedNotchedOuterWidth(for model: AppModel, notchWidth: CGFloat, pillHeight: CGFloat) -> CGFloat {
+        V6ClosedPill.macbookLayout(
+            content: model.islandClosedContent(),
+            sneakPeek: model.overlay.sneakPeek,
+            rightSlot: model.islandClosedRightSlotContent(),
+            physicalNotchWidth: notchWidth,
+            pad: pillHeight / 2
+        ).outerWidth
     }
 
     /// The floating capsule's own content width, computed with the exact

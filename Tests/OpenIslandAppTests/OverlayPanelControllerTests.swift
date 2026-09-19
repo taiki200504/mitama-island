@@ -74,6 +74,29 @@ struct OverlayPanelControllerTests {
     }
 
     @Test
+    func notchedDisplayClosedWidthCoversContentWiderThanTheBleed() {
+        // 2026-09-19: the pill drew 「❙❙ ● MITAMA 25時間 +3 … ×6」 about 508pt
+        // wide around a 185pt notch, but the hit area stayed at 185 + 66,
+        // so hovering the visible ends of the pill never opened the island.
+        let wide = OverlayPanelController.closedPanelWidth(
+            notchWidth: 185,
+            isNotchedDisplay: true,
+            notchedContentWidth: 508,
+            notchStatus: .closed
+        )
+        #expect(wide == 508)
+
+        // Narrow content never shrinks the hit area below the notch bleed.
+        let narrow = OverlayPanelController.closedPanelWidth(
+            notchWidth: 185,
+            isNotchedDisplay: true,
+            notchedContentWidth: 120,
+            notchStatus: .closed
+        )
+        #expect(narrow == 185 + (OverlayPanelController.closedPillSideBleed * 2))
+    }
+
+    @Test
     func externalDisplayClosedWidthFollowsIntrinsicContentPlusHitSlop() {
         // v6 external layout: the floating capsule's hit area follows its
         // real content width (plus a little slop per side) instead of a
