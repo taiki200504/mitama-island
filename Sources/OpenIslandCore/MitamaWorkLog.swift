@@ -242,20 +242,26 @@ public struct MitamaWorkLogClient: Sendable {
             ]
         ) else { return nil }
 
-        guard let (data, response) = try? await session.data(for: environment.authorized(URLRequest(url: url))),
+        var request = environment.authorized(URLRequest(url: url))
+        // Ask for exact count to get Content-Range header
+        request.setValue("count=exact", forHTTPHeaderField: "Prefer")
+
+        guard let (data, response) = try? await session.data(for: request),
               let httpResponse = response as? HTTPURLResponse,
               (200..<300).contains(httpResponse.statusCode) else {
             return nil
         }
 
-        // Supabase returns count via Content-Range header or in the response
+        // Try to extract count from Content-Range header (format: "0-0/N")
         if let contentRange = httpResponse.value(forHTTPHeaderField: "Content-Range"),
            let match = contentRange.range(of: "/(\\d+)", options: .regularExpression) {
             let numberStr = String(contentRange[match]).dropFirst().dropLast()
-            return Int(numberStr)
+            if let count = Int(numberStr) {
+                return count
+            }
         }
 
-        // Fallback: count array length from JSON response
+        // Fallback: count array length from JSON response (when header is missing)
         if let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
             return arr.count
         }
