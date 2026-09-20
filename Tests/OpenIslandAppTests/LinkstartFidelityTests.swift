@@ -45,6 +45,10 @@ struct LinkstartFidelityTests {
     /// CI の描画と手元とで測ると 0.1 近く変わる（同じ指定でも色空間の
     /// 扱いが違う）。それ以外は 0.12/0.14 で詰めてある。
     ///
+    /// トンネル（3.6–4.8 秒）の 7 点も許容が少し広い: 画面いっぱいの
+    /// 楔は 1 枚ずれるだけで数字が動くので、構図の崩れだけを捕まえる幅に
+    /// してある。
+    ///
     /// Measured from the reference: every 0.6s across the opening, and every
     /// 0.3s from 5.6s on — the senses, where a disc lives for under a second,
     /// and the screens after them, where a 0.6s grid walks straight past a
@@ -52,11 +56,26 @@ struct LinkstartFidelityTests {
     private static let beats: [Beat] = [
         Beat(0.2, brightness: 0.13, saturation: 0.00),
         Beat(0.8, brightness: 0.13, saturation: 0.00),
+        Beat(1.4, brightness: 0.40, saturation: 0.00),
         Beat(2.0, brightness: 0.92, saturation: 0.00),
-        Beat(3.2, brightness: 0.91, saturation: 0.00),
-        Beat(3.8, brightness: 0.65, saturation: 0.20),
-        Beat(4.4, brightness: 0.55, saturation: 0.37),
-        Beat(5.0, brightness: 0.92, saturation: 0.00),
+        Beat(2.6, brightness: 0.92, saturation: 0.00),
+        Beat(3.0, brightness: 0.91, saturation: 0.01),
+        Beat(3.4, brightness: 0.91, saturation: 0.01),
+        Beat(3.6, brightness: 0.82, saturation: 0.10,
+             brightnessTolerance: 0.16, saturationTolerance: 0.16),
+        Beat(3.8, brightness: 0.67, saturation: 0.21,
+             brightnessTolerance: 0.16, saturationTolerance: 0.16),
+        Beat(4.0, brightness: 0.57, saturation: 0.22,
+             brightnessTolerance: 0.16, saturationTolerance: 0.16),
+        Beat(4.2, brightness: 0.50, saturation: 0.35,
+             brightnessTolerance: 0.16, saturationTolerance: 0.16),
+        Beat(4.4, brightness: 0.55, saturation: 0.35,
+             brightnessTolerance: 0.16, saturationTolerance: 0.16),
+        Beat(4.6, brightness: 0.48, saturation: 0.40,
+             brightnessTolerance: 0.16, saturationTolerance: 0.16),
+        Beat(4.8, brightness: 0.53, saturation: 0.38,
+             brightnessTolerance: 0.16, saturationTolerance: 0.16),
+        Beat(5.0, brightness: 0.91, saturation: 0.01),
         Beat(5.6, brightness: 0.92, saturation: 0.00,
              brightnessTolerance: 0.12, saturationTolerance: 0.14),
         Beat(5.9, brightness: 0.76, saturation: 0.32,
@@ -153,7 +172,7 @@ struct LinkstartFidelityTests {
         let controller = LinkstartOverlayController()
         controller.pinForOffscreenRender(elapsed: elapsed)
         let renderer = ImageRenderer(
-            content: LinkstartView(controller: controller, showsDetail: true)
+            content: LinkstartView(controller: controller, showsDetail: true, reducesMotionOverride: false)
                 .frame(width: 800, height: 500)
         )
         renderer.scale = 1

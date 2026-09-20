@@ -16,6 +16,11 @@ struct LinkstartView: View {
     /// False on the screens that are only along for the ride, so the checklist
     /// appears once rather than on every display.
     let showsDetail: Bool
+    /// 「視差を減らす」をこの描画に限って決め打ちするための口。既定は nil で
+    /// システム設定に従う。**オフスクリーンで測るときは必ず渡す**: CI の
+    /// マシンはこの設定が入っていて、同じ時刻でもトンネルが 0.35 の薄さで
+    /// 描かれ、参照との比較が環境で変わってしまう。
+    var reducesMotionOverride: Bool?
 
     var body: some View {
         switch controller.stage {
@@ -74,7 +79,7 @@ struct LinkstartView: View {
     static let paper = Color(hex: 0xECECEC)
 
     private func frame(elapsed: TimeInterval) -> some View {
-        let reducesMotion = IslandMotion.reducesMotion
+        let reducesMotion = reducesMotionOverride ?? IslandMotion.reducesMotion
 
         return ZStack {
             // The ground: white while the tunnel runs, tinting to the HUD's
@@ -88,8 +93,10 @@ struct LinkstartView: View {
                 // screen for its first second and a half, and starting on white
                 // loses the moment the whole sequence is built around.
                 Color(hex: 0x111111)
+                    // 参照は 1.4 秒でまだ明るさ 0.40、1.6 秒で真っ白。
+                    // 前へ寄せすぎると、暗い場面が短くなって軽く見える。
                     .opacity(1 - LinkstartSequence.clamp01(
-                        (elapsed - (LinkstartSequence.ignitionStart - 0.25)) / 0.35
+                        (elapsed - (LinkstartSequence.ignitionStart - 0.10)) / 0.25
                     ))
             } else if elapsed < LinkstartSequence.fadeStart {
                 // 参照の灰は #808080 ちょうど。0x555555 だと暗すぎて、
@@ -166,15 +173,24 @@ private struct LinkstartWedgeTunnelView: View {
     /// of streaks of different widths and lengths rushing past the viewer,
     /// and an even eight-way split reads as a colour wheel instead.
     private static let wedgeCount = 62
+    /// 参照のトンネルは原色だけではない。白・黒・灰の楔が混ざっていて、
+    /// それが画面全体の彩度を下げ、明暗の幅を作っている（全部を原色に
+    /// すると彩度が参照の 1.5 倍になる）。
     private static let palette: [Color] = [
         Color(hex: 0xE8253B),   // red
+        Color(hex: 0xFFFFFF),   // white
         Color(hex: 0x00C8E0),   // cyan
-        Color(hex: 0xE81DC8),   // magenta
-        Color(hex: 0x14C850),   // green
         Color(hex: 0x111111),   // black
+        Color(hex: 0xE81DC8),   // magenta
         Color(hex: 0xF0D000),   // yellow
-        Color(hex: 0xFF7A00),   // orange
+        Color(hex: 0x9A9A9A),   // grey
+        Color(hex: 0x14C850),   // green
+        Color(hex: 0xFFFFFF),   // white
         Color(hex: 0x7B3BE8),   // violet
+        Color(hex: 0x111111),   // black
+        Color(hex: 0xFF7A00),   // orange
+        Color(hex: 0x1F49C8),   // deep blue
+        Color(hex: 0x808080),   // grey
     ]
 
     /// Fixed per-wedge angle, width, length and speed. Seeded, so the same
@@ -221,27 +237,30 @@ private struct LinkstartWedgeTunnelView: View {
             // 0 at the first speck, 1 where the tunnel ends: the reference
             // holds a still speck for two seconds before anything moves.
             let hold = LinkstartSequence.warpStart
+            // 参照の 1.6〜2.9 秒は彩度 0.000 の白で、**本当に何も無い**。
+            // 火花が出るのは 2.95 秒から。そこから 3.5 秒までは小さいまま。
+            let sparkStart = hold - 0.55
             let travel = elapsed < hold
-                // Before the tunnel: a speck that barely grows, the way the
-                // reference holds an almost-empty white screen for two seconds.
-                ? 0.02 * LinkstartSequence.clamp01((elapsed - start) / (hold - start))
-                : 0.02 + 0.98 * pow(LinkstartSequence.clamp01((elapsed - hold) / (warpEnd - hold)), 1.35)
+                ? 0.055 * LinkstartSequence.clamp01((elapsed - sparkStart) / (hold - sparkStart))
+                // 参照は動き出してすぐ画面が埋まる。1.35 乗だと出だしが
+                // 遅すぎて、3.6 秒でまだ白いままだった。
+                : 0.055 + 0.945 * pow(LinkstartSequence.clamp01((elapsed - hold) / (warpEnd - hold)), 1.0)
             let fade = elapsed <= warpEnd
                 ? 1
                 : max(0, 1 - (elapsed - warpEnd) / max(LinkstartSequence.flashDuration, 0.001) * 2.2)
 
             for sliver in Self.slivers {
                 let own = max(0, travel - sliver.delay * 0.35) * sliver.speed
-                // A floor, so the speck exists from the first white frame
-                // instead of appearing out of nothing a second later.
-                guard own > 0 || elapsed > start else { continue }
+                guard own > 0 else { continue }
                 // Tail and head both travel; the gap between them is the
                 // streak, and it stretches as the thing speeds up.
                 let head = min(own * 2.4, 2.6) * reach * sliver.lengthScale + 14
                 // The streaks start close to the centre and stay long, so by
                 // the middle of the dive the screen is colour rather than a
                 // ring of slivers around a white hole.
-                let tail = max(0, own - 0.7 * sliver.speed) * reach * sliver.lengthScale
+                // 尾を長く引く。短いと、参照がまだ色で埋まっている 4.8 秒に
+                // こちらは白くなってしまう。
+                let tail = max(0, own - 1.15 * sliver.speed) * reach * sliver.lengthScale
                 guard head > tail else { continue }
 
                 let half = sliver.width / 2
