@@ -87,10 +87,15 @@ struct LinkstartView: View {
                     .opacity(1 - LinkstartSequence.clamp01(
                         (elapsed - (LinkstartSequence.ignitionStart - 0.25)) / 0.35
                     ))
+                // The interface's ground, and only while the interface is up:
+                // the screens after it are plain white in the reference.
                 SAOGrammar.Palette.linkstartPale2
-                    .opacity(elapsed < LinkstartSequence.calibrationStart ? 0 : 1)
+                    .opacity(
+                        elapsed >= LinkstartSequence.calibrationStart
+                            && elapsed < LinkstartSequence.sensesCheckStart ? 1 : 0
+                    )
             } else if elapsed < LinkstartSequence.fadeStart {
-                Color(hex: 0x3A3A3A)
+                Color(hex: 0x555555)
             }
 
             // The speck, then the tunnel, then nothing: the white-out covers it.
@@ -98,12 +103,16 @@ struct LinkstartView: View {
                 .opacity(elapsed >= LinkstartSequence.ignitionStart
                     && elapsed < LinkstartSequence.calibrationStart ? 1 : 0)
 
-            // The white-out between the tunnel and the interface.
+            // The white-out between the tunnel and the interface, and the
+            // second, shorter one the reference flashes as the outer rings
+            // land.
             Color.white
                 .opacity(LinkstartSequence.flashOpacity(at: elapsed) / max(LinkstartSequence.flashPeakOpacity, 0.001))
+            Color.white
+                .opacity(LinkstartSequence.interfaceFlashOpacity(at: elapsed))
 
             // Light HUD (5.8-8.0s: calibration + senses)
-            if showsDetail, elapsed < LinkstartSequence.sensesCheckStart + 0.25 {
+            if showsDetail, elapsed < LinkstartSequence.sensesCheckStart + 0.05 {
                 LinkstartLightHUDView(
                     elapsed: elapsed,
                     phase: phase,
@@ -112,20 +121,20 @@ struct LinkstartView: View {
             }
 
             // Senses check circles (8.0-9.8s)
-            if elapsed >= LinkstartSequence.sensesCheckStart - 0.1,
-               elapsed < LinkstartSequence.languageSelectStart + 0.2 {
+            if elapsed >= LinkstartSequence.sensesCheckStart - 0.3,
+               elapsed < LinkstartSequence.sensesCheckStart + LinkstartSequence.sensesCheckDuration {
                 LinkstartSensesCheckView(elapsed: elapsed)
             }
 
             // Language button (9.8-10.8s)
-            if elapsed >= LinkstartSequence.languageSelectStart - 0.1,
-               elapsed < LinkstartSequence.loginPanelStart + 0.2 {
+            if elapsed >= LinkstartSequence.languageSelectStart - 0.05,
+               elapsed < LinkstartSequence.languageSelectStart + LinkstartSequence.languageSelectDuration {
                 LinkstartLanguageButtonView(elapsed: elapsed)
             }
 
             // Login panel (10.8-12.5s)
-            if elapsed >= LinkstartSequence.loginPanelStart - 0.1,
-               elapsed < LinkstartSequence.confirmationDialogStart + 0.2 {
+            if elapsed >= LinkstartSequence.loginPanelStart - 0.05,
+               elapsed < LinkstartSequence.loginPanelStart + LinkstartSequence.loginPanelDuration {
                 LinkstartLoginPanelView(elapsed: elapsed)
             }
 
@@ -163,7 +172,7 @@ private struct LinkstartWedgeTunnelView: View {
     /// Many thin slivers, not a few fat pie slices: the reference is a field
     /// of streaks of different widths and lengths rushing past the viewer,
     /// and an even eight-way split reads as a colour wheel instead.
-    private static let wedgeCount = 46
+    private static let wedgeCount = 62
     private static let palette: [Color] = [
         Color(hex: 0xE8253B),   // red
         Color(hex: 0x00C8E0),   // cyan
@@ -196,8 +205,8 @@ private struct LinkstartWedgeTunnelView: View {
         return (0..<wedgeCount).map { index in
             Sliver(
                 angle: (Double(index) / Double(wedgeCount) + next() * 0.018) * 2 * .pi,
-                width: (2.2 + next() * 7.5) * .pi / 180,
-                lengthScale: 0.8 + next() * 1.1,
+                width: (2.4 + next() * 6.6) * .pi / 180,
+                lengthScale: 1.0 + next() * 1.3,
                 speed: 0.75 + next() * 0.7,
                 delay: next() * 0.28,
                 colour: palette[index % palette.count]
@@ -218,7 +227,12 @@ private struct LinkstartWedgeTunnelView: View {
             // moving for the first second, gone in the last half.
             // 0 at the first speck, 1 where the tunnel ends: the reference
             // holds a still speck for two seconds before anything moves.
-            let travel = pow(LinkstartSequence.clamp01((elapsed - start) / (warpEnd - start)), 3.4)
+            let hold = LinkstartSequence.warpStart
+            let travel = elapsed < hold
+                // Before the tunnel: a speck that barely grows, the way the
+                // reference holds an almost-empty white screen for two seconds.
+                ? 0.02 * LinkstartSequence.clamp01((elapsed - start) / (hold - start))
+                : 0.02 + 0.98 * pow(LinkstartSequence.clamp01((elapsed - hold) / (warpEnd - hold)), 1.35)
             let fade = elapsed <= warpEnd
                 ? 1
                 : max(0, 1 - (elapsed - warpEnd) / max(LinkstartSequence.flashDuration, 0.001) * 2.2)
@@ -231,7 +245,10 @@ private struct LinkstartWedgeTunnelView: View {
                 // Tail and head both travel; the gap between them is the
                 // streak, and it stretches as the thing speeds up.
                 let head = min(own * 2.4, 2.6) * reach * sliver.lengthScale + 14
-                let tail = max(0, own - 0.16 * sliver.speed) * reach * sliver.lengthScale
+                // The streaks start close to the centre and stay long, so by
+                // the middle of the dive the screen is colour rather than a
+                // ring of slivers around a white hole.
+                let tail = max(0, own - 0.7 * sliver.speed) * reach * sliver.lengthScale
                 guard head > tail else { continue }
 
                 let half = sliver.width / 2
@@ -374,6 +391,11 @@ private struct LinkstartHUDRings: View {
         Ring(radius: 0.71, thickness: 0.016, segments: 22, gap: 6, senseIndex: nil, lavender: true),
         Ring(radius: 0.80, thickness: 0.050, segments: 7, gap: 12, senseIndex: 4, lavender: false),
         Ring(radius: 0.90, thickness: 0.012, segments: 40, gap: 3, senseIndex: nil, lavender: false),
+        // The reference's interface reaches past the corners; these are what
+        // stop ours reading as a small dial in the middle of a pale field.
+        Ring(radius: 1.00, thickness: 0.055, segments: 8, gap: 10, senseIndex: nil, lavender: true),
+        Ring(radius: 1.12, thickness: 0.022, segments: 26, gap: 5, senseIndex: nil, lavender: false),
+        Ring(radius: 1.24, thickness: 0.060, segments: 6, gap: 12, senseIndex: nil, lavender: false),
     ]
 
     var body: some View {
@@ -393,7 +415,7 @@ private struct LinkstartHUDRings: View {
                     : SAOGrammar.Palette.linkstartCyan1
                 // Not yet confirmed is still part of the HUD: a pale version of
                 // its own colour. Grey reads as broken rather than as waiting.
-                let colour = confirmed ? base : base.opacity(0.28)
+                let colour = confirmed ? base : base.opacity(0.42)
                 let direction: Double = index.isMultiple(of: 2) ? 1 : -1
                 let step = 360.0 / Double(ring.segments)
 
@@ -403,6 +425,16 @@ private struct LinkstartHUDRings: View {
                     var path = Path()
                     path.addArc(center: centre, radius: radius, startAngle: start, endAngle: end, clockwise: false)
                     context.stroke(path, with: .color(colour), style: StrokeStyle(lineWidth: lineWidth, lineCap: .butt))
+
+                    // A wash behind each band: the reference's interface is a
+                    // field of colour with structure on top, not line art.
+                    var wash = Path()
+                    wash.addArc(center: centre, radius: radius, startAngle: start, endAngle: end, clockwise: false)
+                    context.stroke(
+                        wash,
+                        with: .color(colour.opacity(0.72)),
+                        style: StrokeStyle(lineWidth: lineWidth * 3.4, lineCap: .butt)
+                    )
                 }
 
                 // The small blocks riding the ring — the reference is dense
@@ -443,7 +475,7 @@ private struct LinkstartSensesCheckView: View {
                     // One lands after another, the way the reference ticks
                     // them off rather than showing five at once.
                     let landed = LinkstartSequence.clamp01(
-                        (progress - Double(index) * 0.13) / 0.18
+                        (progress + 0.12 - Double(index) * 0.13) / 0.18
                     )
                     HStack(spacing: side * 0.03) {
                         ZStack {
@@ -483,7 +515,7 @@ private struct LinkstartLanguageButtonView: View {
                 .foregroundStyle(.white)
                 .padding(.horizontal, side * 0.09)
                 .padding(.vertical, side * 0.035)
-                .background(RoundedRectangle(cornerRadius: side * 0.012).fill(Color(hex: 0x1E8FD6)))
+                .background(RoundedRectangle(cornerRadius: side * 0.012).fill(Color(hex: 0x1379C4)))
                 .scaleEffect(scale)
                 .frame(width: geometry.size.width, height: geometry.size.height)
         }
@@ -512,7 +544,7 @@ private struct LinkstartLoginPanelView: View {
                         .foregroundStyle(.white.opacity(0.85))
                     RoundedRectangle(cornerRadius: side * 0.006)
                         .fill(Color.white.opacity(0.85))
-                        .frame(height: side * 0.055)
+                        .frame(height: side * 0.075)
                 }
 
                 HStack(spacing: side * 0.03) {
@@ -521,7 +553,7 @@ private struct LinkstartLoginPanelView: View {
                         .foregroundStyle(.white.opacity(0.85))
                     RoundedRectangle(cornerRadius: side * 0.006)
                         .fill(Color.white.opacity(0.85))
-                        .frame(height: side * 0.055)
+                        .frame(height: side * 0.075)
                         .overlay(alignment: .leading) {
                             // Filling in as it goes, the way the reference
                             // types the password in for you.
@@ -537,9 +569,9 @@ private struct LinkstartLoginPanelView: View {
                         }
                 }
             }
-            .padding(side * 0.05)
-            .frame(width: side * 0.62)
-            .background(RoundedRectangle(cornerRadius: side * 0.012).fill(Color(hex: 0x1E8FD6)))
+            .padding(side * 0.06)
+            .frame(width: side * 1.05)
+            .background(RoundedRectangle(cornerRadius: side * 0.012).fill(Color(hex: 0x1379C4)))
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
     }
@@ -551,7 +583,7 @@ private struct LinkstartConfirmationDialogView: View {
 
     var body: some View {
         let progress = (elapsed - LinkstartSequence.confirmationDialogStart) / LinkstartSequence.confirmationDialogDuration
-        let opacity = min(1.0, progress * 2)
+        let opacity = min(1.0, progress * 8)
 
         GeometryReader { geometry in
             let side = min(geometry.size.width, geometry.size.height)
@@ -587,8 +619,8 @@ private struct LinkstartConfirmationDialogView: View {
                 }
                 .padding(.bottom, side * 0.045)
             }
-            .frame(width: side * 0.56)
-            .background(RoundedRectangle(cornerRadius: side * 0.01).fill(Color(hex: 0x1E8FD6)))
+            .frame(width: side * 0.88)
+            .background(RoundedRectangle(cornerRadius: side * 0.01).fill(Color(hex: 0x1379C4)))
             .opacity(opacity)
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
@@ -626,11 +658,18 @@ private struct LinkstartDiveView: View {
 
     var body: some View {
         let progress = (elapsed - LinkstartSequence.diveStart) / LinkstartSequence.diveDuration
-        let intensity = reducesMotion ? 0.3 : min(1.0, 0.35 + progress * 1.4)
+        let intensity = reducesMotion ? 0.3 : min(1.0, 0.45 + progress * 1.6)
+        // The last fifth of the dive washes to white — the reference is
+        // already white before the overlay leaves.
+        let washOut = LinkstartSequence.clamp01((progress - 0.62) / 0.3) * 0.8
 
         Canvas { context, size in
             let center = CGPoint(x: size.width / 2, y: size.height / 2)
             let reach = (size.width * size.width + size.height * size.height).squareRoot() / 2
+
+            // White under everything, so the wash at the end lands on white
+            // rather than on the welcome screen's grey.
+            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(.white.opacity(washOut)))
 
             // The ground the streaks ride on, brightening as the dive runs.
             context.fill(
@@ -638,8 +677,8 @@ private struct LinkstartDiveView: View {
                 with: .radialGradient(
                     Gradient(colors: [
                         Color.white.opacity(0.95 * intensity),
-                        Color(hex: 0x29C8F5).opacity(0.95 * intensity),
-                        Color(hex: 0x0B6FD0).opacity(0.9 * intensity),
+                        Color(hex: 0x29C8F5).opacity(0.95 * intensity * (1 - washOut * 0.85)),
+                        Color(hex: 0x0B6FD0).opacity(0.9 * intensity * (1 - washOut)),
                     ]),
                     center: center,
                     startRadius: 0,
@@ -689,7 +728,7 @@ private struct LinkstartDiveView: View {
                     saturation: 0.15 + 0.75 * toEdge,
                     brightness: 1.0
                 )
-                context.fill(path, with: .color(colour.opacity(0.35 + 0.6 * intensity)))
+                context.fill(path, with: .color(colour.opacity((0.35 + 0.6 * intensity) * (1 - washOut))))
             }
         }
         .allowsHitTesting(false)

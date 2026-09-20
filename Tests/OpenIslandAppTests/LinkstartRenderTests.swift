@@ -38,6 +38,10 @@ struct LinkstartRenderTests {
     /// the middle is caught instead of being found by eye later. The flat
     /// ones are the reference's own: the dark it opens on, the white-out
     /// between the tunnel and the interface, and the fade at the end.
+    /// Every 0.6s across the whole sequence, so a beat that goes blank in
+    /// the middle is caught instead of being found by eye later. The flat
+    /// ones are the reference's own empty frames: the dark it opens on,
+    /// the white-out, the white gap after the checks, and the fade.
     private static let moments: [Moment] = [
         Moment(0.2, flat: true),
         Moment(0.8, flat: true),
@@ -54,7 +58,7 @@ struct LinkstartRenderTests {
         Moment(7.4),
         Moment(8.0),
         Moment(8.6),
-        Moment(9.2),
+        Moment(9.2, flat: true),
         Moment(9.8),
         Moment(10.4),
         Moment(11.0),

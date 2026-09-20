@@ -37,7 +37,7 @@ enum SAOGrammar {
         static let linkstartLavender2 = Color(hex: 0xC08FDC)
         static let linkstartPale1 = Color(hex: 0xBCE6EC)
         /// The ground the HUD sits on — a blue-white, not white.
-        static let linkstartPale2 = Color(hex: 0xDCEEF5)
+        static let linkstartPale2 = Color(hex: 0xC9E6F2)
     }
 
     enum Metric {
