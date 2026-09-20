@@ -865,3 +865,8 @@
 
 /* link start */
 "linkstart.ok" = "OK";
+"linkstart.welcome.line1" = "Welcome to";
+"linkstart.welcome.line2" = "mitama island";
+"linkstart.dialog.title" = "角色注册";
+"linkstart.dialog.line1" = "还保留着 beta 测试时的数据。";
+"linkstart.dialog.line2" = "要使用吗？";

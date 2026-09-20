@@ -865,3 +865,8 @@
 
 /* link start */
 "linkstart.ok" = "OK";
+"linkstart.welcome.line1" = "Welcome to";
+"linkstart.welcome.line2" = "mitama island";
+"linkstart.dialog.title" = "キャラクター登録";
+"linkstart.dialog.line1" = "βテスト時に登録したデータが";
+"linkstart.dialog.line2" = "残っていますが、使用しますか？";

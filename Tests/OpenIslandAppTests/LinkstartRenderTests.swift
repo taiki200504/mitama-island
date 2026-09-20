@@ -16,19 +16,33 @@ import Testing
 /// runs and only asserts that each frame has real content.
 @MainActor
 struct LinkstartRenderTests {
-    private static let moments: [TimeInterval] = [
-        0.7,   // speck growing
-        2.4,   // wedges
-        4.2,   // wedges continuing
-        5.4,   // white-out starting
-        7.0,   // HUD with senses
-        8.8,   // green checks
-        10.2,  // language button
-        11.6,  // login panel
-        13.0,  // confirmation dialog
-        15.0,  // welcome text
-        17.4,  // blue dive
-        18.7   // white-out end
+    /// Every beat of the sequence, and what it should be: `flat` marks the
+    /// moments the reference itself is one colour — the dark before the light,
+    /// the white-out, the fade at the end — so an empty frame there is the
+    /// right answer rather than the bug this test is looking for.
+    private struct Moment {
+        let at: TimeInterval
+        let flat: Bool
+
+        init(_ at: TimeInterval, flat: Bool = false) {
+            self.at = at
+            self.flat = flat
+        }
+    }
+
+    private static let moments: [Moment] = [
+        Moment(0.7, flat: true),    // dark, before anything
+        Moment(2.4),                // the speck
+        Moment(4.2),                // the tunnel
+        Moment(5.4, flat: true),    // the white-out
+        Moment(7.0),                // the interface
+        Moment(8.8),                // the checks
+        Moment(10.2),               // language
+        Moment(11.6),               // sign-in
+        Moment(13.0),               // the confirmation
+        Moment(15.0),               // welcome
+        Moment(17.4),               // the dive
+        Moment(18.7, flat: true),   // white, the end
     ]
 
     @Test
@@ -38,7 +52,8 @@ struct LinkstartRenderTests {
             try? FileManager.default.createDirectory(atPath: directory, withIntermediateDirectories: true)
         }
 
-        for elapsed in Self.moments {
+        for moment in Self.moments {
+            let elapsed = moment.at
             let controller = LinkstartOverlayController()
             controller.pinForOffscreenRender(elapsed: elapsed)
             let view = LinkstartView(controller: controller, showsDetail: true)
@@ -69,7 +84,11 @@ struct LinkstartRenderTests {
                     seen.insert(key)
                 }
             }
-            #expect(seen.count > 3, "the frame at \(elapsed)s is a flat fill")
+            if moment.flat {
+                #expect(seen.count <= 3, "the frame at \(elapsed)s should be one flat colour")
+            } else {
+                #expect(seen.count > 3, "the frame at \(elapsed)s is a flat fill")
+            }
 
             if let directory, let png = bitmap.representation(using: .png, properties: [:]) {
                 let name = String(format: "linkstart-%.1fs.png", elapsed)

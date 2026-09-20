@@ -80,15 +80,27 @@ struct LinkstartView: View {
             // paper white behind the interface. Dark grey during welcome/dive.
             if elapsed < LinkstartSequence.welcomeStart {
                 Color.white
+                // Dark until the light arrives: the reference opens on a black
+                // screen for its first second and a half, and starting on white
+                // loses the moment the whole sequence is built around.
+                Color(hex: 0x111111)
+                    .opacity(1 - LinkstartSequence.clamp01(
+                        (elapsed - (LinkstartSequence.ignitionStart - 0.25)) / 0.35
+                    ))
                 SAOGrammar.Palette.linkstartPale2
                     .opacity(elapsed < LinkstartSequence.calibrationStart ? 0 : 1)
             } else if elapsed < LinkstartSequence.fadeStart {
                 Color(hex: 0x3A3A3A)
             }
 
-            // Wedge tunnel (0-5.8s: ignition + warp + flash)
+            // The speck, then the tunnel, then nothing: the white-out covers it.
             LinkstartWedgeTunnelView(elapsed: elapsed, reducesMotion: reducesMotion)
-                .opacity(elapsed < LinkstartSequence.calibrationStart ? 1 : 0)
+                .opacity(elapsed >= LinkstartSequence.ignitionStart
+                    && elapsed < LinkstartSequence.calibrationStart ? 1 : 0)
+
+            // The white-out between the tunnel and the interface.
+            Color.white
+                .opacity(LinkstartSequence.flashOpacity(at: elapsed) / max(LinkstartSequence.flashPeakOpacity, 0.001))
 
             // Light HUD (5.8-8.0s: calibration + senses)
             if showsDetail, elapsed < LinkstartSequence.sensesCheckStart {
@@ -180,8 +192,8 @@ private struct LinkstartWedgeTunnelView: View {
         return (0..<wedgeCount).map { index in
             Sliver(
                 angle: (Double(index) / Double(wedgeCount) + next() * 0.018) * 2 * .pi,
-                width: (0.9 + next() * 3.6) * .pi / 180,
-                lengthScale: 0.45 + next() * 0.75,
+                width: (2.2 + next() * 7.5) * .pi / 180,
+                lengthScale: 0.8 + next() * 1.1,
                 speed: 0.75 + next() * 0.7,
                 delay: next() * 0.28,
                 colour: palette[index % palette.count]
@@ -193,24 +205,26 @@ private struct LinkstartWedgeTunnelView: View {
         Canvas { context, size in
             let center = CGPoint(x: size.width / 2, y: size.height / 2)
             let reach = (size.width * size.width + size.height * size.height).squareRoot() / 2
-            let warpEnd = LinkstartSequence.warpEnd
-            let calibrationStart = LinkstartSequence.calibrationStart
-            guard elapsed < calibrationStart else { return }
+            let start = LinkstartSequence.ignitionStart
+            let warpEnd = LinkstartSequence.flashStart
+            guard elapsed >= start, elapsed < LinkstartSequence.calibrationStart else { return }
 
             // 0 → the slivers are a speck at the centre; 1 → they have left
             // the screen. Cubed, because the reference accelerates: barely
             // moving for the first second, gone in the last half.
-            let travel = pow(max(0, min(elapsed / warpEnd, 1)), 2.6)
+            // 0 at the first speck, 1 where the tunnel ends: the reference
+            // holds a still speck for two seconds before anything moves.
+            let travel = pow(LinkstartSequence.clamp01((elapsed - start) / (warpEnd - start)), 3.4)
             let fade = elapsed <= warpEnd
                 ? 1
-                : max(0, 1 - (elapsed - warpEnd) / max(LinkstartSequence.flashDuration, 0.001) * 1.6)
+                : max(0, 1 - (elapsed - warpEnd) / max(LinkstartSequence.flashDuration, 0.001) * 2.2)
 
             for sliver in Self.slivers {
                 let own = max(0, travel - sliver.delay * 0.35) * sliver.speed
                 guard own > 0.0005 else { continue }
                 // Tail and head both travel; the gap between them is the
                 // streak, and it stretches as the thing speeds up.
-                let head = min(own * 1.6, 1.9) * reach * sliver.lengthScale + 6
+                let head = min(own * 2.4, 2.6) * reach * sliver.lengthScale + 4
                 let tail = max(0, own - 0.16 * sliver.speed) * reach * sliver.lengthScale
                 guard head > tail else { continue }
 
@@ -441,14 +455,17 @@ private struct LinkstartLanguageButtonView: View {
         let progress = (elapsed - LinkstartSequence.languageSelectStart) / LinkstartSequence.languageSelectDuration
         let scale = 0.8 + 0.2 * progress
 
-        Text("Language")
-            .font(.system(size: 14, weight: .bold, design: .default))
-            .foregroundStyle(.white)
-            .padding(.horizontal, 24)
-            .padding(.vertical, 8)
-            .background(Color(hex: 0x0078D7))
-            .cornerRadius(6)
-            .scaleEffect(scale)
+        GeometryReader { geometry in
+            let side = min(geometry.size.width, geometry.size.height)
+            Text(LanguageManager.shared.t("linkstart.language"))
+                .font(.system(size: side * 0.045, weight: .bold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, side * 0.09)
+                .padding(.vertical, side * 0.035)
+                .background(RoundedRectangle(cornerRadius: side * 0.012).fill(Color(hex: 0x1E8FD6)))
+                .scaleEffect(scale)
+                .frame(width: geometry.size.width, height: geometry.size.height)
+        }
     }
 }
 
@@ -460,33 +477,50 @@ private struct LinkstartLoginPanelView: View {
         let progress = (elapsed - LinkstartSequence.loginPanelStart) / LinkstartSequence.loginPanelDuration
         let passwordFill = max(0, (progress - 0.3) / 0.7)
 
-        VStack(spacing: 12) {
-            HStack(spacing: 8) {
-                Text("Account:")
-                    .font(.system(size: 11, weight: .regular, design: .default))
+        GeometryReader { geometry in
+            let side = min(geometry.size.width, geometry.size.height)
+            let label = side * 0.032
+            VStack(alignment: .leading, spacing: side * 0.035) {
+                Text("Log in")
+                    .font(.system(size: side * 0.05, weight: .semibold))
                     .foregroundStyle(.white)
-                Rectangle()
-                    .fill(Color.white.opacity(0.3))
-                    .frame(height: 16)
-            }
 
-            HStack(spacing: 8) {
-                Text("Password:")
-                    .font(.system(size: 11, weight: .regular, design: .default))
-                    .foregroundStyle(.white)
-                HStack(spacing: 2) {
-                    ForEach(0..<8, id: \.self) { index in
-                        Circle()
-                            .fill(Color.white.opacity(index < Int(passwordFill * 8) ? 1 : 0.2))
-                            .frame(width: 4, height: 4)
-                    }
+                HStack(spacing: side * 0.03) {
+                    Text("account")
+                        .font(.system(size: label))
+                        .foregroundStyle(.white.opacity(0.85))
+                    RoundedRectangle(cornerRadius: side * 0.006)
+                        .fill(Color.white.opacity(0.85))
+                        .frame(height: side * 0.055)
+                }
+
+                HStack(spacing: side * 0.03) {
+                    Text("password")
+                        .font(.system(size: label))
+                        .foregroundStyle(.white.opacity(0.85))
+                    RoundedRectangle(cornerRadius: side * 0.006)
+                        .fill(Color.white.opacity(0.85))
+                        .frame(height: side * 0.055)
+                        .overlay(alignment: .leading) {
+                            // Filling in as it goes, the way the reference
+                            // types the password in for you.
+                            HStack(spacing: side * 0.008) {
+                                ForEach(0..<10, id: \.self) { index in
+                                    Circle()
+                                        .fill(Color(hex: 0x1E5F96)
+                                            .opacity(Double(index) < passwordFill * 10 ? 1 : 0))
+                                        .frame(width: side * 0.012, height: side * 0.012)
+                                }
+                            }
+                            .padding(.leading, side * 0.014)
+                        }
                 }
             }
+            .padding(side * 0.05)
+            .frame(width: side * 0.62)
+            .background(RoundedRectangle(cornerRadius: side * 0.012).fill(Color(hex: 0x1E8FD6)))
+            .frame(width: geometry.size.width, height: geometry.size.height)
         }
-        .padding(16)
-        .frame(width: 200)
-        .background(Color(hex: 0x0078D7))
-        .cornerRadius(8)
     }
 }
 
@@ -498,48 +532,45 @@ private struct LinkstartConfirmationDialogView: View {
         let progress = (elapsed - LinkstartSequence.confirmationDialogStart) / LinkstartSequence.confirmationDialogDuration
         let opacity = min(1.0, progress * 2)
 
-        VStack(spacing: 12) {
-            Text("Confirm")
-                .font(.system(size: 13, weight: .bold, design: .default))
+        GeometryReader { geometry in
+            let side = min(geometry.size.width, geometry.size.height)
+            VStack(spacing: 0) {
+                Text(LanguageManager.shared.t("linkstart.dialog.title"))
+                    .font(.system(size: side * 0.034, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, side * 0.022)
+                    .background(Color(hex: 0x11629E))
+
+                VStack(alignment: .leading, spacing: side * 0.012) {
+                    Text(LanguageManager.shared.t("linkstart.dialog.line1"))
+                    Text(LanguageManager.shared.t("linkstart.dialog.line2"))
+                }
+                .font(.system(size: side * 0.028))
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(8)
-                .background(Color(hex: 0x005A9E))
+                .padding(.horizontal, side * 0.04)
+                .padding(.vertical, side * 0.045)
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Do you wish to")
-                    .font(.system(size: 11, weight: .regular, design: .default))
-                    .foregroundStyle(.white)
-                Text("continue?")
-                    .font(.system(size: 11, weight: .regular, design: .default))
-                    .foregroundStyle(.white)
+                HStack(spacing: side * 0.04) {
+                    ForEach(["YES", "NO"], id: \.self) { label in
+                        Text(label)
+                            .font(.system(size: side * 0.03, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: side * 0.14, height: side * 0.05)
+                            .background(
+                                RoundedRectangle(cornerRadius: side * 0.006)
+                                    .fill(Color(hex: 0x3FB9E8).opacity(0.85))
+                            )
+                    }
+                }
+                .padding(.bottom, side * 0.045)
             }
-            .padding(.horizontal, 8)
-            .padding(.bottom, 8)
-
-            HStack(spacing: 8) {
-                Text("YES")
-                    .font(.system(size: 10, weight: .bold, design: .default))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color(hex: 0x00A000).opacity(0.6))
-                    .cornerRadius(4)
-
-                Text("NO")
-                    .font(.system(size: 10, weight: .bold, design: .default))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color(hex: 0xA00000).opacity(0.6))
-                    .cornerRadius(4)
-            }
-            .padding(8)
+            .frame(width: side * 0.56)
+            .background(RoundedRectangle(cornerRadius: side * 0.01).fill(Color(hex: 0x1E8FD6)))
+            .opacity(opacity)
+            .frame(width: geometry.size.width, height: geometry.size.height)
         }
-        .frame(width: 160)
-        .background(Color(hex: 0x0078D7))
-        .cornerRadius(6)
-        .opacity(opacity)
     }
 }
 
@@ -552,14 +583,15 @@ private struct LinkstartWelcomeView: View {
         let opacity = min(1.0, max(0.0, progress * 2))
 
         VStack(spacing: 0) {
-            Text("Welcome to")
-                .font(.system(size: 28, weight: .bold, design: .monospaced))
-                .foregroundStyle(Color.white.opacity(0.7))
-
-            Text("mitama island")
-                .font(.system(size: 28, weight: .bold, design: .monospaced))
-                .foregroundStyle(Color.white.opacity(0.7))
+            Text(LanguageManager.shared.t("linkstart.welcome.line1"))
+            Text(LanguageManager.shared.t("linkstart.welcome.line2"))
         }
+        .font(.system(size: 64, weight: .bold, design: .monospaced))
+        .tracking(6)
+        .foregroundStyle(Color.white.opacity(0.82))
+        .minimumScaleFactor(0.4)
+        .multilineTextAlignment(.center)
+        .padding(.horizontal, 40)
         .opacity(opacity)
     }
 }
@@ -569,15 +601,30 @@ private struct LinkstartDiveView: View {
     let elapsed: TimeInterval
     let reducesMotion: Bool
 
-    private static let streakCount = 80
+    private static let streakCount = 220
 
     var body: some View {
         let progress = (elapsed - LinkstartSequence.diveStart) / LinkstartSequence.diveDuration
-        let intensity = reducesMotion ? 0.3 : min(1.0, progress * 1.5)
+        let intensity = reducesMotion ? 0.3 : min(1.0, 0.35 + progress * 1.4)
 
         Canvas { context, size in
             let center = CGPoint(x: size.width / 2, y: size.height / 2)
             let reach = (size.width * size.width + size.height * size.height).squareRoot() / 2
+
+            // The ground the streaks ride on, brightening as the dive runs.
+            context.fill(
+                Path(CGRect(origin: .zero, size: size)),
+                with: .radialGradient(
+                    Gradient(colors: [
+                        Color.white.opacity(0.95 * intensity),
+                        Color(hex: 0x29C8F5).opacity(0.95 * intensity),
+                        Color(hex: 0x0B6FD0).opacity(0.9 * intensity),
+                    ]),
+                    center: center,
+                    startRadius: 0,
+                    endRadius: reach
+                )
+            )
 
             let travelled = progress * 1.5
 
@@ -595,7 +642,7 @@ private struct LinkstartDiveView: View {
                 guard headRadius > tailRadius else { continue }
 
                 var path = Path()
-                let halfWidth = 0.02
+                let halfWidth = 0.008 + 0.02 * Double(index % 4) / 4
                 let a0 = angle - halfWidth
                 let a1 = angle + halfWidth
 
@@ -613,9 +660,15 @@ private struct LinkstartDiveView: View {
                 ))
                 path.closeSubpath()
 
-                let hue = 0.55 + 0.15 * (Double(index) / Double(Self.streakCount))
-                let color = Color(hue: hue, saturation: 1.0, brightness: 1.0)
-                context.fill(path, with: .color(color.opacity(intensity)))
+                // White near the core, cyan further out — the streaks are the
+                // light itself rather than coloured objects passing by.
+                let toEdge = headRadius / reach
+                let colour = Color(
+                    hue: 0.53 + 0.06 * toEdge,
+                    saturation: 0.15 + 0.75 * toEdge,
+                    brightness: 1.0
+                )
+                context.fill(path, with: .color(colour.opacity(0.35 + 0.6 * intensity)))
             }
         }
         .allowsHitTesting(false)
