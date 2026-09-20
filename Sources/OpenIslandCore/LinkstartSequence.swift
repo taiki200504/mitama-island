@@ -139,17 +139,25 @@ public enum LinkstartSequence: Sendable {
     /// The white-out between the tunnel and the interface.
     public static let flashDuration: TimeInterval = 0.8
     /// The HUD scaling up while the senses confirm.
-    public static let calibrationDuration: TimeInterval = 2.2
+    public static let calibrationDuration: TimeInterval = 2.3
     /// Column of green check circles.
-    public static let sensesCheckDuration: TimeInterval = 1.8
+    public static let sensesCheckDuration: TimeInterval = 0.7
     /// Language selection button.
-    public static let languageSelectDuration: TimeInterval = 1.0
+    public static let languageSelectDuration: TimeInterval = 0.8
     /// Sign-in panel.
-    public static let loginPanelDuration: TimeInterval = 1.7
+    public static let loginPanelDuration: TimeInterval = 1.4
     /// Confirmation dialog.
-    public static let confirmationDialogDuration: TimeInterval = 1.2
+    public static let confirmationDialogDuration: TimeInterval = 1.55
+
+    // The reference leaves the screen plain white between these screens —
+    // after the checks, and again between sign-in and the confirmation. They
+    // are part of its rhythm, so they are timed rather than smoothed over.
+    /// White, between the checks and the language button.
+    public static let afterChecksGap: TimeInterval = 0.7
+    /// White, between sign-in and the confirmation.
+    public static let afterLoginGap: TimeInterval = 0.2
     /// Welcome text.
-    public static let welcomeDuration: TimeInterval = 2.8
+    public static let welcomeDuration: TimeInterval = 3.0
     /// The blue dive.
     public static let diveDuration: TimeInterval = 1.8
     /// Final fade-out.
@@ -162,10 +170,18 @@ public enum LinkstartSequence: Sendable {
     public static var calibrationStart: TimeInterval { warpEnd }
 
     public static var sensesCheckStart: TimeInterval { calibrationStart + calibrationDuration }
-    public static var languageSelectStart: TimeInterval { sensesCheckStart + sensesCheckDuration }
-    public static var loginPanelStart: TimeInterval { languageSelectStart + languageSelectDuration }
-    public static var confirmationDialogStart: TimeInterval { loginPanelStart + loginPanelDuration }
-    public static var welcomeStart: TimeInterval { confirmationDialogStart + confirmationDialogDuration + 0.1 }
+    public static var languageSelectStart: TimeInterval {
+        sensesCheckStart + sensesCheckDuration + afterChecksGap
+    }
+    public static var loginPanelStart: TimeInterval {
+        languageSelectStart + languageSelectDuration + 0.1
+    }
+    public static var confirmationDialogStart: TimeInterval {
+        loginPanelStart + loginPanelDuration + afterLoginGap
+    }
+    public static var welcomeStart: TimeInterval {
+        confirmationDialogStart + confirmationDialogDuration + 0.05
+    }
     public static var diveStart: TimeInterval { welcomeStart + welcomeDuration }
     public static var fadeStart: TimeInterval { diveStart + diveDuration }
 
@@ -317,6 +333,16 @@ public enum LinkstartSequence: Sendable {
     /// One white-out at the end of the tunnel: up in 0.12s, down over the
     /// rest of its window. A single flash, far under the 3-per-second
     /// photosensitivity guideline.
+    /// The short white flash partway through the interface — the reference
+    /// blanks the screen for about a fifth of a second as the outer rings
+    /// land, and without it ours reads as one continuous field.
+    public static func interfaceFlashOpacity(at elapsed: TimeInterval) -> Double {
+        let peak = calibrationStart + calibrationDuration * 0.43
+        let half = 0.12
+        guard abs(elapsed - peak) < half else { return 0 }
+        return 1 - abs(elapsed - peak) / half
+    }
+
     public static func flashOpacity(at elapsed: TimeInterval) -> Double {
         let rise = 0.12
         let start = flashStart - rise
