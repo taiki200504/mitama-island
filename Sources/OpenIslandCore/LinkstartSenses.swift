@@ -143,20 +143,30 @@ public enum LinkstartSenses: Sendable {
 
     /// いま画面にいる円盤。奥（小さい）から手前（大きい）の順に返すので、
     /// 呼ぶ側はそのまま描けば重なりが正しくなる。
-    public static func discs(at elapsed: TimeInterval) -> [LinkstartSenseDisc] {
+    ///
+    /// `holding` は「動きを減らす」設定のためのもの。出入りする時刻と文字は
+    /// そのままに、大きさと位置だけ寿命の半ばで止める——五感がどれだけ
+    /// 進んだかは情報なので消さず、画面を横切る動きだけをやめる。
+    public static func discs(at elapsed: TimeInterval, holding: Bool = false) -> [LinkstartSenseDisc] {
         let named = beats.enumerated().compactMap { index, beat in
-            disc(beat, at: elapsed, variant: index)
+            disc(beat, at: elapsed, variant: index, holding: holding)
         }
         let unnamed = decoys.enumerated().compactMap { index, beat in
-            disc(beat, at: elapsed, variant: index + beats.count)
+            disc(beat, at: elapsed, variant: index + beats.count, holding: holding)
         }
         return (named + unnamed).sorted { $0.radius < $1.radius }
     }
 
-    private static func disc(_ beat: Beat, at elapsed: TimeInterval, variant: Int) -> LinkstartSenseDisc? {
+    private static func disc(
+        _ beat: Beat,
+        at elapsed: TimeInterval,
+        variant: Int,
+        holding: Bool
+    ) -> LinkstartSenseDisc? {
         guard elapsed >= beat.appears, elapsed < beat.leaves else { return nil }
         let progress = (elapsed - beat.appears) / (beat.leaves - beat.appears)
-        let radius = beat.prime * pow(beat.growth, progress)
+        let pose = holding ? 0.5 : progress
+        let radius = beat.prime * pow(beat.growth, pose)
         let drift = radius * centreDrift
         let label: String
         if elapsed < beat.confirms {
@@ -182,14 +192,18 @@ public enum LinkstartSenses: Sendable {
     }
 
     /// いま出ている確認の印。散り終わったあとは空。
-    public static func tally(at elapsed: TimeInterval) -> [LinkstartSenseTallyMarker] {
+    ///
+    /// `holding` のときは中央から右端への飛行と最後の散開をやめ、最初から
+    /// 自分の段に置いてその場で薄くする。緑になるところは残す——あれは
+    /// 動きではなく「五感が揃った」という報せなので。
+    public static func tally(at elapsed: TimeInterval, holding: Bool = false) -> [LinkstartSenseTallyMarker] {
         guard elapsed < tallyEnd else { return [] }
         let green = LinkstartSequence.clamp01((elapsed - greenStart) / greenRamp)
         let scatter = LinkstartSequence.clamp01(
             (elapsed - scatterStart) / max(tallyEnd - scatterStart, 0.001)
         )
         // 散り始めはゆっくり、最後に加速する。止まっていたものが弾ける動き。
-        let eased = scatter * scatter
+        let eased = holding ? 0 : scatter * scatter
 
         return beats.enumerated().compactMap { index, beat -> LinkstartSenseTallyMarker? in
             let born = beat.appears - markerLead
@@ -199,7 +213,7 @@ public enum LinkstartSenses: Sendable {
             let travelStart = beat.confirms + markerTravelDelay
             let travel = LinkstartSequence.clamp01((elapsed - travelStart) / markerTravelDuration)
             // 出だしと着地をなめらかに。等速だと「飛ばされた」ように見える。
-            let easedTravel = travel * travel * (3 - 2 * travel)
+            let easedTravel = holding ? 1 : travel * travel * (3 - 2 * travel)
             let slotY = tallySlotTop + tallySlotStep * Double(index)
             let x = 0.5 + (tallyColumnX - 0.5) * easedTravel
             let y = 0.5 + (slotY - 0.5) * easedTravel
@@ -208,7 +222,7 @@ public enum LinkstartSenses: Sendable {
                 fractionX: x + beat.scatterX * eased,
                 fractionY: y + beat.scatterY * eased,
                 radius: tallyRadius * (0.25 + 0.75 * grown) * (1 + 0.55 * eased),
-                opacity: grown * (1 - eased),
+                opacity: grown * (holding ? 1 - scatter : 1 - eased),
                 green: green
             )
         }

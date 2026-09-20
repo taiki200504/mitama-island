@@ -8,8 +8,6 @@ public enum LinkstartSense: String, CaseIterable, Equatable, Sendable {
     case taste
     case smell
 
-    /// Key into `Localizable.strings`.
-    public var labelKey: String { "linkstart.sense.\(rawValue)" }
 }
 
 /// One of the sounds the boot sequence makes along the way.
@@ -336,18 +334,6 @@ public enum LinkstartSequence: Sendable {
     /// somewhere, never a full-white frame.
     public static let flashPeakOpacity: Double = 0.85
 
-    /// One white-out at the end of the tunnel: up in 0.12s, down over the
-    /// rest of its window. A single flash, far under the 3-per-second
-    /// photosensitivity guideline.
-    /// The short white flash partway through the interface — the reference
-    /// blanks the screen for about a fifth of a second as the outer rings
-    /// land, and without it ours reads as one continuous field.
-    public static func interfaceFlashOpacity(at elapsed: TimeInterval) -> Double {
-        let peak = calibrationStart + calibrationDuration * 0.43
-        let half = 0.12
-        guard abs(elapsed - peak) < half else { return 0 }
-        return 1 - abs(elapsed - peak) / half
-    }
 
     public static func flashOpacity(at elapsed: TimeInterval) -> Double {
         let rise = 0.12
@@ -361,11 +347,6 @@ public enum LinkstartSequence: Sendable {
 
     // MARK: - Checklist
 
-    /// How visible the checklist block (title, rows, status) is: nothing
-    /// through the dive, in over 0.4s as the white-out clears.
-    public static func checklistOpacity(at elapsed: TimeInterval) -> Double {
-        clamp01((elapsed - warpEnd) / 0.4)
-    }
 
     /// The synchronisation rate shown under the checklist, 0…100: climbs
     /// from the calibration wash to full as the senses check completes.

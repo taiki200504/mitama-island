@@ -683,13 +683,6 @@
 "settings.camera.answersByPalm.help" = "承認や質問が島に出ている間だけカメラを開けておきます。手のひらを開いて少し止めるとマイクが開くので、キーを押す必要がありません。答えるのは声なので「声で答える」も一緒にオンにしてください。それ以外のときカメラは止まっています。";
 "linkstart.title" = "LINK START";
 "linkstart.say" = "「リンクスタート」と言ってください";
-"linkstart.sense.touch" = "触覚";
-"linkstart.sense.sight" = "視覚";
-"linkstart.sense.hearing" = "聴覚";
-"linkstart.sense.taste" = "味覚";
-"linkstart.sense.smell" = "嗅覚";
-"linkstart.checking" = "五感を確認しています";
-"linkstart.sync" = "同期率 {rate}%";
 "linkstart.language" = "言語設定 — 日本語";
 "linkstart.welcome" = "ようこそ、{name}";
 "linkstart.dismiss" = "どれかキーを押すと戻ります";
@@ -864,7 +857,6 @@
 "island.signal.jobDone" = "仕事がひとつ終わった";
 
 /* link start */
-"linkstart.ok" = "OK";
 "linkstart.welcome.line1" = "Welcome to";
 "linkstart.welcome.line2" = "mitama island";
 "linkstart.dialog.title" = "キャラクター登録";

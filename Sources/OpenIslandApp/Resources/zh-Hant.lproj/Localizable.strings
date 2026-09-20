@@ -682,13 +682,6 @@
 "settings.camera.answersByPalm.help" = "當島上有請求或問題等待時，攝影機保持開啟。舉起張開的手掌稍作停留即可開啟麥克風，不必按鍵。作答靠語音，因此需同時開啟「語音作答」。其餘時間攝影機始終關閉。";
 "linkstart.title" = "LINK START";
 "linkstart.say" = "請說：LINK START";
-"linkstart.sense.touch" = "觸覺";
-"linkstart.sense.sight" = "視覺";
-"linkstart.sense.hearing" = "聽覺";
-"linkstart.sense.taste" = "味覺";
-"linkstart.sense.smell" = "嗅覺";
-"linkstart.checking" = "正在校準五感";
-"linkstart.sync" = "同步率 {rate}%";
 "linkstart.language" = "語言已設定";
 "linkstart.welcome" = "歡迎，{name}";
 "linkstart.dismiss" = "按任意鍵返回";
@@ -863,7 +856,6 @@
 "island.signal.jobDone" = "一件工作已完成";
 
 /* link start */
-"linkstart.ok" = "OK";
 "linkstart.welcome.line1" = "Welcome to";
 "linkstart.welcome.line2" = "mitama island";
 "linkstart.dialog.title" = "角色註冊";
