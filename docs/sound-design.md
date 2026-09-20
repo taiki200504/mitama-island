@@ -31,6 +31,25 @@ derived from, any game, film, or product: see the legal note at the bottom.
 | login sequence: dive | `ui-linkstart-dive.caf` | 1.80s (stereo) | Leaving the interface — the second dive, into the white-out. |
 | login sequence: resolve | `ui-linkstart-resolve.caf` | 1.80s (stereo) | Low and warm, fading out rather than landing on a chord. |
 
+### Using your own audio for the login sequence
+
+The five login cues are looked up in `~/Library/Application Support/MitamaIsland/Sounds/`
+before the bundled ones, so a file named `ui-linkstart-rise.caf` (`.wav`,
+`.m4a`, `.mp3`, `.aiff` also work) placed there wins without touching the app
+or the repository.
+
+```bash
+zsh scripts/install-linkstart-audio.sh <your-recording> [offset-seconds]
+zsh scripts/install-linkstart-audio.sh --restore      # back to the bundled cues
+```
+
+It slices one recording into the five cues at the sequence's own beats
+(rise 0.00–1.20, warp 1.20–3.40, flash 3.40–4.30, tick 4.30–4.45, resolve
+4.45–7.20 — each overridable with `RISE_RANGE="0.0 1.5"` and friends) and
+writes them to that folder. **Whatever you put there stays there**: the folder
+is outside the repository, nothing is committed, and the app ships only the
+cues it synthesises itself.
+
 ### How the login cues are set
 
 Nobody on this project can hear the cues being generated, so they are not set

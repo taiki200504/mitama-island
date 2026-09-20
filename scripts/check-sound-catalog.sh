@@ -31,6 +31,12 @@ for source in sources:
 # doc comment: a menu-bar-resident app should not chime on every pointer pass.
 known_unused = {"ui-hover"}
 
+# ui-linkstart-full is the name the login sequence looks for in the user's own
+# sounds folder when they have installed a take of their own. Nothing ships
+# under that name by design: the bundled sequence is the five cues.
+user_supplied = {"ui-linkstart-full"}
+referenced -= user_supplied
+
 missing = sorted(referenced - shipped)
 unused = sorted(shipped - referenced - known_unused)
 
