@@ -750,6 +750,24 @@ private struct LinkstartDiveView: View {
 
     private static let streakCount = 320
 
+    /// 地の色。芯にいくほど白い。
+    private static func groundColour(at radius: Double) -> Color {
+        let anchors: [(Double, Double, Double)] = [
+            (1.00, 1.00, 1.00),     // 芯
+            (0.16, 0.78, 0.96),     // 中ほど
+            (0.04, 0.31, 0.66),     // 縁
+        ]
+        let t = min(max(radius, 0), 1) * 2
+        let lower = min(Int(t), 1)
+        let f = t - Double(lower)
+        let a = anchors[lower], b = anchors[lower + 1]
+        return Color(
+            red: a.0 + (b.0 - a.0) * f,
+            green: a.1 + (b.1 - a.1) * f,
+            blue: a.2 + (b.2 - a.2) * f
+        )
+    }
+
     /// 芯の白から縁の青へ。`Color(hue:saturation:brightness:)` は描く側の
     /// 色空間に左右され、CI では同じ指定でも彩度が 0.2 ほど変わった。
     /// ほかの場所と同じ sRGB の直値で混ぜる。
@@ -777,35 +795,28 @@ private struct LinkstartDiveView: View {
         let intensity = reducesMotion ? 0.3 : min(1.0, 0.45 + progress * 1.6)
         // 白へ抜けるのは最後のひと息だけ。18.2 秒の参照はまだ彩度 0.39 の
         // 青で、ここを早く白くすると色が死ぬ。
-        let washOut = LinkstartSequence.clamp01((progress - 0.72) / 0.22) * 0.72
+        let washOut = LinkstartSequence.clamp01((progress - 0.74) / 0.22) * 0.55
 
         Canvas { context, size in
             let center = CGPoint(x: size.width / 2, y: size.height / 2)
             let reach = (size.width * size.width + size.height * size.height).squareRoot() / 2
 
-            // White under everything, so the wash at the end lands on white
-            // rather than on the welcome screen's grey.
-            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(.white.opacity(washOut)))
-
-            // The ground the streaks ride on, brightening as the dive runs.
-            context.fill(
-                Path(CGRect(origin: .zero, size: size)),
-                // 芯は小さく強く、外は濃い青。等間隔の3色だと芯がぼやけて
-                // 全体が同じ明るさの水色になる（参照は中心だけ白い）。
-                with: .radialGradient(
-                    Gradient(stops: [
-                        .init(color: .white.opacity(0.95 * intensity), location: 0),
-                        .init(color: .white.opacity(0.9 * intensity), location: 0.06),
-                        .init(color: Color(hex: 0x29C8F5)
-                            .opacity(0.95 * intensity * (1 - washOut * 0.85)), location: 0.38),
-                        .init(color: Color(hex: 0x0A4FA8)
-                            .opacity(0.95 * intensity * (1 - washOut)), location: 1),
-                    ]),
-                    center: center,
-                    startRadius: 0,
-                    endRadius: reach
+            // 筋が乗る地。芯は小さく強く、外は濃い青。グラデーションで
+            // 塗っていたが、同じ指定でも CI の描画と手元とで彩度が 0.25 も
+            // 違った（画面いっぱいの塗りほど差が出る）。環境を当てにしない
+            // よう、実色の同心円を外から内へ重ねて同じ絵を作る。
+            let ringCount = 28
+            for step in 0..<ringCount {
+                let outer = 1 - Double(step) / Double(ringCount)
+                let colour = Self.groundColour(at: outer)
+                context.fill(
+                    Path(ellipseIn: CGRect(
+                        x: center.x - reach * outer, y: center.y - reach * outer,
+                        width: reach * outer * 2, height: reach * outer * 2
+                    )),
+                    with: .color(colour.opacity(0.95 * intensity))
                 )
-            )
+            }
 
             let travelled = progress * 1.5
 
@@ -855,8 +866,15 @@ private struct LinkstartDiveView: View {
                 // 縁ほど濃く出す。中央付近は地の光に溶けていてよいが、
                 // 画面の端は筋が立っていないと参照の密度にならない。
                 let weight = 0.35 + 0.85 * toEdge
-                context.fill(path, with: .color(colour.opacity((0.30 + 0.75 * intensity) * weight * (1 - washOut))))
+                context.fill(path, with: .color(colour.opacity((0.30 + 0.75 * intensity) * weight)))
             }
+
+            // 最後に白へ抜ける。地と筋を描いたあとに白をかぶせる——下に
+            // 敷くと、上の塗りに隠れて効かない。
+            context.fill(
+                Path(CGRect(origin: .zero, size: size)),
+                with: .color(.white.opacity(washOut))
+            )
         }
         .allowsHitTesting(false)
     }
