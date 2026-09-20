@@ -23,26 +23,26 @@ struct LinkstartRenderTests {
     private struct Moment {
         let at: TimeInterval
         let flat: Bool
+        /// 外から時刻を渡されたときは、どこが白でどこが絵なのかを知って
+        /// いるのは渡した人だけなので、平坦かどうかは判定しない。
+        let asserts: Bool
 
-        init(_ at: TimeInterval, flat: Bool = false) {
+        init(_ at: TimeInterval, flat: Bool = false, asserts: Bool = true) {
             self.at = at
             self.flat = flat
+            self.asserts = asserts
         }
     }
 
     /// Every 0.6s across the whole sequence, so a beat that goes blank in
-    /// the middle is caught rather than being found by eye later. The four
-    /// flat ones are the reference's own: the dark, the moment the white
-    /// arrives, the white-out, and the end.
-    /// Every 0.6s across the whole sequence, so a beat that goes blank in
-    /// the middle is caught instead of being found by eye later. The flat
-    /// ones are the reference's own: the dark it opens on, the white-out
-    /// between the tunnel and the interface, and the fade at the end.
-    /// Every 0.6s across the whole sequence, so a beat that goes blank in
-    /// the middle is caught instead of being found by eye later. The flat
-    /// ones are the reference's own empty frames: the dark it opens on,
-    /// the white-out, the white gap after the checks, and the fade.
-    private static let moments: [Moment] = [
+    /// the middle is caught instead of being found by eye later, plus the
+    /// moments the reference itself changes during the senses (5.7-9.3s),
+    /// where a 0.6s grid walks straight past discs that live for under a
+    /// second. The flat ones are the reference's own empty frames: the dark
+    /// it opens on, the white-out, the gap between two discs at 6.85, the
+    /// one after the last disc leaves, the white before the language button,
+    /// and the fade at the end.
+    private static let builtInMoments: [Moment] = [
         Moment(0.2, flat: true),
         Moment(0.8, flat: true),
         Moment(1.4, flat: true),
@@ -52,13 +52,27 @@ struct LinkstartRenderTests {
         Moment(3.8),
         Moment(4.4),
         Moment(5.0, flat: true),
-        Moment(5.6, flat: true),
+        // 5.6 は真っ白ではない: 参照でもここに確認の印が 2 つ、中央に
+        // 小さく出ている（測ると彩度 0.003 の、ほとんど白い画面）。
+        Moment(5.6),
+        Moment(5.75),
+        Moment(6.0),
         Moment(6.2),
-        Moment(6.8),
+        Moment(6.25),
+        Moment(6.5),
+        Moment(6.85),
+        Moment(7.25),
         Moment(7.4),
+        Moment(7.5),
+        Moment(7.75),
         Moment(8.0),
+        Moment(8.15),
+        Moment(8.45),
         Moment(8.6),
+        Moment(8.75),
+        Moment(9.0, flat: true),
         Moment(9.2, flat: true),
+        Moment(9.3),
         Moment(9.8),
         Moment(10.4),
         Moment(11.0),
@@ -76,6 +90,17 @@ struct LinkstartRenderTests {
         Moment(18.2),
         Moment(18.8, flat: true),
     ]
+
+    /// 参照と突き合わせるときは、見たい時刻を 0.05 秒刻みで渡せた方が早い。
+    /// `OPEN_ISLAND_RENDER_TIMES=5.75,6.25,6.85` のように並べる。
+    private static var moments: [Moment] {
+        guard let raw = ProcessInfo.processInfo.environment["OPEN_ISLAND_RENDER_TIMES"] else {
+            return builtInMoments
+        }
+        let times = raw.split(separator: ",")
+            .compactMap { Double($0.trimmingCharacters(in: .whitespaces)) }
+        return times.isEmpty ? builtInMoments : times.map { Moment($0, asserts: false) }
+    }
 
     @Test
     func everyBeatOfTheSequenceDrawsSomething() throws {
@@ -116,14 +141,16 @@ struct LinkstartRenderTests {
                     seen.insert(key)
                 }
             }
-            if moment.flat {
+            if !moment.asserts {
+                // 時刻を外から渡されたぶんは、書き出すだけ。
+            } else if moment.flat {
                 #expect(seen.count <= 3, "the frame at \(elapsed)s should be one flat colour")
             } else {
                 #expect(seen.count > 3, "the frame at \(elapsed)s is a flat fill")
             }
 
             if let directory, let png = bitmap.representation(using: .png, properties: [:]) {
-                let name = String(format: "linkstart-%.1fs.png", elapsed)
+                let name = String(format: "linkstart-%gs.png", elapsed)
                 try png.write(to: URL(fileURLWithPath: directory).appendingPathComponent(name))
             }
         }

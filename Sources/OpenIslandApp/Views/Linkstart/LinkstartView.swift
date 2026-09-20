@@ -70,8 +70,10 @@ struct LinkstartView: View {
     /// `TimelineView` advancing it afterwards — the harness's screenshot
     /// lands on the frame it asked for rather than on whatever elapsed time
     /// the wall clock had produced by the moment the capture callback ran.
+    /// 参照の地の色。白い場面を実測すると明るさ 0.916 で、純白ではない。
+    static let paper = Color(hex: 0xECECEC)
+
     private func frame(elapsed: TimeInterval) -> some View {
-        let phase = LinkstartSequence.phase(at: elapsed)
         let reducesMotion = IslandMotion.reducesMotion
 
         return ZStack {
@@ -79,7 +81,9 @@ struct LinkstartView: View {
             // blue-white as the rings arrive — the reference is never a flat
             // paper white behind the interface. Dark grey during welcome/dive.
             if elapsed < LinkstartSequence.welcomeStart {
-                Color.white
+                // 参照の「白」は純白ではなく #ECECEC。純白にすると上に乗る
+                // 淡い色が浮き、白い場面の明るさも参照より 0.08 上振れする。
+                LinkstartView.paper
                 // Dark until the light arrives: the reference opens on a black
                 // screen for its first second and a half, and starting on white
                 // loses the moment the whole sequence is built around.
@@ -87,13 +91,6 @@ struct LinkstartView: View {
                     .opacity(1 - LinkstartSequence.clamp01(
                         (elapsed - (LinkstartSequence.ignitionStart - 0.25)) / 0.35
                     ))
-                // The interface's ground, and only while the interface is up:
-                // the screens after it are plain white in the reference.
-                SAOGrammar.Palette.linkstartPale2
-                    .opacity(
-                        elapsed >= LinkstartSequence.calibrationStart
-                            && elapsed < LinkstartSequence.sensesCheckStart ? 1 : 0
-                    )
             } else if elapsed < LinkstartSequence.fadeStart {
                 Color(hex: 0x555555)
             }
@@ -103,30 +100,23 @@ struct LinkstartView: View {
                 .opacity(elapsed >= LinkstartSequence.ignitionStart
                     && elapsed < LinkstartSequence.calibrationStart ? 1 : 0)
 
-            // The white-out between the tunnel and the interface, and the
-            // second, shorter one the reference flashes as the outer rings
-            // land.
-            Color.white
+            // The white-out between the tunnel and the interface. The dip the
+            // reference has mid-way through the senses is not a flash at all —
+            // it is the gap between two discs, so it draws itself.
+            LinkstartView.paper
                 .opacity(LinkstartSequence.flashOpacity(at: elapsed) / max(LinkstartSequence.flashPeakOpacity, 0.001))
-            Color.white
-                .opacity(LinkstartSequence.interfaceFlashOpacity(at: elapsed))
 
-            // Light HUD (5.8-8.0s: calibration + senses)
-            if showsDetail, elapsed < LinkstartSequence.sensesCheckStart + 0.05 {
-                LinkstartLightHUDView(
-                    elapsed: elapsed,
-                    phase: phase,
-                    reducesMotion: reducesMotion
-                )
+            // 五感の確認 (5.7-8.85s): 名前を貼った円盤が通り過ぎ、確認できた
+            // ものが右端に積み上がって、最後に緑になって散る。どの画面にも
+            // 出す——ここは演出の本体で、出さない画面は 3 秒間ただの白になる。
+            if elapsed >= LinkstartSenses.firstAppearance,
+               elapsed < LinkstartSenses.tallyEnd {
+                // 印が先（奥）。参照では円盤が重なる場面で印は見えない。
+                LinkstartSenseTallyView(elapsed: elapsed)
+                LinkstartSenseDiscsView(elapsed: elapsed)
             }
 
-            // Senses check circles (8.0-9.8s)
-            if elapsed >= LinkstartSequence.sensesCheckStart - 0.3,
-               elapsed < LinkstartSequence.sensesCheckStart + LinkstartSequence.sensesCheckDuration {
-                LinkstartSensesCheckView(elapsed: elapsed)
-            }
-
-            // Language button (9.8-10.8s)
+            // Language button (9.35-10.3s)
             if elapsed >= LinkstartSequence.languageSelectStart - 0.05,
                elapsed < LinkstartSequence.languageSelectStart + LinkstartSequence.languageSelectDuration {
                 LinkstartLanguageButtonView(elapsed: elapsed)
@@ -273,230 +263,242 @@ private struct LinkstartWedgeTunnelView: View {
 
 /// The light HUD: concentric rings and arc segments with sense indicators,
 /// scaling up from the center as it appears after the white-out.
-private struct LinkstartLightHUDView: View {
-    let elapsed: TimeInterval
-    let phase: LinkstartPhase
-    let reducesMotion: Bool
-
-    var body: some View {
-        let flashOpacity = LinkstartSequence.flashOpacity(at: elapsed)
-        let checklistOpacity = LinkstartSequence.checklistOpacity(at: elapsed)
-        let scale = hudScale(at: elapsed)
-        let confirmedCount = LinkstartSequence.confirmedSenseCount(at: elapsed)
-
-        ZStack {
-            // White-out flash
-            if !reducesMotion {
-                Color.white
-                    .opacity(flashOpacity)
-                    .allowsHitTesting(false)
-            }
-
-            // Main HUD content
-            VStack(spacing: 0) {
-                LinkstartHUDContent(
-                    elapsed: elapsed,
-                    confirmedCount: confirmedCount,
-                    reducesMotion: reducesMotion
-                )
-            }
-            .scaleEffect(scale, anchor: .center)
-            .opacity(checklistOpacity)
-        }
-        .allowsHitTesting(false)
-    }
-
-    /// HUD scale with ease-out: grows from ~0 to 1 as it appears.
-    private func hudScale(at elapsed: TimeInterval) -> CGFloat {
-        let hudStart = LinkstartSequence.calibrationStart
-        guard elapsed > hudStart else { return 0 }
-        let scaleProgress = (elapsed - hudStart) / (LinkstartSequence.calibrationDuration + 0.2)
-        let clampedProgress = min(max(scaleProgress, 0), 1)
-        // Ease-out cubic
-        let eased = 1 - pow(1 - clampedProgress, 3)
-        return eased
-    }
-}
-
-/// The HUD: concentric arc rings filling the screen, with one ring segment
-/// per sense and the OK pill at the centre. Sized from the frame rather than
-/// a fixed 240pt box — the reference fills the screen edge to edge.
-private struct LinkstartHUDContent: View {
-    let elapsed: TimeInterval
-    let confirmedCount: Int
-    let reducesMotion: Bool
-
-    var body: some View {
-        GeometryReader { geometry in
-            let side = min(geometry.size.width, geometry.size.height)
-            ZStack {
-                LinkstartHUDRings(confirmedCount: confirmedCount, elapsed: elapsed)
-                okPill(side: side)
-            }
-            .frame(width: geometry.size.width, height: geometry.size.height)
-        }
-    }
-
-    /// The one piece of the HUD that is a control rather than decoration.
-    /// Not a Button: the sequence takes no input, and a focusable control
-    /// inside a full-screen overlay steals the keystroke that dismisses it.
-    private func okPill(side: CGFloat) -> some View {
-        let confirmed = confirmedCount >= LinkstartSequence.senses.count
-        return Text(LanguageManager.shared.t("linkstart.ok"))
-            .font(IslandTypography.mono(size: side * 0.075, weight: .bold))
-            .tracking(side * 0.03)
-            .foregroundStyle(.white)
-            .padding(.horizontal, side * 0.075)
-            .padding(.vertical, side * 0.028)
-            .background(
-                Capsule().fill(
-                    confirmed
-                        ? SAOGrammar.Palette.linkstartCyan1
-                        : SAOGrammar.Palette.linkstartCyan3
-                )
-            )
-            .overlay(Capsule().strokeBorder(.white.opacity(0.85), lineWidth: 2))
-            .shadow(color: SAOGrammar.Palette.linkstartCyan2.opacity(0.5), radius: side * 0.03)
-            .opacity(confirmed ? 1 : 0.75)
-    }
-}
-
-/// The rings themselves. Each ring is a run of arc segments with gaps, drawn
-/// thick enough to read as a solid band of colour from across the room, the
-/// way the reference does. One ring belongs to each sense and fills in as
-/// that sense is confirmed; the rest are scenery.
-private struct LinkstartHUDRings: View {
-    let confirmedCount: Int
+/// 通過していく五感の円盤 (5.7-8.2s)。
+///
+/// 参照はここで中央のリング盤を回さない。五感の名前を貼った円盤が次々に
+/// カメラの脇を通り過ぎ、通り過ぎる途中でプレートが OK へ反転する。だから
+/// 画面の中心は空いていることが多く、密度は円盤が重なった時だけ上がる。
+private struct LinkstartSenseDiscsView: View {
     let elapsed: TimeInterval
 
-    /// Radius fraction, thickness fraction, segment count, gap in degrees,
-    /// whether the ring belongs to a sense, and its colour.
-    private struct Ring {
+    /// 内円の半径を 1 としたときの、外側のリングの組み方。参照の円盤は
+    /// 太い帯・細い刻み・小さなブロックが混ざっていて、線画には見えない。
+    private struct Band {
         let radius: Double
         let thickness: Double
         let segments: Int
         let gap: Double
-        let senseIndex: Int?
-        let lavender: Bool
+        let colour: UInt32
+        let blocks: Bool
     }
 
-    private static let rings: [Ring] = [
-        Ring(radius: 0.20, thickness: 0.030, segments: 3, gap: 26, senseIndex: 0, lavender: false),
-        Ring(radius: 0.27, thickness: 0.018, segments: 14, gap: 8, senseIndex: nil, lavender: true),
-        Ring(radius: 0.33, thickness: 0.038, segments: 4, gap: 20, senseIndex: 1, lavender: false),
-        Ring(radius: 0.41, thickness: 0.014, segments: 30, gap: 4, senseIndex: nil, lavender: false),
-        Ring(radius: 0.47, thickness: 0.042, segments: 5, gap: 16, senseIndex: 2, lavender: true),
-        Ring(radius: 0.55, thickness: 0.020, segments: 9, gap: 12, senseIndex: nil, lavender: false),
-        Ring(radius: 0.62, thickness: 0.046, segments: 6, gap: 14, senseIndex: 3, lavender: false),
-        Ring(radius: 0.71, thickness: 0.016, segments: 22, gap: 6, senseIndex: nil, lavender: true),
-        Ring(radius: 0.80, thickness: 0.050, segments: 7, gap: 12, senseIndex: 4, lavender: false),
-        Ring(radius: 0.90, thickness: 0.012, segments: 40, gap: 3, senseIndex: nil, lavender: false),
-        // The reference's interface reaches past the corners; these are what
-        // stop ours reading as a small dial in the middle of a pale field.
-        Ring(radius: 1.00, thickness: 0.055, segments: 8, gap: 10, senseIndex: nil, lavender: true),
-        Ring(radius: 1.12, thickness: 0.022, segments: 26, gap: 5, senseIndex: nil, lavender: false),
-        Ring(radius: 1.24, thickness: 0.060, segments: 6, gap: 12, senseIndex: nil, lavender: false),
+    /// 内側ほど太く詰まり、外側ほど細く隙間が開く。参照の円盤は縁のほうが
+    /// すかすかで、そこが白く抜けるから 1 枚でも画面を塗り潰さない。
+    private static let bands: [Band] = [
+        Band(radius: 1.06, thickness: 0.10, segments: 1, gap: 0, colour: 0xBCE6EC, blocks: false),
+        Band(radius: 1.22, thickness: 0.22, segments: 5, gap: 14, colour: 0x1F9FD0, blocks: true),
+        Band(radius: 1.40, thickness: 0.16, segments: 18, gap: 6, colour: 0x9B7BE0, blocks: false),
+        Band(radius: 1.58, thickness: 0.20, segments: 4, gap: 22, colour: 0x9FC0A8, blocks: true),
+        Band(radius: 1.78, thickness: 0.14, segments: 9, gap: 12, colour: 0x35B4DE, blocks: false),
+        Band(radius: 2.00, thickness: 0.18, segments: 6, gap: 20, colour: 0x9B7BE0, blocks: true),
+        Band(radius: 2.24, thickness: 0.10, segments: 24, gap: 6, colour: 0x1F9FD0, blocks: false),
+        Band(radius: 2.50, thickness: 0.14, segments: 7, gap: 18, colour: 0x74D2E4, blocks: true),
+        Band(radius: 2.80, thickness: 0.08, segments: 12, gap: 10, colour: 0x9FC0A8, blocks: false),
+        Band(radius: 3.14, thickness: 0.12, segments: 5, gap: 26, colour: 0x35B4DE, blocks: true),
+        Band(radius: 3.52, thickness: 0.07, segments: 20, gap: 8, colour: 0x9B7BE0, blocks: false),
+        Band(radius: 3.94, thickness: 0.10, segments: 6, gap: 24, colour: 0x53C6F0, blocks: true),
     ]
 
     var body: some View {
         Canvas { context, size in
-            let centre = CGPoint(x: size.width / 2, y: size.height / 2)
             let side = min(size.width, size.height)
-            // Slow drift, opposite directions per ring — enough to read as
-            // alive, not enough to look like a loading spinner.
-            let drift = elapsed * 9
-
-            for (index, ring) in Self.rings.enumerated() {
-                let radius = side * ring.radius
-                let lineWidth = side * ring.thickness
-                let confirmed = ring.senseIndex.map { $0 < confirmedCount } ?? true
-                let base = ring.lavender
-                    ? SAOGrammar.Palette.linkstartLavender1
-                    : SAOGrammar.Palette.linkstartCyan1
-                // Not yet confirmed is still part of the HUD: a pale version of
-                // its own colour. Grey reads as broken rather than as waiting.
-                let colour = confirmed ? base : base.opacity(0.42)
-                let direction: Double = index.isMultiple(of: 2) ? 1 : -1
-                let step = 360.0 / Double(ring.segments)
-
-                for segment in 0..<ring.segments {
-                    let start = Angle.degrees(Double(segment) * step + drift * direction + ring.gap / 2)
-                    let end = Angle.degrees(Double(segment + 1) * step + drift * direction - ring.gap / 2)
-                    var path = Path()
-                    path.addArc(center: centre, radius: radius, startAngle: start, endAngle: end, clockwise: false)
-                    context.stroke(path, with: .color(colour), style: StrokeStyle(lineWidth: lineWidth, lineCap: .butt))
-
-                    // A wash behind each band: the reference's interface is a
-                    // field of colour with structure on top, not line art.
-                    var wash = Path()
-                    wash.addArc(center: centre, radius: radius, startAngle: start, endAngle: end, clockwise: false)
-                    context.stroke(
-                        wash,
-                        with: .color(colour.opacity(0.72)),
-                        style: StrokeStyle(lineWidth: lineWidth * 3.4, lineCap: .butt)
-                    )
-                }
-
-                // The small blocks riding the ring — the reference is dense
-                // with them, and they are what stops it reading as a target.
-                if ring.segments <= 9 {
-                    for marker in 0..<ring.segments {
-                        let angle = Angle.degrees(Double(marker) * step + drift * direction + step / 2).radians
-                        let point = CGPoint(x: centre.x + cos(angle) * radius, y: centre.y + sin(angle) * radius)
-                        let block = CGRect(
-                            x: point.x - side * 0.012,
-                            y: point.y - side * 0.008,
-                            width: side * 0.024,
-                            height: side * 0.016
-                        )
-                        context.fill(
-                            Path(roundedRect: block, cornerRadius: side * 0.004),
-                            with: .color(confirmed ? base : base.opacity(0.3))
-                        )
-                    }
-                }
+            let centre = CGPoint(x: size.width / 2, y: size.height / 2)
+            for disc in LinkstartSenses.discs(at: elapsed) {
+                var layer = context
+                layer.opacity = disc.opacity
+                draw(
+                    disc,
+                    into: &layer,
+                    at: CGPoint(
+                        x: centre.x + disc.offsetX * side,
+                        y: centre.y + disc.offsetY * side
+                    ),
+                    radius: disc.radius * side
+                )
             }
         }
         .allowsHitTesting(false)
     }
+
+    private func draw(
+        _ disc: LinkstartSenseDisc,
+        into context: inout GraphicsContext,
+        at point: CGPoint,
+        radius: CGFloat
+    ) {
+        // 円盤ごとに向きをずらすと、5 枚が同じ判子に見えなくなる。
+        // ゆっくり回るのは、止まっていると絵として死んで見えるため。
+        let spin = Double(disc.variant) * 47 + elapsed * 5
+
+        // 文字盤。参照の内側はベタ塗りの水色で、そこにプレートが乗る。
+        context.fill(
+            Path(ellipseIn: CGRect(
+                x: point.x - radius, y: point.y - radius,
+                width: radius * 2, height: radius * 2
+            )),
+            with: .color(Color(hex: 0x29AEDF))
+        )
+
+        for band in Self.bands {
+            let bandRadius = radius * band.radius
+            let lineWidth = radius * band.thickness
+            let colour = Color(hex: band.colour)
+            let direction: Double = band.segments.isMultiple(of: 2) ? 1 : -1
+            let step = 360.0 / Double(max(band.segments, 1))
+
+            for segment in 0..<max(band.segments, 1) {
+                let start = Angle.degrees(Double(segment) * step + spin * direction + band.gap / 2)
+                let end = Angle.degrees(Double(segment + 1) * step + spin * direction - band.gap / 2)
+                var path = Path()
+                path.addArc(center: point, radius: bandRadius, startAngle: start, endAngle: end, clockwise: false)
+                context.stroke(
+                    path,
+                    with: .color(colour),
+                    style: StrokeStyle(lineWidth: lineWidth, lineCap: .butt)
+                )
+            }
+
+            guard band.blocks else { continue }
+            for marker in 0..<max(band.segments, 1) {
+                let angle = Angle.degrees(Double(marker) * step + spin * direction + step / 2).radians
+                let centreOfBlock = CGPoint(
+                    x: point.x + cos(angle) * bandRadius,
+                    y: point.y + sin(angle) * bandRadius
+                )
+                let block = CGRect(
+                    x: centreOfBlock.x - radius * 0.11,
+                    y: centreOfBlock.y - radius * 0.07,
+                    width: radius * 0.22,
+                    height: radius * 0.14
+                )
+                context.fill(Path(block), with: .color(colour))
+            }
+        }
+
+        plate(disc, into: &context, at: point, radius: radius)
+    }
+
+    /// 名前の板。反転の瞬間だけ文字が消えて白く光り、そのあと OK になる。
+    private func plate(
+        _ disc: LinkstartSenseDisc,
+        into context: inout GraphicsContext,
+        at point: CGPoint,
+        radius: CGFloat
+    ) {
+        let confirmed = disc.label == "OK"
+        let plateRect = CGRect(
+            x: point.x - radius * 0.80,
+            y: point.y - radius * 0.22,
+            width: radius * 1.60,
+            height: radius * 0.44
+        )
+        let fill: Color = disc.label.isEmpty
+            ? Color(hex: 0xF6FCFA)
+            : (confirmed ? Color(hex: 0xA5E4D2) : Color(hex: 0xEAF6F2))
+        context.fill(Path(plateRect), with: .color(fill))
+
+        guard !disc.label.isEmpty else { return }
+        context.draw(
+            Text(disc.label)
+                .font(.system(size: radius * 0.30, weight: .regular))
+                .foregroundStyle(confirmed ? Color.white : Color(hex: 0x7FCFC6)),
+            at: point,
+            anchor: .center
+        )
+    }
 }
 
-/// Green check circles column showing confirmed senses (8.0-9.8s)
-private struct LinkstartSensesCheckView: View {
+/// 右端に積み上がる、確認できた五感の印 (6.3-8.85s)。
+///
+/// 参照では最後に 5 つが一斉に緑へ変わり、そのまま左へ散って消える。緑に
+/// なるのは「五感すべて通った」の合図なので、1 つずつではなく同時に振れる。
+private struct LinkstartSenseTallyView: View {
     let elapsed: TimeInterval
 
     var body: some View {
-        let progress = (elapsed - LinkstartSequence.sensesCheckStart) / LinkstartSequence.sensesCheckDuration
-
-        GeometryReader { geometry in
-            let side = min(geometry.size.width, geometry.size.height)
-            VStack(spacing: side * 0.035) {
-                ForEach(Array(LinkstartSequence.senses.enumerated()), id: \.element) { index, sense in
-                    // One lands after another, the way the reference ticks
-                    // them off rather than showing five at once.
-                    let landed = LinkstartSequence.clamp01(
-                        (progress + 0.12 - Double(index) * 0.13) / 0.18
-                    )
-                    HStack(spacing: side * 0.03) {
-                        ZStack {
-                            Circle()
-                                .stroke(Color(hex: 0x14B85A), lineWidth: side * 0.008)
-                                .frame(width: side * 0.09, height: side * 0.09)
-                            Image(systemName: "checkmark")
-                                .font(.system(size: side * 0.045, weight: .bold))
-                                .foregroundStyle(Color(hex: 0x14B85A))
-                                .scaleEffect(0.6 + 0.4 * landed)
-                        }
-                        Text(LanguageManager.shared.t(sense.labelKey))
-                            .font(.system(size: side * 0.035, weight: .medium))
-                            .foregroundStyle(Color(hex: 0x2A6B4A))
-                    }
-                    .opacity(landed)
-                }
+        Canvas { context, size in
+            let side = min(size.width, size.height)
+            for marker in LinkstartSenses.tally(at: elapsed) {
+                var layer = context
+                layer.opacity = marker.opacity
+                draw(
+                    marker,
+                    into: &layer,
+                    at: CGPoint(x: marker.fractionX * size.width, y: marker.fractionY * size.height),
+                    radius: marker.radius * side
+                )
             }
-            .frame(width: geometry.size.width, height: geometry.size.height)
         }
         .allowsHitTesting(false)
+    }
+
+    private func draw(
+        _ marker: LinkstartSenseTallyMarker,
+        into context: inout GraphicsContext,
+        at point: CGPoint,
+        radius: CGFloat
+    ) {
+        let shell = blend(from: 0x35B4DE, to: 0x2FD968, amount: marker.green)
+        let ring = blend(from: 0xC58FE0, to: 0x50DF79, amount: marker.green)
+        let core = blend(from: 0x29AEDF, to: 0x3FE070, amount: marker.green)
+
+        for (index, ratio) in [0.98, 0.80, 0.62].enumerated() {
+            var path = Path()
+            path.addEllipse(in: CGRect(
+                x: point.x - radius * ratio, y: point.y - radius * ratio,
+                width: radius * ratio * 2, height: radius * ratio * 2
+            ))
+            context.stroke(
+                path,
+                with: .color(index.isMultiple(of: 2) ? shell : ring),
+                style: StrokeStyle(lineWidth: radius * (index == 0 ? 0.20 : 0.12))
+            )
+        }
+
+        context.fill(
+            Path(ellipseIn: CGRect(
+                x: point.x - radius * 0.44, y: point.y - radius * 0.44,
+                width: radius * 0.88, height: radius * 0.88
+            )),
+            with: .color(core)
+        )
+        // 中央の横棒。参照の印は文字を持たず、この 1 本だけで「済み」を示す。
+        context.fill(
+            Path(CGRect(
+                x: point.x - radius * 0.38, y: point.y - radius * 0.10,
+                width: radius * 0.76, height: radius * 0.20
+            )),
+            with: .color(blend(from: 0xCFEFE8, to: 0xE6FFEE, amount: marker.green))
+        )
+
+        // 左脇の小さな四角。参照はここに 3 つ並べて列をつないでいる。
+        for step in 0..<3 {
+            let square = CGRect(
+                x: point.x - radius * (1.45 + 0.04),
+                y: point.y - radius * 0.34 + radius * 0.30 * CGFloat(step),
+                width: radius * 0.16,
+                height: radius * 0.16
+            )
+            context.fill(Path(square), with: .color(shell))
+        }
+    }
+
+    private func blend(from: UInt32, to: UInt32, amount: Double) -> Color {
+        func parts(_ hex: UInt32) -> (Double, Double, Double) {
+            (
+                Double((hex >> 16) & 0xFF) / 255,
+                Double((hex >> 8) & 0xFF) / 255,
+                Double(hex & 0xFF) / 255
+            )
+        }
+        let (r1, g1, b1) = parts(from)
+        let (r2, g2, b2) = parts(to)
+        let t = min(max(amount, 0), 1)
+        return Color(
+            red: r1 + (r2 - r1) * t,
+            green: g1 + (g2 - g1) * t,
+            blue: b1 + (b2 - b1) * t
+        )
     }
 }
 

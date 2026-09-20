@@ -119,12 +119,12 @@ public enum LinkstartSequence: Sendable {
     //   1.4–3.5  white, a speck at centre growing
     //   3.5–5.0  the wedge tunnel
     //   5.0–5.8  white-out
-    //   5.8–8.0  the HUD, senses confirming
-    //   8.0–9.8  the five checks
-    //   9.8–10.8 language
-    //  10.8–12.5 sign-in
-    //  12.5–13.7 the confirmation
-    //  13.8–16.6 welcome
+    //   5.7–8.2  the sense discs passing the camera, one confirming at a time
+    //   8.2–8.85 the five marks turning green and scattering
+    //   9.35–10.3 language
+    //  10.4–11.8 sign-in
+    //  12.0–13.55 the confirmation
+    //  13.6–16.6 welcome
     //  16.6–18.4 the dive
     //  18.4–19.0 white-out, end
 
@@ -138,12 +138,12 @@ public enum LinkstartSequence: Sendable {
     public static let warpDuration: TimeInterval = 1.5
     /// The white-out between the tunnel and the interface.
     public static let flashDuration: TimeInterval = 0.8
-    /// The HUD scaling up while the senses confirm.
+    /// The sense discs passing the camera, one confirming at a time.
     public static let calibrationDuration: TimeInterval = 2.3
-    /// Column of green check circles.
-    public static let sensesCheckDuration: TimeInterval = 0.7
+    /// The five marks turning green at the right edge, then scattering.
+    public static let sensesCheckDuration: TimeInterval = 0.75
     /// Language selection button.
-    public static let languageSelectDuration: TimeInterval = 0.8
+    public static let languageSelectDuration: TimeInterval = 0.95
     /// Sign-in panel.
     public static let loginPanelDuration: TimeInterval = 1.4
     /// Confirmation dialog.
@@ -153,7 +153,7 @@ public enum LinkstartSequence: Sendable {
     // after the checks, and again between sign-in and the confirmation. They
     // are part of its rhythm, so they are timed rather than smoothed over.
     /// White, between the checks and the language button.
-    public static let afterChecksGap: TimeInterval = 0.7
+    public static let afterChecksGap: TimeInterval = 0.5
     /// White, between sign-in and the confirmation.
     public static let afterLoginGap: TimeInterval = 0.2
     /// Welcome text.
@@ -196,7 +196,12 @@ public enum LinkstartSequence: Sendable {
         if elapsed < warpStart { return .ignition }
         if elapsed < flashStart { return .warp }
         if elapsed < warpEnd { return .flash }
-        if elapsed < sensesCheckStart { return .calibration(step: 0) }
+        // 五感は calibration の時間帯のうちに 1 つずつ確定する。ここを
+        // `.calibration(step: 0)` で潰していたせいで確認済みの数がいつまでも
+        // 0 のままになり、音だけ進んで画が動かなかった。
+        if elapsed < sensesCheckStart {
+            return .senses(checked: LinkstartSenses.confirmedCount(at: elapsed))
+        }
 
         if elapsed < languageSelectStart { return .sensesCheck }
         if elapsed < loginPanelStart { return .languageSelect }
@@ -229,10 +234,11 @@ public enum LinkstartSequence: Sendable {
             (warpStart, .warp),
             (flashStart, .flash),
         ]
-        // Senses all confirm during calibration
-        for index in senses.indices {
-            let senseConfirmTime = calibrationStart + (calibrationDuration / Double(senses.count)) * Double(index + 1)
-            schedule.append((senseConfirmTime, .tick))
+        // 五感が確定する瞬間。等間隔ではなく、参照映像で実際にプレートが
+        // OK へ反転する時刻に置く（本人の音源がある時はこのキューは鳴らない
+        // が、無い環境ではこれが画と音を合わせる唯一の手がかりになる）。
+        for beat in LinkstartSenses.beats {
+            schedule.append((beat.confirms, .tick))
         }
         // The interface settling, then the dive out of it.
         schedule.append((sensesCheckStart, .resolve))
