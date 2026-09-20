@@ -30,11 +30,12 @@ struct LinkstartSequenceTests {
         #expect(LinkstartSequence.phase(at: 4.99) == .warp)
         #expect(LinkstartSequence.phase(at: 5.01) == .flash)
         #expect(LinkstartSequence.phase(at: 5.79) == .flash)
-        if case .calibration = LinkstartSequence.phase(at: 5.81) {
-            // Expected.
-        } else {
-            Issue.record("Expected .calibration at 5.81, got \(LinkstartSequence.phase(at: 5.81))")
-        }
+        // 五感は円盤が通り過ぎながら 1 つずつ確定する。ここが
+        // `.calibration(step: 0)` で潰されていたせいで、確認済みの数が
+        // いつまでも 0 のままだった。
+        #expect(LinkstartSequence.phase(at: 5.81) == .senses(checked: 0))
+        #expect(LinkstartSequence.phase(at: 6.5) == .senses(checked: 2))
+        #expect(LinkstartSequence.phase(at: 8.0) == .senses(checked: 5))
         #expect(LinkstartSequence.phase(at: 7.99) != .sensesCheck)
         // The reference's own beats, to two decimal places.
         #expect(LinkstartSequence.phase(at: 0.5) == .awakening)
@@ -53,13 +54,12 @@ struct LinkstartSequenceTests {
 
     @Test("The senses confirm one at a time, in order")
     func sensesConfirmOneByOne() {
-        let start = LinkstartSequence.calibrationStart
-        let step = LinkstartSequence.calibrationDuration / Double(LinkstartSequence.senses.count)
-        var previous = LinkstartSequence.confirmedSenseCount(at: start)
-        for index in 0..<LinkstartSequence.senses.count {
-            let count = LinkstartSequence.confirmedSenseCount(at: start + step * (Double(index) + 0.5))
-            #expect(count >= previous)
-            previous = count
+        // 等間隔ではない。参照でプレートが OK へ反転する時刻をそのまま使う。
+        var previous = 0
+        for beat in LinkstartSenses.beats {
+            #expect(LinkstartSequence.confirmedSenseCount(at: beat.confirms - 0.01) == previous)
+            previous += 1
+            #expect(LinkstartSequence.confirmedSenseCount(at: beat.confirms + 0.01) == previous)
         }
         // By the time the checks appear, every sense is lit.
         #expect(LinkstartSequence.confirmedSenseCount(at: LinkstartSequence.sensesCheckStart + 0.01)
@@ -86,7 +86,7 @@ struct LinkstartSequenceTests {
         #expect(abs(LinkstartSequence.warpStart - 3.5) < 0.01)
         #expect(abs(LinkstartSequence.calibrationStart - 5.8) < 0.01)
         #expect(abs(LinkstartSequence.sensesCheckStart - 8.1) < 0.01)
-        #expect(abs(LinkstartSequence.languageSelectStart - 9.5) < 0.01)
+        #expect(abs(LinkstartSequence.languageSelectStart - 9.35) < 0.01)
         #expect(abs(LinkstartSequence.loginPanelStart - 10.4) < 0.01)
         #expect(abs(LinkstartSequence.confirmationDialogStart - 12.0) < 0.01)
         #expect(abs(LinkstartSequence.welcomeStart - 13.6) < 0.01)
@@ -132,8 +132,9 @@ struct LinkstartSequenceTests {
         // checks appear.
         let ticks = schedule.filter { $0.cue == .tick }
         #expect(ticks.count == LinkstartSequence.senses.count)
+        #expect(ticks.map(\.at) == LinkstartSenses.beats.map(\.confirms))
         #expect(ticks.first?.at ?? 0 > LinkstartSequence.calibrationStart)
-        #expect(abs((ticks.last?.at ?? 0) - LinkstartSequence.sensesCheckStart) < 1e-9)
+        #expect(ticks.last?.at ?? 0 < LinkstartSequence.sensesCheckStart)
 
         // Resolve as the interface settles, then the dive closes the sequence.
         #expect(schedule.contains { $0.cue == .resolve && abs($0.at - LinkstartSequence.sensesCheckStart) < 1e-9 })
