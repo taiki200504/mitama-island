@@ -41,9 +41,10 @@ struct LinkstartFidelityTests {
         }
     }
 
-    /// Measured from the reference: every 0.6s across the sequence, and every
-    /// 0.3s through the senses (5.6-9.2s), where a disc lives for under a
-    /// second and a 0.6s grid walks straight past it.
+    /// Measured from the reference: every 0.6s across the opening, and every
+    /// 0.3s from 5.6s on — the senses, where a disc lives for under a second,
+    /// and the screens after them, where a 0.6s grid walks straight past a
+    /// panel arriving and leaving.
     private static let beats: [Beat] = [
         Beat(0.2, brightness: 0.13, saturation: 0.00),
         Beat(0.8, brightness: 0.13, saturation: 0.00),
@@ -78,14 +79,52 @@ struct LinkstartFidelityTests {
              brightnessTolerance: 0.12, saturationTolerance: 0.14),
         Beat(9.2, brightness: 0.91, saturation: 0.02,
              brightnessTolerance: 0.12, saturationTolerance: 0.14),
-        Beat(10.4, brightness: 0.87, saturation: 0.06),
-        Beat(11.6, brightness: 0.85, saturation: 0.09),
-        Beat(12.8, brightness: 0.74, saturation: 0.24),
-        Beat(14.6, brightness: 0.48, saturation: 0.00),
-        Beat(15.8, brightness: 0.48, saturation: 0.00),
-        Beat(17.0, brightness: 0.63, saturation: 0.60),
-        Beat(18.2, brightness: 0.83, saturation: 0.31),
-        Beat(18.8, brightness: 0.99, saturation: 0.02),
+        Beat(9.5, brightness: 0.91, saturation: 0.03,
+             brightnessTolerance: 0.12, saturationTolerance: 0.14),
+        Beat(9.8, brightness: 0.90, saturation: 0.05,
+             brightnessTolerance: 0.12, saturationTolerance: 0.14),
+        Beat(10.1, brightness: 0.90, saturation: 0.05,
+             brightnessTolerance: 0.12, saturationTolerance: 0.14),
+        Beat(10.4, brightness: 0.91, saturation: 0.01,
+             brightnessTolerance: 0.12, saturationTolerance: 0.14),
+        Beat(10.7, brightness: 0.85, saturation: 0.10,
+             brightnessTolerance: 0.12, saturationTolerance: 0.14),
+        Beat(11.0, brightness: 0.85, saturation: 0.10,
+             brightnessTolerance: 0.12, saturationTolerance: 0.14),
+        Beat(11.3, brightness: 0.85, saturation: 0.10,
+             brightnessTolerance: 0.12, saturationTolerance: 0.14),
+        Beat(11.6, brightness: 0.84, saturation: 0.10,
+             brightnessTolerance: 0.12, saturationTolerance: 0.14),
+        Beat(11.9, brightness: 0.80, saturation: 0.16,
+             brightnessTolerance: 0.12, saturationTolerance: 0.14),
+        Beat(12.2, brightness: 0.74, saturation: 0.25,
+             brightnessTolerance: 0.12, saturationTolerance: 0.14),
+        Beat(12.5, brightness: 0.74, saturation: 0.25,
+             brightnessTolerance: 0.12, saturationTolerance: 0.14),
+        Beat(12.8, brightness: 0.74, saturation: 0.25,
+             brightnessTolerance: 0.12, saturationTolerance: 0.14),
+        Beat(13.1, brightness: 0.74, saturation: 0.25,
+             brightnessTolerance: 0.12, saturationTolerance: 0.14),
+        Beat(13.4, brightness: 0.75, saturation: 0.24,
+             brightnessTolerance: 0.12, saturationTolerance: 0.14),
+        Beat(14.0, brightness: 0.50, saturation: 0.00,
+             brightnessTolerance: 0.12, saturationTolerance: 0.14),
+        Beat(14.6, brightness: 0.48, saturation: 0.00,
+             brightnessTolerance: 0.12, saturationTolerance: 0.14),
+        Beat(15.2, brightness: 0.48, saturation: 0.00,
+             brightnessTolerance: 0.12, saturationTolerance: 0.14),
+        Beat(15.8, brightness: 0.48, saturation: 0.00,
+             brightnessTolerance: 0.12, saturationTolerance: 0.14),
+        Beat(16.4, brightness: 0.50, saturation: 0.01,
+             brightnessTolerance: 0.12, saturationTolerance: 0.14),
+        Beat(17.0, brightness: 0.62, saturation: 0.58,
+             brightnessTolerance: 0.12, saturationTolerance: 0.14),
+        Beat(17.6, brightness: 0.66, saturation: 0.65,
+             brightnessTolerance: 0.12, saturationTolerance: 0.14),
+        Beat(18.2, brightness: 0.78, saturation: 0.39,
+             brightnessTolerance: 0.12, saturationTolerance: 0.14),
+        Beat(18.8, brightness: 0.98, saturation: 0.04,
+             brightnessTolerance: 0.12, saturationTolerance: 0.14),
     ]
 
 

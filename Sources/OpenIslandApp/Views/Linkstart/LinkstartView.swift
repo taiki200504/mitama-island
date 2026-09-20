@@ -92,7 +92,9 @@ struct LinkstartView: View {
                         (elapsed - (LinkstartSequence.ignitionStart - 0.25)) / 0.35
                     ))
             } else if elapsed < LinkstartSequence.fadeStart {
-                Color(hex: 0x555555)
+                // 参照の灰は #808080 ちょうど。0x555555 だと暗すぎて、
+                // 文字を白く置く羽目になり明暗が逆になる。
+                Color(hex: 0x808080)
             }
 
             // The speck, then the tunnel, then nothing: the white-out covers it.
@@ -118,13 +120,14 @@ struct LinkstartView: View {
 
             // Language button (9.35-10.3s)
             if elapsed >= LinkstartSequence.languageSelectStart - 0.05,
-               elapsed < LinkstartSequence.languageSelectStart + LinkstartSequence.languageSelectDuration {
+               elapsed < LinkstartSequence.languageSelectStart + LinkstartSequence.languageSelectDuration + 0.15 {
                 LinkstartLanguageButtonView(elapsed: elapsed)
             }
 
-            // Login panel (10.8-12.5s)
+            // サインイン (10.4-11.95s)。参照は 11.9 でもまだパネルが出ていて、
+            // 白い間は 12.0 の直前まで短い。
             if elapsed >= LinkstartSequence.loginPanelStart - 0.05,
-               elapsed < LinkstartSequence.loginPanelStart + LinkstartSequence.loginPanelDuration {
+               elapsed < LinkstartSequence.loginPanelStart + LinkstartSequence.loginPanelDuration + 0.25 {
                 LinkstartLoginPanelView(elapsed: elapsed)
             }
 
@@ -505,127 +508,204 @@ private struct LinkstartSenseTallyView: View {
     }
 }
 
-/// Blue "Language" button (9.8-10.8s)
+/// 言語の選択 (9.35-10.3s)。
+///
+/// 参照では画面の左寄り・やや上に濃い青の「Language」が出て、少し遅れて
+/// その右からシアンの「▶ 日本語」が滑り出す。中央に 1 個だけ置くと、
+/// 位置も動きも参照と別物になる。位置と大きさは参照の実測値:
+/// ボタンは x 0.175–0.486 / y 0.294–0.392、選択は x 0.455–0.758。
 private struct LinkstartLanguageButtonView: View {
     let elapsed: TimeInterval
 
     var body: some View {
-        let progress = (elapsed - LinkstartSequence.languageSelectStart) / LinkstartSequence.languageSelectDuration
-        let scale = 0.8 + 0.2 * progress
+        let progress = LinkstartSequence.clamp01(
+            (elapsed - LinkstartSequence.languageSelectStart) / LinkstartSequence.languageSelectDuration
+        )
+        // 選択が滑り出すのは、ボタンが出てひと呼吸おいてから。
+        let slide = LinkstartSequence.clamp01((progress - 0.34) / 0.22)
 
         GeometryReader { geometry in
-            let side = min(geometry.size.width, geometry.size.height)
-            Text(LanguageManager.shared.t("linkstart.language"))
-                .font(.system(size: side * 0.045, weight: .bold))
-                .foregroundStyle(.white)
-                .padding(.horizontal, side * 0.09)
-                .padding(.vertical, side * 0.035)
-                .background(RoundedRectangle(cornerRadius: side * 0.012).fill(Color(hex: 0x1379C4)))
-                .scaleEffect(scale)
-                .frame(width: geometry.size.width, height: geometry.size.height)
+            let width = geometry.size.width
+            let height = geometry.size.height
+            let side = min(width, height)
+            let buttonHeight = side * 0.097
+            let buttonWidth = side * 0.553
+            let buttonCentre = CGPoint(x: width * 0.331, y: height * 0.343)
+
+            ZStack(alignment: .topLeading) {
+                // 選択のほう。ボタンの裏から出てくるので先に描く。
+                Text("▶  " + LanguageManager.shared.t("linkstart.language.value"))
+                    .font(.system(size: side * 0.042, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: side * 0.545, height: buttonHeight, alignment: .leading)
+                    .padding(.leading, side * 0.055)
+                    .background(
+                        RoundedRectangle(cornerRadius: side * 0.014)
+                            .fill(Color(hex: 0x2FC3F0))
+                    )
+                    .opacity(slide)
+                    .position(
+                        x: buttonCentre.x + buttonWidth * (0.28 + 0.62 * slide),
+                        y: buttonCentre.y + side * 0.045
+                    )
+
+                Text(LanguageManager.shared.t("linkstart.language"))
+                    .font(.system(size: side * 0.046, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: buttonWidth, height: buttonHeight)
+                    .background(
+                        RoundedRectangle(cornerRadius: side * 0.014)
+                            .fill(Color(hex: 0x1478D2))
+                    )
+                    .shadow(color: .black.opacity(0.18), radius: side * 0.012, y: side * 0.006)
+                    .position(buttonCentre)
+                    .opacity(LinkstartSequence.clamp01(progress / 0.12))
+                    .opacity(LinkstartSequence.clamp01(
+                        (LinkstartSequence.languageSelectStart + LinkstartSequence.languageSelectDuration
+                            + 0.14 - elapsed) / 0.14
+                    ))
+            }
+            .frame(width: width, height: height)
         }
     }
 }
 
-/// Blue login panel with fields (10.8-12.5s)
+/// サインインのパネル (10.4-11.8s)。
+///
+/// 参照の実測: パネルは画面の中央、幅 0.875・高さ 0.325（短辺basis）。
+/// 左に「Log in_::」、右にラベルを**上に置いた**白いフィールドが 2 段。
+/// 文字はアスタリスクで、下の段はその場で打たれていく。
 private struct LinkstartLoginPanelView: View {
     let elapsed: TimeInterval
 
     var body: some View {
-        let progress = (elapsed - LinkstartSequence.loginPanelStart) / LinkstartSequence.loginPanelDuration
-        let passwordFill = max(0, (progress - 0.3) / 0.7)
+        let progress = LinkstartSequence.clamp01(
+            (elapsed - LinkstartSequence.loginPanelStart) / LinkstartSequence.loginPanelDuration
+        )
+        // 上の段は最初から埋まっていて、下の段が打たれていく。
+        let typed = Int((LinkstartSequence.clamp01((progress - 0.25) / 0.45) * 5).rounded(.down))
 
         GeometryReader { geometry in
             let side = min(geometry.size.width, geometry.size.height)
-            let label = side * 0.032
-            VStack(alignment: .leading, spacing: side * 0.035) {
-                Text("Log in")
-                    .font(.system(size: side * 0.05, weight: .semibold))
+            let fieldWidth = side * 0.343
+            HStack(alignment: .center, spacing: side * 0.06) {
+                Text("Log in_::")
+                    .font(.system(size: side * 0.058, weight: .regular))
                     .foregroundStyle(.white)
 
-                HStack(spacing: side * 0.03) {
-                    Text("account")
-                        .font(.system(size: label))
-                        .foregroundStyle(.white.opacity(0.85))
-                    RoundedRectangle(cornerRadius: side * 0.006)
-                        .fill(Color.white.opacity(0.85))
-                        .frame(height: side * 0.075)
-                }
-
-                HStack(spacing: side * 0.03) {
-                    Text("password")
-                        .font(.system(size: label))
-                        .foregroundStyle(.white.opacity(0.85))
-                    RoundedRectangle(cornerRadius: side * 0.006)
-                        .fill(Color.white.opacity(0.85))
-                        .frame(height: side * 0.075)
-                        .overlay(alignment: .leading) {
-                            // Filling in as it goes, the way the reference
-                            // types the password in for you.
-                            HStack(spacing: side * 0.008) {
-                                ForEach(0..<10, id: \.self) { index in
-                                    Circle()
-                                        .fill(Color(hex: 0x1E5F96)
-                                            .opacity(Double(index) < passwordFill * 10 ? 1 : 0))
-                                        .frame(width: side * 0.012, height: side * 0.012)
-                                }
-                            }
-                            .padding(.leading, side * 0.014)
-                        }
+                VStack(alignment: .leading, spacing: side * 0.028) {
+                    field(":account", value: "*********", width: fieldWidth, side: side)
+                    field(":password", value: String(repeating: "*", count: typed),
+                          width: fieldWidth, side: side)
                 }
             }
-            .padding(side * 0.06)
-            .frame(width: side * 1.05)
-            .background(RoundedRectangle(cornerRadius: side * 0.012).fill(Color(hex: 0x1379C4)))
+            .padding(.horizontal, side * 0.055)
+            .frame(width: side * 0.875, height: side * 0.325)
+            .background(
+                RoundedRectangle(cornerRadius: side * 0.018)
+                    .fill(Color(hex: 0x1379C4))
+            )
+            .shadow(color: .black.opacity(0.22), radius: side * 0.016, y: side * 0.008)
+            .opacity(min(
+                LinkstartSequence.clamp01(progress / 0.10),
+                // 引き際は秒で測る——progress は 1 で頭打ちなので、
+                // そこから引くと永遠に 1 のままになる。
+                LinkstartSequence.clamp01(
+                    (LinkstartSequence.loginPanelStart + LinkstartSequence.loginPanelDuration
+                        + 0.25 - elapsed) / 0.26
+                )
+            ))
             .frame(width: geometry.size.width, height: geometry.size.height)
+        }
+    }
+
+    /// ラベルはフィールドの**上**。参照は横に並べていない。
+    private func field(_ label: String, value: String, width: CGFloat, side: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: side * 0.008) {
+            Text(label)
+                .font(.system(size: side * 0.036))
+                .foregroundStyle(.white)
+            Text(value)
+                .font(.system(size: side * 0.034, weight: .bold, design: .monospaced))
+                .foregroundStyle(Color(hex: 0x333333))
+                .frame(width: width, height: side * 0.050, alignment: .leading)
+                .padding(.leading, side * 0.010)
+                .background(Color.white)
         }
     }
 }
 
-/// Blue confirmation dialog (12.5-13.7s)
+/// 確認のダイアログ (12.0-13.55s)。
+///
+/// 参照の実測（画面に対する割合）: 題の丸帯は x 0.325–0.677 / y 0.211–0.292、
+/// 本体は x 0.166–0.836 / y 0.328–0.831。題は本体から離れて上に浮いていて、
+/// くっついた見出し帯ではない。本体には白い縁があり、文中に名前のチップ、
+/// 下に YES / NO の小さな丸帯が 2 つ（x 0.319–0.422 と 0.578–0.680）。
 private struct LinkstartConfirmationDialogView: View {
     let elapsed: TimeInterval
 
     var body: some View {
-        let progress = (elapsed - LinkstartSequence.confirmationDialogStart) / LinkstartSequence.confirmationDialogDuration
-        let opacity = min(1.0, progress * 8)
+        let progress = LinkstartSequence.clamp01(
+            (elapsed - LinkstartSequence.confirmationDialogStart) / LinkstartSequence.confirmationDialogDuration
+        )
+        let opacity = LinkstartSequence.clamp01(progress * 8)
 
         GeometryReader { geometry in
             let side = min(geometry.size.width, geometry.size.height)
-            VStack(spacing: 0) {
+            VStack(spacing: side * 0.036) {
                 Text(LanguageManager.shared.t("linkstart.dialog.title"))
-                    .font(.system(size: side * 0.034, weight: .bold))
+                    .font(.system(size: side * 0.040, weight: .bold))
                     .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, side * 0.022)
-                    .background(Color(hex: 0x11629E))
-
-                VStack(alignment: .leading, spacing: side * 0.012) {
-                    Text(LanguageManager.shared.t("linkstart.dialog.line1"))
-                    Text(LanguageManager.shared.t("linkstart.dialog.line2"))
-                }
-                .font(.system(size: side * 0.028))
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, side * 0.04)
-                .padding(.vertical, side * 0.045)
-
-                HStack(spacing: side * 0.04) {
-                    ForEach(["YES", "NO"], id: \.self) { label in
-                        Text(label)
-                            .font(.system(size: side * 0.03, weight: .bold))
-                            .foregroundStyle(.white)
-                            .frame(width: side * 0.14, height: side * 0.05)
-                            .background(
-                                RoundedRectangle(cornerRadius: side * 0.006)
-                                    .fill(Color(hex: 0x3FB9E8).opacity(0.85))
+                    .frame(width: side * 0.626, height: side * 0.081)
+                    .background(
+                        RoundedRectangle(cornerRadius: side * 0.040)
+                            .fill(Color(hex: 0x1478D2))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: side * 0.040)
+                                    .strokeBorder(.white.opacity(0.9), lineWidth: max(1, side * 0.003))
                             )
+                    )
+
+                VStack(spacing: side * 0.030) {
+                    VStack(spacing: side * 0.012) {
+                        Text(LanguageManager.shared.t("linkstart.dialog.line1"))
+                        Text(LanguageManager.shared.t("linkstart.dialog.line2"))
+                    }
+                    .font(.system(size: side * 0.042))
+                    .foregroundStyle(.white)
+                    .multilineTextAlignment(.center)
+
+                    Text(LanguageManager.shared.t("linkstart.dialog.profile"))
+                        .font(.system(size: side * 0.042, weight: .bold, design: .monospaced))
+                        .tracking(side * 0.010)
+                        .foregroundStyle(.white)
+                        .frame(width: side * 0.414, height: side * 0.058)
+                        .background(Color(hex: 0x35C6EF))
+
+                    HStack(spacing: side * 0.155) {
+                        ForEach(["YES", "NO"], id: \.self) { label in
+                            Text(label)
+                                .font(.system(size: side * 0.034, weight: .bold))
+                                .foregroundStyle(.white)
+                                .frame(width: side * 0.183, height: side * 0.044)
+                                .background(
+                                    RoundedRectangle(cornerRadius: side * 0.022)
+                                        .fill(Color(hex: 0x35C6EF))
+                                )
+                        }
                     }
                 }
-                .padding(.bottom, side * 0.045)
+                .padding(.vertical, side * 0.050)
+                .frame(width: side * 1.191, height: side * 0.503)
+                .background(
+                    RoundedRectangle(cornerRadius: side * 0.030)
+                        .fill(Color(hex: 0x1379C4))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: side * 0.030)
+                                .strokeBorder(.white.opacity(0.9), lineWidth: max(1, side * 0.004))
+                        )
+                )
             }
-            .frame(width: side * 0.88)
-            .background(RoundedRectangle(cornerRadius: side * 0.01).fill(Color(hex: 0x1379C4)))
             .opacity(opacity)
             .frame(width: geometry.size.width, height: geometry.size.height)
         }
@@ -640,17 +720,24 @@ private struct LinkstartWelcomeView: View {
         let progress = (elapsed - LinkstartSequence.welcomeStart) / LinkstartSequence.welcomeDuration
         let opacity = min(1.0, max(0.0, progress * 2))
 
-        VStack(spacing: 0) {
-            Text(LanguageManager.shared.t("linkstart.welcome.line1"))
-            Text(LanguageManager.shared.t("linkstart.welcome.line2"))
+        GeometryReader { geometry in
+            let side = min(geometry.size.width, geometry.size.height)
+            VStack(spacing: side * 0.012) {
+                Text(LanguageManager.shared.t("linkstart.welcome.line1"))
+                Text(LanguageManager.shared.t("linkstart.welcome.line2"))
+            }
+            // 参照の文字は画面の高さの 1 割ほどの背丈がある。固定 64pt だと
+            // 画面が大きいほど小さく見えて、灰色の面ばかりになる。
+            .font(.system(size: side * 0.145, weight: .bold, design: .monospaced))
+            .tracking(side * 0.012)
+        // 参照は #808080 の地に #2B2C2C の文字。白抜きではない。
+        .foregroundStyle(Color(hex: 0x2B2C2C))
+            .minimumScaleFactor(0.4)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, side * 0.06)
+            .opacity(opacity)
+            .frame(width: geometry.size.width, height: geometry.size.height)
         }
-        .font(.system(size: 64, weight: .bold, design: .monospaced))
-        .tracking(6)
-        .foregroundStyle(Color.white.opacity(0.82))
-        .minimumScaleFactor(0.4)
-        .multilineTextAlignment(.center)
-        .padding(.horizontal, 40)
-        .opacity(opacity)
     }
 }
 
@@ -659,14 +746,14 @@ private struct LinkstartDiveView: View {
     let elapsed: TimeInterval
     let reducesMotion: Bool
 
-    private static let streakCount = 220
+    private static let streakCount = 320
 
     var body: some View {
         let progress = (elapsed - LinkstartSequence.diveStart) / LinkstartSequence.diveDuration
         let intensity = reducesMotion ? 0.3 : min(1.0, 0.45 + progress * 1.6)
-        // The last fifth of the dive washes to white — the reference is
-        // already white before the overlay leaves.
-        let washOut = LinkstartSequence.clamp01((progress - 0.62) / 0.3) * 0.8
+        // 白へ抜けるのは最後のひと息だけ。18.2 秒の参照はまだ彩度 0.39 の
+        // 青で、ここを早く白くすると色が死ぬ。
+        let washOut = LinkstartSequence.clamp01((progress - 0.72) / 0.22) * 0.72
 
         Canvas { context, size in
             let center = CGPoint(x: size.width / 2, y: size.height / 2)
@@ -679,11 +766,16 @@ private struct LinkstartDiveView: View {
             // The ground the streaks ride on, brightening as the dive runs.
             context.fill(
                 Path(CGRect(origin: .zero, size: size)),
+                // 芯は小さく強く、外は濃い青。等間隔の3色だと芯がぼやけて
+                // 全体が同じ明るさの水色になる（参照は中心だけ白い）。
                 with: .radialGradient(
-                    Gradient(colors: [
-                        Color.white.opacity(0.95 * intensity),
-                        Color(hex: 0x29C8F5).opacity(0.95 * intensity * (1 - washOut * 0.85)),
-                        Color(hex: 0x0B6FD0).opacity(0.9 * intensity * (1 - washOut)),
+                    Gradient(stops: [
+                        .init(color: .white.opacity(0.95 * intensity), location: 0),
+                        .init(color: .white.opacity(0.9 * intensity), location: 0.06),
+                        .init(color: Color(hex: 0x29C8F5)
+                            .opacity(0.95 * intensity * (1 - washOut * 0.85)), location: 0.38),
+                        .init(color: Color(hex: 0x0A4FA8)
+                            .opacity(0.95 * intensity * (1 - washOut)), location: 1),
                     ]),
                     center: center,
                     startRadius: 0,
@@ -695,11 +787,16 @@ private struct LinkstartDiveView: View {
 
             for index in 0..<Self.streakCount {
                 let angle = Double(index) / Double(Self.streakCount) * 2 * .pi
-                let offset = Double(index) / Double(Self.streakCount)
+                // 深さは角度と相関させない。index をそのまま使うと、角度と
+                // 深さが一緒に増えて渦巻きになり、参照の「四方へ伸びる光」に
+                // ならない（実際そうなっていた）。
+                let offset = Double((index &* 2_654_435_761) % 9_973) / 9_973
                 let pace = 0.7 + 0.3 * Double(index % 3) / 3
 
                 let depth = (offset + travelled * pace).truncatingRemainder(dividingBy: 1.0)
-                let tail = max(0, depth - 0.12)
+                // 長い筋。0.12 は点に近く、参照の「中心から縁へ伸びる光」に
+                // ならない。
+                let tail = max(0, depth - 0.45)
 
                 let headRadius = min(depth * reach, reach)
                 let tailRadius = max(0, tail * reach)
@@ -707,7 +804,9 @@ private struct LinkstartDiveView: View {
                 guard headRadius > tailRadius else { continue }
 
                 var path = Path()
-                let halfWidth = 0.008 + 0.02 * Double(index % 4) / 4
+                // 近づくほど太く見える。等幅だと縁がすかすかで、参照の
+                // 「光が横を走り抜ける」感じにならない。
+                let halfWidth = (0.008 + 0.02 * Double(index % 4) / 4) * (0.6 + depth * 2.2)
                 let a0 = angle - halfWidth
                 let a1 = angle + halfWidth
 
@@ -729,11 +828,14 @@ private struct LinkstartDiveView: View {
                 // light itself rather than coloured objects passing by.
                 let toEdge = headRadius / reach
                 let colour = Color(
-                    hue: 0.53 + 0.06 * toEdge,
-                    saturation: 0.15 + 0.75 * toEdge,
-                    brightness: 1.0
+                    hue: 0.55 + 0.05 * Double(index % 3) / 3,
+                    saturation: 0.10 + 0.72 * toEdge,
+                    brightness: 1.0 - 0.12 * toEdge
                 )
-                context.fill(path, with: .color(colour.opacity((0.35 + 0.6 * intensity) * (1 - washOut))))
+                // 縁ほど濃く出す。中央付近は地の光に溶けていてよいが、
+                // 画面の端は筋が立っていないと参照の密度にならない。
+                let weight = 0.35 + 0.85 * toEdge
+                context.fill(path, with: .color(colour.opacity((0.30 + 0.75 * intensity) * weight * (1 - washOut))))
             }
         }
         .allowsHitTesting(false)
