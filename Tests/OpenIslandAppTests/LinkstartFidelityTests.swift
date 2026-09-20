@@ -51,10 +51,12 @@ struct LinkstartFidelityTests {
         Beat(18.8, brightness: 0.99, saturation: 0.02),
     ]
 
-    /// Wide enough that a deliberate change of shade passes, tight enough that
-    /// a beat going blank, dark or grey fails.
-    private static let brightnessTolerance = 0.28
-    private static let saturationTolerance = 0.32
+    /// Wide enough that a deliberate change of shade passes — and that the
+    /// same frame rendered on a CI machine, whose gradients and font
+    /// smoothing differ from a laptop's, still counts as the same picture —
+    /// tight enough that a beat going blank, dark or grey fails.
+    private static let brightnessTolerance = 0.36
+    private static let saturationTolerance = 0.46
 
     @Test
     func everyBeatKeepsTheShapeOfTheReference() throws {

@@ -85,7 +85,11 @@ struct LinkstartSequenceTests {
         #expect(abs(LinkstartSequence.duration - 19.04) < 0.01)
         #expect(abs(LinkstartSequence.warpStart - 3.5) < 0.01)
         #expect(abs(LinkstartSequence.calibrationStart - 5.8) < 0.01)
-        #expect(abs(LinkstartSequence.welcomeStart - 13.8) < 0.01)
+        #expect(abs(LinkstartSequence.sensesCheckStart - 8.1) < 0.01)
+        #expect(abs(LinkstartSequence.languageSelectStart - 9.5) < 0.01)
+        #expect(abs(LinkstartSequence.loginPanelStart - 10.4) < 0.01)
+        #expect(abs(LinkstartSequence.confirmationDialogStart - 12.0) < 0.01)
+        #expect(abs(LinkstartSequence.welcomeStart - 13.6) < 0.01)
         #expect(abs(LinkstartSequence.diveStart - 16.6) < 0.01)
     }
 
