@@ -238,6 +238,7 @@ final class LinkstartOverlayController {
         case .flash: "ui-linkstart-flash"
         case .tick: "ui-linkstart-tick"
         case .resolve: "ui-linkstart-resolve"
+        case .dive: "ui-linkstart-dive"
         }
     }
 

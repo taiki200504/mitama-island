@@ -291,6 +291,7 @@ D_GAINS = {
     "flash": {"low": 0.7, "mid": 1.8, "air": 0.05},
     "tick": {"low": 0.0, "mid": 1.8, "air": 0.05},
     "resolve": {"low": 1.0, "mid": 1.8, "air": 0.05},
+    "dive": {"low": 0.7, "mid": 1.2, "air": 0.35},
 }
 
 
@@ -386,6 +387,33 @@ def d_flash():
     body = stack((burst * 0.7, 0), (bells, 0), (pad, 0.01), (thump, 0))[: len(x)]
     body += d_sparkle(dur, g("flash", "air")) * env_adsr(len(x), 0.02, 0.4, 0.7, 0.6)
     return stereo(reverb(body, 2.0, wet=0.42)[: len(x)], 1.0)
+
+
+def d_dive():
+    """Leaving the interface: the second dive, brighter and shorter than the
+    first, ending in the white-out the sequence closes on."""
+    dur = 1.8
+    x = t(dur)
+    p = x / dur
+    riser = shepard_rise(dur, 180, 4200, voices=3, curve=1.1) * g("dive", "mid")
+    n = noise(dur, 37)
+    air = np.zeros_like(n)
+    chunks = 48
+    edges = np.linspace(0, len(n), chunks + 1).astype(int)
+    for i in range(chunks):
+        q = i / (chunks - 1)
+        centre = 600 * (12000 / 600) ** (q ** 0.9)
+        seg = n[max(0, edges[i] - 512):edges[i + 1]]
+        air[edges[i]:edges[i + 1]] = bandpass(seg, centre * 0.5, min(centre * 2.2, 20000), order=2)[
+            -(edges[i + 1] - edges[i]):
+        ]
+    swell = np.clip(p / 0.2, 0, 1) ** 1.1
+    low = np.sin(2 * math.pi * 52 * x) * g("dive", "low") * swell
+    sparkle = d_sparkle(dur, g("dive", "air"))
+    body = (air * 0.5 + riser * 0.35 + sparkle * 0.5 + low) * swell
+    tail = int(SR * 0.25)
+    body[-tail:] *= np.linspace(1, 0.05, tail)
+    return stereo(reverb(body, 1.4, wet=0.35)[: len(x)], 1.0)
 
 
 def d_resolve():
@@ -508,6 +536,11 @@ def c_linkstart_flash():
     return stereo(s, 1.0)
 
 
+def c_linkstart_dive():
+    """Leaving the interface — only the measured variant has one."""
+    return d_dive()
+
+
 def c_linkstart_resolve():
     if VARIANT == "d":
         return d_resolve()
@@ -577,6 +610,7 @@ CUES = {
     "linkstart-flash": (c_linkstart_flash, 1.80),
     "linkstart-tick": (c_linkstart_tick, 0.15),
     "linkstart-resolve": (c_linkstart_resolve, 1.80),
+    "linkstart-dive": (c_linkstart_dive, 1.80),
     "lock-scan": (c_lock_scan, 0.90),
     "unlock": (c_unlock, 0.50),
     "timer-end": (c_timer_end, 1.60),
