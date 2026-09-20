@@ -559,7 +559,9 @@ private struct LinkstartLanguageButtonView: View {
                     )
                     .shadow(color: .black.opacity(0.18), radius: side * 0.012, y: side * 0.006)
                     .position(buttonCentre)
-                    .opacity(LinkstartSequence.clamp01(progress / 0.12))
+                    .opacity(LinkstartSequence.clamp01(
+                        (elapsed - (LinkstartSequence.languageSelectStart - 0.09)) / 0.12
+                    ))
                     .opacity(LinkstartSequence.clamp01(
                         (LinkstartSequence.languageSelectStart + LinkstartSequence.languageSelectDuration
                             + 0.14 - elapsed) / 0.14
@@ -748,6 +750,28 @@ private struct LinkstartDiveView: View {
 
     private static let streakCount = 320
 
+    /// 芯の白から縁の青へ。`Color(hue:saturation:brightness:)` は描く側の
+    /// 色空間に左右され、CI では同じ指定でも彩度が 0.2 ほど変わった。
+    /// ほかの場所と同じ sRGB の直値で混ぜる。
+    private static func rayColour(toEdge: Double, tint: Int) -> Color {
+        let anchors: [(Double, Double, Double)] = [
+            (1.00, 1.00, 1.00),     // 芯
+            (0.44, 0.88, 1.00),     // 中ほどの水色
+            (0.10, 0.40, 0.88),     // 縁の青
+        ]
+        let t = min(max(toEdge, 0), 1) * 2
+        let lower = min(Int(t), 1)
+        let f = t - Double(lower)
+        let a = anchors[lower], b = anchors[lower + 1]
+        // 1 本ごとに少しだけ色味を変える。全部同じだと帯に見える。
+        let shift = 0.04 * Double(tint - 1)
+        return Color(
+            red: min(max(a.0 + (b.0 - a.0) * f - shift, 0), 1),
+            green: min(max(a.1 + (b.1 - a.1) * f, 0), 1),
+            blue: min(max(a.2 + (b.2 - a.2) * f + shift, 0), 1)
+        )
+    }
+
     var body: some View {
         let progress = (elapsed - LinkstartSequence.diveStart) / LinkstartSequence.diveDuration
         let intensity = reducesMotion ? 0.3 : min(1.0, 0.45 + progress * 1.6)
@@ -827,11 +851,7 @@ private struct LinkstartDiveView: View {
                 // White near the core, cyan further out — the streaks are the
                 // light itself rather than coloured objects passing by.
                 let toEdge = headRadius / reach
-                let colour = Color(
-                    hue: 0.55 + 0.05 * Double(index % 3) / 3,
-                    saturation: 0.10 + 0.72 * toEdge,
-                    brightness: 1.0 - 0.12 * toEdge
-                )
+                let colour = Self.rayColour(toEdge: toEdge, tint: index % 3)
                 // 縁ほど濃く出す。中央付近は地の光に溶けていてよいが、
                 // 画面の端は筋が立っていないと参照の密度にならない。
                 let weight = 0.35 + 0.85 * toEdge

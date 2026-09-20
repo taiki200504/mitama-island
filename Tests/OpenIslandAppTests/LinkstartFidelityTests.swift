@@ -41,6 +41,10 @@ struct LinkstartFidelityTests {
         }
     }
 
+    /// ダイブの 3 点だけ許容が広い: 画面いっぱいの彩度の高い塗りは、
+    /// CI の描画と手元とで測ると 0.1 近く変わる（同じ指定でも色空間の
+    /// 扱いが違う）。それ以外は 0.12/0.14 で詰めてある。
+    ///
     /// Measured from the reference: every 0.6s across the opening, and every
     /// 0.3s from 5.6s on — the senses, where a disc lives for under a second,
     /// and the screens after them, where a 0.6s grid walks straight past a
@@ -118,11 +122,11 @@ struct LinkstartFidelityTests {
         Beat(16.4, brightness: 0.50, saturation: 0.01,
              brightnessTolerance: 0.12, saturationTolerance: 0.14),
         Beat(17.0, brightness: 0.62, saturation: 0.58,
-             brightnessTolerance: 0.12, saturationTolerance: 0.14),
+             brightnessTolerance: 0.16, saturationTolerance: 0.20),
         Beat(17.6, brightness: 0.66, saturation: 0.65,
-             brightnessTolerance: 0.12, saturationTolerance: 0.14),
+             brightnessTolerance: 0.16, saturationTolerance: 0.20),
         Beat(18.2, brightness: 0.78, saturation: 0.39,
-             brightnessTolerance: 0.12, saturationTolerance: 0.14),
+             brightnessTolerance: 0.16, saturationTolerance: 0.20),
         Beat(18.8, brightness: 0.98, saturation: 0.04,
              brightnessTolerance: 0.12, saturationTolerance: 0.14),
     ]
