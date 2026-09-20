@@ -111,12 +111,6 @@ struct LinkstartSequenceTests {
         }
     }
 
-    @Test("Every sense carries a distinct string key")
-    func senseKeysAreDistinct() {
-        let keys = Set(LinkstartSequence.senses.map(\.labelKey))
-        #expect(keys.count == LinkstartSequence.senses.count)
-    }
-
     /// Rise, warp, flash, one tick per sense, resolve — each landing exactly
     /// where the thing it announces begins.
     @Test("The cue schedule follows rise, warp, flash, one tick per sense, then resolve")

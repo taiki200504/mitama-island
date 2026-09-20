@@ -683,13 +683,6 @@
 "settings.camera.answersByPalm.help" = "While a request or question is on the island, the camera stays on. Hold an open hand up for a moment and the microphone opens — no key to press. Needs “Answer by voice” switched on as well, since speaking is what answers. The camera is off at every other time.";
 "linkstart.title" = "LINK START";
 "linkstart.say" = "SAY: LINK START";
-"linkstart.sense.touch" = "TOUCH";
-"linkstart.sense.sight" = "SIGHT";
-"linkstart.sense.hearing" = "HEARING";
-"linkstart.sense.taste" = "TASTE";
-"linkstart.sense.smell" = "SMELL";
-"linkstart.checking" = "CALIBRATING SENSES";
-"linkstart.sync" = "SYNC {rate}%";
 "linkstart.language" = "LANGUAGE SET";
 "linkstart.welcome" = "WELCOME, {name}";
 "linkstart.dismiss" = "PRESS ANY KEY TO RETURN";
@@ -864,7 +857,6 @@
 "island.signal.jobDone" = "A job finished";
 
 /* link start */
-"linkstart.ok" = "OK";
 "linkstart.welcome.line1" = "Welcome to";
 "linkstart.welcome.line2" = "mitama island";
 "linkstart.dialog.title" = "Character registration";

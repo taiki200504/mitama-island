@@ -112,8 +112,8 @@ struct LinkstartView: View {
             if elapsed >= LinkstartSenses.firstAppearance,
                elapsed < LinkstartSenses.tallyEnd {
                 // 印が先（奥）。参照では円盤が重なる場面で印は見えない。
-                LinkstartSenseTallyView(elapsed: elapsed)
-                LinkstartSenseDiscsView(elapsed: elapsed)
+                LinkstartSenseTallyView(elapsed: elapsed, reducesMotion: reducesMotion)
+                LinkstartSenseDiscsView(elapsed: elapsed, reducesMotion: reducesMotion)
             }
 
             // Language button (9.35-10.3s)
@@ -270,6 +270,8 @@ private struct LinkstartWedgeTunnelView: View {
 /// 画面の中心は空いていることが多く、密度は円盤が重なった時だけ上がる。
 private struct LinkstartSenseDiscsView: View {
     let elapsed: TimeInterval
+    /// 動きを減らす設定のとき、円盤は出入りするが画面を横切らない。
+    let reducesMotion: Bool
 
     /// 内円の半径を 1 としたときの、外側のリングの組み方。参照の円盤は
     /// 太い帯・細い刻み・小さなブロックが混ざっていて、線画には見えない。
@@ -303,7 +305,7 @@ private struct LinkstartSenseDiscsView: View {
         Canvas { context, size in
             let side = min(size.width, size.height)
             let centre = CGPoint(x: size.width / 2, y: size.height / 2)
-            for disc in LinkstartSenses.discs(at: elapsed) {
+            for disc in LinkstartSenses.discs(at: elapsed, holding: reducesMotion) {
                 var layer = context
                 layer.opacity = disc.opacity
                 draw(
@@ -328,7 +330,7 @@ private struct LinkstartSenseDiscsView: View {
     ) {
         // 円盤ごとに向きをずらすと、5 枚が同じ判子に見えなくなる。
         // ゆっくり回るのは、止まっていると絵として死んで見えるため。
-        let spin = Double(disc.variant) * 47 + elapsed * 5
+        let spin = Double(disc.variant) * 47 + (reducesMotion ? 0 : elapsed * 5)
 
         // 文字盤。参照の内側はベタ塗りの水色で、そこにプレートが乗る。
         context.fill(
@@ -414,11 +416,12 @@ private struct LinkstartSenseDiscsView: View {
 /// なるのは「五感すべて通った」の合図なので、1 つずつではなく同時に振れる。
 private struct LinkstartSenseTallyView: View {
     let elapsed: TimeInterval
+    let reducesMotion: Bool
 
     var body: some View {
         Canvas { context, size in
             let side = min(size.width, size.height)
-            for marker in LinkstartSenses.tally(at: elapsed) {
+            for marker in LinkstartSenses.tally(at: elapsed, holding: reducesMotion) {
                 var layer = context
                 layer.opacity = marker.opacity
                 draw(

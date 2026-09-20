@@ -113,6 +113,31 @@ struct LinkstartSensesTests {
         #expect(LinkstartSenses.beats.map(\.sense) == LinkstartSequence.senses)
     }
 
+    /// 「動きを減らす」設定のとき、画面を横切る動きだけをやめて、
+    /// 出入りする時刻・文字・緑になることは残す。
+    @Test("動きを減らす設定では、位置と大きさが止まる")
+    func holdingStopsTheMotion() {
+        // 同じ円盤を寿命の 3 点で見て、大きさも位置も動かないこと。
+        func pose(_ elapsed: TimeInterval) -> (Double, Double, Double)? {
+            LinkstartSenses.discs(at: elapsed, holding: true)
+                .first { $0.variant == 2 }
+                .map { ($0.radius, $0.offsetX, $0.offsetY) }
+        }
+        let early = pose(7.00)
+        #expect(early != nil)
+        #expect(pose(7.35)! == early!)
+        #expect(pose(7.70)! == early!)
+        // 文字は止めない——どこまで進んだかは情報。
+        #expect(LinkstartSenses.discs(at: 7.00, holding: true).first { $0.variant == 2 }?.label == "Hearing")
+        #expect(LinkstartSenses.discs(at: 7.70, holding: true).first { $0.variant == 2 }?.label == "OK")
+
+        // 印は最初から自分の段にいて、散らずにその場で消える。
+        let marks = LinkstartSenses.tally(at: 6.10, holding: true)
+        #expect(marks.allSatisfy { $0.fractionX > 0.85 })
+        #expect(LinkstartSenses.tally(at: 8.45, holding: true).allSatisfy { $0.green == 1 })
+        #expect(LinkstartSenses.tally(at: 8.84, holding: true).allSatisfy { $0.opacity < 0.1 })
+    }
+
     private func label(of sense: LinkstartSense, at elapsed: TimeInterval) -> String? {
         LinkstartSenses.discs(at: elapsed).first { $0.sense == sense }?.label
     }
