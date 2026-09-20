@@ -314,6 +314,9 @@ final class LinkstartOverlayController {
         FullScreenOverlayPanel.make(
             on: screen,
             rootView: LinkstartView(controller: self, showsDetail: showsDetail),
+            // 始まってすぐの一打は反射なので聞かない。19 秒の演出が毎回
+            // 1.5 秒で消えていたのはこれだった。
+            dismissGrace: OverlayDismissGate.maximumGrace,
             onDismiss: { [weak self] in self?.dismiss() }
         )
     }
