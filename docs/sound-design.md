@@ -28,6 +28,7 @@ derived from, any game, film, or product: see the legal note at the bottom.
 | login sequence: warp | `ui-linkstart-warp.caf` | 2.50s (stereo) | The dive: a rise that never tops out, thickening as it goes. |
 | login sequence: flash | `ui-linkstart-flash.caf` | 1.80s (stereo) | Arrival — bright, not a boom. |
 | login sequence: tick × 5 | `ui-linkstart-tick.caf` | 0.15s | One per sense confirmed. A narrow blip, not a bell. |
+| login sequence: dive | `ui-linkstart-dive.caf` | 1.80s (stereo) | Leaving the interface — the second dive, into the white-out. |
 | login sequence: resolve | `ui-linkstart-resolve.caf` | 1.80s (stereo) | Low and warm, fading out rather than landing on a chord. |
 
 ### How the login cues are set
