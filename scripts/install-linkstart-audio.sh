@@ -31,10 +31,34 @@ sounds_dir="$HOME/Library/Application Support/MitamaIsland/Sounds"
 cues=(rise warp flash tick resolve)
 
 if [[ "${1:-}" == "--restore" ]]; then
-    for cue in $cues; do
+    for cue in $cues full; do
         rm -f "$sounds_dir/ui-linkstart-$cue."{caf,wav,aiff,aif,m4a,mp3}
     done
     echo "戻しました。バンドルされた音が鳴ります。"
+    exit 0
+fi
+
+# --full <file> [offset] : install the recording as one take instead of five
+# cues. The sequence then plays that file straight through, which is the only
+# way to keep a piece of audio that was written as one take sounding like one.
+if [[ "${1:-}" == "--full" ]]; then
+    if [[ $# -lt 2 ]]; then
+        echo "使い方: zsh scripts/install-linkstart-audio.sh --full <ファイル> [開始位置(秒)]" >&2
+        exit 1
+    fi
+    source_file="$2"
+    offset="${3:-0}"
+    [[ -f "$source_file" ]] || { echo "ファイルが見つかりません: $source_file" >&2; exit 1; }
+    command -v ffmpeg >/dev/null || { echo "ffmpeg が要ります: brew install ffmpeg" >&2; exit 1; }
+    mkdir -p "$sounds_dir"
+    for cue in $cues; do
+        rm -f "$sounds_dir/ui-linkstart-$cue."{caf,wav,aiff,aif,m4a,mp3}
+    done
+    target="$sounds_dir/ui-linkstart-full.caf"
+    ffmpeg -nostdin -loglevel error -y -ss "$offset" -i "$source_file" \
+        -af "afade=t=in:st=0:d=0.02" -ac 2 -ar 48000 -c:a pcm_s16le -f caf "$target"
+    echo "1本で入れました: $target"
+    echo "⌃⌥L で最初から最後まで鳴ります。戻すときは --restore。"
     exit 0
 fi
 

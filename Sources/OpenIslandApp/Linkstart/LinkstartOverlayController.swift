@@ -207,9 +207,29 @@ final class LinkstartOverlayController {
     /// elapsed time instead: any cue at or before that point fires at once,
     /// so a screenshot taken moments later still finds the log it needs,
     /// rather than waiting out several real seconds it does not have.
+    /// The name of a single file that replaces the five cues.
+    ///
+    /// Five separate cues can only ever approximate a piece of audio that was
+    /// written as one take: the crossfades, the room, the way one sound
+    /// finishes underneath the next. Drop a file named this into the sounds
+    /// folder and the sequence plays it straight through instead, so what you
+    /// hear is exactly what you put there.
+    static let fullSoundtrackName = "ui-linkstart-full"
+
+    /// Whether a full-length soundtrack is installed.
+    static var hasFullSoundtrack: Bool {
+        NotificationSoundService.resolvedSoundURL(named: fullSoundtrackName) != nil
+    }
+
     private func playSoundtrack(elapsedAtStart: TimeInterval = 0) {
         soundtrack?.cancel()
         guard !soundsAreSuppressed() else { return }
+
+        // One take wins over five cues, and it starts where the picture does.
+        if Self.hasFullSoundtrack {
+            NotificationSoundService.play(Self.fullSoundtrackName, volume: 0.65, from: elapsedAtStart)
+            return
+        }
 
         soundtrack = Task { [weak self] in
             var previousAt: TimeInterval = elapsedAtStart
@@ -243,8 +263,16 @@ final class LinkstartOverlayController {
     }
 
     private func scheduleDismissalAfterSequence() {
+        // An installed soundtrack sets the length: dismissing on the picture's
+        // own schedule would cut the audio mid-phrase, which is worse than
+        // holding the last frame for a moment.
+        let audio = Self.hasFullSoundtrack
+            ? NotificationSoundService.resolvedSoundURL(named: Self.fullSoundtrackName)
+                .flatMap { NSSound(contentsOf: $0, byReference: true)?.duration } ?? 0
+            : 0
+        let hold = max(LinkstartSequence.duration + 1.0, audio + 0.4)
         dismissal = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(LinkstartSequence.duration + 1.0))
+            try? await Task.sleep(for: .seconds(hold))
             guard !Task.isCancelled else { return }
             self?.dismiss()
         }

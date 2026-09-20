@@ -86,7 +86,7 @@ struct NotificationSoundService {
 
     /// Plays a sound by name: an imported file, a bundled cue, or a system
     /// sound, in that order.
-    static func play(_ name: String, volume: Double = 1) {
+    static func play(_ name: String, volume: Double = 1, from offset: TimeInterval = 0) {
         if let harnessSink {
             // Recorded, not played: the harness captures a still screen, and a
             // chime mid-capture would be noise nobody asked for.
@@ -99,6 +99,12 @@ struct NotificationSoundService {
         guard let sound else { return }
         sound.stop()
         sound.volume = Float(min(max(volume, 0), 1))
+        // `currentTime` only means anything once the sound knows its own
+        // duration, which it does as soon as it is loaded — the harness pins
+        // the sequence partway in and the audio has to land there too.
+        if offset > 0, offset < sound.duration {
+            sound.currentTime = offset
+        }
         sound.play()
     }
 
