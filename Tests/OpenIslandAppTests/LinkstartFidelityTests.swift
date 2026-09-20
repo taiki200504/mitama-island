@@ -172,7 +172,7 @@ struct LinkstartFidelityTests {
         let controller = LinkstartOverlayController()
         controller.pinForOffscreenRender(elapsed: elapsed)
         let renderer = ImageRenderer(
-            content: LinkstartView(controller: controller, showsDetail: true)
+            content: LinkstartView(controller: controller, showsDetail: true, reducesMotionOverride: false)
                 .frame(width: 800, height: 500)
         )
         renderer.scale = 1

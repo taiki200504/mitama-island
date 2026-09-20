@@ -16,6 +16,11 @@ struct LinkstartView: View {
     /// False on the screens that are only along for the ride, so the checklist
     /// appears once rather than on every display.
     let showsDetail: Bool
+    /// 「視差を減らす」をこの描画に限って決め打ちするための口。既定は nil で
+    /// システム設定に従う。**オフスクリーンで測るときは必ず渡す**: CI の
+    /// マシンはこの設定が入っていて、同じ時刻でもトンネルが 0.35 の薄さで
+    /// 描かれ、参照との比較が環境で変わってしまう。
+    var reducesMotionOverride: Bool?
 
     var body: some View {
         switch controller.stage {
@@ -74,7 +79,7 @@ struct LinkstartView: View {
     static let paper = Color(hex: 0xECECEC)
 
     private func frame(elapsed: TimeInterval) -> some View {
-        let reducesMotion = IslandMotion.reducesMotion
+        let reducesMotion = reducesMotionOverride ?? IslandMotion.reducesMotion
 
         return ZStack {
             // The ground: white while the tunnel runs, tinting to the HUD's

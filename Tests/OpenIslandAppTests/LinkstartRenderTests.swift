@@ -117,7 +117,7 @@ struct LinkstartRenderTests {
             let elapsed = moment.at
             let controller = LinkstartOverlayController()
             controller.pinForOffscreenRender(elapsed: elapsed)
-            let view = LinkstartView(controller: controller, showsDetail: true)
+            let view = LinkstartView(controller: controller, showsDetail: true, reducesMotionOverride: false)
                 .frame(width: 1_200, height: 750)
 
             let renderer = ImageRenderer(content: view)
