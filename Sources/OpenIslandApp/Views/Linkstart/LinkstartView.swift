@@ -77,17 +77,21 @@ struct LinkstartView: View {
         return ZStack {
             // The ground: white while the tunnel runs, tinting to the HUD's
             // blue-white as the rings arrive — the reference is never a flat
-            // paper white behind the interface.
-            Color.white
-            SAOGrammar.Palette.linkstartPale2
-                .opacity(elapsed < LinkstartSequence.calibrationStart ? 0 : 1)
+            // paper white behind the interface. Dark grey during welcome/dive.
+            if elapsed < LinkstartSequence.welcomeStart {
+                Color.white
+                SAOGrammar.Palette.linkstartPale2
+                    .opacity(elapsed < LinkstartSequence.calibrationStart ? 0 : 1)
+            } else if elapsed < LinkstartSequence.fadeStart {
+                Color(hex: 0x3A3A3A)
+            }
 
-            // Wedge tunnel (0-3.5s: ignition + warp + flash)
+            // Wedge tunnel (0-5.8s: ignition + warp + flash)
             LinkstartWedgeTunnelView(elapsed: elapsed, reducesMotion: reducesMotion)
                 .opacity(elapsed < LinkstartSequence.calibrationStart ? 1 : 0)
 
-            // Light HUD (3.5s onwards: calibration, senses, language, identity)
-            if showsDetail {
+            // Light HUD (5.8-8.0s: calibration + senses)
+            if showsDetail, elapsed < LinkstartSequence.sensesCheckStart {
                 LinkstartLightHUDView(
                     elapsed: elapsed,
                     phase: phase,
@@ -95,9 +99,39 @@ struct LinkstartView: View {
                 )
             }
 
+            // Senses check circles (8.0-9.8s)
+            if elapsed >= LinkstartSequence.sensesCheckStart, elapsed < LinkstartSequence.languageSelectStart {
+                LinkstartSensesCheckView(elapsed: elapsed)
+            }
+
+            // Language button (9.8-10.8s)
+            if elapsed >= LinkstartSequence.languageSelectStart, elapsed < LinkstartSequence.loginPanelStart {
+                LinkstartLanguageButtonView(elapsed: elapsed)
+            }
+
+            // Login panel (10.8-12.5s)
+            if elapsed >= LinkstartSequence.loginPanelStart, elapsed < LinkstartSequence.confirmationDialogStart {
+                LinkstartLoginPanelView(elapsed: elapsed)
+            }
+
+            // Confirmation dialog (12.5-13.7s)
+            if elapsed >= LinkstartSequence.confirmationDialogStart, elapsed < LinkstartSequence.welcomeStart {
+                LinkstartConfirmationDialogView(elapsed: elapsed)
+            }
+
+            // Welcome text (13.8-16.6s)
+            if elapsed >= LinkstartSequence.welcomeStart, elapsed < LinkstartSequence.diveStart {
+                LinkstartWelcomeView(elapsed: elapsed)
+            }
+
+            // Blue dive (16.6-18.4s)
+            if elapsed >= LinkstartSequence.diveStart, elapsed < LinkstartSequence.fadeStart {
+                LinkstartDiveView(elapsed: elapsed, reducesMotion: reducesMotion)
+            }
+
             // Fade to white at the end
             Color.white
-                .opacity(max(0, (elapsed - LinkstartSequence.fadeStart) / LinkstartSequence.fadeDuration))
+                .opacity(max(0, (elapsed - LinkstartSequence.fadeStart) / LinkstartSequence.finalFadeDuration))
         }
         .opacity(LinkstartSequence.fadeOpacity(at: elapsed))
         .ignoresSafeArea()
@@ -369,6 +403,219 @@ private struct LinkstartHUDRings: View {
                         )
                     }
                 }
+            }
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+/// Green check circles column showing confirmed senses (8.0-9.8s)
+private struct LinkstartSensesCheckView: View {
+    let elapsed: TimeInterval
+
+    var body: some View {
+        let progress = (elapsed - LinkstartSequence.sensesCheckStart) / LinkstartSequence.sensesCheckDuration
+        let opacity = min(1.0, progress * 2)
+
+        VStack(spacing: 16) {
+            ForEach(0..<LinkstartSequence.senses.count, id: \.self) { _ in
+                Circle()
+                    .stroke(Color(hex: 0x00C850), lineWidth: 3)
+                    .frame(width: 32, height: 32)
+                    .overlay(
+                        Circle()
+                            .fill(Color(hex: 0x00C850))
+                            .frame(width: 8, height: 8)
+                    )
+            }
+        }
+        .opacity(opacity)
+    }
+}
+
+/// Blue "Language" button (9.8-10.8s)
+private struct LinkstartLanguageButtonView: View {
+    let elapsed: TimeInterval
+
+    var body: some View {
+        let progress = (elapsed - LinkstartSequence.languageSelectStart) / LinkstartSequence.languageSelectDuration
+        let scale = 0.8 + 0.2 * progress
+
+        Text("Language")
+            .font(.system(size: 14, weight: .bold, design: .default))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 8)
+            .background(Color(hex: 0x0078D7))
+            .cornerRadius(6)
+            .scaleEffect(scale)
+    }
+}
+
+/// Blue login panel with fields (10.8-12.5s)
+private struct LinkstartLoginPanelView: View {
+    let elapsed: TimeInterval
+
+    var body: some View {
+        let progress = (elapsed - LinkstartSequence.loginPanelStart) / LinkstartSequence.loginPanelDuration
+        let passwordFill = max(0, (progress - 0.3) / 0.7)
+
+        VStack(spacing: 12) {
+            HStack(spacing: 8) {
+                Text("Account:")
+                    .font(.system(size: 11, weight: .regular, design: .default))
+                    .foregroundStyle(.white)
+                Rectangle()
+                    .fill(Color.white.opacity(0.3))
+                    .frame(height: 16)
+            }
+
+            HStack(spacing: 8) {
+                Text("Password:")
+                    .font(.system(size: 11, weight: .regular, design: .default))
+                    .foregroundStyle(.white)
+                HStack(spacing: 2) {
+                    ForEach(0..<8, id: \.self) { index in
+                        Circle()
+                            .fill(Color.white.opacity(index < Int(passwordFill * 8) ? 1 : 0.2))
+                            .frame(width: 4, height: 4)
+                    }
+                }
+            }
+        }
+        .padding(16)
+        .frame(width: 200)
+        .background(Color(hex: 0x0078D7))
+        .cornerRadius(8)
+    }
+}
+
+/// Blue confirmation dialog (12.5-13.7s)
+private struct LinkstartConfirmationDialogView: View {
+    let elapsed: TimeInterval
+
+    var body: some View {
+        let progress = (elapsed - LinkstartSequence.confirmationDialogStart) / LinkstartSequence.confirmationDialogDuration
+        let opacity = min(1.0, progress * 2)
+
+        VStack(spacing: 12) {
+            Text("Confirm")
+                .font(.system(size: 13, weight: .bold, design: .default))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(8)
+                .background(Color(hex: 0x005A9E))
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Do you wish to")
+                    .font(.system(size: 11, weight: .regular, design: .default))
+                    .foregroundStyle(.white)
+                Text("continue?")
+                    .font(.system(size: 11, weight: .regular, design: .default))
+                    .foregroundStyle(.white)
+            }
+            .padding(.horizontal, 8)
+            .padding(.bottom, 8)
+
+            HStack(spacing: 8) {
+                Text("YES")
+                    .font(.system(size: 10, weight: .bold, design: .default))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color(hex: 0x00A000).opacity(0.6))
+                    .cornerRadius(4)
+
+                Text("NO")
+                    .font(.system(size: 10, weight: .bold, design: .default))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color(hex: 0xA00000).opacity(0.6))
+                    .cornerRadius(4)
+            }
+            .padding(8)
+        }
+        .frame(width: 160)
+        .background(Color(hex: 0x0078D7))
+        .cornerRadius(6)
+        .opacity(opacity)
+    }
+}
+
+/// Welcome text display (13.8-16.6s)
+private struct LinkstartWelcomeView: View {
+    let elapsed: TimeInterval
+
+    var body: some View {
+        let progress = (elapsed - LinkstartSequence.welcomeStart) / LinkstartSequence.welcomeDuration
+        let opacity = min(1.0, max(0.0, progress * 2))
+
+        VStack(spacing: 0) {
+            Text("Welcome to")
+                .font(.system(size: 28, weight: .bold, design: .monospaced))
+                .foregroundStyle(Color.white.opacity(0.7))
+
+            Text("mitama island")
+                .font(.system(size: 28, weight: .bold, design: .monospaced))
+                .foregroundStyle(Color.white.opacity(0.7))
+        }
+        .opacity(opacity)
+    }
+}
+
+/// Blue dive sequence (16.6-18.4s)
+private struct LinkstartDiveView: View {
+    let elapsed: TimeInterval
+    let reducesMotion: Bool
+
+    private static let streakCount = 80
+
+    var body: some View {
+        let progress = (elapsed - LinkstartSequence.diveStart) / LinkstartSequence.diveDuration
+        let intensity = reducesMotion ? 0.3 : min(1.0, progress * 1.5)
+
+        Canvas { context, size in
+            let center = CGPoint(x: size.width / 2, y: size.height / 2)
+            let reach = (size.width * size.width + size.height * size.height).squareRoot() / 2
+
+            let travelled = progress * 1.5
+
+            for index in 0..<Self.streakCount {
+                let angle = Double(index) / Double(Self.streakCount) * 2 * .pi
+                let offset = Double(index) / Double(Self.streakCount)
+                let pace = 0.7 + 0.3 * Double(index % 3) / 3
+
+                let depth = (offset + travelled * pace).truncatingRemainder(dividingBy: 1.0)
+                let tail = max(0, depth - 0.12)
+
+                let headRadius = min(depth * reach, reach)
+                let tailRadius = max(0, tail * reach)
+
+                guard headRadius > tailRadius else { continue }
+
+                var path = Path()
+                let halfWidth = 0.02
+                let a0 = angle - halfWidth
+                let a1 = angle + halfWidth
+
+                path.move(to: CGPoint(
+                    x: center.x + cos(angle) * tailRadius,
+                    y: center.y + sin(angle) * tailRadius
+                ))
+                path.addLine(to: CGPoint(
+                    x: center.x + cos(a0) * headRadius,
+                    y: center.y + sin(a0) * headRadius
+                ))
+                path.addLine(to: CGPoint(
+                    x: center.x + cos(a1) * headRadius,
+                    y: center.y + sin(a1) * headRadius
+                ))
+                path.closeSubpath()
+
+                let hue = 0.55 + 0.15 * (Double(index) / Double(Self.streakCount))
+                let color = Color(hue: hue, saturation: 1.0, brightness: 1.0)
+                context.fill(path, with: .color(color.opacity(intensity)))
             }
         }
         .allowsHitTesting(false)

@@ -24,6 +24,8 @@ public enum LinkstartCue: Equatable, Sendable {
     case tick
     /// Everything passed; the checklist gives way to identity.
     case resolve
+    /// Dive at the end, approaching portal.
+    case dive
 }
 
 /// One colour of the calibration wash that runs between the white-out and
@@ -82,8 +84,18 @@ public enum LinkstartPhase: Equatable, Sendable {
     case calibration(step: Int)
     /// Running the senses, with this many already confirmed.
     case senses(checked: Int)
-    case language
-    case identity
+    /// Column of green check circles for confirmed senses.
+    case sensesCheck
+    /// Language selection button.
+    case languageSelect
+    /// Login panel with account and password fields.
+    case loginPanel
+    /// Confirmation dialog.
+    case confirmationDialog
+    /// Welcome text display.
+    case welcome
+    /// Blue dive at the end.
+    case dive
     /// The whole overlay dissolving, on the way to `.complete`.
     case fade
     /// Everything passed; the overlay can leave.
@@ -102,48 +114,57 @@ public enum LinkstartSequence: Sendable {
     public static let ignitionDuration: TimeInterval = 0.5
     /// The shockwave rings, overlapping the start of the dive.
     public static let ringsDuration: TimeInterval = 1.20
-    public static let warpDuration: TimeInterval = 2.5
-    public static let flashDuration: TimeInterval = 0.5
-    public static let calibrationDuration: TimeInterval = 1.00
-    /// How long each sense takes to confirm.
-    public static let perSenseDuration: TimeInterval = 0.5
-    public static let languageDuration: TimeInterval = 0.9
-    public static let identityDuration: TimeInterval = 1.8
-    public static let fadeDuration: TimeInterval = 0.80
+    /// Extended warp through calibration
+    public static let warpDuration: TimeInterval = 5.3
+    public static let flashDuration: TimeInterval = 0.8
+    /// HUD + senses calibration
+    public static let calibrationDuration: TimeInterval = 2.2
+    /// Column of green check circles
+    public static let sensesCheckDuration: TimeInterval = 1.8
+    /// Language selection button
+    public static let languageSelectDuration: TimeInterval = 1.0
+    /// Login panel
+    public static let loginPanelDuration: TimeInterval = 1.7
+    /// Confirmation dialog
+    public static let confirmationDialogDuration: TimeInterval = 1.2
+    /// Welcome text
+    public static let welcomeDuration: TimeInterval = 2.8
+    /// Blue dive sequence
+    public static let diveDuration: TimeInterval = 1.8
+    /// Final fade-out
+    public static let finalFadeDuration: TimeInterval = 0.6
 
     public static var warpStart: TimeInterval { ignitionDuration }
     public static var warpEnd: TimeInterval { warpStart + warpDuration }
-    public static var calibrationStart: TimeInterval { warpEnd + flashDuration }
+    public static var flashStart: TimeInterval { warpEnd - 0.8 }
+    public static var calibrationStart: TimeInterval { warpEnd }
 
-    public static var sensesDuration: TimeInterval {
-        perSenseDuration * Double(senses.count)
-    }
-
-    public static var sensesStart: TimeInterval { calibrationStart + calibrationDuration }
-    public static var languageStart: TimeInterval { sensesStart + sensesDuration }
-    public static var identityStart: TimeInterval { languageStart + languageDuration }
-    public static var fadeStart: TimeInterval { identityStart + identityDuration }
+    public static var sensesCheckStart: TimeInterval { calibrationStart + calibrationDuration }
+    public static var languageSelectStart: TimeInterval { sensesCheckStart + sensesCheckDuration }
+    public static var loginPanelStart: TimeInterval { languageSelectStart + languageSelectDuration }
+    public static var confirmationDialogStart: TimeInterval { loginPanelStart + loginPanelDuration }
+    public static var welcomeStart: TimeInterval { confirmationDialogStart + confirmationDialogDuration + 0.1 }
+    public static var diveStart: TimeInterval { welcomeStart + welcomeDuration }
+    public static var fadeStart: TimeInterval { diveStart + diveDuration }
 
     /// Total run time. After this the overlay dismisses itself.
-    public static var duration: TimeInterval { fadeStart + fadeDuration }
+    public static var duration: TimeInterval { fadeStart + finalFadeDuration }
 
     public static func phase(at elapsed: TimeInterval) -> LinkstartPhase {
         // Negative time can only come from a clock that moved. Treat it as the
         // beginning rather than as an error the view would have to render.
         guard elapsed > 0 else { return .awakening }
         if elapsed < warpStart { return .ignition }
-        if elapsed < warpEnd { return .warp }
-        if elapsed < calibrationStart { return .flash }
-        if elapsed < sensesStart { return .calibration(step: calibrationStepIndex(at: elapsed)) }
+        if elapsed < flashStart { return .warp }
+        if elapsed < warpEnd { return .flash }
+        if elapsed < sensesCheckStart { return .calibration(step: 0) }
 
-        let intoSenses = elapsed - sensesStart
-        if intoSenses < sensesDuration {
-            let checked = Int(intoSenses / perSenseDuration)
-            return .senses(checked: min(checked, senses.count))
-        }
-
-        if elapsed < identityStart { return .language }
-        if elapsed < fadeStart { return .identity }
+        if elapsed < languageSelectStart { return .sensesCheck }
+        if elapsed < loginPanelStart { return .languageSelect }
+        if elapsed < confirmationDialogStart { return .loginPanel }
+        if elapsed < welcomeStart { return .confirmationDialog }
+        if elapsed < diveStart { return .welcome }
+        if elapsed < fadeStart { return .dive }
         if elapsed < duration { return .fade }
         return .complete
     }
@@ -156,7 +177,7 @@ public enum LinkstartSequence: Sendable {
             0
         case let .senses(checked):
             checked
-        case .language, .identity, .fade, .complete:
+        case .sensesCheck, .languageSelect, .loginPanel, .confirmationDialog, .welcome, .dive, .fade, .complete:
             senses.count
         }
     }
@@ -167,12 +188,14 @@ public enum LinkstartSequence: Sendable {
         var schedule: [(at: TimeInterval, cue: LinkstartCue)] = [
             (0, .rise),
             (warpStart, .warp),
-            (warpEnd, .flash),
+            (flashStart, .flash),
         ]
+        // Senses all confirm during calibration
         for index in senses.indices {
-            schedule.append((sensesStart + Double(index) * perSenseDuration, .tick))
+            let senseConfirmTime = calibrationStart + (calibrationDuration / Double(senses.count)) * Double(index + 1)
+            schedule.append((senseConfirmTime, .tick))
         }
-        schedule.append((identityStart, .resolve))
+        schedule.append((diveStart, .dive))
         return schedule
     }
 
@@ -271,12 +294,12 @@ public enum LinkstartSequence: Sendable {
     /// photosensitivity guideline.
     public static func flashOpacity(at elapsed: TimeInterval) -> Double {
         let rise = 0.12
-        let start = warpEnd - rise
-        guard elapsed > start, elapsed < calibrationStart else { return 0 }
-        if elapsed < warpEnd {
+        let start = flashStart - rise
+        guard elapsed > start, elapsed < warpEnd else { return 0 }
+        if elapsed < flashStart {
             return flashPeakOpacity * (elapsed - start) / rise
         }
-        return flashPeakOpacity * (1 - easeOut((elapsed - warpEnd) / flashDuration))
+        return flashPeakOpacity * (1 - easeOut((elapsed - flashStart) / flashDuration))
     }
 
     // MARK: - Checklist
@@ -288,9 +311,9 @@ public enum LinkstartSequence: Sendable {
     }
 
     /// The synchronisation rate shown under the checklist, 0…100: climbs
-    /// from the calibration wash to full as identity begins.
+    /// from the calibration wash to full as the senses check completes.
     public static func syncRate(at elapsed: TimeInterval) -> Int {
-        let progress = clamp01((elapsed - calibrationStart) / (identityStart - calibrationStart))
+        let progress = clamp01((elapsed - calibrationStart) / (sensesCheckStart - calibrationStart))
         return Int((easeInOut(progress) * 100).rounded())
     }
 
@@ -314,7 +337,7 @@ public enum LinkstartSequence: Sendable {
     /// The colour(s) on screen during the calibration wash: one frame at full
     /// strength while holding, two while handing off. Empty outside the wash.
     public static func calibrationFrames(at elapsed: TimeInterval) -> [CalibrationFrame] {
-        guard elapsed >= calibrationStart, elapsed < sensesStart else { return [] }
+        guard elapsed >= calibrationStart, elapsed < sensesCheckStart else { return [] }
 
         for (index, boundary) in calibrationTransitionTimes.enumerated() {
             let windowStart = boundary - calibrationCrossfadeHalfWidth
@@ -340,7 +363,7 @@ public enum LinkstartSequence: Sendable {
     /// down to 0 by the time the sequence completes.
     public static func fadeOpacity(at elapsed: TimeInterval) -> Double {
         guard elapsed > fadeStart else { return 1 }
-        return 1 - clamp01((elapsed - fadeStart) / fadeDuration)
+        return 1 - clamp01((elapsed - fadeStart) / finalFadeDuration)
     }
 
     // MARK: - Maths

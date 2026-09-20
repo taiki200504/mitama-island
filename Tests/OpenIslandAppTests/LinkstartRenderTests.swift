@@ -16,7 +16,20 @@ import Testing
 /// runs and only asserts that each frame has real content.
 @MainActor
 struct LinkstartRenderTests {
-    private static let moments: [TimeInterval] = [0.8, 2.4, 4.4, 6.0]
+    private static let moments: [TimeInterval] = [
+        0.7,   // speck growing
+        2.4,   // wedges
+        4.2,   // wedges continuing
+        5.4,   // white-out starting
+        7.0,   // HUD with senses
+        8.8,   // green checks
+        10.2,  // language button
+        11.6,  // login panel
+        13.0,  // confirmation dialog
+        15.0,  // welcome text
+        17.4,  // blue dive
+        18.7   // white-out end
+    ]
 
     @Test
     func everyBeatOfTheSequenceDrawsSomething() throws {
