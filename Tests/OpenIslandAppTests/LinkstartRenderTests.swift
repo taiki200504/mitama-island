@@ -30,19 +30,47 @@ struct LinkstartRenderTests {
         }
     }
 
+    /// Every 0.6s across the whole sequence, so a beat that goes blank in
+    /// the middle is caught rather than being found by eye later. The four
+    /// flat ones are the reference's own: the dark, the moment the white
+    /// arrives, the white-out, and the end.
+    /// Every 0.6s across the whole sequence, so a beat that goes blank in
+    /// the middle is caught instead of being found by eye later. The flat
+    /// ones are the reference's own: the dark it opens on, the white-out
+    /// between the tunnel and the interface, and the fade at the end.
     private static let moments: [Moment] = [
-        Moment(0.7, flat: true),    // dark, before anything
-        Moment(2.4),                // the speck
-        Moment(4.2),                // the tunnel
-        Moment(5.4, flat: true),    // the white-out
-        Moment(7.0),                // the interface
-        Moment(8.8),                // the checks
-        Moment(10.2),               // language
-        Moment(11.6),               // sign-in
-        Moment(13.0),               // the confirmation
-        Moment(15.0),               // welcome
-        Moment(17.4),               // the dive
-        Moment(18.7, flat: true),   // white, the end
+        Moment(0.2, flat: true),
+        Moment(0.8, flat: true),
+        Moment(1.4, flat: true),
+        Moment(2.0),
+        Moment(2.6),
+        Moment(3.2),
+        Moment(3.8),
+        Moment(4.4),
+        Moment(5.0, flat: true),
+        Moment(5.6, flat: true),
+        Moment(6.2),
+        Moment(6.8),
+        Moment(7.4),
+        Moment(8.0),
+        Moment(8.6),
+        Moment(9.2),
+        Moment(9.8),
+        Moment(10.4),
+        Moment(11.0),
+        Moment(11.6),
+        Moment(12.2),
+        Moment(12.8),
+        Moment(13.4),
+        Moment(14.0),
+        Moment(14.6),
+        Moment(15.2),
+        Moment(15.8),
+        Moment(16.4),
+        Moment(17.0),
+        Moment(17.6),
+        Moment(18.2),
+        Moment(18.8, flat: true),
     ]
 
     @Test

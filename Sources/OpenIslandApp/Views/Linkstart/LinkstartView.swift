@@ -103,7 +103,7 @@ struct LinkstartView: View {
                 .opacity(LinkstartSequence.flashOpacity(at: elapsed) / max(LinkstartSequence.flashPeakOpacity, 0.001))
 
             // Light HUD (5.8-8.0s: calibration + senses)
-            if showsDetail, elapsed < LinkstartSequence.sensesCheckStart {
+            if showsDetail, elapsed < LinkstartSequence.sensesCheckStart + 0.25 {
                 LinkstartLightHUDView(
                     elapsed: elapsed,
                     phase: phase,
@@ -112,22 +112,26 @@ struct LinkstartView: View {
             }
 
             // Senses check circles (8.0-9.8s)
-            if elapsed >= LinkstartSequence.sensesCheckStart, elapsed < LinkstartSequence.languageSelectStart {
+            if elapsed >= LinkstartSequence.sensesCheckStart - 0.1,
+               elapsed < LinkstartSequence.languageSelectStart + 0.2 {
                 LinkstartSensesCheckView(elapsed: elapsed)
             }
 
             // Language button (9.8-10.8s)
-            if elapsed >= LinkstartSequence.languageSelectStart, elapsed < LinkstartSequence.loginPanelStart {
+            if elapsed >= LinkstartSequence.languageSelectStart - 0.1,
+               elapsed < LinkstartSequence.loginPanelStart + 0.2 {
                 LinkstartLanguageButtonView(elapsed: elapsed)
             }
 
             // Login panel (10.8-12.5s)
-            if elapsed >= LinkstartSequence.loginPanelStart, elapsed < LinkstartSequence.confirmationDialogStart {
+            if elapsed >= LinkstartSequence.loginPanelStart - 0.1,
+               elapsed < LinkstartSequence.confirmationDialogStart + 0.2 {
                 LinkstartLoginPanelView(elapsed: elapsed)
             }
 
             // Confirmation dialog (12.5-13.7s)
-            if elapsed >= LinkstartSequence.confirmationDialogStart, elapsed < LinkstartSequence.welcomeStart {
+            if elapsed >= LinkstartSequence.confirmationDialogStart - 0.1,
+               elapsed < LinkstartSequence.welcomeStart + 0.1 {
                 LinkstartConfirmationDialogView(elapsed: elapsed)
             }
 
@@ -221,10 +225,12 @@ private struct LinkstartWedgeTunnelView: View {
 
             for sliver in Self.slivers {
                 let own = max(0, travel - sliver.delay * 0.35) * sliver.speed
-                guard own > 0.0005 else { continue }
+                // A floor, so the speck exists from the first white frame
+                // instead of appearing out of nothing a second later.
+                guard own > 0 || elapsed > start else { continue }
                 // Tail and head both travel; the gap between them is the
                 // streak, and it stretches as the thing speeds up.
-                let head = min(own * 2.4, 2.6) * reach * sliver.lengthScale + 4
+                let head = min(own * 2.4, 2.6) * reach * sliver.lengthScale + 14
                 let tail = max(0, own - 0.16 * sliver.speed) * reach * sliver.lengthScale
                 guard head > tail else { continue }
 
@@ -429,21 +435,36 @@ private struct LinkstartSensesCheckView: View {
 
     var body: some View {
         let progress = (elapsed - LinkstartSequence.sensesCheckStart) / LinkstartSequence.sensesCheckDuration
-        let opacity = min(1.0, progress * 2)
 
-        VStack(spacing: 16) {
-            ForEach(0..<LinkstartSequence.senses.count, id: \.self) { _ in
-                Circle()
-                    .stroke(Color(hex: 0x00C850), lineWidth: 3)
-                    .frame(width: 32, height: 32)
-                    .overlay(
-                        Circle()
-                            .fill(Color(hex: 0x00C850))
-                            .frame(width: 8, height: 8)
+        GeometryReader { geometry in
+            let side = min(geometry.size.width, geometry.size.height)
+            VStack(spacing: side * 0.035) {
+                ForEach(Array(LinkstartSequence.senses.enumerated()), id: \.element) { index, sense in
+                    // One lands after another, the way the reference ticks
+                    // them off rather than showing five at once.
+                    let landed = LinkstartSequence.clamp01(
+                        (progress - Double(index) * 0.13) / 0.18
                     )
+                    HStack(spacing: side * 0.03) {
+                        ZStack {
+                            Circle()
+                                .stroke(Color(hex: 0x14B85A), lineWidth: side * 0.008)
+                                .frame(width: side * 0.09, height: side * 0.09)
+                            Image(systemName: "checkmark")
+                                .font(.system(size: side * 0.045, weight: .bold))
+                                .foregroundStyle(Color(hex: 0x14B85A))
+                                .scaleEffect(0.6 + 0.4 * landed)
+                        }
+                        Text(LanguageManager.shared.t(sense.labelKey))
+                            .font(.system(size: side * 0.035, weight: .medium))
+                            .foregroundStyle(Color(hex: 0x2A6B4A))
+                    }
+                    .opacity(landed)
+                }
             }
+            .frame(width: geometry.size.width, height: geometry.size.height)
         }
-        .opacity(opacity)
+        .allowsHitTesting(false)
     }
 }
 

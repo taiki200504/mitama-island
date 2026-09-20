@@ -55,8 +55,12 @@ if [[ "${1:-}" == "--full" ]]; then
         rm -f "$sounds_dir/ui-linkstart-$cue."{caf,wav,aiff,aif,m4a,mp3}
     done
     target="$sounds_dir/ui-linkstart-full.caf"
+    # A screen recording sits ~20 dB below where a cue needs to be, and its
+    # quieter stretches then read as "the sound stopped". Bring the take up to
+    # a broadcast-ish loudness while keeping its own dynamics.
     ffmpeg -nostdin -loglevel error -y -ss "$offset" -i "$source_file" \
-        -af "afade=t=in:st=0:d=0.02" -ac 2 -ar 48000 -c:a pcm_s16le -f caf "$target"
+        -af "afade=t=in:st=0:d=0.02,dynaudnorm=f=200:g=15:p=0.92:m=14,alimiter=limit=0.95" \
+        -ac 2 -ar 48000 -c:a pcm_s16le -f caf "$target"
     echo "1本で入れました: $target"
     echo "⌃⌥L で最初から最後まで鳴ります。戻すときは --restore。"
     exit 0

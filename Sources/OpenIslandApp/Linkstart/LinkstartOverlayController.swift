@@ -227,7 +227,10 @@ final class LinkstartOverlayController {
 
         // One take wins over five cues, and it starts where the picture does.
         if Self.hasFullSoundtrack {
-            NotificationSoundService.play(Self.fullSoundtrackName, volume: 0.65, from: elapsedAtStart)
+            // Full volume: an installed take is the whole soundtrack, not a
+            // cue layered under other sounds, and at 0.65 its softer stretches
+            // read as silence.
+            NotificationSoundService.play(Self.fullSoundtrackName, volume: 1.0, from: elapsedAtStart)
             return
         }
 
