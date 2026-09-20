@@ -46,8 +46,9 @@ struct LinkstartRenderTests {
         Moment(0.2, flat: true),
         Moment(0.8, flat: true),
         Moment(1.4, flat: true),
-        Moment(2.0),
-        Moment(2.6),
+        // 参照の 1.6–2.9 秒は彩度 0.000 の白で、本当に何も無い。
+        Moment(2.0, flat: true),
+        Moment(2.6, flat: true),
         Moment(3.2),
         Moment(3.8),
         Moment(4.4),
