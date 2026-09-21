@@ -50,6 +50,8 @@ final class CameraActivationSession {
     private var timeout: Task<Void, Never>?
     /// True while the camera is held open by a waiting card rather than by a keypress.
     private var keepsCameraOpen = false
+    /// 練習中。スワイプで閉じないのと、窓の長さを呼ぶ側が決めるため。
+    private var isRehearsing = false
     /// So the explanation is given once per run of refusals rather than on
     /// every card that arrives.
     private var hasSaidCameraIsNotAllowed = false
@@ -191,6 +193,7 @@ final class CameraActivationSession {
 
     func stop() {
         keepsCameraOpen = false
+        isRehearsing = false
         timeout?.cancel()
         timeout = nil
         phase = .idle
@@ -202,6 +205,26 @@ final class CameraActivationSession {
         // Stopping blocks until the device releases, which is exactly the wrong
         // thing to do on the main actor while an animation is running.
         queue.async { session?.stopRunning() }
+    }
+
+    /// ポーズを覚えるためだけに開く。`begin()` との違いは 2 つ:
+    /// スワイプで閉じないことと、窓の長さを呼ぶ側が決めること。
+    /// 認識したものは通常どおりコールバックへ流れるので、島を開かせない
+    /// 判断は呼ぶ側（`AppModel`）が持つ。
+    ///
+    /// 権限が無いときは `begin()` に任せる——許可を求める文言と拒否の
+    /// 説明がすでにそこにあり、二重に書くと片方が腐る。
+    @discardableResult
+    func beginRehearsal(seconds: TimeInterval) -> Bool {
+        guard settings.isEnabled else { return false }
+        guard AVCaptureDevice.authorizationStatus(for: .video) == .authorized else {
+            return begin()
+        }
+        if isRunning { stop() }
+        isRehearsing = true
+        Self.logger.notice("Rehearsal camera opening for \(seconds, privacy: .public)s")
+        start(window: seconds)
+        return true
     }
 
     /// Opens the camera for at most `maxDuration` purely to see whether a
@@ -274,7 +297,7 @@ final class CameraActivationSession {
 
     // MARK: - Private
 
-    private func start() {
+    private func start(window: TimeInterval? = nil) {
         guard let session = makeCaptureSession() else {
             phase = .unavailable
             return
@@ -289,7 +312,7 @@ final class CameraActivationSession {
         // A sustained camera is closed by the card going away, not by a clock.
         guard !keepsCameraOpen else { return }
 
-        let seconds = settings.windowSeconds
+        let seconds = window ?? settings.windowSeconds
         timeout = Task { [weak self] in
             try? await Task.sleep(for: .seconds(seconds))
             guard !Task.isCancelled else { return }
@@ -344,11 +367,22 @@ final class CameraActivationSession {
     }
 
     private func handle(_ outcome: CameraFrameOutcome) {
+        // 何を認識したかを残す。これが無いと「効かない」と言われたときに、
+        // ポーズが違うのかカメラが見ていないのかを後から確かめられない。
+        if case .idle = outcome {} else {
+            Self.logger.notice("Recognised \(String(describing: outcome), privacy: .public)")
+        }
+
         switch outcome {
         case .idle:
             break
 
         case let .swiped(direction):
+            // 練習中は閉じない。1 回ごとにキーを押し直すのでは練習にならない。
+            guard !isRehearsing else {
+                onGesture?(direction)
+                return
+            }
             let fired = onGesture
             stop()
             fired?(direction)

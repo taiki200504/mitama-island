@@ -19,7 +19,7 @@ independent slot for a timer, now-playing, the camera, or the shelf.
 | Ambient backdrop | Merged |
 | System HUD (volume/brightness key capture) | Shipped (#56) |
 | mitama ecosystem signals (browser automation lamp, job queue counts, Codex gate) | Merged — accessory `automation` plus a three-line strip above the session list |
-| Settings reorganization (12-pane, appearance folded into display) | In progress — PR #57 `feat/settings-sao` |
+| Settings reorganization (12-pane, appearance folded into display) | Merged (#57, #59) |
 
 ## Problem
 

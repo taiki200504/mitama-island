@@ -683,14 +683,7 @@
 "settings.camera.answersByPalm.help" = "承認や質問が島に出ている間だけカメラを開けておきます。手のひらを開いて少し止めるとマイクが開くので、キーを押す必要がありません。答えるのは声なので「声で答える」も一緒にオンにしてください。それ以外のときカメラは止まっています。";
 "linkstart.title" = "LINK START";
 "linkstart.say" = "「リンクスタート」と言ってください";
-"linkstart.sense.touch" = "触覚";
-"linkstart.sense.sight" = "視覚";
-"linkstart.sense.hearing" = "聴覚";
-"linkstart.sense.taste" = "味覚";
-"linkstart.sense.smell" = "嗅覚";
-"linkstart.checking" = "五感を確認しています";
-"linkstart.sync" = "同期率 {rate}%";
-"linkstart.language" = "言語設定 — 日本語";
+"linkstart.language" = "Language";
 "linkstart.welcome" = "ようこそ、{name}";
 "linkstart.dismiss" = "どれかキーを押すと戻ります";
 "settings.linkstart.section" = "リンクスタート";
@@ -735,8 +728,18 @@
 "camera.status.timedOutOnGesture" = "ジェスチャを認識できませんでした。2本指を立てて、上から下へ。";
 "camera.watching" = "カメラが見ています — 手をかざすと答えられます";
 "settings.camera.staysOpen" = "何も待っていなくてもカメラを開けておく";
-"settings.camera.staysOpen.help" = "手をかざす操作を常時使えるようにします。待っているものが無いときは、手のひらでリンクスタートが再生されます。macOS は カメラが動いている間ずっと緑のランプを点けるので、既定はオフです（島にも手のアイコンが出ます）。ふた・熱・電池の制限は変わらず効きます。";
+"settings.camera.staysOpen.help" = "いつでも二本指で開きたいならここをオン。手をかざす操作を常時使えるようにします。待っているものが無いときは、手のひらでリンクスタートが再生されます。macOS は カメラが動いている間ずっと緑のランプを点けるので、既定はオフです（島にも手のアイコンが出ます）。ふた・熱・電池の制限は変わらず効きます。";
 "camera.status.inUseByAnotherApp" = "他のアプリがカメラを使っているので、手をかざす操作は止めています。";
+"settings.camera.rehearse" = "ポーズを試す";
+"settings.camera.rehearse.help" = "20 秒だけカメラを開いて、認識したものをここに並べます。島は開きません。二本指を上から下へ、手のひらを開いて止める、親指と人差し指をつまむ——どれが通るか確かめてください。";
+"settings.camera.rehearse.start" = "試す";
+"settings.camera.rehearse.stop" = "やめる";
+"settings.camera.rehearse.waiting" = "カメラが見ています";
+"camera.sighting.swipeDown" = "二本指 ↓";
+"camera.sighting.swipeUp" = "二本指 ↑";
+"camera.sighting.palm" = "手のひら";
+"camera.sighting.pinch" = "つまむ";
+"camera.sighting.pointing" = "指差し";
 "settings.camera.sensitivity" = "反応のしやすさ";
 "settings.camera.sensitivity.help" = "誤って反応するなら「鈍い」、何度やっても通らないなら「敏感」。手のひらを保持する長さと、続けて反応するまでの間隔が変わります。";
 "settings.camera.sensitivity.low" = "鈍い";
@@ -856,9 +859,19 @@
 "settings.mitama.signal.jobs.help" = "実行中・待ち・今日終わった件数を出し、1件終わるたびに島でひと言知らせる";
 "settings.mitama.signal.codex" = "Codex の指摘を出す";
 "settings.mitama.signal.codex.help" = "コードレビューで [P1] が出たプロジェクトを赤く出す。押すと指摘の中身が読める";
+"island.signal.camera" = "カメラが見ています";
 "island.signal.automation" = "自動操作中";
 "island.signal.jobs" = "mitama · 実行中 %1$d ・待ち %2$d ・今日 %3$d 件完了";
 "island.signal.codex" = "Codex P1 · %1$@ (%2$@) %3$d件";
 "island.signal.codex.hint" = "押すと指摘の中身を開く";
 "island.signal.codex.noDetail" = "指摘の本文は残っていない";
 "island.signal.jobDone" = "仕事がひとつ終わった";
+
+/* link start */
+"linkstart.welcome.line1" = "Welcome to";
+"linkstart.welcome.line2" = "mitama island";
+"linkstart.language.value" = "日本語";
+"linkstart.dialog.profile" = "mitama(M)";
+"linkstart.dialog.title" = "プロフィール登録";
+"linkstart.dialog.line1" = "前回のセッションが残っています。";
+"linkstart.dialog.line2" = "続きから始めますか？";

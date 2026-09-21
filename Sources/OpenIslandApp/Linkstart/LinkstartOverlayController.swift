@@ -95,6 +95,17 @@ final class LinkstartOverlayController {
         }
     }
 
+    /// Freezes the picture at `elapsed` without opening a window.
+    ///
+    /// Screen capture goes black whenever the display is asleep or locked,
+    /// which makes "does the sequence look right" unanswerable at exactly the
+    /// times a long build finishes. Rendering the view offscreen instead
+    /// needs a controller already in `.pinned`, and nothing else.
+    func pinForOffscreenRender(elapsed: TimeInterval) {
+        heard = nil
+        stage = .pinned(elapsed: elapsed)
+    }
+
     /// Presents the sequence already partway through, for the harness only:
     /// skips the phrase-listening step entirely and pins the picture — and
     /// fast-forwards any cue that would already have played — to
@@ -196,9 +207,32 @@ final class LinkstartOverlayController {
     /// elapsed time instead: any cue at or before that point fires at once,
     /// so a screenshot taken moments later still finds the log it needs,
     /// rather than waiting out several real seconds it does not have.
+    /// The name of a single file that replaces the five cues.
+    ///
+    /// Five separate cues can only ever approximate a piece of audio that was
+    /// written as one take: the crossfades, the room, the way one sound
+    /// finishes underneath the next. Drop a file named this into the sounds
+    /// folder and the sequence plays it straight through instead, so what you
+    /// hear is exactly what you put there.
+    static let fullSoundtrackName = "ui-linkstart-full"
+
+    /// Whether a full-length soundtrack is installed.
+    static var hasFullSoundtrack: Bool {
+        NotificationSoundService.resolvedSoundURL(named: fullSoundtrackName) != nil
+    }
+
     private func playSoundtrack(elapsedAtStart: TimeInterval = 0) {
         soundtrack?.cancel()
         guard !soundsAreSuppressed() else { return }
+
+        // One take wins over five cues, and it starts where the picture does.
+        if Self.hasFullSoundtrack {
+            // Full volume: an installed take is the whole soundtrack, not a
+            // cue layered under other sounds, and at 0.65 its softer stretches
+            // read as silence.
+            NotificationSoundService.play(Self.fullSoundtrackName, volume: 1.0, from: elapsedAtStart)
+            return
+        }
 
         soundtrack = Task { [weak self] in
             var previousAt: TimeInterval = elapsedAtStart
@@ -227,12 +261,21 @@ final class LinkstartOverlayController {
         case .flash: "ui-linkstart-flash"
         case .tick: "ui-linkstart-tick"
         case .resolve: "ui-linkstart-resolve"
+        case .dive: "ui-linkstart-dive"
         }
     }
 
     private func scheduleDismissalAfterSequence() {
+        // An installed soundtrack sets the length: dismissing on the picture's
+        // own schedule would cut the audio mid-phrase, which is worse than
+        // holding the last frame for a moment.
+        let audio = Self.hasFullSoundtrack
+            ? NotificationSoundService.resolvedSoundURL(named: Self.fullSoundtrackName)
+                .flatMap { NSSound(contentsOf: $0, byReference: true)?.duration } ?? 0
+            : 0
+        let hold = max(LinkstartSequence.duration + 1.0, audio + 0.4)
         dismissal = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(LinkstartSequence.duration + 1.0))
+            try? await Task.sleep(for: .seconds(hold))
             guard !Task.isCancelled else { return }
             self?.dismiss()
         }
@@ -256,7 +299,7 @@ final class LinkstartOverlayController {
         voice?.stop()
         guard !panels.isEmpty else { return }
         Self.logger.notice("Dismissing")
-        panels.forEach { $0.orderOut(nil) }
+        panels.forEach { $0.tearDownHostedContent() }
         panels = []
 
         if let returnFocusTo, !returnFocusTo.isTerminated {
@@ -271,6 +314,9 @@ final class LinkstartOverlayController {
         FullScreenOverlayPanel.make(
             on: screen,
             rootView: LinkstartView(controller: self, showsDetail: showsDetail),
+            // 始まってすぐの一打は反射なので聞かない。19 秒の演出が毎回
+            // 1.5 秒で消えていたのはこれだった。
+            dismissGrace: OverlayDismissGate.maximumGrace,
             onDismiss: { [weak self] in self?.dismiss() }
         )
     }

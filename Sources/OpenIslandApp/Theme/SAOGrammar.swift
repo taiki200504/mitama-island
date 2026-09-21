@@ -25,6 +25,19 @@ enum SAOGrammar {
         static let outlineGlow = Color(red: 1, green: 1, blue: 60 / 255).opacity(0.81)
         static let outlineDark = Color(hex: 0x565653)
         static let hairline = Color(hex: 0x565653)
+
+        // The login sequence's light HUD palette.
+        // Sampled from the reference, then pulled back up: the sample came
+        // from a phone recording of a screen, which washes every colour out.
+        // Rendered at the recorded values the HUD reads as grey.
+        static let linkstartCyan1 = Color(hex: 0x1F9FD0)
+        static let linkstartCyan2 = Color(hex: 0x35B4DE)
+        static let linkstartCyan3 = Color(hex: 0x74D2E4)
+        static let linkstartLavender1 = Color(hex: 0x9B7BE0)
+        static let linkstartLavender2 = Color(hex: 0xC08FDC)
+        static let linkstartPale1 = Color(hex: 0xBCE6EC)
+        /// The ground the HUD sits on — a blue-white, not white.
+        static let linkstartPale2 = Color(hex: 0xC9E6F2)
     }
 
     enum Metric {

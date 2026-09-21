@@ -790,6 +790,9 @@ struct IslandClosedAccessoryView: View {
                 Image(systemName: "bolt.circle.fill")
                     .font(.islandMono(size: 9, weight: .semibold))
                     .foregroundStyle(IslandThemes.current.statusTints.running.opacity(0.92))
+                    // 字のないランプは読み上げにも、撮った絵の検査にも
+                    // 出てこない。名前を付けておく。
+                    .accessibilityLabel(LanguageManager.shared.t("island.signal.automation"))
             case .cameraWatching:
                 // The same glyph the peek band used to draw for this — macOS
                 // lights its own camera indicator for as long as the device
@@ -797,6 +800,7 @@ struct IslandClosedAccessoryView: View {
                 Image(systemName: "hand.raised.fill")
                     .font(.islandMono(size: 9, weight: .semibold))
                     .foregroundStyle(IslandThemes.current.statusTints.waitingForAnswer.opacity(0.92))
+                    .accessibilityLabel(LanguageManager.shared.t("island.signal.camera"))
             case .shelf(let count):
                 HStack(spacing: 3) {
                     Image(systemName: "tray.full")

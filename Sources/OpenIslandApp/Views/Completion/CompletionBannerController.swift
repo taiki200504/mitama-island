@@ -71,6 +71,8 @@ final class CompletionBannerController {
         burst.isOpaque = false
         burst.hasShadow = false
         burst.ignoresMouseEvents = true
+        // `tearDown` が `close()` を呼ぶので、寿命は ARC 側に持たせる。
+        burst.isReleasedWhenClosed = false
         burst.hidesOnDeactivate = false
         burst.collectionBehavior = [.fullScreenAuxiliary, .canJoinAllSpaces, .ignoresCycle, .stationary]
         burst.orderFrontRegardless()
@@ -85,7 +87,7 @@ final class CompletionBannerController {
 
     private func dismissBurst() {
         burstTimer.invalidate()
-        burstPanel?.orderOut(nil)
+        burstPanel?.tearDownHostedContent()
         burstPanel = nil
     }
 
@@ -105,7 +107,7 @@ final class CompletionBannerController {
 
     func dismiss() {
         dismissTimer.invalidate()
-        panel?.orderOut(nil)
+        panel?.tearDownHostedContent()
         panel = nil
     }
 
@@ -180,6 +182,8 @@ final class CompletionBannerController {
         panel.collectionBehavior = [.fullScreenAuxiliary, .canJoinAllSpaces, .ignoresCycle, .stationary]
         panel.titleVisibility = .hidden
         panel.titlebarAppearsTransparent = true
+        // `tearDown` が `close()` を呼ぶので、寿命は ARC 側に持たせる。
+        panel.isReleasedWhenClosed = false
         return panel
     }
 }

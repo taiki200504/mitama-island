@@ -19,14 +19,56 @@ derived from, any game, film, or product: see the legal note at the bottom.
 | `confirm` | `ui-confirm.caf` | 0.35s | Submitting an answer or a reply. |
 | `approve` | `ui-approve.caf` | 0.40s | Allow / Allow All. |
 | `reject` | `ui-reject.caf` | 0.30s | Deny / Deny All. |
-| `timerFinished` | `ui-timer-end.caf` | 1.60s | Reserved; not raised yet. |
-| `lockScan` | `ui-lock-scan.caf` | 0.90s | Reserved; not raised yet. |
-| `unlock` | `ui-unlock.caf` | 0.39s | Reserved; not raised yet. |
+| `timerFinished` | `ui-timer-end.caf` | 1.60s | A countdown reaching zero (`FocusTimerCoordinator`). |
+| `lockScan` | `ui-lock-scan.caf` | 0.90s | The lock-screen scan starting. |
+| `unlock` | `ui-unlock.caf` | 0.39s | The scan finishing — the machine is yours again. |
 | — | `ui-hover.caf` | 0.06s | Bundled but not wired to anything — a menu-bar-resident app should not chime on every pointer pass. |
 | — | `ui-urgent.caf` | 1.20s | Bundled for future use; not yet assigned a default. |
-| login sequence: rise | `ui-linkstart-rise.caf` | 1.20s (stereo) | The light arriving, at the very start. |
-| login sequence: tick × 5 | `ui-linkstart-tick.caf` | 0.15s | One per sense confirmed. |
-| login sequence: resolve | `ui-linkstart-resolve.caf` | 1.80s (stereo) | The checklist giving way to identity. |
+| login sequence: rise | `ui-linkstart-rise.caf` | 1.20s (stereo) | Bright and airy — the light arriving. |
+| login sequence: warp | `ui-linkstart-warp.caf` | 2.50s (stereo) | The dive: a rise that never tops out, thickening as it goes. |
+| login sequence: flash | `ui-linkstart-flash.caf` | 1.80s (stereo) | Arrival — bright, not a boom. |
+| login sequence: tick × 5 | `ui-linkstart-tick.caf` | 0.15s | One per sense confirmed. A narrow blip, not a bell. |
+| login sequence: dive | `ui-linkstart-dive.caf` | 1.80s (stereo) | Leaving the interface — the second dive, into the white-out. |
+| login sequence: resolve | `ui-linkstart-resolve.caf` | 1.80s (stereo) | Low and warm, fading out rather than landing on a chord. |
+
+### Using your own audio for the login sequence
+
+The five login cues are looked up in `~/Library/Application Support/MitamaIsland/Sounds/`
+before the bundled ones, so a file named `ui-linkstart-rise.caf` (`.wav`,
+`.m4a`, `.mp3`, `.aiff` also work) placed there wins without touching the app
+or the repository.
+
+```bash
+zsh scripts/install-linkstart-audio.sh <your-recording> [offset-seconds]
+zsh scripts/install-linkstart-audio.sh --restore      # back to the bundled cues
+```
+
+It slices one recording into the six cues at the sequence's own beats
+(rise 0.00–1.40, warp 3.50–5.00, flash 5.00–5.80, tick 6.02–6.17, resolve
+8.28–9.28, dive 16.60–18.40 — each overridable with `RISE_RANGE="0.0 1.5"` and
+friends) and
+writes them to that folder. **Whatever you put there stays there**: the folder
+is outside the repository, nothing is committed, and the app ships only the
+cues it synthesises itself.
+
+### How the login cues are set
+
+Nobody on this project can hear the cues being generated, so they are not set
+by taste. `scripts/tune-linkstart.py` renders each cue across a grid of three
+gains (body under 120 Hz, the 120–800 Hz middle, air above 3 kHz) and keeps
+the combination whose spectrum lands closest to a measured target:
+
+| cue | centroid | <120 Hz | >3 kHz |
+|---|---|---|---|
+| rise | 4,500 Hz | 3 % | 55 % |
+| warp | 3,400 Hz | 8 % | 40 % |
+| flash | 4,000 Hz | 7 % | 50 % |
+| tick | 3,600 Hz | 1 % | 55 % |
+| resolve | 2,100 Hz | 33 % | 24 % |
+
+Those numbers were measured from a reference the owner supplied, analysed in
+the browser so that only measurements — never audio — left the page. Re-run
+`python3 scripts/tune-linkstart.py` after changing a cue's synthesis.
 
 The login-sequence timing comes from `LinkstartSequence.cueSchedule`
 (`Sources/OpenIslandCore/LinkstartSequence.swift`), derived from the same

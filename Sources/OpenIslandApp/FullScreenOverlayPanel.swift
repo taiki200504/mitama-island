@@ -1,4 +1,5 @@
 import AppKit
+import OpenIslandCore
 import SwiftUI
 
 /// A panel that covers one whole screen and gets out of the way on any input.
@@ -13,24 +14,42 @@ import SwiftUI
 ///   panel had already been bitten by this.
 ///
 /// Any key and any click dismiss it. Something that owns every display has to
-/// be escapable without knowing a shortcut.
+/// be escapable without knowing a shortcut — except for `dismissGrace` seconds
+/// right after it appears, where a keystroke is far more likely to be a reflex
+/// to the screen being taken over than a decision to leave. See
+/// `OverlayDismissGate`.
 final class FullScreenOverlayPanel: NSPanel {
     var onDismiss: (() -> Void)?
+    /// 出した時刻と、入力を無視する猶予。0 なら最初の一打で閉じる。
+    private var presentedAt = Date()
+    private var dismissGrace: TimeInterval = 0
 
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
 
     override func keyDown(with event: NSEvent) {
-        onDismiss?()
+        dismissIfAllowed()
     }
 
     override func mouseDown(with event: NSEvent) {
+        dismissIfAllowed()
+    }
+
+    /// 猶予のあいだの入力は捨てる。**ここで握り潰すだけで、転送はしない**
+    /// ——下にあるのは演出そのもので、キーを渡す相手がいない。
+    private func dismissIfAllowed() {
+        guard OverlayDismissGate.allowsDismiss(
+            presentedAt: presentedAt,
+            now: Date(),
+            grace: dismissGrace
+        ) else { return }
         onDismiss?()
     }
 
     static func make(
         on screen: NSScreen,
         rootView: some View,
+        dismissGrace: TimeInterval = 0,
         onDismiss: @escaping () -> Void
     ) -> FullScreenOverlayPanel {
         let panel = FullScreenOverlayPanel(
@@ -41,11 +60,15 @@ final class FullScreenOverlayPanel: NSPanel {
             screen: screen
         )
         panel.onDismiss = onDismiss
+        panel.presentedAt = Date()
+        panel.dismissGrace = dismissGrace
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = false
         panel.isMovable = false
         panel.ignoresMouseEvents = false
+        // `tearDownHostedContent` が `close()` を呼ぶので、寿命は ARC 側に持たせる。
+        panel.isReleasedWhenClosed = false
         panel.level = .screenSaver
         panel.collectionBehavior = [.fullScreenAuxiliary, .canJoinAllSpaces, .ignoresCycle, .stationary]
 
