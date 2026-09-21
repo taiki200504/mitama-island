@@ -22,6 +22,12 @@ struct AmbientBoardView: View {
     /// `(title, artist)`, captured once at presentation like `timer` above.
     var nowPlaying: (title: String, artist: String?)?
     let lang: LanguageManager
+    /// カードが裏に返るまでの経過時間を外から固定する。ハーネスが任意の時点を
+    /// 撮るためのもので、実機では nil。
+    var cardElapsedOverride: TimeInterval?
+
+    /// 画面が出た時刻。カードは出てから一定時間で裏に返る。
+    @State private var shownAt: Date?
 
     private var isVideoBackdrop: Bool {
         if case .video = backdrop { return true }
@@ -84,9 +90,19 @@ struct AmbientBoardView: View {
 
                     Spacer(minLength: 0)
 
+                    if let card = board.card {
+                        learnCardPanel(card, elapsed: cardElapsed(at: context.date))
+                            .padding(.bottom, 8)
+                    }
+
                     if !board.isQuiet {
                         waitingPanel
                             .padding(.bottom, 8)
+                    }
+
+                    if let pulse = board.pulse {
+                        pulseLine(pulse)
+                            .padding(.bottom, 10)
                     }
 
                     Text(lang.t("ambient.dismiss"))
@@ -96,7 +112,15 @@ struct AmbientBoardView: View {
                 }
                 .padding(.horizontal, 48)
             }
+            .onAppear { if shownAt == nil { shownAt = context.date } }
         }
+    }
+
+    /// カードが出てからの経過。まだ出た時刻を掴んでいなければ 0。
+    private func cardElapsed(at now: Date) -> TimeInterval {
+        if let cardElapsedOverride { return cardElapsedOverride }
+        guard let shownAt else { return 0 }
+        return max(0, now.timeIntervalSince(shownAt))
     }
 
     // MARK: - Backdrop
@@ -264,6 +288,109 @@ struct AmbientBoardView: View {
     private static func ringRotation(at date: Date) -> Angle {
         let seconds = date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 60)
         return .degrees(seconds / 60 * 360)
+    }
+
+    // MARK: - 今日の1枚
+
+    /// 表を出し、しばらく置いてから裏に返す。めくる操作は作らない——この画面は
+    /// キーでもクリックでも即座に閉じる作りなので、めくろうとすると消える。
+    private static let cardRevealDelay: TimeInterval = 8
+
+    @ViewBuilder
+    private func learnCardPanel(_ card: MitamaLearnCard, elapsed: TimeInterval) -> some View {
+        let revealed = elapsed >= Self.cardRevealDelay
+
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Text(lang.t("ambient.card.heading"))
+                    .font(.islandMono(size: 11, weight: .semibold))
+                    .foregroundStyle(V6Palette.paper.opacity(0.4))
+                Text(card.domain)
+                    .font(.islandMono(size: 11))
+                    .foregroundStyle(SAOGrammar.Palette.accentAmber.opacity(0.8))
+            }
+
+            Text(card.front)
+                .font(.islandText(size: 15, weight: .semibold))
+                .foregroundStyle(V6Palette.paper.opacity(0.9))
+                .fixedSize(horizontal: false, vertical: true)
+
+            if revealed {
+                Text(card.back)
+                    .font(.islandText(size: 13))
+                    .foregroundStyle(V6Palette.paper.opacity(0.66))
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if let why = card.why, !why.isEmpty {
+                    HStack(alignment: .top, spacing: 6) {
+                        Text(lang.t("ambient.card.why"))
+                            .font(.islandMono(size: 11, weight: .semibold))
+                            .foregroundStyle(SAOGrammar.Palette.accentAmber.opacity(0.7))
+                        Text(why)
+                            .font(.islandText(size: 12))
+                            .foregroundStyle(V6Palette.paper.opacity(0.55))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 26)
+        .padding(.vertical, 18)
+        .frame(maxWidth: 560, alignment: .leading)
+        .background(Self.waitingPanelShape.fill(V6Palette.paper.opacity(0.045)))
+        .clipShape(Self.waitingPanelShape)
+        .saoOutline(Self.waitingPanelShape, scale: 1.0)
+    }
+
+    // MARK: - 脈
+
+    /// 1行。異常が無いときは「異常なし」と数字だけで、黙っていない。
+    @ViewBuilder
+    private func pulseLine(_ pulse: MitamaPulse) -> some View {
+        let isConcern = pulse.concern != nil
+
+        HStack(spacing: 8) {
+            Circle()
+                .fill(isConcern
+                    ? IslandThemes.current.statusTints.critical
+                    : IslandDesignPalette.Status.idle)
+                .frame(width: 6, height: 6)
+
+            Text(concernText(pulse))
+                .font(.islandText(size: 12, weight: isConcern ? .semibold : .regular))
+                .foregroundStyle(V6Palette.paper.opacity(isConcern ? 0.8 : 0.46))
+                .lineLimit(1)
+                .truncationMode(.tail)
+
+            Text(lang.t("ambient.pulse.week", pulse.weekSessions, hoursText(pulse.weekHours)))
+                .font(.islandMono(size: 11))
+                .foregroundStyle(V6Palette.paper.opacity(0.36))
+                .lineLimit(1)
+        }
+        .frame(maxWidth: 560, alignment: .leading)
+    }
+
+    private func concernText(_ pulse: MitamaPulse) -> String {
+        switch pulse.concern {
+        case let .boardError(message):
+            return message
+        case let .scheduleFailing(id, others):
+            return others > 0
+                ? lang.t("ambient.pulse.scheduleMore", id, others)
+                : lang.t("ambient.pulse.schedule", id)
+        case let .orchestratorSilent(minutes):
+            return lang.t("ambient.pulse.silent", minutes)
+        case let .overdue(decisions, tasks):
+            return lang.t("ambient.pulse.overdue", decisions, tasks)
+        case .none:
+            return lang.t("ambient.pulse.ok") + " · "
+                + lang.t("ambient.pulse.counts", pulse.activeSchedules, pulse.inflow7d, pulse.done7d)
+        }
+    }
+
+    /// 「6.4」。小数第1位で切って、桁で画面が揺れないようにする。
+    private func hoursText(_ hours: Double) -> String {
+        String(format: "%.1f", hours)
     }
 
     private func row(tint: Color, label: String, detail: String) -> some View {

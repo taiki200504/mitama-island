@@ -775,6 +775,15 @@
 "ambient.dismiss" = "どれかキーを押すか、クリックすると戻ります";
 "ambient.waiting" = "待っているもの";
 "ambient.more" = "ほか %d 件";
+"ambient.pulse.ok" = "異常なし";
+"ambient.pulse.schedule" = "%@ が失敗している";
+"ambient.pulse.scheduleMore" = "%@ ほか%d本が失敗している";
+"ambient.pulse.silent" = "司令塔の鼓動が%d分途切れている";
+"ambient.pulse.overdue" = "期限切れ 決裁%d件・タスク%d件";
+"ambient.pulse.counts" = "定期実行%d本 ・ 7日 %d件入って%d件出た";
+"ambient.pulse.week" = "今週 %d回 %@h";
+"ambient.card.heading" = "今日の1枚";
+"ambient.card.why" = "効くところ";
 "settings.display.ambient" = "何もしていないとき待機画面を出す";
 "settings.display.ambient.help" = "Mac を放置すると、時計・次の予定・待たせている相手を全画面に出します。集中モード中・画面共有中・他のアプリがカメラを使っている間（通話中）・島を開いている間は出しません。どれかキーを押すかクリックすれば戻ります。";
 "settings.display.ambient.never" = "出さない";

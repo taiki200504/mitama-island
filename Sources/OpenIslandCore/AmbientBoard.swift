@@ -26,6 +26,10 @@ public struct AmbientBoard: Equatable, Sendable {
     public let alerts: [String]
     /// Everything that did not fit. Zero when the lists are complete.
     public let hiddenCount: Int
+    /// mitama の脈。放置画面でしか出さないので、ここにだけ載る。
+    public let pulse: MitamaPulse?
+    /// 今日の復習カード1枚。
+    public let card: MitamaLearnCard?
 
     /// A screen read from across a room, not a list to work through. Past four
     /// rows it stops being glanceable and starts being a backlog, which is the
@@ -35,18 +39,31 @@ public struct AmbientBoard: Equatable, Sendable {
     /// more than one" without turning the screen into a feed.
     public static let maximumAlerts = 2
 
-    public init(waiting: [WaitingRow], alerts: [String], hiddenCount: Int) {
+    public init(
+        waiting: [WaitingRow],
+        alerts: [String],
+        hiddenCount: Int,
+        pulse: MitamaPulse? = nil,
+        card: MitamaLearnCard? = nil
+    ) {
         self.waiting = waiting
         self.alerts = alerts
         self.hiddenCount = hiddenCount
+        self.pulse = pulse
+        self.card = card
     }
 
     /// True when there is nothing to report and the board is just a clock.
+    ///
+    /// 脈とカードは数えない。どちらも「待たせているもの」ではないので、
+    /// 待ちの枠を出すかどうかの判断には混ぜない。
     public var isQuiet: Bool { waiting.isEmpty && alerts.isEmpty }
 
     public static func make(
         for sessions: [AgentSession],
         mitamaAlerts: [MitamaNotification] = [],
+        pulse: MitamaPulse? = nil,
+        card: MitamaLearnCard? = nil,
         now: Date = .now
     ) -> AmbientBoard {
         // Longest-waiting first, for the same reason the closed island's band
@@ -69,7 +86,9 @@ public struct AmbientBoard: Equatable, Sendable {
             waiting: Array(shownWaiting),
             alerts: Array(shownAlerts),
             hiddenCount: (waitingSessions.count - shownWaiting.count)
-                + (urgent.count - shownAlerts.count)
+                + (urgent.count - shownAlerts.count),
+            pulse: pulse,
+            card: card
         )
     }
 }

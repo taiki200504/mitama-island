@@ -362,6 +362,15 @@ def main() -> None:
     button_labels.update(summary.get("buttonLabels") or [])
     text_values.update(summary.get("textValues") or [])
 
+    # 放置画面や完了バナーは島とは別のウィンドウなので、`overlay` の木には
+    # 入ってこない。そちらを見たい場面のために、別の集合として持っておく
+    # (同じ集合に混ぜると、島に出ていないものを島の検査が拾ってしまう)。
+    window_values: set[str] = set()
+    for window in report.get("windows") or []:
+        window_summary = window.get("accessibilitySummary") or {}
+        window_values.update(window_summary.get("textValues") or [])
+        window_values.update(window_summary.get("labels") or [])
+
     island_surface = report.get("islandSurface") or ""
     notch_status = report.get("notchStatus")
     overlay_frame = overlay.get("frame") or {}
@@ -811,6 +820,21 @@ def main() -> None:
         assert_contains_any(spoken, ["mitama-island"], "automationSignals の Codex の行")
         if not any("12" in value for value in spoken):
             fail("automationSignals is missing the job counts")
+
+    elif scenario == "ambientPulse":
+        # 異常があるときは、何が止まっているかを名指しする。件数だけでは
+        # どれを見に行けばいいか分からない。
+        assert_contains_any(window_values, ["voice-morning"], "ambientPulse の止まっている定期実行")
+        assert_contains_any(window_values, ["12"], "ambientPulse の今週の稼働")
+
+    elif scenario == "ambientLearnCard":
+        # 裏に返った状態。表・裏・効くところの3つが揃っていること。
+        # 異常が無いときの脈は黙らず「異常なし」と数字を出す。
+        assert_contains_any(window_values, ["CAC"], "ambientLearnCard の表")
+        assert_contains_any(window_values, ["3倍"], "ambientLearnCard の裏")
+        assert_contains_any(window_values, ["効くところ", "Where it lands", "用在哪里", "用在哪裡"],
+                            "ambientLearnCard の効くところ")
+        assert_contains_any(window_values, ["異常なし", "All clear", "一切正常"], "ambientLearnCard の脈")
 
     elif scenario == "mitamaProposals":
         # 押さないと毎朝 urgent が来続けるものなので、本文・経過日数・

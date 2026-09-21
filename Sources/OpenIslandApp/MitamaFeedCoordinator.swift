@@ -49,6 +49,17 @@ final class MitamaFeedCoordinator {
     func loadProposalsFixture(_ proposals: [MitamaProposal]) {
         self.proposals = proposals
     }
+
+    /// 放置画面に出す脈と今日の1枚。60秒の周回には乗せない——盤面は1時間ごと
+    /// にしか変わらず、カードは1日1枚で足りるので、毎分引いても同じ答えが返る。
+    private(set) var pulse: MitamaPulse?
+    private(set) var learnCard: MitamaLearnCard?
+
+    /// ハーネス用。
+    func loadAmbientFixture(pulse: MitamaPulse?, card: MitamaLearnCard?) {
+        self.pulse = pulse
+        self.learnCard = card
+    }
     /// Off until the owner turns the signal on, so a disabled signal costs
     /// no query at all.
     @ObservationIgnored var jobSummaryEnabled = false
@@ -60,6 +71,8 @@ final class MitamaFeedCoordinator {
     @ObservationIgnored private var client: MitamaNotificationClient?
     @ObservationIgnored private(set) var workLog: MitamaWorkLogClient?
     @ObservationIgnored private var proposalClient: MitamaProposalClient?
+    @ObservationIgnored private var ambientClient: MitamaAmbientClient?
+    @ObservationIgnored private var ambientFetchedAt: Date?
     @ObservationIgnored private var pollTask: Task<Void, Never>?
     @ObservationIgnored private var currentInterval = MitamaFeedCoordinator.pollInterval
     /// Set by `AppModel` when the Watch endpoint is running. Nil is the normal
@@ -105,6 +118,7 @@ final class MitamaFeedCoordinator {
             self.client = MitamaNotificationClient(environment: loaded.environment)
             self.workLog = MitamaWorkLogClient(environment: loaded.environment)
             self.proposalClient = MitamaProposalClient(environment: loaded.environment)
+            self.ambientClient = MitamaAmbientClient(environment: loaded.environment)
             self.currentInterval = Self.pollInterval
 
             while !Task.isCancelled {
@@ -119,8 +133,12 @@ final class MitamaFeedCoordinator {
         pollTask = nil
         workLog = nil
         proposalClient = nil
+        ambientClient = nil
+        ambientFetchedAt = nil
         notifications = []
         proposals = []
+        pulse = nil
+        learnCard = nil
         jobSummary = nil
         lastJobPollAt = nil
     }
@@ -193,6 +211,25 @@ final class MitamaFeedCoordinator {
         guard let workLog else { return }
         Task {
             await workLog.perform(.replyToProposal(runDate: proposal.runDate, reply: reply))
+        }
+    }
+
+    /// 放置画面を出す直前に呼ぶ。待たない——この提示は今ある値で描き、取り直した
+    /// 分は次の提示に効く（放置画面の動画一覧と同じ作法）。
+    func refreshAmbient(now: Date = .now) {
+        guard let ambientClient else { return }
+        if let ambientFetchedAt, now.timeIntervalSince(ambientFetchedAt) < MitamaAmbientClient.freshness {
+            return
+        }
+        ambientFetchedAt = now
+
+        let weekStart = Calendar.current.dateInterval(of: .weekOfYear, for: now)?.start
+            ?? Calendar.current.startOfDay(for: now)
+        Task { [weak self] in
+            let fetched = await ambientClient.fetch(weekStart: weekStart, now: now)
+            guard let self, !Task.isCancelled else { return }
+            self.pulse = fetched.pulse
+            self.learnCard = fetched.card
         }
     }
 
