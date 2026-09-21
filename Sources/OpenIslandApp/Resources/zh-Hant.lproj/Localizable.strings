@@ -708,6 +708,8 @@
 "shelf.title" = "暫存";
 "shelf.clear" = "全部清空";
 "shelf.remove" = "移除";
+"shelf.pin" = "釘選";
+"shelf.unpin" = "取消釘選";
 "shelf.revealInFinder" = "在 Finder 中顯示";
 "shelf.airDrop" = "隔空投送";
 "shelf.share" = "共享…";
@@ -783,6 +785,8 @@
 "ambient.pulse.week" = "本週 %d 次 %@ 小時";
 "ambient.card.heading" = "今日一張";
 "ambient.card.why" = "用在哪裡";
+"settings.display.hideDesktop" = "分享螢幕時隱藏桌面";
+"settings.display.hideDesktop.help" = "分享螢幕期間在桌面圖示上方覆蓋一層。不會修改 Finder 設定。依據正在執行的應用程式判斷，無法確認時不會隱藏。";
 "settings.display.ambient" = "閒置時顯示待機畫面";
 "settings.display.ambient.help" = "離開 Mac 後，全螢幕顯示時鐘、下一個行程與正在等待你的對象。在專注模式、共享螢幕、其他應用程式正在使用攝影機（通話中）或島已展開時不會出現。按任意鍵或點擊即可返回。";
 "settings.display.ambient.never" = "不顯示";

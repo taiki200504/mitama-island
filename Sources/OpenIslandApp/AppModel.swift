@@ -72,6 +72,8 @@ final class AppModel {
     /// Focus, screen lock and screen sharing — the moments the user asked us to
     /// hold the panel back.
     let quietScenes: QuietSceneMonitor
+    /// 画面共有中に机を隠す1枚。設定が off のあいだは何も作らない。
+    private let desktopCover = DesktopCoverController()
 
     /// The screen locking and unlocking, for the unlock greeting. Distinct
     /// from `quietScenes`, which only polls whether the screen is obscured
@@ -946,6 +948,7 @@ final class AppModel {
         configureNowPlaying()
         configureSystemHUD()
 
+        quietScenes.onSceneChanged = { [weak self] _ in self?.applyDesktopCover() }
         quietScenes.start()
         screenLockWatcher.onLocked = { [weak self] in
             // The poll that backs `quietScenes` runs every 5s; a lock is
@@ -2540,6 +2543,29 @@ final class AppModel {
 
     func jumpToFocusedSession() {
         jump(to: focusedSession?.jumpTarget)
+    }
+
+    /// 画面共有の有無と設定から、机を隠すかどうかを決めて反映する。
+    ///
+    /// 判断は `DesktopCover` が持つ。ここは読んだ場面を渡して、結果を敷くだけ。
+    func applyDesktopCover() {
+        desktopCover.apply(
+            shouldCover: DesktopCover.shouldCover(
+                scene: quietScenes.snapshot,
+                isEnabled: settings.display.hidesDesktopWhenSharing
+            )
+        )
+    }
+
+    /// 中断カードから戻る。
+    ///
+    /// 行のタップと違って、押した人は「戻る」としか読めない操作なので、
+    /// 「クリックで飛ばない」設定には従わない——従うと、押しても何も起きない
+    /// ボタンになる。セッションが既に無ければ黙って何もしない。
+    func jumpToSavedSession(id: String) {
+        guard let target = state.session(id: id)?.jumpTarget,
+              target.terminalApp.lowercased() != "unknown" else { return }
+        jump(to: target)
     }
 
     func jumpToSession(_ session: AgentSession) {

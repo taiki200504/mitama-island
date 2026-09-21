@@ -115,3 +115,23 @@ struct ScreenSharingAppsTests {
         #expect(ScreenSharingApps.isSharing(runningBundleIdentifiers: []) == false)
     }
 }
+
+/// 画面共有中に机を隠すかどうか。読めなかった信号で画面を変えないことが要件。
+struct DesktopCoverTests {
+    @Test
+    func theDesktopIsHiddenOnlyWhileSharingIsCertain() {
+        let sharing = QuietSceneSnapshot(screenIsBeingShared: .active)
+        #expect(DesktopCover.shouldCover(scene: sharing, isEnabled: true))
+        #expect(DesktopCover.shouldCover(scene: sharing, isEnabled: false) == false)
+    }
+
+    /// 共有していないのに机が消えるのは事故でしかない。読めなかったときは
+    /// 隠さない——「見に行けなかった」を「起きている」として扱わない。
+    @Test
+    func anUnreadableSignalNeverHidesTheDesktop() {
+        #expect(DesktopCover.shouldCover(
+            scene: QuietSceneSnapshot(screenIsBeingShared: .unavailable), isEnabled: true) == false)
+        #expect(DesktopCover.shouldCover(
+            scene: QuietSceneSnapshot(screenIsBeingShared: .inactive), isEnabled: true) == false)
+    }
+}

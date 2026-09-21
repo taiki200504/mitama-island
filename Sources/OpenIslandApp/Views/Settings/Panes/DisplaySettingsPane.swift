@@ -121,6 +121,18 @@ struct DisplaySettingsPane: View {
                 )
             )
 
+            SettingsToggleRow(
+                title: lang.t("settings.display.hideDesktop"),
+                help: lang.t("settings.display.hideDesktop.help"),
+                isOn: Binding(
+                    get: { display.hidesDesktopWhenSharing },
+                    set: {
+                        display.hidesDesktopWhenSharing = $0
+                        model.applyDesktopCover()
+                    }
+                )
+            )
+
             SettingsRow(
                 title: lang.t("settings.display.ambient"),
                 help: lang.t("settings.display.ambient.help")

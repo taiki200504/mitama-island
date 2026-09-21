@@ -709,6 +709,8 @@
 "shelf.title" = "Set aside";
 "shelf.clear" = "Clear";
 "shelf.remove" = "Remove";
+"shelf.pin" = "Pin";
+"shelf.unpin" = "Unpin";
 "shelf.revealInFinder" = "Show in Finder";
 "shelf.airDrop" = "AirDrop";
 "shelf.share" = "Share…";
@@ -784,6 +786,8 @@
 "ambient.pulse.week" = "This week %d runs, %@h";
 "ambient.card.heading" = "Today's card";
 "ambient.card.why" = "Where it lands";
+"settings.display.hideDesktop" = "Hide the desktop while sharing";
+"settings.display.hideDesktop.help" = "Lays a cover over your desktop icons while the screen is being shared. Finder settings are left alone. Detection is by which apps are running, so an unreadable signal never hides anything.";
 "settings.display.ambient" = "Show the idle board when you step away";
 "settings.display.ambient.help" = "Fills the screen with the clock, what is next, and who is waiting. Never appears during a Focus mode, while the screen is shared, while another app is using the camera (a call), or while the island is open. Any key or click brings you back.";
 "settings.display.ambient.never" = "Never";

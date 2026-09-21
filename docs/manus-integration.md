@@ -117,11 +117,31 @@ but it needs its own gesture to reach, which would have left the card saved and
 unreachable. Anything actually happening still pushes the bookmark out of the
 pill; it only appears when the island has nothing more pressing to say.
 
-Not done: `jumpToSession`. `resume` marks the card current and closes the island;
-nothing reopens a terminal yet. `shelfReference` is carried through the model
-untouched for whoever wires that.
+着地済み (2026-09-21): `resume` は中断したセッションのターミナルへ戻す。カードは
+中断時にセッションの id を掴んでおき（題を取るのと同じところから取る——別々に決めると
+題が指すものと戻り先が食い違う）、戻るときにそこから `JumpTarget` を引く。セッションが
+既に終わっていれば、今までどおり島を閉じるだけ。`shelfReference` はまだモデルを素通り
+している。置くものを save 側で推測すると、開いた覚えのない Finder が開く。
 
 ---
+
+### Phase 2: Conditional Desktop Guard + Shelf Pinning — 着地済み (2026-09-21)
+
+仕様から3点変えた。理由つきで残す。
+
+1. **机の隠し方**: `CreateDesktop` を書き換えて `killall Finder` するやり方は採らなかった。
+   人の設定を書き換えて Finder を落とすのは、共有が終わったあとに元へ戻す保証が無く、
+   開いていた Finder の窓も消える。代わりに、デスクトップのアイコンの上・普通の窓の下に
+   1枚敷く（`DesktopCoverController`、`CGWindowLevelForKey(.desktopIconWindow) + 1`）。
+   マウスは素通し。判断は `DesktopCover.shouldCover` にあり、**共有が確かに起きている
+   ときだけ**隠す（読めなかった信号では隠さない）。
+2. **固定の操作**: ⌥クリックは既に「除去」に割り当たっていたので、そこには載せなかった。
+   取り違えると置いたはずのものが消える。固定は右クリックのメニューに置いた。
+3. **固定の持ち方**: `isPinned: Bool` ではなく `pinnedAt: Date?`。合成された Decodable は
+   既定値に落ちてくれないので、`Bool` を足すと欄の無い既存の棚が丸ごと読めなくなる。
+   並べ替えの鍵もそのまま要る。
+
+以下は当初の設計メモ。
 
 ### Phase 2: Conditional Desktop Guard + Shelf Pinning (Weeks 3–4)
 

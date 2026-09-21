@@ -14,15 +14,26 @@ public struct ShelfItem: Equatable, Identifiable, Codable, Sendable {
     public let storedName: String
     public let byteSize: Int64
     public let addedAt: Date
+    /// 固定した時刻。nil なら固定していない。
+    ///
+    /// `Bool` ではなく `Optional` の日付なのは2つ理由がある。並べ替えの鍵が
+    /// そのまま要ること、そして**古い棚を読み直せること**——合成された
+    /// Decodable は既定値に落ちてくれないので、`Bool` を足すと欄の無い
+    /// 既存のファイルが丸ごと読めなくなる。
+    public var pinnedAt: Date?
+
+    public var isPinned: Bool { pinnedAt != nil }
 
     public init(
         id: UUID = UUID(),
         displayName: String,
         storedName: String,
         byteSize: Int64,
-        addedAt: Date
+        addedAt: Date,
+        pinnedAt: Date? = nil
     ) {
         self.id = id
+        self.pinnedAt = pinnedAt
         self.displayName = displayName
         self.storedName = storedName
         self.byteSize = byteSize
@@ -88,16 +99,25 @@ public enum ShelfLedger: Sendable {
     }
 
     /// Newest first — the thing you just put down is the thing you are about to
-    /// pick up again.
+    /// pick up again。ただし固定したものは、いつ置いたかに関わらず上に浮く。
     public static func ordered(_ items: [ShelfItem]) -> [ShelfItem] {
-        items.sorted { $0.addedAt > $1.addedAt }
+        items.sorted { lhs, rhs in
+            switch (lhs.pinnedAt, rhs.pinnedAt) {
+            case let (left?, right?): return left > right
+            case (.some, .none): return true
+            case (.none, .some): return false
+            case (.none, .none): return lhs.addedAt > rhs.addedAt
+            }
+        }
     }
 
     /// What has sat around longer than `ttl` allows. `ttl == nil` — the
     /// default — means never, so nothing here ever comes back expired.
+    /// 固定したものは失効しない。置いたままにしておくために固定したのに、
+    /// 時間で消えるなら固定の意味が無い。
     public static func expired(_ items: [ShelfItem], now: Date, ttl: TimeInterval?) -> [ShelfItem] {
         guard let ttl else { return [] }
-        return items.filter { now.timeIntervalSince($0.addedAt) >= ttl }
+        return items.filter { !$0.isPinned && now.timeIntervalSince($0.addedAt) >= ttl }
     }
 }
 

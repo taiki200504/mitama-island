@@ -104,6 +104,14 @@ extension IslandPanelView {
             Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
                 .resizable()
                 .frame(width: 22, height: 22)
+                .overlay(alignment: .topTrailing) {
+                    if item.isPinned {
+                        Image(systemName: "pin.fill")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(SAOGrammar.Palette.accentAmber)
+                            .offset(x: 4, y: -3)
+                    }
+                }
             Text(item.displayName)
                 .font(.islandText(size: 9))
                 .foregroundStyle(V6Palette.paper.opacity(0.7))
@@ -138,6 +146,10 @@ extension IslandPanelView {
                     .init(
                         title: model.lang.t("shelf.revealInFinder"),
                         action: { _ in NSWorkspace.shared.activateFileViewerSelecting([url]) }
+                    ),
+                    .init(
+                        title: model.lang.t(item.isPinned ? "shelf.unpin" : "shelf.pin"),
+                        action: { _ in model.shelf.togglePin(item) }
                     ),
                     .init(
                         title: model.lang.t("shelf.remove"),

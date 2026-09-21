@@ -82,13 +82,29 @@ final class ShelfStore {
             changed = true
         }
 
-        if changed { save() }
+        // 置いた順に差し込んだあと、固定したものを上に戻す。並べ替えを
+        // 入口ごとに書くのではなく、items が変わったところで一度だけ通す。
+        if changed {
+            items = ShelfLedger.ordered(items)
+            save()
+        }
         return refusal
     }
 
     func remove(_ item: ShelfItem) {
         try? fileManager.removeItem(at: fileURL(for: item))
         items.removeAll { $0.id == item.id }
+        save()
+    }
+
+    /// 固定する／外す。固定したものは上に浮き、失効でも消えない。
+    ///
+    /// ⌥クリックには割り当てない——そこは既に「除去」で、取り違えると
+    /// 置いたはずのものが消える。固定は右クリックのメニューに置く。
+    func togglePin(_ item: ShelfItem, now: Date = .now) {
+        guard let index = items.firstIndex(where: { $0.id == item.id }) else { return }
+        items[index].pinnedAt = items[index].isPinned ? nil : now
+        items = ShelfLedger.ordered(items)
         save()
     }
 
