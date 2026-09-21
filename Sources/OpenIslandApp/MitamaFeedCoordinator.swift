@@ -33,10 +33,21 @@ final class MitamaFeedCoordinator {
     /// a second timer would double the traffic for the same answer.
     private(set) var jobSummary: MitamaJobSummary?
 
+    /// 返事待ちの RSI 提案。古いものから最大3件。
+    ///
+    /// 7日放っておくと RSI が毎朝 urgent で催促する。その催促を島で止められる
+    /// 唯一の口なので、通知を読むのと同じ周回で拾う。
+    private(set) var proposals: [MitamaProposal] = []
+
     /// ハーネス用。ジョブの数え上げはデータベース越しなので、撮るときは
     /// ここに置いた値をそのまま出す。
     func loadJobSummaryFixture(_ summary: MitamaJobSummary?) {
         jobSummary = summary
+    }
+
+    /// ハーネス用。提案も同じ理由でデータベース越し。
+    func loadProposalsFixture(_ proposals: [MitamaProposal]) {
+        self.proposals = proposals
     }
     /// Off until the owner turns the signal on, so a disabled signal costs
     /// no query at all.
@@ -48,6 +59,7 @@ final class MitamaFeedCoordinator {
 
     @ObservationIgnored private var client: MitamaNotificationClient?
     @ObservationIgnored private(set) var workLog: MitamaWorkLogClient?
+    @ObservationIgnored private var proposalClient: MitamaProposalClient?
     @ObservationIgnored private var pollTask: Task<Void, Never>?
     @ObservationIgnored private var currentInterval = MitamaFeedCoordinator.pollInterval
     /// Set by `AppModel` when the Watch endpoint is running. Nil is the normal
@@ -92,6 +104,7 @@ final class MitamaFeedCoordinator {
             Self.logger.notice("Credentials from \(String(describing: loaded.source), privacy: .public)")
             self.client = MitamaNotificationClient(environment: loaded.environment)
             self.workLog = MitamaWorkLogClient(environment: loaded.environment)
+            self.proposalClient = MitamaProposalClient(environment: loaded.environment)
             self.currentInterval = Self.pollInterval
 
             while !Task.isCancelled {
@@ -105,7 +118,9 @@ final class MitamaFeedCoordinator {
         pollTask?.cancel()
         pollTask = nil
         workLog = nil
+        proposalClient = nil
         notifications = []
+        proposals = []
         jobSummary = nil
         lastJobPollAt = nil
     }
@@ -136,6 +151,9 @@ final class MitamaFeedCoordinator {
             }
             currentInterval = Self.pollInterval
             await refreshJobSummary()
+            if let proposalClient {
+                proposals = await proposalClient.openProposals()
+            }
         } catch {
             // Back off instead of hammering: the usual failure here is being
             // offline, and that can last hours.
@@ -163,6 +181,19 @@ final class MitamaFeedCoordinator {
             onJobCompleted?(completion)
         }
         lastJobPollAt = .now
+    }
+
+    /// 提案に「やる／捨てる」を返す。
+    ///
+    /// 行は押した瞬間に手元から消す。送りが通ったかは次の周回で分かるし、通らな
+    /// ければ提案はそのまま返事待ちのまま出てくる——消えたのに催促が続くより、
+    /// 一度消えてまた出てくる方が読み違えようがない。
+    func reply(to proposal: MitamaProposal, _ reply: MitamaProposalReply) {
+        proposals.removeAll { $0.id == proposal.id }
+        guard let workLog else { return }
+        Task {
+            await workLog.perform(.replyToProposal(runDate: proposal.runDate, reply: reply))
+        }
     }
 
     func markRead(_ notification: MitamaNotification) {

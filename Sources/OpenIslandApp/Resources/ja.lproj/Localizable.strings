@@ -360,6 +360,10 @@
 "mitama.level.homework" = "宿題";
 "mitama.level.digest" = "まとめ";
 "mitama.level.info" = "情報";
+"mitama.proposal.heading" = "RSI の提案";
+"mitama.proposal.do" = "やる";
+"mitama.proposal.drop" = "捨てる";
+"mitama.proposal.age" = "%d日";
 
 /* Shortcuts pane */
 "settings.shortcuts.section.global" = "グローバル";

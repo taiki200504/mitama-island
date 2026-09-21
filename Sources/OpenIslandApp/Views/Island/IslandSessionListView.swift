@@ -75,6 +75,10 @@ extension IslandPanelView {
                     }
             } else {
                 VStack(spacing: 0) {
+                    // mitama の分は行の上。エージェントは「何が動いているか」に
+                    // 答えるが、こちらは「何が自分を待っているか」に答える。
+                    mitamaProposalSection
+                    mitamaFeedSection
                     sessionPanelHeader(referenceDate: referenceDate)
 
                     ScrollView(.vertical) {
@@ -88,6 +92,87 @@ extension IslandPanelView {
                 .padding(.vertical, 2)
             }
         }
+    }
+
+    /// 返事待ちの RSI 提案。通知より上に出す——通知は「読めば済む」もので、
+    /// これは押さないと毎朝 urgent が来続けるものだから。
+    @ViewBuilder
+    private var mitamaProposalSection: some View {
+        // 旗ではなく中身で出す。止めると coordinator が空にするので、
+        // 二重に見張ると harness から値を置いた絵が撮れなくなる。
+        let proposals = model.mitamaFeed.proposals
+        if !proposals.isEmpty {
+            VStack(spacing: 0) {
+                ForEach(proposals) { proposal in
+                    mitamaProposalRow(proposal)
+                }
+            }
+            .overlay(alignment: .bottom) {
+                Rectangle()
+                    .fill(V6Palette.paper.opacity(0.06))
+                    .frame(height: 1)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func mitamaProposalRow(_ proposal: MitamaProposal) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Text(model.lang.t("mitama.proposal.age", proposal.ageDays))
+                .font(.islandText(size: 10, weight: .semibold))
+                .foregroundStyle(IslandDesignPalette.Status.waitingForAnswer)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(
+                    IslandDesignPalette.Status.waitingForAnswer.opacity(0.14),
+                    in: Capsule()
+                )
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(model.lang.t("mitama.proposal.heading"))
+                    .font(.islandText(size: 10, weight: .semibold))
+                    .foregroundStyle(V6Palette.paper.opacity(0.4))
+
+                Text(proposal.text)
+                    .font(.islandText(size: 12, weight: .medium))
+                    .foregroundStyle(V6Palette.paper.opacity(0.88))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 8)
+
+            HStack(spacing: 6) {
+                mitamaProposalButton(model.lang.t("mitama.proposal.do"), tint: SAOGrammar.Palette.accentOrange) {
+                    model.mitamaFeed.reply(to: proposal, .act)
+                }
+                mitamaProposalButton(model.lang.t("mitama.proposal.drop"), tint: V6Palette.paper.opacity(0.5)) {
+                    model.mitamaFeed.reply(to: proposal, .drop)
+                }
+            }
+            .padding(.top, 8)
+        }
+        .padding(.horizontal, sessionListSideInset)
+        .padding(.vertical, 9)
+    }
+
+    @ViewBuilder
+    private func mitamaProposalButton(
+        _ title: String,
+        tint: Color,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.islandText(size: 11, weight: .semibold))
+                .foregroundStyle(tint)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 4)
+                .background(tint.opacity(0.12), in: Capsule())
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
     }
 
     /// mitama's own queue, above the agent sessions. Agents answer "what is
@@ -161,10 +246,9 @@ extension IslandPanelView {
     @ViewBuilder
     private func sessionListContent(referenceDate: Date) -> some View {
         VStack(spacing: 0) {
-            if !isNotificationMode {
-                mitamaFeedSection
-                sessionPanelHeader(referenceDate: referenceDate)
-            }
+            // この経路は通知モードでしか通らない（`sessionList` の分岐を見ること）。
+            // ここに `!isNotificationMode` の枝を置くと、置いたものが一度も
+            // 描かれない——mitama の行が長いあいだそうなっていた。
 
             if isNotificationMode, let session = model.activeIslandCardSession {
                 IslandSessionRow(

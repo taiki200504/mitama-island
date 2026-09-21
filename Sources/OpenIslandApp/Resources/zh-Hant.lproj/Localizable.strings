@@ -359,6 +359,10 @@
 "mitama.level.homework" = "作業";
 "mitama.level.digest" = "摘要";
 "mitama.level.info" = "資訊";
+"mitama.proposal.heading" = "RSI 提議";
+"mitama.proposal.do" = "去做";
+"mitama.proposal.drop" = "捨棄";
+"mitama.proposal.age" = "%d天";
 
 /* Shortcuts pane */
 "settings.shortcuts.section.global" = "全域";

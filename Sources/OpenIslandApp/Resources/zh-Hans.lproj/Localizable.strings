@@ -360,6 +360,10 @@
 "mitama.level.homework" = "作业";
 "mitama.level.digest" = "摘要";
 "mitama.level.info" = "信息";
+"mitama.proposal.heading" = "RSI 提议";
+"mitama.proposal.do" = "去做";
+"mitama.proposal.drop" = "放弃";
+"mitama.proposal.age" = "%d天";
 
 /* Shortcuts pane */
 "settings.shortcuts.section.global" = "全局";
