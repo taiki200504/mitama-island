@@ -88,6 +88,8 @@ struct ShortcutsSettingsPane: View {
                     )
                 }
 
+                rehearsalRow
+
                 SettingsRow(
                     title: lang.t("settings.camera.sensitivity"),
                     help: lang.t("settings.camera.sensitivity.help")
@@ -110,6 +112,49 @@ struct ShortcutsSettingsPane: View {
             Text(lang.t("settings.camera.section.footer"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
+        }
+    }
+
+    /// ポーズを覚えるための場所。押すと 20 秒だけカメラを開き、認識した
+    /// ものをここに並べる。島は開かない——当たったかどうかだけを返す。
+    private var rehearsalRow: some View {
+        let rehearsal = model.gestureRehearsal
+        return SettingsRow(
+            title: lang.t("settings.camera.rehearse"),
+            help: lang.t("settings.camera.rehearse.help")
+        ) {
+            VStack(alignment: .trailing, spacing: 8) {
+                Button(rehearsal.isRunning
+                    ? lang.t("settings.camera.rehearse.stop")
+                    : lang.t("settings.camera.rehearse.start")
+                ) {
+                    if rehearsal.isRunning {
+                        model.endGestureRehearsal()
+                    } else {
+                        model.beginGestureRehearsal()
+                    }
+                }
+
+                if rehearsal.isRunning || !rehearsal.entries.isEmpty {
+                    VStack(alignment: .trailing, spacing: 4) {
+                        if rehearsal.entries.isEmpty {
+                            Text(lang.t("settings.camera.rehearse.waiting"))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        ForEach(rehearsal.entries) { entry in
+                            HStack(spacing: 6) {
+                                Text(lang.t(entry.sighting.labelKey))
+                                Text(entry.at, style: .relative)
+                                    .foregroundStyle(.secondary)
+                                    .monospacedDigit()
+                            }
+                            .font(.caption)
+                        }
+                    }
+                    .animation(.easeOut(duration: 0.15), value: rehearsal.entries)
+                }
+            }
         }
     }
 
