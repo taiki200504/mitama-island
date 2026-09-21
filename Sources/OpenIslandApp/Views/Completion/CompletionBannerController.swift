@@ -71,6 +71,8 @@ final class CompletionBannerController {
         burst.isOpaque = false
         burst.hasShadow = false
         burst.ignoresMouseEvents = true
+        // `tearDown` が `close()` を呼ぶので、寿命は ARC 側に持たせる。
+        burst.isReleasedWhenClosed = false
         burst.hidesOnDeactivate = false
         burst.collectionBehavior = [.fullScreenAuxiliary, .canJoinAllSpaces, .ignoresCycle, .stationary]
         burst.orderFrontRegardless()
@@ -85,8 +87,25 @@ final class CompletionBannerController {
 
     private func dismissBurst() {
         burstTimer.invalidate()
-        burstPanel?.orderOut(nil)
+        Self.tearDown(burstPanel)
         burstPanel = nil
+    }
+
+    /// Takes the window away for good.
+    ///
+    /// `orderOut` alone only pulls it off the screen: AppKit keeps the window
+    /// in the application's window list, so the `NSHostingView` inside it stays
+    /// alive with its SwiftUI graph. The burst's graph holds a
+    /// `TimelineView(.animation)`, which goes on asking for a frame at the
+    /// display's refresh rate — **off screen, where nobody can see it** — for
+    /// the rest of the launch. A 1.1-second flourish was leaving one of those
+    /// behind every time a session finished. Dropping the content first is what
+    /// actually cuts the graph loose.
+    private static func tearDown(_ panel: NSPanel?) {
+        guard let panel else { return }
+        panel.orderOut(nil)
+        panel.contentView = nil
+        panel.close()
     }
 
     /// Restarts the countdown. Called on arrival, and again when the pointer
@@ -105,7 +124,7 @@ final class CompletionBannerController {
 
     func dismiss() {
         dismissTimer.invalidate()
-        panel?.orderOut(nil)
+        Self.tearDown(panel)
         panel = nil
     }
 
@@ -180,6 +199,8 @@ final class CompletionBannerController {
         panel.collectionBehavior = [.fullScreenAuxiliary, .canJoinAllSpaces, .ignoresCycle, .stationary]
         panel.titleVisibility = .hidden
         panel.titlebarAppearsTransparent = true
+        // `tearDown` が `close()` を呼ぶので、寿命は ARC 側に持たせる。
+        panel.isReleasedWhenClosed = false
         return panel
     }
 }
