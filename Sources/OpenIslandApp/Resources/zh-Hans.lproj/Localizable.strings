@@ -904,3 +904,11 @@
 "focusCard.elapsed.minutes" = "%d 分钟前";
 "focusCard.elapsed.hours" = "%d 小时前";
 "focusCard.elapsed.days" = "%d 天前";
+
+/* 旁听 — 持续开启的麦克风。默认关闭。 */
+"settings.earshot.section" = "旁听";
+"settings.earshot.section.footer" = "持续开启麦克风，并把听到的内容写入本机文件。转写也在本机完成，文件会按时限自动删除（通常 24 小时，可能有他人在场时为 1 小时）。开启期间，macOS 会整天显示橙色麦克风指示灯。这是此功能的代价。";
+"settings.earshot.enabled" = "启用旁听";
+"settings.earshot.enabled.help" = "默认关闭。与语音回答是两个独立开关，可只开其一。";
+"settings.earshot.pauseCalls" = "通话时暂停";
+"settings.earshot.pauseCalls.help" = "当 Zoom / Teams / FaceTime / Webex / Skype 正在运行时停止录制。对方并未同意被录音。";

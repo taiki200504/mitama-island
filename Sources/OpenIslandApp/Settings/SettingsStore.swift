@@ -21,6 +21,7 @@ final class SettingsStore: Sendable {
     let autoResponse: AutoResponseSettings
     let cameraGesture: CameraGestureSettings
     let voiceCommand: VoiceCommandSettings
+    let ambientListen: AmbientListenSettings
     let usage: UsageSettings
     let lockScan: LockScanSettings
     let timer: TimerSettings
@@ -37,6 +38,7 @@ final class SettingsStore: Sendable {
         autoResponse = AutoResponseSettings(store: store)
         cameraGesture = CameraGestureSettings(store: store)
         voiceCommand = VoiceCommandSettings(store: store)
+        ambientListen = AmbientListenSettings(store: store)
         usage = UsageSettings(store: store)
         lockScan = LockScanSettings(store: store)
         timer = TimerSettings(store: store)

@@ -904,3 +904,11 @@
 "focusCard.elapsed.minutes" = "%dm ago";
 "focusCard.elapsed.hours" = "%dh ago";
 "focusCard.elapsed.days" = "%dd ago";
+
+/* Earshot — the standing microphone. Off by default. */
+"settings.earshot.section" = "Earshot";
+"settings.earshot.section.footer" = "Keeps the microphone open and writes what it hears to files on this Mac. The files are transcribed locally and deleted on a timer — 24 hours normally, one hour when someone else may be in the room. While this is on, macOS shows the orange microphone indicator all day. That is the honest cost of it.";
+"settings.earshot.enabled" = "Keep listening";
+"settings.earshot.enabled.help" = "Off by default. Separate from voice answers: you can have one without the other.";
+"settings.earshot.pauseCalls" = "Pause during calls";
+"settings.earshot.pauseCalls.help" = "Stops while Zoom, Teams, FaceTime, Webex, or Skype is running. The other side never agreed to this.";

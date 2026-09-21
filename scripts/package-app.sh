@@ -119,7 +119,7 @@ cat > "$bundle_dir/Contents/Info.plist" <<EOF
     <key>NSAppleEventsUsageDescription</key>
     <string>Open Island needs automation access to focus Terminal and iTerm sessions for jump-back.</string>
     <key>NSMicrophoneUsageDescription</key>
-    <string>Open Island uses the microphone only while you hold its shortcut, to hear a spoken yes or no for a request an agent is waiting on. Speech is recognized on this Mac and is never saved or sent.</string>
+    <string>Open Island uses the microphone in two ways. Held shortcut: it hears a spoken yes or no for a request an agent is waiting on, recognized on this Mac and not saved. Earshot, which is off until you turn it on in Settings: it keeps the microphone open and writes what it hears to files on this Mac, which are transcribed locally and deleted on a timer. Nothing is sent from the app.</string>
     <key>NSSpeechRecognitionUsageDescription</key>
     <string>Speech is recognized on this Mac so a waiting request can be answered out loud. Nothing is saved or sent.</string>
     <key>NSCalendarsFullAccessUsageDescription</key>

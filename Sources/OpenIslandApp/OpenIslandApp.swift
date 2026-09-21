@@ -40,6 +40,10 @@ final class OpenIslandAppDelegate: NSObject, NSApplicationDelegate {
             harnessRuntimeMonitor.recordMilestone("modelStarted")
 
             if harnessLaunchConfiguration.scenario == nil {
+                // The standing microphone, if it was switched on. Never during a
+                // harness run — an automated scenario must not open the mic.
+                model.earshot.start()
+
                 let controller = StatusItemController(model: model)
                 statusItemController = controller
                 model.onShowsMenuBarIconChanged = { [weak controller] isOn in
