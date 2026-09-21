@@ -1379,7 +1379,11 @@ final class AppModel {
             guard let self else { return .make(for: []) }
             return AmbientBoard.make(
                 for: surfacedSessions,
-                mitamaAlerts: mitamaFeedEnabled ? mitamaFeed.notifications : []
+                mitamaAlerts: mitamaFeedEnabled ? mitamaFeed.notifications : [],
+                // 旗は取りに行く側（refreshAmbient）の門。描く側で二重に見張ると
+                // harness から値を置いた絵が撮れなくなるので、ここは値の有無で出す。
+                pulse: mitamaFeed.pulse,
+                card: mitamaFeed.learnCard
             )
         }
         ambient.nextEvent = { [weak self] in self?.calendar.band }
@@ -1502,6 +1506,7 @@ final class AppModel {
         // already cached, and the fresh listing lands in time for the next
         // one rather than blocking this one on `FileManager`.
         refreshAmbientVideoCache()
+        if mitamaFeedEnabled { mitamaFeed.refreshAmbient() }
         ambient.present()
     }
 
@@ -2399,6 +2404,8 @@ final class AppModel {
         if snapshot.presentsAmbientBoard {
             // Its own full-screen panel, so a scenario has to ask for it — the
             // same reason the completion banner does.
+            mitamaFeed.loadAmbientFixture(pulse: snapshot.debugPulse, card: snapshot.debugLearnCard)
+            ambient.cardElapsedOverride = snapshot.debugCardElapsed
             configureAmbientBoard()
             if let ambientDate = snapshot.debugAmbientDate {
                 // Pinned so a headless capture always lands on the same

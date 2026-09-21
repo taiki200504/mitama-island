@@ -42,6 +42,8 @@ final class AmbientOverlayController {
     /// the board can stay up long after this closure was captured.
     @ObservationIgnored var nowPlaying: () -> (title: String, artist: String?)? = { nil }
     @ObservationIgnored var lang: LanguageManager = .shared
+    /// ハーネス用。カードが裏に返るまでの経過を固定する。実機では nil。
+    @ObservationIgnored var cardElapsedOverride: TimeInterval?
     /// Called when the board goes away, so the idle count restarts from zero
     /// instead of re-presenting on the next tick.
     @ObservationIgnored var onDismiss: (() -> Void)?
@@ -79,7 +81,8 @@ final class AmbientOverlayController {
                     timer: timer(),
                     backdrop: screen == primaryScreen ? primaryBackdrop : secondaryBackdrop,
                     nowPlaying: nowPlaying(),
-                    lang: lang
+                    lang: lang,
+                    cardElapsedOverride: cardElapsedOverride
                 ),
                 onDismiss: { [weak self] in self?.dismiss() }
             )

@@ -775,6 +775,15 @@
 "ambient.dismiss" = "按任意键或点击即可返回";
 "ambient.waiting" = "正在等待你";
 "ambient.more" = "另有 %d 项";
+"ambient.pulse.ok" = "一切正常";
+"ambient.pulse.schedule" = "%@ 失败";
+"ambient.pulse.scheduleMore" = "%@ 等 %d 项失败";
+"ambient.pulse.silent" = "心跳中断 %d 分钟";
+"ambient.pulse.overdue" = "逾期：决策 %d 项、任务 %d 项";
+"ambient.pulse.counts" = "定时任务 %d 项 · 7天 进 %d 出 %d";
+"ambient.pulse.week" = "本周 %d 次 %@ 小时";
+"ambient.card.heading" = "今日一张";
+"ambient.card.why" = "用在哪里";
 "settings.display.ambient" = "闲置时显示待机画面";
 "settings.display.ambient.help" = "离开 Mac 后，全屏显示时钟、下一个日程和正在等待你的对象。在专注模式、共享屏幕、其他应用正在使用摄像头（通话中）或岛已展开时不会出现。按任意键或点击即可返回。";
 "settings.display.ambient.never" = "不显示";

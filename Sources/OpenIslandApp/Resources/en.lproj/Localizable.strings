@@ -775,6 +775,15 @@
 "ambient.dismiss" = "Any key or click brings you back";
 "ambient.waiting" = "Waiting on you";
 "ambient.more" = "%d more";
+"ambient.pulse.ok" = "All clear";
+"ambient.pulse.schedule" = "%@ is failing";
+"ambient.pulse.scheduleMore" = "%@ and %d more are failing";
+"ambient.pulse.silent" = "No heartbeat for %d min";
+"ambient.pulse.overdue" = "Overdue: %d decisions, %d tasks";
+"ambient.pulse.counts" = "%d schedules · 7d %d in, %d out";
+"ambient.pulse.week" = "This week %d runs, %@h";
+"ambient.card.heading" = "Today's card";
+"ambient.card.why" = "Where it lands";
 "settings.display.ambient" = "Show the idle board when you step away";
 "settings.display.ambient.help" = "Fills the screen with the clock, what is next, and who is waiting. Never appears during a Focus mode, while the screen is shared, while another app is using the camera (a call), or while the island is open. Any key or click brings you back.";
 "settings.display.ambient.never" = "Never";

@@ -49,6 +49,11 @@ struct IslandDebugSnapshot {
     /// instead of the wall clock, so `ambientBoardNight` always lands on the
     /// same gradient no matter when the harness happens to run.
     var debugAmbientDate: Date?
+    /// 放置画面に出す mitama の脈と今日の1枚。実機ではデータベース越しに来る。
+    var debugPulse: MitamaPulse?
+    var debugLearnCard: MitamaLearnCard?
+    /// カードが裏に返るまでの経過を固定する。表を撮るなら 0、裏なら 8 秒より後。
+    var debugCardElapsed: TimeInterval?
     /// Items to load straight into `ClipboardStore` for the
     /// `clipboardSurface` scenario — never through `record(_:)`, the same
     /// reasoning `shelfItems` gives for its own fixture loading.
@@ -111,6 +116,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
     case automationLamp
     case automationSignals
     case mitamaProposals
+    case ambientPulse
+    case ambientLearnCard
 
     var id: String { rawValue }
 
@@ -172,6 +179,10 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "mitama Signals Strip"
         case .mitamaProposals:
             "mitama Proposals"
+        case .ambientPulse:
+            "Ambient Pulse"
+        case .ambientLearnCard:
+            "Ambient Learn Card"
         }
     }
 
@@ -233,6 +244,10 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "The opened island with all three mitama signals: the browser being driven, the job queue, and a failing Codex gate."
         case .mitamaProposals:
             "返事待ちの RSI 提案。押さないと毎朝 urgent が来続けるので、通知より上に出る。"
+        case .ambientPulse:
+            "放置画面に出る mitama の脈。止まっている定期実行があるときの姿。"
+        case .ambientLearnCard:
+            "放置画面の今日の1枚。表を出してから裏に返ったあとの姿と、異常なしの脈。"
         }
     }
 
@@ -417,6 +432,63 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                 sessions: [recent, stale],
                 selectedSessionID: recent.id,
                 presentsAmbientBoard: true
+            )
+
+        case .ambientPulse:
+            // 異常がある側。止まっている定期実行が1本と、ほかに1本。
+            // 待ちの枠と並んでも下の段が詰まらないことを見る。
+            let pulseWaiting = DebugSessionFactory.approvalSession(now: now.addingTimeInterval(-12 * 60))
+            return IslandDebugSnapshot(
+                title: title,
+                summary: summary,
+                previewHeight: 78,
+                notchStatus: .closed,
+                notchOpenReason: nil,
+                islandSurface: .sessionList(),
+                sessions: [pulseWaiting],
+                selectedSessionID: pulseWaiting.id,
+                presentsAmbientBoard: true,
+                debugAmbientDate: now,
+                debugPulse: MitamaPulse(
+                    concern: .scheduleFailing(id: "voice-morning", others: 1),
+                    activeSchedules: 9,
+                    inflow7d: 3,
+                    done7d: 3,
+                    weekSessions: 12,
+                    weekSeconds: 23_040,
+                    asOf: now.addingTimeInterval(-1200)
+                )
+            )
+
+        case .ambientLearnCard:
+            // 裏に返ったあと。異常が無いときの脈は「異常なし」と数字だけを出す。
+            return IslandDebugSnapshot(
+                title: title,
+                summary: summary,
+                previewHeight: 78,
+                notchStatus: .closed,
+                notchOpenReason: nil,
+                islandSurface: .sessionList(),
+                sessions: [],
+                selectedSessionID: nil,
+                presentsAmbientBoard: true,
+                debugAmbientDate: now,
+                debugPulse: MitamaPulse(
+                    concern: nil,
+                    activeSchedules: 9,
+                    inflow7d: 3,
+                    done7d: 3,
+                    weekSessions: 12,
+                    weekSeconds: 23_040,
+                    asOf: now.addingTimeInterval(-1200)
+                ),
+                debugLearnCard: MitamaLearnCard(
+                    domain: "finance",
+                    front: "CAC に対して LTV がどの比率を下回ったら危険信号か。",
+                    back: "3倍。それを割ると、獲得に使った金が回収しきれない。",
+                    why: "広告を増やすか止めるかを、勘ではなく比率で決められる。"
+                ),
+                debugCardElapsed: 9
             )
 
         case .ambientBoardNight:
