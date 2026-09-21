@@ -18,32 +18,12 @@ CLI coding agents are powerful, but they pull attention away from the editor and
 - **Terminal-native** — built to support the terminal workflow, not replace it
 - **Fail open** — if the app or bridge is unavailable, agents keep running unchanged
 
-## Supported Code Agents
+## Supported Agents, Terminals and IDEs
 
-| Agent | Status | Notes |
-|---|---|---|
-| **Claude Code** | Supported | Hook integration, JSONL session discovery, status line bridge, usage tracking |
-| **Codex** | Supported | Full hook integration (SessionStart, UserPromptSubmit, Stop), usage tracking |
-| **OpenCode** | Supported | JS plugin integration, permission/question flows, process detection |
-| **Qoder** | Supported | Claude Code fork — same hook format, config at `~/.qoder/settings.json` |
-| **Qwen Code** | Supported | Claude Code fork — same hook format, config at `~/.qwen/settings.json` |
-| **Factory** | Supported | Claude Code fork — same hook format, config at `~/.factory/settings.json` |
-| **CodeBuddy** | Supported | Claude Code fork — same hook format, config at `~/.codebuddy/settings.json` |
-| **Gemini CLI** | Supported | Hook integration (`SessionStart`, `BeforeAgent`, `AfterAgent`, `SessionEnd`, `Notification`), session tracking, terminal jump metadata, completion-card compatibility handling |
-| **Kimi CLI** | Supported | Hook integration via `~/.kimi/config.toml` `[[hooks]]` (Moonshot AI). Kimi's hook payload is byte-compatible with Claude Code, so runtime reuses the Claude decode path; a dedicated TOML installer preserves user-authored hooks |
-
-## Supported Terminals
-
-| Terminal | Status | Notes |
-|---|---|---|
-| **Terminal.app** | Full Support | Jump-back with TTY targeting |
-| **Ghostty** | Full Support | Jump-back with ID matching |
-| **cmux** | Full Support | Jump-back via Unix socket API |
-| **Kaku** | Full Support | Jump-back via CLI pane targeting |
-| **WezTerm** | Full Support | Jump-back via CLI pane targeting |
-| **iTerm2** | Full Support | Jump-back with session ID / TTY matching |
-| **tmux** (multiplexer) | Full Support | Jump-back with session/window/pane targeting |
-| **Warp** | Planned | Fallback detection only |
+**The matrix lives in [README.md](../README.md)** — agents, terminals, IDEs, and how
+far the jump-back goes for each. It was duplicated here and the copy drifted:
+this file still called Warp "Planned" long after the precision jump shipped, and
+never learned about Zellij, Cursor or the IDE column at all. One table, one place.
 
 ## Features
 
@@ -85,6 +65,5 @@ default-off stay default-off.
 
 ## Future Directions
 
-- Warp precision jump support
 - Sound packs, themes, and onboarding polish
 - Deeper terminal split targeting

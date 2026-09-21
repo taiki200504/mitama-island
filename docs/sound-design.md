@@ -19,9 +19,9 @@ derived from, any game, film, or product: see the legal note at the bottom.
 | `confirm` | `ui-confirm.caf` | 0.35s | Submitting an answer or a reply. |
 | `approve` | `ui-approve.caf` | 0.40s | Allow / Allow All. |
 | `reject` | `ui-reject.caf` | 0.30s | Deny / Deny All. |
-| `timerFinished` | `ui-timer-end.caf` | 1.60s | Reserved; not raised yet. |
-| `lockScan` | `ui-lock-scan.caf` | 0.90s | Reserved; not raised yet. |
-| `unlock` | `ui-unlock.caf` | 0.39s | Reserved; not raised yet. |
+| `timerFinished` | `ui-timer-end.caf` | 1.60s | A countdown reaching zero (`FocusTimerCoordinator`). |
+| `lockScan` | `ui-lock-scan.caf` | 0.90s | The lock-screen scan starting. |
+| `unlock` | `ui-unlock.caf` | 0.39s | The scan finishing — the machine is yours again. |
 | — | `ui-hover.caf` | 0.06s | Bundled but not wired to anything — a menu-bar-resident app should not chime on every pointer pass. |
 | — | `ui-urgent.caf` | 1.20s | Bundled for future use; not yet assigned a default. |
 | login sequence: rise | `ui-linkstart-rise.caf` | 1.20s (stereo) | Bright and airy — the light arriving. |
@@ -43,9 +43,10 @@ zsh scripts/install-linkstart-audio.sh <your-recording> [offset-seconds]
 zsh scripts/install-linkstart-audio.sh --restore      # back to the bundled cues
 ```
 
-It slices one recording into the five cues at the sequence's own beats
-(rise 0.00–1.20, warp 1.20–3.40, flash 3.40–4.30, tick 4.30–4.45, resolve
-4.45–7.20 — each overridable with `RISE_RANGE="0.0 1.5"` and friends) and
+It slices one recording into the six cues at the sequence's own beats
+(rise 0.00–1.40, warp 3.50–5.00, flash 5.00–5.80, tick 6.02–6.17, resolve
+8.28–9.28, dive 16.60–18.40 — each overridable with `RISE_RANGE="0.0 1.5"` and
+friends) and
 writes them to that folder. **Whatever you put there stays there**: the folder
 is outside the repository, nothing is committed, and the app ships only the
 cues it synthesises itself.
