@@ -565,6 +565,9 @@ final class AppModel {
     /// that has none to spare. Eager construction is free here, so it is not
     /// worth understanding further.
     @ObservationIgnored let cameraActivation: CameraActivationSession
+    /// ポーズを覚えるための練習場。走っている間、手のジェスチャは島を
+    /// 動かさず、ここに名前として積まれるだけになる。
+    @ObservationIgnored let gestureRehearsal = CameraGestureRehearsal()
     /// The idle screen and the clock that decides when to show it.
     let ambient = AmbientOverlayController()
     @ObservationIgnored let idle = UserIdleWatcher()
@@ -1966,6 +1969,26 @@ final class AppModel {
         }
     }
 
+    /// ポーズを覚える時間。5 秒（通常の窓）では 1 回外すと終わってしまう。
+    static let gestureRehearsalSeconds: TimeInterval = 20
+
+    /// 練習を始める。島は開かず、認識したものが `gestureRehearsal` に積まれる。
+    func beginGestureRehearsal() {
+        gestureRehearsal.start(seconds: Self.gestureRehearsalSeconds) { [weak self] in
+            self?.cameraActivation.stop()
+        }
+        guard cameraActivation.beginRehearsal(seconds: Self.gestureRehearsalSeconds) else {
+            // 機能が切れている・権限が無いなど。カメラが開かないなら練習も無い。
+            gestureRehearsal.stop()
+            return
+        }
+    }
+
+    func endGestureRehearsal() {
+        gestureRehearsal.stop()
+        cameraActivation.stop()
+    }
+
     /// The session a spoken answer would go to, and the options it offers.
     ///
     /// Nil when nothing is waiting. That is what keeps the microphone shut: the
@@ -3047,9 +3070,15 @@ final class AppModel {
         // can be dismissed the way it was summoned rather than reaching for the
         // keyboard to undo a gesture.
         cameraActivation.onGesture = { [weak self] direction in
+            guard let self else { return }
+            // 練習中は島を動かさない。当たったことだけを見せる。
+            guard !gestureRehearsal.isRunning else {
+                gestureRehearsal.record(direction == .down ? .swipeDown : .swipeUp)
+                return
+            }
             switch direction {
-            case .down: self?.notchOpen(reason: .handGesture)
-            case .up: self?.notchClose()
+            case .down: notchOpen(reason: .handGesture)
+            case .up: notchClose()
             }
         }
         // A held palm answers whatever is being asked. With nothing being
@@ -3058,6 +3087,10 @@ final class AppModel {
         // all when no card is waiting.
         cameraActivation.onPalmHeld = { [weak self] in
             guard let self else { return }
+            guard !gestureRehearsal.isRunning else {
+                gestureRehearsal.record(.palm)
+                return
+            }
             if voiceAnswerTarget != nil {
                 beginVoiceAnswer()
             } else if settings.display.playsLinkstart {
@@ -3067,13 +3100,22 @@ final class AppModel {
         // 差した先の行に印を移す。指の縦位置だけを使う——一覧は1列で、
         // 横に何かを選ぶものが無い。
         cameraActivation.onPointing = { [weak self] reading in
-            self?.pointHand(at: reading)
+            guard let self else { return }
+            guard !gestureRehearsal.isRunning else {
+                gestureRehearsal.record(.pointing)
+                return
+            }
+            pointHand(at: reading)
         }
         // つまむ＝決定。差している行があればそれを、無ければ今の行を開く。
         // 島が閉じているときは、まず開いてから決める段にする（閉じたまま
         // 「決定」だけ起きても、何を決めたのか本人に見えない）。
         cameraActivation.onPinch = { [weak self] in
             guard let self else { return }
+            guard !gestureRehearsal.isRunning else {
+                gestureRehearsal.record(.pinch)
+                return
+            }
             guard overlay.isOverlayVisible else {
                 notchOpen(reason: .handGesture)
                 return
