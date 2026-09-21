@@ -18,4 +18,11 @@ public enum ISO8601Timestamp {
         whole.formatOptions = [.withInternetDateTime]
         return whole.date(from: text)
     }
+
+    /// 送り出すときの形。受け取る側は小数秒があってもなくても通すので、短い方に揃える。
+    public static func string(from date: Date) -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter.string(from: date)
+    }
 }

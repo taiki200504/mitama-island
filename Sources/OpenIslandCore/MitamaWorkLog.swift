@@ -128,6 +128,21 @@ public struct MitamaWorkLogClient: Sendable {
         )
     }
 
+    /// 島から mitama を止める・訂正する。
+    ///
+    /// 何を起こしてよいかの判断は `MitamaIslandAction` の側にあり、ここは運ぶだけ。
+    /// 判断と配管を同じ場所に置くと、配管を足すたびに線が引き直されてしまう。
+    @discardableResult
+    public func perform(_ action: MitamaIslandAction, now: Date = Date()) async -> Bool {
+        guard action.isValid else { return false }
+        return await send(
+            table: action.table,
+            method: action.method,
+            filters: action.filters,
+            body: action.body(now: now)
+        )
+    }
+
     @discardableResult
     public func enqueue(_ job: IslandJobSubmission) async -> Bool {
         await post(
@@ -319,13 +334,30 @@ public struct MitamaWorkLogClient: Sendable {
     }
 
     private func post(table: String, body: [String: Any], preferences: String? = nil) async -> Bool {
-        guard let url = environment.endpoint(table),
-              let payload = try? JSONSerialization.data(withJSONObject: [body]) else {
+        await send(table: table, method: "POST", filters: [], body: body, preferences: preferences)
+    }
+
+    private func send(
+        table: String,
+        method: String,
+        filters: [URLQueryItem],
+        body: [String: Any],
+        preferences: String? = nil
+    ) async -> Bool {
+        // 絞り込みの無い PATCH は表を丸ごと書き換える。URL の組み立てを間違えた
+        // ときに一番高くつく失敗なので、ネットワークまで運ばずにここで止める。
+        guard method == "POST" || !filters.isEmpty else { return false }
+
+        // PostgREST は追加が配列、更新が単体。
+        let payloadObject: Any = method == "POST" ? [body] : body
+
+        guard let url = environment.endpoint(table, queryItems: filters),
+              let payload = try? JSONSerialization.data(withJSONObject: payloadObject) else {
             return false
         }
 
         var request = environment.authorized(URLRequest(url: url))
-        request.httpMethod = "POST"
+        request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if let preferences {
             request.setValue(preferences, forHTTPHeaderField: "Prefer")
