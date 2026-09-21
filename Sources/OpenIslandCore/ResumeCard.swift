@@ -90,9 +90,16 @@ public struct FocusCardState: Equatable, Sendable {
     }
 
     /// Resumes from a card in history, making it the current card.
+    ///
+    /// Whatever was current is put back into history first — resuming an older
+    /// interruption must not throw away the one you were holding. `save` already
+    /// displaces the same way; this is the same rule read from the other end.
     public mutating func resume(_ card: ResumeCard) {
-        currentCard = card
         history.removeAll { $0.id == card.id }
+        if let current = currentCard, current.id != card.id {
+            history.insert(current, at: 0)
+        }
+        currentCard = card
     }
 
     /// Dismisses the current card without resuming.
