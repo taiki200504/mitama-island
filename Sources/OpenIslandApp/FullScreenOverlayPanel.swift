@@ -67,6 +67,8 @@ final class FullScreenOverlayPanel: NSPanel {
         panel.hasShadow = false
         panel.isMovable = false
         panel.ignoresMouseEvents = false
+        // `tearDownHostedContent` が `close()` を呼ぶので、寿命は ARC 側に持たせる。
+        panel.isReleasedWhenClosed = false
         panel.level = .screenSaver
         panel.collectionBehavior = [.fullScreenAuxiliary, .canJoinAllSpaces, .ignoresCycle, .stationary]
 

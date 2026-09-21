@@ -87,25 +87,8 @@ final class CompletionBannerController {
 
     private func dismissBurst() {
         burstTimer.invalidate()
-        Self.tearDown(burstPanel)
+        burstPanel?.tearDownHostedContent()
         burstPanel = nil
-    }
-
-    /// Takes the window away for good.
-    ///
-    /// `orderOut` alone only pulls it off the screen: AppKit keeps the window
-    /// in the application's window list, so the `NSHostingView` inside it stays
-    /// alive with its SwiftUI graph. The burst's graph holds a
-    /// `TimelineView(.animation)`, which goes on asking for a frame at the
-    /// display's refresh rate — **off screen, where nobody can see it** — for
-    /// the rest of the launch. A 1.1-second flourish was leaving one of those
-    /// behind every time a session finished. Dropping the content first is what
-    /// actually cuts the graph loose.
-    private static func tearDown(_ panel: NSPanel?) {
-        guard let panel else { return }
-        panel.orderOut(nil)
-        panel.contentView = nil
-        panel.close()
     }
 
     /// Restarts the countdown. Called on arrival, and again when the pointer
@@ -124,7 +107,7 @@ final class CompletionBannerController {
 
     func dismiss() {
         dismissTimer.invalidate()
-        Self.tearDown(panel)
+        panel?.tearDownHostedContent()
         panel = nil
     }
 

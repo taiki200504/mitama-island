@@ -299,7 +299,7 @@ final class LinkstartOverlayController {
         voice?.stop()
         guard !panels.isEmpty else { return }
         Self.logger.notice("Dismissing")
-        panels.forEach { $0.orderOut(nil) }
+        panels.forEach { $0.tearDownHostedContent() }
         panels = []
 
         if let returnFocusTo, !returnFocusTo.isTerminated {
