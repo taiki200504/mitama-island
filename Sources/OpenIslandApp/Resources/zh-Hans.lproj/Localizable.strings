@@ -859,6 +859,7 @@
 "settings.mitama.signal.jobs.help" = "显示进行中、排队中与今日完成的数量，每完成一件在岛上提示一次。";
 "settings.mitama.signal.codex" = "显示 Codex 的问题";
 "settings.mitama.signal.codex.help" = "最近一次 Codex 审查出现 [P1] 的项目会标红，点击可查看内容。";
+"island.signal.camera" = "摄像头正在看";
 "island.signal.automation" = "自动操作中";
 "island.signal.jobs" = "mitama · 进行中 %1$d ・排队 %2$d ・今日完成 %3$d";
 "island.signal.codex" = "Codex P1 · %1$@ (%2$@) %3$d 项";

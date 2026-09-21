@@ -859,6 +859,7 @@
 "settings.mitama.signal.jobs.help" = "Running, queued and finished-today counts, plus a short note on the island each time one finishes.";
 "settings.mitama.signal.codex" = "Show Codex review findings";
 "settings.mitama.signal.codex.help" = "Flags projects whose latest Codex review reported [P1]. Tap the line to read the findings.";
+"island.signal.camera" = "The camera is watching";
 "island.signal.automation" = "Driving";
 "island.signal.jobs" = "mitama · %1$d running · %2$d queued · %3$d done today";
 "island.signal.codex" = "Codex P1 · %1$@ (%2$@) ×%3$d";

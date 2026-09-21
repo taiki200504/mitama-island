@@ -859,6 +859,7 @@
 "settings.mitama.signal.jobs.help" = "実行中・待ち・今日終わった件数を出し、1件終わるたびに島でひと言知らせる";
 "settings.mitama.signal.codex" = "Codex の指摘を出す";
 "settings.mitama.signal.codex.help" = "コードレビューで [P1] が出たプロジェクトを赤く出す。押すと指摘の中身が読める";
+"island.signal.camera" = "カメラが見ています";
 "island.signal.automation" = "自動操作中";
 "island.signal.jobs" = "mitama · 実行中 %1$d ・待ち %2$d ・今日 %3$d 件完了";
 "island.signal.codex" = "Codex P1 · %1$@ (%2$@) %3$d件";

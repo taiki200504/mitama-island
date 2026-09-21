@@ -2345,6 +2345,18 @@ final class AppModel {
         debugClosedAccessoryNowPlaying = snapshot.debugAccessoryNowPlaying
         nowPlaying.loadDebugState(snapshot.debugNowPlayingState)
 
+        // mitama の 3 つの信号。実機では lsof・Codex の台帳・ジョブの
+        // データベースから来るので、撮るときは値を置いてポーリングを止める。
+        // ここも毎回リセットする——前のシナリオのランプが残ると、次の絵が
+        // 嘘になる。
+        let signals = snapshot.debugEcosystemSignals ?? EcosystemSignalsFixture()
+        ecosystemSignals.loadFixture(
+            automationIsRunning: signals.automationIsRunning,
+            activity: signals.automationActivity,
+            codexFailure: signals.codexFailure
+        )
+        mitamaFeed.loadJobSummaryFixture(signals.jobSummary)
+
         // Exercises the real `CalendarWatcher.loadFixture` path: the closed
         // body, the opened island's join bar, and the ambient board all read
         // `calendar.current` the same way a live refresh would leave it.
