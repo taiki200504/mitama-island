@@ -875,3 +875,15 @@
 "linkstart.dialog.title" = "プロフィール登録";
 "linkstart.dialog.line1" = "前回のセッションが残っています。";
 "linkstart.dialog.line2" = "続きから始めますか？";
+
+/* Focus Card — 中断メモ */
+"focusCard.title" = "中断メモ";
+"focusCard.empty" = "中断メモはまだありません";
+"focusCard.hint" = "%@ でいまの作業を置いていけます";
+"focusCard.resume" = "再開する";
+"focusCard.dismiss" = "破棄";
+"focusCard.history" = "その前";
+"focusCard.elapsed.justNow" = "たった今";
+"focusCard.elapsed.minutes" = "%d分前";
+"focusCard.elapsed.hours" = "%d時間前";
+"focusCard.elapsed.days" = "%d日前";

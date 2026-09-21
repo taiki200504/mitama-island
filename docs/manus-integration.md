@@ -84,20 +84,42 @@ extension SessionState {
 - Load on app startup
 - Expire if stale (>7 days at `focusCard.savedAt`)
 
-#### 1.4 Add UI gesture: keyboard shortcut to save
+#### 1.4 Add UI gesture: keyboard shortcut to save — **shipped, with three changes**
 
-- Global: ⇧⌘F (or settings-configurable)
-- Shows **modal card** (non-intrusive) with pre-filled title + snippet + confirm
-- Calls `AppModel.saveFocusCard()`
+Shipped as **⌃⌥P**, which saves the card and opens the island on it in one gesture.
 
-#### 1.5 On startup: show Resume Card in the idle board
+Three deliberate departures from the plan above:
 
-- If `focusCard` exists and not stale, render it above the time-of-day clock
-- Show title + snippet + "Jump" button
-- Tapping jump calls `AppModel.jumpToSession(focusCard.jumpTarget)`
-- Swiping/⎋ dismisses it; can be restored via a "Resume" shelf item
+- **⌃⌥P, not ⇧⌘F.** ⇧⌘F is Find in half the apps you would be leaving. Every
+  global key this app already owns sits under ⌃⌥ (⌃⌥L linkstart, ⌃⌥C clipboard),
+  so the new one joins them rather than starting a second convention.
+- **No modal, and nothing to fill in.** A confirmation step defeats the gesture:
+  this key is pressed while you are already standing up. The title comes from
+  the active session, and the island opening on the card is the receipt. A
+  dialog asking what to call it is a fourth thing to do before you can leave.
+- **Always registered, with no setting.** The other four feature keys are gated
+  so an unused shortcut does not hold a key hostage. This one is not a feature
+  you remember to switch on beforehand — an escape hatch behind a preference is
+  not an escape hatch.
 
-**Rationale:** The closed-island body slot is reserved for "what is waiting on you *now*" (agent, calendar). Resume context belongs in the **idle board**, not the closed pill — it's available on demand, not a standing interrupt.
+#### 1.5 On resume: where the card lives — **shipped, in the accessory slot**
+
+- `IslandClosedAccessory.heldInterruption` — a bookmark glyph in the closed
+  pill, at the **bottom** of the accessory priority, below even the shelf
+- Opening it gives the `.focusCard` surface: the held card, its one next step,
+  how long ago it was put down, and 「再開する」/「破棄」
+- Behind that, a three-card tail of what came before, each one resumable
+
+**Rationale:** the plan's reasoning — the closed-island *body* slot is reserved
+for what is waiting on you *now* — still holds, and is why this went to the
+**accessory** slot instead, ranked last. The idle board was the other candidate,
+but it needs its own gesture to reach, which would have left the card saved and
+unreachable. Anything actually happening still pushes the bookmark out of the
+pill; it only appears when the island has nothing more pressing to say.
+
+Not done: `jumpToSession`. `resume` marks the card current and closes the island;
+nothing reopens a terminal yet. `shelfReference` is carried through the model
+untouched for whoever wires that.
 
 ---
 

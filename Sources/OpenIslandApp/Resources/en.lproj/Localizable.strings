@@ -875,3 +875,15 @@
 "linkstart.dialog.title" = "Profile registration";
 "linkstart.dialog.line1" = "A session from last time is still here.";
 "linkstart.dialog.line2" = "Pick up where you left off?";
+
+/* Focus Card */
+"focusCard.title" = "Where you left off";
+"focusCard.empty" = "Nothing put down yet";
+"focusCard.hint" = "%@ keeps your place on the way out";
+"focusCard.resume" = "Pick it back up";
+"focusCard.dismiss" = "Let it go";
+"focusCard.history" = "Before that";
+"focusCard.elapsed.justNow" = "just now";
+"focusCard.elapsed.minutes" = "%dm ago";
+"focusCard.elapsed.hours" = "%dh ago";
+"focusCard.elapsed.days" = "%dd ago";

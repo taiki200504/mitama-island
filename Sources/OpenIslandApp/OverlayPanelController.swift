@@ -822,6 +822,10 @@ final class OverlayPanelController {
     private static let nowPlayingContentHeight: CGFloat = 280
     private static let timerPlaceholderHeight: CGFloat = 300
     private static let clipboardPlaceholderHeight: CGFloat = 360
+    /// One card, its two buttons and a three-line tail. Fixed like the others:
+    /// the surface is meant to be read at a glance, so it must not resize as
+    /// the tail fills up behind it.
+    private static let focusCardHeight: CGFloat = 300
     /// Fixed rather than measured: the log scrolls inside a frame of its own,
     /// so the window never jumps as messages load.
     private static let conversationHeight: CGFloat = 440
@@ -835,6 +839,8 @@ final class OverlayPanelController {
             return min(Self.timerPlaceholderHeight, maxHeight)
         case .clipboard:
             return min(Self.clipboardPlaceholderHeight, maxHeight)
+        case .focusCard:
+            return min(Self.focusCardHeight, maxHeight)
         case .conversation:
             return min(Self.conversationHeight, maxHeight)
         case .sessionList:

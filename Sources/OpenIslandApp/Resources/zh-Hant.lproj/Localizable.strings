@@ -874,3 +874,15 @@
 "linkstart.dialog.title" = "檔案註冊";
 "linkstart.dialog.line1" = "上次的工作階段還在。";
 "linkstart.dialog.line2" = "要從上次的地方繼續嗎？";
+
+/* Focus Card */
+"focusCard.title" = "中斷記錄";
+"focusCard.empty" = "還沒有中斷記錄";
+"focusCard.hint" = "按 %@ 可以先把手邊的事放下";
+"focusCard.resume" = "繼續";
+"focusCard.dismiss" = "捨棄";
+"focusCard.history" = "在那之前";
+"focusCard.elapsed.justNow" = "剛剛";
+"focusCard.elapsed.minutes" = "%d 分鐘前";
+"focusCard.elapsed.hours" = "%d 小時前";
+"focusCard.elapsed.days" = "%d 天前";

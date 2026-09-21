@@ -28,6 +28,7 @@ extension AppModel {
 
         do {
             try await focusCardStore.save(card)
+            await refreshFocusCard()
             Self.focusCardLogger.debug("Saved Resume Card: \(cardTitle)")
         } catch {
             Self.focusCardLogger.error("Failed to save Resume Card: \(error, privacy: .public)")
@@ -41,6 +42,7 @@ extension AppModel {
     func resumeFromCard(_ card: ResumeCard) async {
         do {
             try await focusCardStore.resume(card)
+            await refreshFocusCard()
             Self.focusCardLogger.debug("Resumed from card: \(card.title)")
             // In future phases, implement jump-back and context restoration
         } catch {
@@ -53,9 +55,28 @@ extension AppModel {
     func dismissCurrentCard() async {
         do {
             try await focusCardStore.dismissCurrent()
+            await refreshFocusCard()
             Self.focusCardLogger.debug("Dismissed current Resume Card")
         } catch {
             Self.focusCardLogger.error("Failed to dismiss Resume Card: \(error, privacy: .public)")
+        }
+    }
+
+    /// Copies the store's contents into `focusCard`, which is what the island
+    /// actually draws from.
+    ///
+    /// The store is an actor and the island draws on the main thread, so the
+    /// view can never await it. Every operation that changes the store ends
+    /// here; nothing else is allowed to write `focusCard`.
+    @MainActor
+    func refreshFocusCard() async {
+        do {
+            focusCard = FocusCardState(
+                currentCard: try await focusCardStore.current(),
+                history: try await focusCardStore.history()
+            )
+        } catch {
+            Self.focusCardLogger.error("Failed to read Resume Cards: \(error, privacy: .public)")
         }
     }
 
@@ -86,6 +107,7 @@ extension AppModel {
     func pruneOldResumeCards() async {
         do {
             try await focusCardStore.pruneOldCards()
+            await refreshFocusCard()
             Self.focusCardLogger.debug("Pruned old Resume Cards")
         } catch {
             Self.focusCardLogger.error("Failed to prune old Resume Cards: \(error, privacy: .public)")

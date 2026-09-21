@@ -53,6 +53,10 @@ struct IslandDebugSnapshot {
     /// `clipboardSurface` scenario — never through `record(_:)`, the same
     /// reasoning `shelfItems` gives for its own fixture loading.
     var debugClipboardItems: [ClipboardItem] = []
+    /// Cards to put straight into `AppModel.focusCard` for the `focusCard`
+    /// scenario. Same reasoning as the clipboard fixture: never through the
+    /// store, so a harness run never writes the real `resume_cards.jsonl`.
+    var debugFocusCard: FocusCardState?
     /// Forces the closed island into the non-notched (floating capsule)
     /// layout regardless of the real display, so a harness scenario can
     /// capture that layout on any machine — see `closedFloating`.
@@ -99,6 +103,7 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
     case timerSurface
     case eventInProgress
     case clipboardSurface
+    case focusCard
     case nowPlayingClosed
     case nowPlayingSurface
     case hudVolume
@@ -151,6 +156,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Event In Progress"
         case .clipboardSurface:
             "Clipboard Surface"
+        case .focusCard:
+            "Focus Card Surface"
         case .nowPlayingClosed:
             "Closed + Now Playing Accessory"
         case .nowPlayingSurface:
@@ -208,6 +215,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Closed island body while a calendar entry that just started is still fresh."
         case .clipboardSurface:
             "Opened island with three fixture clipboard items: text, a file, and an image."
+        case .focusCard:
+            "The opened focus card surface: one held interruption with a next step, and two older ones behind it."
         case .nowPlayingClosed:
             "Closed island with a waiting agent body and a now-playing accessory alongside it."
         case .nowPlayingSurface:
@@ -591,6 +600,31 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                 sessions: [],
                 selectedSessionID: nil,
                 debugClipboardItems: DebugSessionFactory.clipboardFixtureItems(now: now)
+            )
+
+        case .focusCard:
+            // Ages picked to land in three different units, so one screenshot
+            // proves the whole elapsed vocabulary at once.
+            return IslandDebugSnapshot(
+                title: title,
+                summary: summary,
+                previewHeight: 300,
+                notchStatus: .opened,
+                notchOpenReason: .click,
+                islandSurface: .focusCard,
+                sessions: [],
+                selectedSessionID: nil,
+                debugFocusCard: FocusCardState(
+                    currentCard: ResumeCard(
+                        title: "請求書の突き合わせ",
+                        nextAction: "9月分の未入金3件を Hub に起票する",
+                        savedAt: now.addingTimeInterval(-18 * 60)
+                    ),
+                    history: [
+                        ResumeCard(title: "島の音を録り直す", savedAt: now.addingTimeInterval(-5 * 3600)),
+                        ResumeCard(title: "Gugen の決裁メモ", savedAt: now.addingTimeInterval(-2 * 24 * 3600)),
+                    ]
+                )
             )
 
         case .nowPlayingSurface:

@@ -812,6 +812,37 @@ def main() -> None:
         if not any("12" in value for value in spoken):
             fail("automationSignals is missing the job counts")
 
+    elif scenario == "focusCard":
+        if notch_status != "opened":
+            fail(f"expected opened notch for focusCard, got {notch_status!r}")
+        if island_surface != "focusCard":
+            fail(f"expected the focus card surface, got {island_surface!r}")
+        require_frame_between(
+            overlay_frame,
+            width=(520, 780),
+            height=(180, 480),
+            context="focusCard overlay frame",
+        )
+        # The card being held has to be legible, not merely present — the
+        # whole point of the surface is reading it at a glance.
+        assert_contains_any(
+            text_values | labels,
+            ["請求書の突き合わせ"],
+            "focusCard text values (the held card)",
+        )
+        assert_contains_any(
+            text_values | labels,
+            ["9月分の未入金3件を Hub に起票する"],
+            "focusCard text values (the next step)",
+        )
+        # The tail proves the older cards are reachable, and the two ages
+        # below prove the elapsed wording covers more than one unit.
+        assert_contains_any(
+            text_values | labels,
+            ["島の音を録り直す"],
+            "focusCard text values (the tail)",
+        )
+
     else:
         fail(f"unsupported scenario {scenario!r}")
 

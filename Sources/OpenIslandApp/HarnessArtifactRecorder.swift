@@ -339,6 +339,8 @@ enum HarnessArtifactRecorder {
             "clipboard"
         case .timer:
             "timer"
+        case .focusCard:
+            "focusCard"
         case .conversation:
             "conversation"
         }
