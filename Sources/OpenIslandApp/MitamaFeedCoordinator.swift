@@ -32,6 +32,12 @@ final class MitamaFeedCoordinator {
     /// The job queue's own numbers, refreshed on the same loop as the feed —
     /// a second timer would double the traffic for the same answer.
     private(set) var jobSummary: MitamaJobSummary?
+
+    /// ハーネス用。ジョブの数え上げはデータベース越しなので、撮るときは
+    /// ここに置いた値をそのまま出す。
+    func loadJobSummaryFixture(_ summary: MitamaJobSummary?) {
+        jobSummary = summary
+    }
     /// Off until the owner turns the signal on, so a disabled signal costs
     /// no query at all.
     @ObservationIgnored var jobSummaryEnabled = false

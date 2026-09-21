@@ -64,6 +64,17 @@ struct IslandDebugSnapshot {
     /// Poses `NowPlayingCoordinator` directly for the `nowPlayingSurface`
     /// scenario, bypassing the perl adapter process entirely.
     var debugNowPlayingState: NowPlayingState?
+    /// mitama の 3 つの信号を直接置く。`lsof` も Codex の台帳も
+    /// ジョブのデータベースも触らないので、実機の状態に関係なく同じ絵になる。
+    var debugEcosystemSignals: EcosystemSignalsFixture?
+}
+
+/// ハーネスが流し込む mitama の信号。実機では 3 つ別々の経路から来る。
+struct EcosystemSignalsFixture {
+    var automationIsRunning = false
+    var automationActivity: BrowserAutomationActivity?
+    var codexFailure: CodexFailure?
+    var jobSummary: MitamaJobSummary?
 }
 
 enum IslandDebugScenario: String, CaseIterable, Identifiable {
@@ -91,6 +102,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
     case nowPlayingClosed
     case nowPlayingSurface
     case hudVolume
+    case automationLamp
+    case automationSignals
 
     var id: String { rawValue }
 
@@ -144,6 +157,10 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Now Playing Surface"
         case .hudVolume:
             "System HUD (Volume)"
+        case .automationLamp:
+            "Closed + Automation Lamp"
+        case .automationSignals:
+            "mitama Signals Strip"
         }
     }
 
@@ -197,6 +214,10 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "The opened now-playing surface with a fixture track, artwork placeholder, seek bar and transport controls."
         case .hudVolume:
             "The closed island's HUD gauge, pinned at 9 of 16 segments after a volume-up press."
+        case .automationLamp:
+            "Closed island while mitama Browser is being driven — the automation accessory on its own."
+        case .automationSignals:
+            "The opened island with all three mitama signals: the browser being driven, the job queue, and a failing Codex gate."
         }
     }
 
@@ -622,7 +643,75 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                     // capture always lands while it's still showing.
                     until: now.addingTimeInterval(30)
                 )            )
+
+        case .automationLamp:
+            // 閉じた島のアクセサリだけを見る。ジョブと Codex は置かない
+            // ——ランプが 1 つだけ点いている絵がほしい。
+            //
+            // セッションの組は timer / nowPlaying のアクセサリ シナリオと
+            // 同じ小さい方を使う。一覧の組だと本体と右の数字で幅を使い切り、
+            // **アクセサリは入らないと判断されて落とされる**（V6NotchContent
+            // の accessoryFits）。
+            let waiting = DebugSessionFactory.approvalSession(now: now.addingTimeInterval(-8 * 60))
+            return IslandDebugSnapshot(
+                title: title,
+                summary: summary,
+                previewHeight: 78,
+                notchStatus: .closed,
+                notchOpenReason: nil,
+                islandSurface: .sessionList(),
+                sessions: DebugSessionFactory.notificationSessions(lead: waiting, now: now),
+                selectedSessionID: waiting.id,
+                debugEcosystemSignals: EcosystemSignalsFixture(
+                    automationIsRunning: true,
+                    automationActivity: Self.automationFixture(at: now)
+                )
+            )
+
+        case .automationSignals:
+            // 3 本とも立てる。1 本ずつ描かれる作りなので、全部あるときの
+            // 高さと並びが一番崩れやすい。
+            let sessions = DebugSessionFactory.listSessions(now: now)
+            return IslandDebugSnapshot(
+                title: title,
+                summary: summary,
+                previewHeight: 300,
+                notchStatus: .opened,
+                notchOpenReason: .click,
+                islandSurface: .sessionList(),
+                sessions: sessions,
+                selectedSessionID: sessions.first?.id,
+                debugEcosystemSignals: EcosystemSignalsFixture(
+                    automationIsRunning: true,
+                    automationActivity: Self.automationFixture(at: now),
+                    codexFailure: CodexFailure(
+                        project: "mitama-island",
+                        branch: "feat/harness-automation-scenario",
+                        p1Count: 2,
+                        detailPath: nil,
+                        timestamp: now.addingTimeInterval(-420)
+                    ),
+                    jobSummary: MitamaJobSummary(
+                        runningCount: 1,
+                        enqueuedCount: 3,
+                        completedTodayCount: 12,
+                        lastCompletedObjective: "請求書の下書きを作る",
+                        lastCompletedAt: now.addingTimeInterval(-900)
+                    )
+                )
+            )
         }
+    }
+
+    /// 自動操作の中身。実機では mitama Browser が書いたファイルから来る。
+    private static func automationFixture(at now: Date) -> BrowserAutomationActivity {
+        BrowserAutomationActivity(
+            accountId: "gugen",
+            accountLabel: "Gugen",
+            title: "請求書 2026-09 — Gugen Office",
+            url: URL(string: "https://office.gugenlab.com/invoices/2026-09"),
+            at: now.addingTimeInterval(-35)
+        )
     }
 }
 

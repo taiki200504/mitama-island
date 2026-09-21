@@ -45,6 +45,8 @@ final class EcosystemSignalsCoordinator {
 
     let state = EcosystemSignalsState()
 
+    /// ハーネスが値を置いたあとは true。以後どのポーリングも起こさない。
+    private var isFrozen = false
     private var automationTask: Task<Void, Never>?
     private var codexTask: Task<Void, Never>?
 
@@ -56,7 +58,27 @@ final class EcosystemSignalsCoordinator {
         didSet { applyEnablement() }
     }
 
+    /// ハーネス用。ポーリングを止めて、渡された値をそのまま state に置く。
+    /// `lsof` も `codex-findings.jsonl` も触らないので、実機に何が起きて
+    /// いるかに関係なく同じ絵が撮れる。
+    ///
+    /// 止めるだけでは足りない: 設定の読み込みが `automationEnabled` を
+    /// 書き直すとポーリングが立ち上がり直し、3 秒後に実機の値で上書きして
+    /// しまう（ハーネスの撮影はちょうどその頃）。凍らせて二度と動かさない。
+    func loadFixture(
+        automationIsRunning: Bool,
+        activity: BrowserAutomationActivity?,
+        codexFailure: CodexFailure?
+    ) {
+        stop()
+        isFrozen = true
+        state.automationIsRunning = automationIsRunning
+        state.automationActivity = activity
+        state.codexFailures = codexFailure.map { [$0.project: $0] } ?? [:]
+    }
+
     func start() {
+        guard !isFrozen else { return }
         applyEnablement()
     }
 
@@ -71,6 +93,7 @@ final class EcosystemSignalsCoordinator {
     }
 
     private func applyEnablement() {
+        guard !isFrozen else { return }
         if automationEnabled, automationTask == nil {
             automationTask = Task { [weak self] in await self?.pollAutomation() }
         } else if !automationEnabled, automationTask != nil {

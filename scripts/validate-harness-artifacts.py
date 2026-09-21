@@ -774,6 +774,44 @@ def main() -> None:
         if not any("56%" in value for value in text_values):
             fail("hudVolume is missing its gauge percentage")
 
+    elif scenario == "automationLamp":
+        # The lamp is a glyph with no text of its own, so the accessibility
+        # label is what proves it was drawn. Any of the four languages will
+        # do — the harness runs in whatever the app is set to.
+        if notch_status != "closed":
+            fail(f"expected closed notch for automationLamp, got {notch_status!r}")
+        require_frame_between(
+            overlay_frame,
+            width=(520, 780),
+            height=(35, 500),
+            context="automationLamp overlay frame",
+        )
+        assert_contains_any(
+            labels | text_values,
+            ["Driving", "自動操作中", "自动操作中"],
+            "automationLamp accessibility labels",
+        )
+
+    elif scenario == "automationSignals":
+        # All three lines at once: the browser being driven, the job queue and
+        # the failing gate. The fixture's own nouns are language-independent,
+        # which is what makes them worth asserting on.
+        if notch_status != "opened":
+            fail(f"expected opened notch for automationSignals, got {notch_status!r}")
+        require_frame_between(
+            overlay_frame,
+            width=(520, 780),
+            height=(180, 520),
+            context="automationSignals overlay frame",
+        )
+        # Codex の行は押せるボタンなので、文字は buttonLabels 側に入る。
+        # 3 本とも出ていることを見たいので、3 つまとめて探す。
+        spoken = labels | button_labels | text_values
+        assert_contains_any(spoken, ["Gugen"], "automationSignals の自動操作の行")
+        assert_contains_any(spoken, ["mitama-island"], "automationSignals の Codex の行")
+        if not any("12" in value for value in spoken):
+            fail("automationSignals is missing the job counts")
+
     else:
         fail(f"unsupported scenario {scenario!r}")
 
