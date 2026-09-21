@@ -360,6 +360,10 @@
 "mitama.level.homework" = "Homework";
 "mitama.level.digest" = "Digest";
 "mitama.level.info" = "Info";
+"mitama.proposal.heading" = "RSI proposals";
+"mitama.proposal.do" = "Do it";
+"mitama.proposal.drop" = "Drop";
+"mitama.proposal.age" = "%dd";
 
 /* Shortcuts pane */
 "settings.shortcuts.section.global" = "Global";

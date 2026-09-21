@@ -2383,6 +2383,7 @@ final class AppModel {
             codexFailure: signals.codexFailure
         )
         mitamaFeed.loadJobSummaryFixture(signals.jobSummary)
+        mitamaFeed.loadProposalsFixture(signals.proposals)
 
         // Exercises the real `CalendarWatcher.loadFixture` path: the closed
         // body, the opened island's join bar, and the ambient board all read

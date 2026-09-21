@@ -812,6 +812,23 @@ def main() -> None:
         if not any("12" in value for value in spoken):
             fail("automationSignals is missing the job counts")
 
+    elif scenario == "mitamaProposals":
+        # 押さないと毎朝 urgent が来続けるものなので、本文・経過日数・
+        # 押せる2つが揃っていること。どれが欠けても「押せる場所」にならない。
+        if notch_status != "opened":
+            fail(f"expected opened notch for mitamaProposals, got {notch_status!r}")
+        require_frame_between(
+            overlay_frame,
+            width=(520, 780),
+            height=(180, 520),
+            context="mitamaProposals overlay frame",
+        )
+        spoken = labels | button_labels | text_values
+        assert_contains_any(spoken, ["OpenAI Codex for OSS"], "mitamaProposals の提案本文")
+        assert_contains_any(spoken, ["30日", "30d", "30天"], "mitamaProposals の経過日数")
+        assert_contains_any(spoken, ["やる", "Do it", "去做"], "mitamaProposals のやるボタン")
+        assert_contains_any(spoken, ["捨てる", "Drop", "放弃", "捨棄"], "mitamaProposals の捨てるボタン")
+
     elif scenario == "focusCard":
         if notch_status != "opened":
             fail(f"expected opened notch for focusCard, got {notch_status!r}")

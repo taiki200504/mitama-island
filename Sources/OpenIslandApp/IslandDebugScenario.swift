@@ -79,6 +79,7 @@ struct EcosystemSignalsFixture {
     var automationActivity: BrowserAutomationActivity?
     var codexFailure: CodexFailure?
     var jobSummary: MitamaJobSummary?
+    var proposals: [MitamaProposal] = []
 }
 
 enum IslandDebugScenario: String, CaseIterable, Identifiable {
@@ -109,6 +110,7 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
     case hudVolume
     case automationLamp
     case automationSignals
+    case mitamaProposals
 
     var id: String { rawValue }
 
@@ -168,6 +170,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Closed + Automation Lamp"
         case .automationSignals:
             "mitama Signals Strip"
+        case .mitamaProposals:
+            "mitama Proposals"
         }
     }
 
@@ -227,6 +231,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Closed island while mitama Browser is being driven — the automation accessory on its own."
         case .automationSignals:
             "The opened island with all three mitama signals: the browser being driven, the job queue, and a failing Codex gate."
+        case .mitamaProposals:
+            "返事待ちの RSI 提案。押さないと毎朝 urgent が来続けるので、通知より上に出る。"
         }
     }
 
@@ -699,6 +705,35 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                 debugEcosystemSignals: EcosystemSignalsFixture(
                     automationIsRunning: true,
                     automationActivity: Self.automationFixture(at: now)
+                )
+            )
+
+        case .mitamaProposals:
+            // 一番古いものが「最古30日」の催促と同じ日数で出ること。
+            // 2 行目が畳まれる長文と、押せる短文を混ぜる。
+            let proposalSessions = DebugSessionFactory.listSessions(now: now)
+            return IslandDebugSnapshot(
+                title: title,
+                summary: summary,
+                previewHeight: 300,
+                notchStatus: .opened,
+                notchOpenReason: .click,
+                islandSurface: .sessionList(),
+                sessions: proposalSessions,
+                selectedSessionID: proposalSessions.first?.id,
+                debugEcosystemSignals: EcosystemSignalsFixture(
+                    proposals: [
+                        MitamaProposal(
+                            runDate: "2026-08-22",
+                            text: "OpenAI Codex for OSS（公開リポジトリのメンテナ向けに ChatGPT Pro 6 か月無償）に申請するか判断してほしい。対象になりそうな公開リポジトリがあるか確認が要る。",
+                            ageDays: 30
+                        ),
+                        MitamaProposal(
+                            runDate: "2026-09-03",
+                            text: "gstack の node_modules(704M) と dist の重複バイナリ(285M) を減らしてよいか。",
+                            ageDays: 18
+                        ),
+                    ]
                 )
             )
 
