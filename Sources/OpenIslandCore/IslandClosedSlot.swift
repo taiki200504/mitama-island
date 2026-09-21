@@ -40,6 +40,9 @@ public enum IslandClosedAccessory: Equatable, Hashable, Sendable {
     /// this is the island's only way to say why.
     case cameraWatching
     case shelf(count: Int)
+    /// An interruption is being held: you told the island where you were on
+    /// the way out, and it is still holding the place.
+    case heldInterruption
 }
 
 /// Everything `IslandClosedArbiter` needs to decide, as plain values. Nothing
@@ -93,6 +96,7 @@ public struct IslandClosedInputs: Sendable {
     public var nowPlaying: NowPlaying?
     public var cameraIsWatching: Bool
     public var shelfCount: Int
+    public var holdsInterruption: Bool
     public var now: Date
 
     public init(
@@ -106,6 +110,7 @@ public struct IslandClosedInputs: Sendable {
         nowPlaying: NowPlaying? = nil,
         cameraIsWatching: Bool = false,
         shelfCount: Int = 0,
+        holdsInterruption: Bool = false,
         now: Date = .now
     ) {
         self.mitamaUrgent = mitamaUrgent
@@ -118,6 +123,7 @@ public struct IslandClosedInputs: Sendable {
         self.nowPlaying = nowPlaying
         self.cameraIsWatching = cameraIsWatching
         self.shelfCount = shelfCount
+        self.holdsInterruption = holdsInterruption
         self.now = now
     }
 }
@@ -143,7 +149,8 @@ public enum IslandClosedArbiter {
     /// Body priority: a mitama alert beats a waiting agent beats a calendar
     /// entry that just started beats what's next. Accessory priority: a
     /// running timer beats automation beats now-playing beats "the camera is
-    /// watching" beats the shelf having something on it.
+    /// watching" beats the shelf having something on it beats an interruption
+    /// being held.
     public static func resolve(_ inputs: IslandClosedInputs) -> IslandClosedContent {
         IslandClosedContent(body: resolveBody(inputs), accessory: resolveAccessory(inputs))
     }
@@ -182,6 +189,11 @@ public enum IslandClosedArbiter {
         }
         if inputs.shelfCount > 0 {
             return .shelf(count: inputs.shelfCount)
+        }
+        // Last: a held interruption is the one thing here that is not about
+        // right now. Anything happening beats a place kept for later.
+        if inputs.holdsInterruption {
+            return .heldInterruption
         }
         return nil
     }

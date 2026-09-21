@@ -617,6 +617,12 @@ final class AppModel {
 
     /// What you put down in the island on the way somewhere else.
     @ObservationIgnored let shelf = ShelfStore()
+    /// Saved interruption points for quick resume without losing context.
+    @ObservationIgnored let focusCardStore = ResumeCardStore()
+    /// What the store holds, in a form a view can read without awaiting.
+    /// The store is an actor — the island draws on the main thread and cannot
+    /// wait on it, so every operation writes its result back here.
+    var focusCard = FocusCardState()
     /// Debug/harness only: shows the shelf's chips without needing a real
     /// hover, so a scenario can put items on screen for a screenshot.
     var debugShelfBadgeForcedExpanded = false
@@ -954,6 +960,26 @@ final class AppModel {
         startIdleSessionCleanup()
         shelf.expiryProvider = { [weak self] in self?.shelfExpiresAfter.ttl }
         startShelfExpiryPruning()
+
+        // Load Resume Cards from disk on startup.
+        //
+        // Skipped under a harness scenario: the fixture is written straight
+        // into `focusCard`, and this task would land a moment later and
+        // replace it with whatever the real machine happens to hold — which,
+        // on a clean runner, is nothing. The clipboard fixture avoids the same
+        // race by never going through its store either.
+        if HarnessLaunchConfiguration().scenario == nil {
+            Task { @MainActor in
+                do {
+                    try await focusCardStore.load()
+                    await refreshFocusCard()
+                } catch {
+                    Logger(subsystem: "com.mitama.island", category: "focus-card")
+                        .error("Failed to load Resume Cards: \(error, privacy: .public)")
+                }
+            }
+        }
+
         hooks.onUsageSnapshotChanged = { [weak self] in
             self?.checkUsageThreshold()
         }
@@ -1574,6 +1600,7 @@ final class AppModel {
             // runs, and the island is the only thing that can say why.
             cameraIsWatching: cameraActivation.phase == .awaitingGesture,
             shelfCount: shelf.items.count,
+            holdsInterruption: focusCard.currentCard != nil,
             now: now
         )
         return IslandClosedArbiter.resolve(inputs)
@@ -2415,6 +2442,12 @@ final class AppModel {
         // never through `record(_:)`, so a harness run never touches the
         // real pasteboard or the real Application Support clipboard folder.
         clipboard.loadFixture(snapshot.debugClipboardItems)
+
+        // Straight into the mirror the island draws from, not through the
+        // store: a harness run must not write the real resume_cards.jsonl.
+        if let focusCardFixture = snapshot.debugFocusCard {
+            focusCard = focusCardFixture
+        }
     }
 
     func showSettings() {
@@ -3150,6 +3183,16 @@ final class AppModel {
         coordinator.onLinkstart = { [weak self] in self?.playLinkstart() }
         coordinator.clipboardOpenEnabled = settings.clipboard.enabled
         coordinator.onOpenClipboard = { [weak self] in self?.notchOpen(reason: .click, surface: .clipboard) }
+        // Saving and showing are one gesture: the island opening on the card
+        // is the receipt. Without it the key is indistinguishable from a key
+        // that did nothing, which is the worst thing a "you can leave now"
+        // shortcut can be.
+        coordinator.onSaveFocusCard = { [weak self] in
+            Task { @MainActor in
+                await self?.saveInterruptionCard()
+                self?.notchOpen(reason: .click, surface: .focusCard)
+            }
+        }
 
         voiceAnswer.onIntent = { [weak self] intent, heard in
             self?.apply(intent, heard: heard)

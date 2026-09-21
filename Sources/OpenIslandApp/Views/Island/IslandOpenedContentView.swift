@@ -60,6 +60,9 @@ extension IslandPanelView {
         case .timer:
             FocusTimerSurfaceView(model: model)
                 .padding(.horizontal, surfaceSideInset)
+        case .focusCard:
+            FocusCardSurfaceView(model: model)
+                .padding(.horizontal, surfaceSideInset)
         case let .conversation(sessionID):
             ConversationSurfaceView(model: model, sessionID: sessionID)
         }

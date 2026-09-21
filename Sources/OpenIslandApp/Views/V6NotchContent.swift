@@ -810,6 +810,13 @@ struct IslandClosedAccessoryView: View {
                         .font(.islandMono(size: 11))
                         .foregroundStyle(V6Palette.paper.opacity(0.7))
                 }
+            case .heldInterruption:
+                // Dimmer than the rest: everything else here is happening, and
+                // this one is only a place being kept.
+                Image(systemName: "bookmark.fill")
+                    .font(.islandMono(size: 9, weight: .semibold))
+                    .foregroundStyle(V6Palette.paper.opacity(0.55))
+                    .accessibilityLabel(LanguageManager.shared.t("focusCard.title"))
             }
         }
         .lineLimit(1)
@@ -831,6 +838,8 @@ struct IslandClosedAccessoryView: View {
             return 11
         case .shelf(let count):
             return 11 + CGFloat("\(count)".count) * charWidth
+        case .heldInterruption:
+            return 11
         }
     }
 }

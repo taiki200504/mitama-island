@@ -29,6 +29,9 @@ final class PanelHotkeyCoordinator {
     var onVoiceAnswer: (() -> Void)?
     var onLinkstart: (() -> Void)?
     var onOpenClipboard: (() -> Void)?
+    /// Save where you are and get out. Always live: an interruption is not a
+    /// feature you remember to switch on beforehand.
+    var onSaveFocusCard: (() -> Void)?
     /// Off until the camera feature is switched on. A global shortcut that does
     /// nothing still takes ⌃⇧Space away from whatever else the user bound it to.
     /// Re-run `startPersistentBindings()` after changing this.
@@ -76,6 +79,7 @@ final class PanelHotkeyCoordinator {
         case Self.voiceAnswerBindingID: onVoiceAnswer?()
         case Self.linkstartBindingID: onLinkstart?()
         case Self.clipboardOpenBindingID: onOpenClipboard?()
+        case Self.focusCardBindingID: onSaveFocusCard?()
         default:
             guard let action = PanelShortcutAction(rawValue: id) else { return }
             onAction?(action)
@@ -94,6 +98,7 @@ final class PanelHotkeyCoordinator {
     static let voiceAnswerBindingID = "voiceAnswer.begin"
     static let linkstartBindingID = "linkstart.play"
     static let clipboardOpenBindingID = "clipboard.open"
+    static let focusCardBindingID = "focusCard.save"
 
     /// Backtick, next to the shift key on every layout this app runs on. Not
     /// user-assignable: it is the one shortcut that has to be live all the time,
@@ -174,6 +179,17 @@ final class PanelHotkeyCoordinator {
                 )
             )
         }
+        // No `enabled` flag, unlike the four above: this key is not a feature
+        // to switch on, it is the way out. Something you reach for while
+        // already standing up cannot be behind a setting you forgot.
+        bindings.append(
+            HotkeyBinding(
+                id: Self.focusCardBindingID,
+                keyCode: UInt16(FocusCardTrigger.keyCode),
+                modifiers: NSEvent.ModifierFlags(rawValue: UInt(FocusCardTrigger.modifiers)),
+                scope: .persistent
+            )
+        )
         if settings.reverseSwitcherEnabled {
             bindings.append(
                 HotkeyBinding(

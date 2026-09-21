@@ -8,6 +8,8 @@ enum IslandSurface: Equatable {
     case nowPlaying
     case clipboard
     case timer
+    /// Where you left off, and the one next step you wrote down for yourself.
+    case focusCard
     /// One session's conversation, read from its transcript.
     case conversation(sessionID: String)
 
@@ -17,7 +19,7 @@ enum IslandSurface: Equatable {
             actionableSessionID
         // Not `actionableSessionID`: the log is something you asked to read,
         // not a notification card that dismisses itself.
-        case .nowPlaying, .clipboard, .timer, .conversation:
+        case .nowPlaying, .clipboard, .timer, .focusCard, .conversation:
             nil
         }
     }

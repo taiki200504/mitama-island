@@ -875,3 +875,15 @@
 "linkstart.dialog.title" = "档案注册";
 "linkstart.dialog.line1" = "上次的会话还在。";
 "linkstart.dialog.line2" = "要从上次的地方继续吗？";
+
+/* Focus Card */
+"focusCard.title" = "中断记录";
+"focusCard.empty" = "还没有中断记录";
+"focusCard.hint" = "按 %@ 可以先把手头的事放下";
+"focusCard.resume" = "继续";
+"focusCard.dismiss" = "丢弃";
+"focusCard.history" = "在那之前";
+"focusCard.elapsed.justNow" = "刚刚";
+"focusCard.elapsed.minutes" = "%d 分钟前";
+"focusCard.elapsed.hours" = "%d 小时前";
+"focusCard.elapsed.days" = "%d 天前";

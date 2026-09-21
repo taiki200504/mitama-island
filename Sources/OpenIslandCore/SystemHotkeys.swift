@@ -93,6 +93,17 @@ public enum LinkstartTrigger {
 }
 
 /// The key that opens the clipboard history surface.
+/// Saves where you are on the way out — the one key that has to work while
+/// your hands are already leaving the machine, so it asks for nothing but
+/// itself: no text field, no dialog, no choice of what to call it.
+public enum FocusCardTrigger {
+    /// P, for the pause it marks.
+    public static let keyCode = 35
+    /// control + option.
+    public static let modifiers = 262144 | 524288
+    public static let displayLabel = "⌃⌥P"
+}
+
 public enum ClipboardOpenTrigger {
     /// C.
     public static let keyCode = 8
