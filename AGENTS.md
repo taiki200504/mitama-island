@@ -62,7 +62,9 @@ See [docs/worktree-workflow.md](/Users/wangruobing/Personal/open-island/docs/wor
 
 ## Product Boundaries
 
-- Keep product scope in `docs/product.md`. Do not duplicate the supported agent, terminal, or IDE matrix here.
+- Keep product scope in `docs/product.md`. The supported agent / terminal / IDE
+  matrix belongs to `README.md` and lives there only — `docs/product.md` points at
+  it. Two copies drifted apart once already.
 - Do not broaden supported tools, runtimes, platforms, or environments unless the user explicitly asks.
 - Keep hook behavior aligned with `docs/hooks.md` and the implementation in `Sources/OpenIslandCore`.
 

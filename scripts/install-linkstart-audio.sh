@@ -18,17 +18,18 @@
 # use it when the recording has a lead-in.
 #
 # The slice points follow the structure of the sequence the app draws:
-#   rise    offset + 0.00 … 1.20   the light arriving
-#   warp    offset + 1.20 … 3.40   the dive
-#   flash   offset + 3.40 … 4.30   the arrival
-#   tick    offset + 4.30 … 4.45   one sense confirmed (played five times)
-#   resolve offset + 4.45 … 7.20   the interface settling
+#   rise    offset + 0.00 … 1.40   the light arriving
+#   warp    offset + 3.50 … 5.00   the dive into the tunnel
+#   flash   offset + 5.00 … 5.80   the white-out at its end
+#   tick    offset + 6.02 … 6.17   one sense confirming
+#   resolve offset + 8.28 … 9.28   the five marks turning green
+#   dive    offset + 16.60 … 18.40 leaving the interface
 # Override any of them with e.g. RISE_RANGE="0.0 1.5" before the command.
 
 set -euo pipefail
 
 sounds_dir="$HOME/Library/Application Support/MitamaIsland/Sounds"
-cues=(rise warp flash tick resolve)
+cues=(rise warp flash tick resolve dive)
 
 if [[ "${1:-}" == "--restore" ]]; then
     for cue in $cues full; do
@@ -86,11 +87,12 @@ fi
 
 # start length  (seconds, relative to `offset`)
 typeset -A ranges
-ranges[rise]="${RISE_RANGE:-0.00 1.20}"
-ranges[warp]="${WARP_RANGE:-1.20 2.20}"
-ranges[flash]="${FLASH_RANGE:-3.40 0.90}"
-ranges[tick]="${TICK_RANGE:-4.30 0.15}"
-ranges[resolve]="${RESOLVE_RANGE:-4.45 2.75}"
+ranges[rise]="${RISE_RANGE:-0.00 1.40}"
+ranges[warp]="${WARP_RANGE:-3.50 1.50}"
+ranges[flash]="${FLASH_RANGE:-5.00 0.80}"
+ranges[tick]="${TICK_RANGE:-6.02 0.15}"
+ranges[resolve]="${RESOLVE_RANGE:-8.28 1.00}"
+ranges[dive]="${DIVE_RANGE:-16.60 1.80}"
 
 mkdir -p "$sounds_dir"
 

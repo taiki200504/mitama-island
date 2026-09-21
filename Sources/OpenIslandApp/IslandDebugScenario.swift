@@ -90,7 +90,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
     case clipboardSurface
     case nowPlayingClosed
     case nowPlayingSurface
-        case hudVolume
+    case hudVolume
+
     var id: String { rawValue }
 
     var title: String {
@@ -109,8 +110,6 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Question Card"
         case .completionCard:
             "Completion Card"
-        case .completionBanner:
-            "The middle-of-screen announcement shown when a session finishes."
         case .longCompletionCard:
             "Long Completion Card"
         case .planApproval:
