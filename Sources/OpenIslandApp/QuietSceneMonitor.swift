@@ -60,7 +60,12 @@ final class QuietSceneMonitor {
         observers.removeAll()
     }
 
+    /// 読み取った場面が変わったときだけ呼ぶ。何をするかはここでは決めない
+    /// ——読み取りと判断を同じ場所に置くと、判断を足すたびにここが太る。
+    var onSceneChanged: ((QuietSceneSnapshot) -> Void)?
+
     func refresh() {
+        let previous = snapshot
         snapshot = QuietSceneSnapshot(
             activeFocusModes: FocusModeReader.activeModes(inAssertionsAt: assertionsURL),
             screenIsObscured: (screensAreAsleep || screenIsLocked()) ? .active : .inactive,
@@ -68,6 +73,7 @@ final class QuietSceneMonitor {
                 runningBundleIdentifiers: runningBundleIdentifiers()
             ) ? .active : .inactive
         )
+        if snapshot != previous { onSceneChanged?(snapshot) }
     }
 
     /// Whether the island should keep quiet under the user's current choices.

@@ -18,12 +18,16 @@ extension AppModel {
         shelfReference: String? = nil
     ) async {
         // Use active session title if no title provided
-        let cardTitle = title ?? state.activeActionableSession?.title ?? "Unnamed Work"
+        let interrupted = state.activeActionableSession
+        let cardTitle = title ?? interrupted?.title ?? "Unnamed Work"
 
         let card = ResumeCard(
             title: cardTitle,
             nextAction: nextAction,
-            shelfReference: shelfReference
+            shelfReference: shelfReference,
+            // 題と同じところから取る。別々に決めると、カードの題が指している
+            // ものと戻り先が食い違う。
+            sessionID: interrupted?.id
         )
 
         do {
@@ -37,14 +41,17 @@ extension AppModel {
 
     /// Resume from a saved Resume Card.
     ///
-    /// Makes the card active and optionally jumps back to its associated context.
+    /// 島を閉じて、中断したターミナルへ戻す。戻り先が残っていなければ閉じる
+    /// だけ——カードを置いた頃のセッションは、終わっていることの方が多い。
     @MainActor
     func resumeFromCard(_ card: ResumeCard) async {
         do {
             try await focusCardStore.resume(card)
             await refreshFocusCard()
             Self.focusCardLogger.debug("Resumed from card: \(card.title)")
-            // In future phases, implement jump-back and context restoration
+            if let sessionID = card.sessionID {
+                jumpToSavedSession(id: sessionID)
+            }
         } catch {
             Self.focusCardLogger.error("Failed to resume from card: \(error, privacy: .public)")
         }

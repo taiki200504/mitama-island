@@ -709,6 +709,8 @@
 "shelf.title" = "置いてあるもの";
 "shelf.clear" = "全部どける";
 "shelf.remove" = "どける";
+"shelf.pin" = "固定する";
+"shelf.unpin" = "固定を外す";
 "shelf.revealInFinder" = "Finder で表示";
 "shelf.airDrop" = "AirDrop";
 "shelf.share" = "共有…";
@@ -784,6 +786,8 @@
 "ambient.pulse.week" = "今週 %d回 %@h";
 "ambient.card.heading" = "今日の1枚";
 "ambient.card.why" = "効くところ";
+"settings.display.hideDesktop" = "画面共有中は机を隠す";
+"settings.display.hideDesktop.help" = "画面を共有しているあいだ、デスクトップのアイコンの上に1枚敷いて隠します。Finder の設定は変えません。共有アプリが動いているかで判断するので、確実に検知できないときは隠しません。";
 "settings.display.ambient" = "何もしていないとき待機画面を出す";
 "settings.display.ambient.help" = "Mac を放置すると、時計・次の予定・待たせている相手を全画面に出します。集中モード中・画面共有中・他のアプリがカメラを使っている間（通話中）・島を開いている間は出しません。どれかキーを押すかクリックすれば戻ります。";
 "settings.display.ambient.never" = "出さない";

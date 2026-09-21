@@ -132,3 +132,26 @@ struct FocusCardStateTests {
         #expect(state.history[0].id == recentCard.id)
     }
 }
+
+/// 中断カードから戻るための欄。
+struct ResumeCardSessionTests {
+    /// セッションの欄を足す前に保存されたカードも読み直せること。
+    /// ここが崩れると、置いてある中断が全部消えて見える。
+    @Test
+    func aCardSavedBeforeJumpBackStillDecodes() throws {
+        let legacy = """
+        {"id":"card-1","title":"請求書の突き合わせ","nextAction":"9月分を起票する",\
+        "savedAt":0,"lastShownAt":0}
+        """
+
+        let decoded = try JSONDecoder().decode(ResumeCard.self, from: Data(legacy.utf8))
+        #expect(decoded.title == "請求書の突き合わせ")
+        #expect(decoded.sessionID == nil)
+    }
+
+    @Test
+    func aCardRemembersWhichSessionItInterrupted() {
+        let card = ResumeCard(title: "実装", sessionID: "session-42")
+        #expect(card.sessionID == "session-42")
+    }
+}

@@ -594,7 +594,7 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                 islandSurface: .sessionList(),
                 sessions: [],
                 selectedSessionID: nil,
-                shelfItems: DebugSessionFactory.shelfFixtureItems(now: now)
+                shelfItems: ShelfLedger.ordered(DebugSessionFactory.shelfFixtureItems(now: now))
             )
 
         case .unlockScan:
@@ -878,7 +878,10 @@ private enum DebugSessionFactory {
                 displayName: name,
                 storedName: name,
                 byteSize: byteSize,
-                addedAt: now.addingTimeInterval(-Double(index) * 60)
+                addedAt: now.addingTimeInterval(-Double(index) * 60),
+                // 2枚目を固定しておく。固定の印が出ることと、固定したものが
+                // 後から置いたものより上に来ることを、同じ絵で見る。
+                pinnedAt: index == 1 ? now.addingTimeInterval(-30) : nil
             )
         }
     }

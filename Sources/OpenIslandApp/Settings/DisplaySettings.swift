@@ -62,6 +62,15 @@ final class DisplaySettings: PreferenceGroup {
         set { write(\.playsLinkstart, Keys.playsLinkstart, newValue) }
     }
 
+    /// 画面共有中に机（デスクトップのアイコン）を隠す。
+    ///
+    /// 既定は off。机に何が置いてあるかは人によって事情が違うし、共有の検知は
+    /// 動いているアプリの名前から推すものなので、勝手に画面を変えない。
+    var hidesDesktopWhenSharing: Bool {
+        get { read(\.hidesDesktopWhenSharing, Keys.hidesDesktopWhenSharing, false) }
+        set { write(\.hidesDesktopWhenSharing, Keys.hidesDesktopWhenSharing, newValue) }
+    }
+
     /// Whether the key only darkens the screen, and the sequence waits to be
     /// spoken into.
     ///
@@ -236,6 +245,7 @@ extension DisplaySettings {
         static let theme = "display.theme"
         static let completionBanner = "display.completionBanner"
         static let playsLinkstart = "display.playsLinkstart"
+        static let hidesDesktopWhenSharing = "display.hidesDesktopWhenSharing"
         static let linkstartWaitsForPhrase = "display.linkstartWaitsForPhrase"
         static let showsNextEvent = "display.showsNextEvent"
         static let alertsWhenEventStarts = "display.alertsWhenEventStarts"

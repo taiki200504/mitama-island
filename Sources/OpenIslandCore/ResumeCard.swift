@@ -28,6 +28,13 @@ public struct ResumeCard: Equatable, Codable, Sendable {
     /// Helps user jump back to the context they were in.
     public var shelfReference: String?
 
+    /// どのセッションを中断したか。戻り先のターミナルはここから引く。
+    ///
+    /// 省略可なのは、古いカードにこの欄が無いから——`Optional` なので、
+    /// 書き足す前に保存されたカードも読み直せる。セッションが既に終わって
+    /// いれば戻り先は見つからず、カードは今までどおり読むだけのものになる。
+    public var sessionID: String?
+
     /// When this card was created.
     public let savedAt: Date
 
@@ -39,6 +46,7 @@ public struct ResumeCard: Equatable, Codable, Sendable {
         title: String,
         nextAction: String = "",
         shelfReference: String? = nil,
+        sessionID: String? = nil,
         savedAt: Date = .now,
         lastShownAt: Date = .now
     ) {
@@ -46,6 +54,7 @@ public struct ResumeCard: Equatable, Codable, Sendable {
         self.title = title
         self.nextAction = nextAction
         self.shelfReference = shelfReference
+        self.sessionID = sessionID
         self.savedAt = savedAt
         self.lastShownAt = lastShownAt
     }

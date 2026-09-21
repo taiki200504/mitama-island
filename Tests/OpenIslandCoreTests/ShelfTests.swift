@@ -113,3 +113,53 @@ struct ShelfTests {
         #expect(ShelfLedger.expired([old, recent], now: now, ttl: 60) == [old])
     }
 }
+
+/// 固定した棚の項目。守っているのは「固定したのに消える」を起こさないこと。
+struct ShelfPinTests {
+    private let now = Date(timeIntervalSince1970: 1_758_000_000)
+
+    private func item(_ name: String, addedAgo: TimeInterval, pinnedAgo: TimeInterval? = nil) -> ShelfItem {
+        ShelfItem(
+            displayName: name,
+            storedName: name,
+            byteSize: 10,
+            addedAt: now.addingTimeInterval(-addedAgo),
+            pinnedAt: pinnedAgo.map { now.addingTimeInterval(-$0) }
+        )
+    }
+
+    @Test
+    func pinnedItemsFloatAboveNewerOnes() {
+        let ordered = ShelfLedger.ordered([
+            item("新しい", addedAgo: 10),
+            item("古いが固定", addedAgo: 9_000, pinnedAgo: 100),
+            item("中くらい", addedAgo: 100),
+        ])
+
+        #expect(ordered.map(\.displayName) == ["古いが固定", "新しい", "中くらい"])
+    }
+
+    /// 置いたままにしておくために固定したのに、時間で消えるなら意味がない。
+    @Test
+    func aPinnedItemNeverExpires() {
+        let stale = item("放置", addedAgo: 9_000)
+        let pinned = item("固定", addedAgo: 9_000, pinnedAgo: 10)
+
+        let expired = ShelfLedger.expired([stale, pinned], now: now, ttl: 3_600)
+        #expect(expired.map(\.displayName) == ["放置"])
+    }
+
+    /// 固定した欄を足す前に保存された棚も、そのまま読み直せること。
+    /// ここが崩れると、棚が丸ごと空になって見える。
+    @Test
+    func aShelfSavedBeforePinningStillDecodes() throws {
+        let legacy = """
+        [{"id":"8B8E3B6E-3D3E-4E2E-9B1E-2C7B4F5A6D7E","displayName":"notes.md",\
+        "storedName":"notes.md","byteSize":12,"addedAt":0}]
+        """
+
+        let decoded = try JSONDecoder().decode([ShelfItem].self, from: Data(legacy.utf8))
+        #expect(decoded.count == 1)
+        #expect(decoded.first?.isPinned == false)
+    }
+}
