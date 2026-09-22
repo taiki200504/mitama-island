@@ -593,6 +593,10 @@ final class AppModel {
     /// Holds no microphone until the key is pressed with a card waiting.
     @ObservationIgnored let voiceAnswer: VoiceCommandSession
 
+    /// The standing microphone. Off unless `settings.ambientListen.isEnabled`,
+    /// and it writes to disk only — nothing is recognised or sent from here.
+    @ObservationIgnored let earshot: AmbientListenSession
+
     /// The one sentence the island is currently showing the user.
     ///
     /// The camera and the microphone explain themselves here — refused
@@ -868,6 +872,7 @@ final class AppModel {
         self.overlay = OverlayUICoordinator(settings: settings)
         self.cameraActivation = CameraActivationSession(settings: settings.cameraGesture)
         self.voiceAnswer = VoiceCommandSession(settings: settings.voiceCommand)
+        self.earshot = AmbientListenSession(settings: settings.ambientListen)
         UserDefaults.standard.register(defaults: [
             // Off. The island is the app; a Dock icon and an entry in the
             // application switcher make the settings window read as a second

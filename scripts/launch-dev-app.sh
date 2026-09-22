@@ -91,6 +91,10 @@ cat > "$plist_path" <<EOF
     <string>14.0</string>
     <key>NSAppleEventsUsageDescription</key>
     <string>Open Island needs automation access to focus Terminal and iTerm sessions for jump-back.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Dev build: the microphone is used for spoken answers and, when earshot is switched on, for recording to local files.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>Dev build: speech is recognized on this Mac so a waiting request can be answered out loud.</string>
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSPrincipalClass</key>

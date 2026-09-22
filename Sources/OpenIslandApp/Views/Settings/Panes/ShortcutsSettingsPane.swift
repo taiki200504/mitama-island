@@ -20,6 +20,7 @@ struct ShortcutsSettingsPane: View {
             switcherSection
             cameraGestureSection
             voiceAnswerSection
+            earshotSection
             linkstartSection
             clipboardSection
             panelSection
@@ -267,6 +268,44 @@ struct ShortcutsSettingsPane: View {
             Text(lang.t("settings.voice.section"))
         } footer: {
             Text(lang.t("settings.voice.section.footer"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var earshot: AmbientListenSettings { model.settings.ambientListen }
+
+    /// Under "answer by voice" because it is the same organ, but it is its own
+    /// switch: that one opens the microphone for eight seconds, this one keeps
+    /// it open. Nobody should get the second by agreeing to the first.
+    private var earshotSection: some View {
+        Section {
+            SettingsToggleRow(
+                title: lang.t("settings.earshot.enabled"),
+                help: lang.t("settings.earshot.enabled.help"),
+                isOn: Binding(
+                    get: { earshot.isEnabled },
+                    set: {
+                        earshot.isEnabled = $0
+                        model.earshot.settingsChanged()
+                    }
+                )
+            )
+
+            if earshot.isEnabled {
+                SettingsToggleRow(
+                    title: lang.t("settings.earshot.pauseCalls"),
+                    help: lang.t("settings.earshot.pauseCalls.help"),
+                    isOn: Binding(
+                        get: { earshot.pauseDuringCalls },
+                        set: { earshot.pauseDuringCalls = $0 }
+                    )
+                )
+            }
+        } header: {
+            Text(lang.t("settings.earshot.section"))
+        } footer: {
+            Text(lang.t("settings.earshot.section.footer"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

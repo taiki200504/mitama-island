@@ -904,3 +904,11 @@
 "focusCard.elapsed.minutes" = "%d分前";
 "focusCard.elapsed.hours" = "%d時間前";
 "focusCard.elapsed.days" = "%d日前";
+
+/* 聞き書き — 開けたままのマイク。既定はオフ。 */
+"settings.earshot.section" = "聞き書き";
+"settings.earshot.section.footer" = "マイクを開けたままにして、聞こえたものをこの Mac の中のファイルに書きます。文字起こしもこの Mac の中で行い、ファイルは時間で消えます（通常24時間、人が同席しうるときは1時間）。オンの間は macOS のオレンジのマイク表示が終日点きます。それがこの機能の代償です。";
+"settings.earshot.enabled" = "聞き書きを使う";
+"settings.earshot.enabled.help" = "既定はオフ。声で答える機能とは別のスイッチで、片方だけ使えます。";
+"settings.earshot.pauseCalls" = "通話中は止める";
+"settings.earshot.pauseCalls.help" = "Zoom / Teams / FaceTime / Webex / Skype が起動している間は録らない。相手は同意していないため。";

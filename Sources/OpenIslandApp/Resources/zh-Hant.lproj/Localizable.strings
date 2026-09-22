@@ -903,3 +903,11 @@
 "focusCard.elapsed.minutes" = "%d 分鐘前";
 "focusCard.elapsed.hours" = "%d 小時前";
 "focusCard.elapsed.days" = "%d 天前";
+
+/* 旁聽 — 持續開啟的麥克風。預設關閉。 */
+"settings.earshot.section" = "旁聽";
+"settings.earshot.section.footer" = "持續開啟麥克風，並把聽到的內容寫入本機檔案。轉寫也在本機完成，檔案會依時限自動刪除（通常 24 小時，可能有他人在場時為 1 小時）。開啟期間，macOS 會整天顯示橙色麥克風指示燈。這是此功能的代價。";
+"settings.earshot.enabled" = "啟用旁聽";
+"settings.earshot.enabled.help" = "預設關閉。與語音回答是兩個獨立開關，可只開其一。";
+"settings.earshot.pauseCalls" = "通話時暫停";
+"settings.earshot.pauseCalls.help" = "當 Zoom / Teams / FaceTime / Webex / Skype 正在執行時停止錄製。對方並未同意被錄音。";
