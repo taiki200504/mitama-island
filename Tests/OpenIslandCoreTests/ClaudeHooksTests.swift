@@ -357,6 +357,49 @@ struct ClaudeHooksTests {
     /// into the subprocess env; the session must still classify as
     /// `Claude.app`, not the launching terminal.
     @Test
+    func claudeInferTerminalAppRecognizesPaseoViaBundleIdentifier() {
+        let payload = ClaudeHookPayload(
+            cwd: "/tmp/demo", hookEventName: .sessionStart, sessionID: "s1"
+        ).withRuntimeContext(
+            environment: ["__CFBundleIdentifier": "sh.paseo.desktop"],
+            currentTTYProvider: { nil },
+            terminalLocatorProvider: { _ in (sessionID: nil, tty: nil, title: nil) }
+        )
+
+        #expect(payload.terminalApp == "Paseo")
+        #expect(payload.defaultJumpTarget.terminalApp == "Paseo")
+    }
+
+    @Test
+    func claudeInferTerminalAppRecognizesPaseoViaAgentID() {
+        let payload = ClaudeHookPayload(
+            cwd: "/tmp/demo", hookEventName: .sessionStart, sessionID: "s1"
+        ).withRuntimeContext(
+            environment: ["PASEO_AGENT_ID": "00000000-0000-0000-0000-000000000000"],
+            currentTTYProvider: { nil },
+            terminalLocatorProvider: { _ in (sessionID: nil, tty: nil, title: nil) }
+        )
+
+        #expect(payload.terminalApp == "Paseo")
+    }
+
+    @Test
+    func claudeInferTerminalAppPrefersPaseoOverLeakedTermProgram() {
+        let payload = ClaudeHookPayload(
+            cwd: "/tmp/demo", hookEventName: .sessionStart, sessionID: "s1"
+        ).withRuntimeContext(
+            environment: [
+                "__CFBundleIdentifier": "sh.paseo.desktop",
+                "TERM_PROGRAM": "ghostty",
+            ],
+            currentTTYProvider: { nil },
+            terminalLocatorProvider: { _ in (sessionID: nil, tty: nil, title: nil) }
+        )
+
+        #expect(payload.terminalApp == "Paseo")
+    }
+
+    @Test
     func claudeInferTerminalAppPrefersClaudeDesktopOverLeakedTermProgram() {
         let payload = ClaudeHookPayload(
             cwd: "/tmp/demo", hookEventName: .sessionStart, sessionID: "s1"

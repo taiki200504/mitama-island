@@ -185,7 +185,8 @@ extension PixelGlyph {
             || name.contains("rustrover") {
             return .editorHost
         }
-        if name.contains(".app") || name.contains("desktop") || name.contains("claude") {
+        if name.contains(".app") || name.contains("desktop") || name.contains("claude")
+            || name.contains("paseo") {
             return .desktopAppHost
         }
         if name.contains("unknown") {

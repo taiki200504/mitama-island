@@ -638,7 +638,7 @@ public extension CodexHookPayload {
     }
 
     private static let noLocatorTerminalApps: Set<String> = [
-        "cmux", "codex.app", "kaku", "wezterm", "zellij",
+        "cmux", "codex.app", "kaku", "paseo", "wezterm", "zellij",
         "vs code", "vs code insiders", "cursor", "windsurf", "trae",
         "intellij idea", "webstorm", "pycharm", "goland", "clion",
         "rubymine", "phpstorm", "rider", "rustrover",
@@ -688,6 +688,13 @@ public extension CodexHookPayload {
         if let bundleID = environment["__CFBundleIdentifier"]?.lowercased(),
            bundleID.contains("openai") && bundleID.contains("codex") {
             return "Codex.app"
+        }
+
+        // Paseo desktop app — its daemon spawns agents TTY-less with no
+        // TERM_PROGRAM, but they inherit Paseo's bundle id and PASEO_AGENT_ID.
+        if environment["__CFBundleIdentifier"]?.lowercased() == "sh.paseo.desktop"
+            || environment["PASEO_AGENT_ID"] != nil {
+            return "Paseo"
         }
 
         // TERM_PROGRAM is the only authoritative terminal signal. Each

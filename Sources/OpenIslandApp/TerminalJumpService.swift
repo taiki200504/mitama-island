@@ -84,6 +84,11 @@ struct TerminalJumpService {
             aliases: ["claude.app"]
         ),
         TerminalAppDescriptor(
+            displayName: "Paseo",
+            bundleIdentifier: "sh.paseo.desktop",
+            aliases: ["paseo"]
+        ),
+        TerminalAppDescriptor(
             displayName: "Kaku",
             bundleIdentifier: "fun.tw93.kaku",
             aliases: ["kaku"]
@@ -362,6 +367,10 @@ struct TerminalJumpService {
                 // per-session deep link, so just bring the app forward.
                 try openAction(["-b", "com.anthropic.claudefordesktop"])
                 return "Activated Claude."
+            case "sh.paseo.desktop":
+                // Paseo hosts the agent in-app; no per-agent deep link.
+                try openAction(["-b", "sh.paseo.desktop"])
+                return "Activated Paseo."
             case "com.googlecode.iterm2":
                 if try jumpToITermSession(target) {
                     return "Focused the matching iTerm session."

@@ -152,6 +152,33 @@ final class TerminalJumpServiceTests: XCTestCase {
         XCTAssertEqual(openedArguments.values, [["-b", "com.todesktop.230313mzl4w4u92"]])
     }
 
+    func testPaseoJumpActivatesAppWithoutPassingWorkingDirectory() throws {
+        let openedArguments = OpenedArgumentsBox()
+        let service = TerminalJumpService(
+            applicationResolver: { bundleIdentifier in
+                bundleIdentifier == "sh.paseo.desktop" ? URL(fileURLWithPath: "/Applications/Paseo.app") : nil
+            },
+            appRunningChecker: { _ in true },
+            openAction: { arguments in
+                openedArguments.values.append(arguments)
+            },
+            appleScriptRunner: { _ in "" },
+            processRunner: { _, _ in false }
+        )
+
+        let result = try service.jump(
+            to: JumpTarget(
+                terminalApp: "Paseo",
+                workspaceName: "mitama",
+                paneTitle: "claude",
+                workingDirectory: "/Users/test/mitama"
+            )
+        )
+
+        XCTAssertEqual(result, "Activated Paseo.")
+        XCTAssertEqual(openedArguments.values, [["-b", "sh.paseo.desktop"]])
+    }
+
     func testCursorJumpFallsBackToWorkspaceWhenAppNotRunning() throws {
         let openedArguments = OpenedArgumentsBox()
         let service = TerminalJumpService(
