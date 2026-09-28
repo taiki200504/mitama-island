@@ -1067,7 +1067,7 @@ public extension ClaudeHookPayload {
     }
 
     private static let noLocatorTerminalApps: Set<String> = [
-        "cmux", "kaku", "wezterm", "zellij",
+        "cmux", "kaku", "paseo", "wezterm", "zellij",
         "vs code", "vs code insiders", "cursor", "windsurf", "trae",
         "intellij idea", "webstorm", "pycharm", "goland", "clion",
         "rubymine", "phpstorm", "rider", "rustrover",
@@ -1202,6 +1202,13 @@ public extension ClaudeHookPayload {
         if environment["CLAUDE_CODE_ENTRYPOINT"] == "claude-desktop"
             || environment["__CFBundleIdentifier"]?.lowercased() == "com.anthropic.claudefordesktop" {
             return "Claude.app"
+        }
+
+        // Paseo desktop app — its daemon spawns agents TTY-less with no
+        // TERM_PROGRAM, but they inherit Paseo's bundle id and PASEO_AGENT_ID.
+        if environment["__CFBundleIdentifier"]?.lowercased() == "sh.paseo.desktop"
+            || environment["PASEO_AGENT_ID"] != nil {
+            return "Paseo"
         }
 
         // TERM_PROGRAM is the only authoritative terminal signal. Each
