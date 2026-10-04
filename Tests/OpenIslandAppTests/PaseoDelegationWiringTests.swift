@@ -27,7 +27,7 @@ struct PaseoDelegationWiringTests {
             }
             throw PaseoQuestionError.invalidResponse
         }, providerAliases: [:])
-        let model = AppModel(paseoQuestions: coordinator)
+        let model = isolatedPaseoAppModel(coordinator)
         model.state = SessionState(sessions: [
             AgentSession(id: "native-child", title: "Old child", tool: .claudeCode, origin: .live, attachmentState: .attached, phase: .waitingForAnswer,
                          summary: "Child", updatedAt: .now, jumpTarget: JumpTarget(terminalApp: "Paseo", workspaceName: "", paneTitle: "")),

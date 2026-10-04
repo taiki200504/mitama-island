@@ -50,7 +50,7 @@ struct PaseoQuestionWiringTests {
         let suiteName = "paseo-wiring-\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
-        let model = AppModel(settings: SettingsStore(store: PreferenceStore(suite: defaults)), paseoQuestions: coordinator)
+        let model = isolatedPaseoAppModel(coordinator, settings: SettingsStore(store: PreferenceStore(suite: defaults)))
         model.connectPaseoQuestions()
         coordinator.stop()
         await coordinator.poll()
@@ -74,7 +74,7 @@ struct PaseoQuestionWiringTests {
     @Test func externalAnswerRemovesOnlyMatchingQuestion() async throws {
         let mock = PaseoWiringMock()
         let coordinator = PaseoQuestionCoordinator(call: { try await mock.call($0, $1) })
-        let model = AppModel(paseoQuestions: coordinator)
+        let model = isolatedPaseoAppModel(coordinator)
         model.connectPaseoQuestions()
         coordinator.stop()
         await coordinator.poll()

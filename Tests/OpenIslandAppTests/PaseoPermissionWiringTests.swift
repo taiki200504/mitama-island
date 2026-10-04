@@ -47,7 +47,7 @@ struct PaseoPermissionWiringTests {
 
     private func model(_ coordinator: PaseoQuestionCoordinator) -> AppModel {
         let defaults = UserDefaults(suiteName: "paseo-approval-\(UUID().uuidString)")!
-        return AppModel(settings: SettingsStore(store: PreferenceStore(suite: defaults)), paseoQuestions: coordinator)
+        return isolatedPaseoAppModel(coordinator, settings: SettingsStore(store: PreferenceStore(suite: defaults)))
     }
 
     @Test func bothApprovalOverloadsUseSDKAndFailureKeepsCard() async throws {

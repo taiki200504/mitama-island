@@ -40,8 +40,28 @@ private actor ForwardedPaseoMock {
 @MainActor struct PaseoForwardedQuestionTests {
     private func model(_ coordinator: PaseoQuestionCoordinator) -> AppModel {
         let defaults = UserDefaults(suiteName: "forwarded-paseo-\(UUID().uuidString)")!
-        return AppModel(settings: SettingsStore(store: PreferenceStore(suite: defaults)), paseoQuestions: coordinator)
+        return isolatedPaseoAppModel(coordinator, settings: SettingsStore(store: PreferenceStore(suite: defaults)))
     }
+    @Test func bridgeStartupFailureStillDiscoversSDKQuestionsInIsolatedRegistries() async throws {
+        enum BridgeFailure: Error { case unavailable }
+        let mock = ForwardedPaseoMock()
+        let coordinator = PaseoQuestionCoordinator(call: { await mock.call($0, $1) })
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let model = isolatedPaseoAppModel(coordinator, registryDirectory: directory)
+        model.startAgentConnections { throw BridgeFailure.unavailable }
+        coordinator.stop()
+        await coordinator.poll()
+        #expect(!model.isBridgeReady)
+        #expect(model.lastActionMessage.contains("Failed to start local bridge"))
+        #expect(model.state.session(id: "parent-native")?.questionPrompt != nil)
+        #expect(coordinator.questions["child-native"] != nil)
+        model.discovery.scheduleClaudeSessionPersistence()
+        let registry = ClaudeSessionRegistry(fileURL: directory.appendingPathComponent("claude.json"))
+        let deadline = ContinuousClock.now.advanced(by: .seconds(2))
+        while !FileManager.default.fileExists(atPath: registry.fileURL.path), ContinuousClock.now < deadline { await Task.yield() }
+        #expect(Set(try registry.load().map(\.sessionID)) == ["parent-native", "child-native"])
+    }
+
     @Test func childQuestionProjectsAndAnswersChildOnly() async throws {
         let mock = ForwardedPaseoMock()
         let coordinator = PaseoQuestionCoordinator(call: { await mock.call($0, $1) })
