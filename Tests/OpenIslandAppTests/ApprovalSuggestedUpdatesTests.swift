@@ -127,7 +127,7 @@ struct BatchApprovalTests {
         let name = "batch-\(UUID().uuidString)"
         let suite = UserDefaults(suiteName: name)!
         suite.removePersistentDomain(forName: name)
-        return AppModel(settings: SettingsStore(store: PreferenceStore(suite: suite)))
+        return isolatedAppModel(settings: SettingsStore(store: PreferenceStore(suite: suite)))
     }
 
     private func waiting(_ id: String) -> AgentSession {
@@ -237,7 +237,7 @@ struct BatchApprovalTests {
         let suite = UserDefaults(suiteName: name)!
         suite.removePersistentDomain(forName: name)
         let settings = SettingsStore(store: PreferenceStore(suite: suite))
-        let model = AppModel(settings: settings)
+        let model = isolatedAppModel(settings: settings)
 
         settings.notificationFilters.addRule(
             SilenceRule(field: .workingDirectory, match: .contains, pattern: "/tmp/hidden")

@@ -241,7 +241,7 @@ final class SessionDiscoveryCoordinator {
     private func merge(discovered: AgentSession, into existing: AgentSession) -> AgentSession {
         var merged = existing
         let preservesLiveRequest = existing.attachmentState == .attached && existing.phase.requiresAttention
-            && discovered.attachmentState == .stale
+            && (discovered.attachmentState == .stale || !discovered.phase.requiresAttention)
         let discoveredIsNewer = discovered.updatedAt >= existing.updatedAt && !preservesLiveRequest
 
         if discoveredIsNewer {

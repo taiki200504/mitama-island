@@ -78,7 +78,7 @@ struct NotificationSoundServiceTests {
     /// double chime.
     @Test
     func aNotificationOpenDoesNotAlsoPlayTheOpenCue() {
-        let model = AppModel()
+        let model = isolatedAppModel()
         model.state = SessionState(sessions: [
             AgentSession(
                 id: "s1",

@@ -198,7 +198,7 @@ struct NotificationFilterTests {
     @Test
     func aHiddenSessionLeavesTheListAndTheCounts() {
         let settings = makeSettings()
-        let model = AppModel(settings: settings)
+        let model = isolatedAppModel(settings: settings)
         model.state = SessionState(sessions: [
             session(id: "visible", directory: "/x/real"),
             session(id: "noisy", directory: "/x/scratch"),

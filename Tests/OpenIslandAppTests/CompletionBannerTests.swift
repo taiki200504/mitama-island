@@ -105,7 +105,7 @@ struct CompletionBannerControllerTests {
 struct CompletionAnnouncementTests {
     private func makeModel() -> AppModel {
         let defaults = UserDefaults(suiteName: "completion-\(UUID().uuidString)")!
-        return AppModel(settings: SettingsStore(store: PreferenceStore(suite: defaults)))
+        return isolatedAppModel(settings: SettingsStore(store: PreferenceStore(suite: defaults)))
     }
 
     private func completedSession(id: String) -> AgentSession {

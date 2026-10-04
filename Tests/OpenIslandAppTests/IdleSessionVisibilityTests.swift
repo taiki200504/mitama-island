@@ -8,7 +8,7 @@ import Testing
 struct IdleSessionVisibilityTests {
     private func makeModel() -> AppModel {
         let defaults = UserDefaults(suiteName: "idle-\(UUID().uuidString)")!
-        return AppModel(settings: SettingsStore(store: PreferenceStore(suite: defaults)))
+        return isolatedAppModel(settings: SettingsStore(store: PreferenceStore(suite: defaults)))
     }
 
     private func session(id: String, phase: SessionPhase, minutesAgo: Double) -> AgentSession {
@@ -108,7 +108,7 @@ struct IdleSessionVisibilityTests {
 struct IslandCountConsistencyTests {
     private func makeModel() -> AppModel {
         let defaults = UserDefaults(suiteName: "count-\(UUID().uuidString)")!
-        return AppModel(settings: SettingsStore(store: PreferenceStore(suite: defaults)))
+        return isolatedAppModel(settings: SettingsStore(store: PreferenceStore(suite: defaults)))
     }
 
     private func session(id: String, phase: SessionPhase, minutesAgo: Double) -> AgentSession {

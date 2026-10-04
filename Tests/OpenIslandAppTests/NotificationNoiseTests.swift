@@ -11,7 +11,7 @@ struct NotificationNoiseTests {
         let suite = UserDefaults(suiteName: name)!
         suite.removePersistentDomain(forName: name)
         let settings = SettingsStore(store: PreferenceStore(suite: suite))
-        return (AppModel(settings: settings), settings)
+        return (isolatedAppModel(settings: settings), settings)
     }
 
     private func session(id: String, phase: SessionPhase) -> AgentSession {
