@@ -107,6 +107,31 @@ final class AppModel {
     private var paseoDelegatedSessionIDs: Set<String> = [] {
         didSet { _cachedSessionBuckets = nil }
     }
+    private func liveLocalCodexParent(of child: AgentSession) -> AgentSession? {
+        guard child.tool == .codex, let parentID = child.codexMetadata?.parentThreadID,
+              parentID != child.id, let parent = state.session(id: parentID),
+              parent.tool == .codex, parent.origin == .live, !parent.isSessionEnded,
+              parent.attachmentState.isLive,
+              parent.isProcessAlive || (parent.isHookManaged && parent.phase != .completed) else { return nil }
+        return parent
+    }
+
+    private var delegatedSessionIDs: Set<String> {
+        let local = state.sessions.compactMap { child -> String? in
+            guard child.questionPrompt == nil, child.phase != .waitingForAnswer,
+                  liveLocalCodexParent(of: child) != nil else { return nil }
+            return child.id
+        }
+        return paseoDelegatedSessionIDs.union(local)
+    }
+
+    func localCodexQuestionSourceTitle(sessionID: String) -> String? {
+        guard let child = state.session(id: sessionID),
+              child.questionPrompt != nil || child.phase == .waitingForAnswer,
+              let parent = liveLocalCodexParent(of: child) else { return nil }
+        return "\(child.title)（親: \(parent.title)）"
+    }
+
     @ObservationIgnored private var paseoLookupSessionIDs: Set<String> = []
     @ObservationIgnored private var paseoLookedUpSessionIDs: Set<String> = []
     @ObservationIgnored private var paseoDeferredEvents: [String: AgentEvent] = [:]
@@ -780,7 +805,7 @@ final class AppModel {
             // Safe to call from any queue — reads a snapshot count.
             guard let self else { return 0 }
             return MainActor.assumeIsolated {
-                self.state.sessions.count
+                self.islandListSessions.count
             }
         }
     }
@@ -1739,8 +1764,8 @@ final class AppModel {
     }
 
     var focusedSession: AgentSession? {
-        let visible = state.sessions.filter { !paseoDelegatedSessionIDs.contains($0.id) }
-        let selected = state.session(id: selectedSessionID).flatMap { paseoDelegatedSessionIDs.contains($0.id) ? nil : $0 }
+        let visible = state.sessions.filter { !delegatedSessionIDs.contains($0.id) }
+        let selected = state.session(id: selectedSessionID).flatMap { delegatedSessionIDs.contains($0.id) ? nil : $0 }
         return selected ?? surfacedSessions.first ?? visible.first(where: { $0.phase.requiresAttention }) ?? visible.first
     }
 
@@ -1749,7 +1774,7 @@ final class AppModel {
             return nil
         }
 
-        guard !paseoDelegatedSessionIDs.contains(sessionID) else { return nil }
+        guard !delegatedSessionIDs.contains(sessionID) else { return nil }
         return state.session(id: sessionID)
     }
 
@@ -3176,12 +3201,18 @@ final class AppModel {
         // about a decision already made is the noise the rule was written to end.
         let paseoEventID: String? = {
             switch event {
-            case let .sessionStarted(payload): return payload.jumpTarget?.terminalApp == "Paseo" ? payload.sessionID : nil
+            case let .sessionStarted(payload): return payload.sessionID
             case let .permissionRequested(payload): return payload.sessionID
             case let .questionAsked(payload): return payload.sessionID
             case let .activityUpdated(payload): return payload.sessionID
             case let .sessionCompleted(payload): return payload.sessionID
-            default: return nil
+            case let .jumpTargetUpdated(payload): return payload.sessionID
+            case let .sessionMetadataUpdated(payload): return payload.sessionID
+            case let .claudeSessionMetadataUpdated(payload): return payload.sessionID
+            case let .geminiSessionMetadataUpdated(payload): return payload.sessionID
+            case let .openCodeSessionMetadataUpdated(payload): return payload.sessionID
+            case let .cursorSessionMetadataUpdated(payload): return payload.sessionID
+            case let .actionableStateResolved(payload): return payload.sessionID
             }
         }()
         if let id = paseoEventID, state.session(id: id)?.jumpTarget?.terminalApp == "Paseo" {
@@ -3193,8 +3224,9 @@ final class AppModel {
                 if case .questionAsked = event { paseoDeferredEvents[id] = event }
                 return
             }
-            if paseoDelegatedSessionIDs.contains(id) { return }
+            if delegatedSessionIDs.contains(id) { return }
         }
+        if let id = paseoEventID, delegatedSessionIDs.contains(id) { return }
         if autoAnsweredPermission(for: event) {
             return
         }
@@ -3901,7 +3933,7 @@ final class AppModel {
 
     var islandSurfaceAwaitsUserAction: Bool {
         guard let sessionID = islandSurface.sessionID,
-              !paseoDelegatedSessionIDs.contains(sessionID),
+              !delegatedSessionIDs.contains(sessionID),
               let session = state.session(id: sessionID) else {
             return false
         }
@@ -3947,7 +3979,7 @@ final class AppModel {
         ingress: TrackedEventIngress
     ) -> Bool {
         guard let sessionID = surface.sessionID,
-              !paseoDelegatedSessionIDs.contains(sessionID),
+              !delegatedSessionIDs.contains(sessionID),
               let session = state.session(id: sessionID) else {
             return false
         }
@@ -3961,7 +3993,7 @@ final class AppModel {
     private func synchronizeSelection() {
         let surfacedIDs = Set(surfacedSessions.map(\.id))
 
-        if let activeAction = state.sessions.first(where: { $0.phase.requiresAttention && !paseoDelegatedSessionIDs.contains($0.id) }) {
+        if let activeAction = state.sessions.first(where: { $0.phase.requiresAttention && !delegatedSessionIDs.contains($0.id) }) {
             selectedSessionID = activeAction.id
             return
         }
@@ -3969,7 +4001,7 @@ final class AppModel {
         guard let selectedSessionID,
               surfacedIDs.contains(selectedSessionID),
               state.session(id: selectedSessionID) != nil else {
-            self.selectedSessionID = surfacedSessions.first?.id ?? state.sessions.first(where: { !paseoDelegatedSessionIDs.contains($0.id) })?.id
+            self.selectedSessionID = surfacedSessions.first?.id ?? state.sessions.first(where: { !delegatedSessionIDs.contains($0.id) })?.id
             return
         }
     }
@@ -4038,7 +4070,7 @@ final class AppModel {
         let now = Date.now
         // Silenced sessions drop out here rather than at the view, so they are
         // also absent from the counts, the notification surfaces and the sound.
-        let visibleSessions = state.sessions.filter { !settings.notificationFilters.isSilenced($0) && !paseoDelegatedSessionIDs.contains($0.id) }
+        let visibleSessions = state.sessions.filter { !settings.notificationFilters.isSilenced($0) && !delegatedSessionIDs.contains($0.id) }
         let rankedSessions = visibleSessions.sorted { lhs, rhs in
             let lhsScore = displayPriority(for: lhs, now: now)
             let rhsScore = displayPriority(for: rhs, now: now)

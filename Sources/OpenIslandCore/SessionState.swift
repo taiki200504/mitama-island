@@ -92,6 +92,11 @@ public struct SessionState: Equatable, Sendable {
                 openCodeMetadata: payload.openCodeMetadata?.isEmpty == true ? nil : payload.openCodeMetadata,
                 cursorMetadata: payload.cursorMetadata?.isEmpty == true ? nil : payload.cursorMetadata
             )
+            if session.codexMetadata?.parentThreadID == nil,
+               let parent = sessionsByID[payload.sessionID]?.codexMetadata?.parentThreadID {
+                if session.codexMetadata == nil { session.codexMetadata = CodexSessionMetadata() }
+                session.codexMetadata?.parentThreadID = parent
+            }
             session.isRemote = payload.isRemote
             session.isHookManaged = payload.origin == .live
             // Codex.app sessions use app-level liveness (NSRunningApplication)
@@ -184,7 +189,9 @@ public struct SessionState: Equatable, Sendable {
                 return
             }
 
-            session.codexMetadata = payload.codexMetadata.isEmpty ? nil : payload.codexMetadata
+            var metadata = payload.codexMetadata
+            metadata.parentThreadID = metadata.parentThreadID ?? session.codexMetadata?.parentThreadID
+            session.codexMetadata = metadata.isEmpty ? nil : metadata
             session.updatedAt = payload.timestamp
             upsert(session)
 

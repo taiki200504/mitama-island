@@ -2,6 +2,7 @@ import Dispatch
 import Foundation
 
 public struct CodexSessionMetadata: Equatable, Codable, Sendable {
+    public var parentThreadID: String?
     public var transcriptPath: String?
     public var initialUserPrompt: String?
     public var lastUserPrompt: String?
@@ -10,6 +11,7 @@ public struct CodexSessionMetadata: Equatable, Codable, Sendable {
     public var currentCommandPreview: String?
 
     public init(
+        parentThreadID: String? = nil,
         transcriptPath: String? = nil,
         initialUserPrompt: String? = nil,
         lastUserPrompt: String? = nil,
@@ -17,6 +19,7 @@ public struct CodexSessionMetadata: Equatable, Codable, Sendable {
         currentTool: String? = nil,
         currentCommandPreview: String? = nil
     ) {
+        self.parentThreadID = parentThreadID
         self.transcriptPath = transcriptPath
         self.initialUserPrompt = initialUserPrompt
         self.lastUserPrompt = lastUserPrompt
@@ -26,7 +29,8 @@ public struct CodexSessionMetadata: Equatable, Codable, Sendable {
     }
 
     public var isEmpty: Bool {
-        transcriptPath == nil
+        parentThreadID == nil
+            && transcriptPath == nil
             && initialUserPrompt == nil
             && lastUserPrompt == nil
             && lastAssistantMessage == nil
@@ -368,6 +372,7 @@ public final class CodexRolloutDiscovery: @unchecked Sendable {
         var sessionID: String
         var cwd: String
         var timestamp: Date?
+        var parentThreadID: String?
 
         var workspaceName: String {
             let workspace = URL(fileURLWithPath: cwd).lastPathComponent
@@ -634,6 +639,7 @@ public final class CodexRolloutDiscovery: @unchecked Sendable {
         let summary = snapshot.summary ?? sessionMeta.defaultSummary
         let updatedAt = snapshot.updatedAt ?? sessionMeta.timestamp ?? modifiedAt
         let metadata = CodexSessionMetadata(
+            parentThreadID: sessionMeta.parentThreadID,
             transcriptPath: fileURL.path,
             initialUserPrompt: snapshot.initialUserPrompt,
             lastUserPrompt: snapshot.lastUserPrompt,
@@ -675,7 +681,8 @@ public final class CodexRolloutDiscovery: @unchecked Sendable {
             cwd: cwd,
             timestamp: codexRolloutParseTimestamp(
                 (payload["timestamp"] as? String) ?? (object["timestamp"] as? String)
-            )
+            ),
+            parentThreadID: codexParentThreadID(payload)
         )
     }
 
@@ -703,6 +710,7 @@ public struct CodexRolloutWatchTarget: Equatable, Sendable {
 }
 
 public struct CodexRolloutSnapshot: Equatable, Sendable {
+    public var parentThreadID: String?
     public var summary: String?
     public var phase: SessionPhase
     public var updatedAt: Date?
@@ -715,6 +723,7 @@ public struct CodexRolloutSnapshot: Equatable, Sendable {
     public var isInterrupted: Bool
 
     public init(
+        parentThreadID: String? = nil,
         summary: String? = nil,
         phase: SessionPhase = .running,
         updatedAt: Date? = nil,
@@ -726,6 +735,7 @@ public struct CodexRolloutSnapshot: Equatable, Sendable {
         isCompleted: Bool = false,
         isInterrupted: Bool = false
     ) {
+        self.parentThreadID = parentThreadID
         self.summary = summary
         self.phase = phase
         self.updatedAt = updatedAt
@@ -740,6 +750,7 @@ public struct CodexRolloutSnapshot: Equatable, Sendable {
 
     public var metadata: CodexSessionMetadata {
         CodexSessionMetadata(
+            parentThreadID: parentThreadID,
             initialUserPrompt: initialUserPrompt,
             lastUserPrompt: lastUserPrompt,
             lastAssistantMessage: lastAssistantMessage,
@@ -765,6 +776,8 @@ public enum CodexRolloutReducer {
         let payload = object["payload"] as? [String: Any] ?? [:]
 
         switch object["type"] as? String {
+        case "session_meta":
+            snapshot.parentThreadID = codexParentThreadID(payload)
         case "event_msg":
             applyEventMessage(payload, timestamp: timestamp, to: &snapshot)
         case "response_item":
@@ -784,6 +797,7 @@ public enum CodexRolloutReducer {
         let timestamp = newSnapshot.updatedAt ?? .now
         let oldMetadata = oldSnapshot.map {
             CodexSessionMetadata(
+                parentThreadID: $0.parentThreadID,
                 transcriptPath: transcriptPath,
                 initialUserPrompt: $0.initialUserPrompt,
                 lastUserPrompt: $0.lastUserPrompt,
@@ -793,6 +807,7 @@ public enum CodexRolloutReducer {
             )
         }
         let newMetadata = CodexSessionMetadata(
+            parentThreadID: newSnapshot.parentThreadID,
             transcriptPath: transcriptPath,
             initialUserPrompt: newSnapshot.initialUserPrompt,
             lastUserPrompt: newSnapshot.lastUserPrompt,
@@ -1739,7 +1754,7 @@ public final class CodexRolloutWatcher: @unchecked Sendable {
             return CodexRolloutSnapshot()
         }
 
-        let initialPrompt = bootstrapInitialPrompt(
+        let initialSnapshot = bootstrapInitialSnapshot(
             fileHandle: fileHandle,
             readLimit: readLimit
         )
@@ -1749,15 +1764,16 @@ public final class CodexRolloutWatcher: @unchecked Sendable {
             readLimit: readLimit
         )
         return CodexRolloutSnapshot(
-            initialUserPrompt: initialPrompt,
-            lastUserPrompt: lastPrompt ?? initialPrompt
+            parentThreadID: initialSnapshot.parentThreadID,
+            initialUserPrompt: initialSnapshot.initialUserPrompt,
+            lastUserPrompt: lastPrompt ?? initialSnapshot.initialUserPrompt
         )
     }
 
-    private func bootstrapInitialPrompt(
+    private func bootstrapInitialSnapshot(
         fileHandle: FileHandle,
         readLimit: UInt64
-    ) -> String? {
+    ) -> CodexRolloutSnapshot {
         do {
             try fileHandle.seek(toOffset: 0)
             var buffer = Data()
@@ -1781,9 +1797,9 @@ public final class CodexRolloutWatcher: @unchecked Sendable {
                 lines.forEach { CodexRolloutReducer.apply(line: $0, to: &snapshot) }
             }
 
-            return snapshot.initialUserPrompt
+            return snapshot
         } catch {
-            return nil
+            return CodexRolloutSnapshot()
         }
     }
 
@@ -1841,4 +1857,14 @@ private func codexRolloutParseTimestamp(_ string: String?) -> Date? {
     let formatter = ISO8601DateFormatter()
     formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
     return formatter.date(from: string)
+}
+
+/// Only the provider's typed thread-spawn identity establishes a parent.
+private func codexParentThreadID(_ payload: [String: Any]) -> String? {
+    guard let source = payload["source"] as? [String: Any],
+          let subagent = source["subagent"] as? [String: Any],
+          let spawn = subagent["thread_spawn"] as? [String: Any],
+          let parent = spawn["parent_thread_id"] as? String,
+          UUID(uuidString: parent) != nil, parent != payload["id"] as? String else { return nil }
+    return parent
 }

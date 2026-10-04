@@ -334,6 +334,7 @@ final class SessionDiscoveryCoordinator {
         }
 
         let merged = CodexSessionMetadata(
+            parentThreadID: discovered.parentThreadID ?? existing.parentThreadID,
             transcriptPath: discovered.transcriptPath ?? existing.transcriptPath,
             initialUserPrompt: existing.initialUserPrompt ?? discovered.initialUserPrompt ?? discovered.lastUserPrompt,
             lastUserPrompt: discovered.lastUserPrompt ?? existing.lastUserPrompt,
