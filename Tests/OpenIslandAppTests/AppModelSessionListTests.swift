@@ -94,6 +94,7 @@ struct AppModelSessionListTests {
     func islandListDeduplicatesSessionsSharingTheSameLiveGhosttyTerminal() {
         let now = Date(timeIntervalSince1970: 2_000)
         let model = isolatedAppModel()
+        model.settings.display.hideIdleSessions = false
 
         var runningLive = AgentSession(
             id: "running-live",
