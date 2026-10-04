@@ -103,6 +103,7 @@ final class AppModel {
     let discovery = SessionDiscoveryCoordinator()
     let monitoring = ProcessMonitoringCoordinator()
     let codexAppServer = CodexAppServerCoordinator()
+    @ObservationIgnored let paseoQuestions: PaseoQuestionCoordinator
     let updateChecker = UpdateChecker()
 
     var notchStatus: NotchStatus {
@@ -863,9 +864,11 @@ final class AppModel {
             await ForegroundTerminalSessionProbe().matches(session: session)
         },
         settings: SettingsStore = .shared,
-        quietScenes: QuietSceneMonitor = QuietSceneMonitor()
+        quietScenes: QuietSceneMonitor = QuietSceneMonitor(),
+        paseoQuestions: PaseoQuestionCoordinator = PaseoQuestionCoordinator()
     ) {
         self.quietScenes = quietScenes
+        self.paseoQuestions = paseoQuestions
         self.terminalJumpAction = terminalJumpAction
         self.isNotificationSessionAlreadyFrontmost = isNotificationSessionAlreadyFrontmost
         self.settings = settings
@@ -1897,11 +1900,41 @@ final class AppModel {
         do {
             try bridgeServer.start()
             connectBridgeObserver()
+            connectPaseoQuestions()
         } catch {
             isBridgeReady = false
             lastActionMessage = "Failed to start local bridge: \(error.localizedDescription)"
             harnessRuntimeMonitor?.recordMilestone("bridgeStartFailed", message: lastActionMessage)
         }
+    }
+
+    func connectPaseoQuestions() {
+        paseoQuestions.onChange = { [weak self] questions, previous in
+            guard let self else { return }
+            for (id, old) in previous where questions[id] == nil {
+                guard self.state.session(id: id)?.questionPrompt?.id == old.prompt.id else { continue }
+                self.state.answerQuestion(sessionID: id, response: QuestionPromptResponse())
+            }
+            for (id, question) in questions {
+                if self.state.session(id: id) == nil {
+                    self.applyTrackedEvent(.sessionStarted(SessionStarted(
+                        sessionID: id, title: question.title, tool: .claudeCode,
+                        summary: question.prompt.title, timestamp: .now,
+                        jumpTarget: JumpTarget(terminalApp: "Paseo", workspaceName: question.cwd,
+                                               paneTitle: question.title, workingDirectory: question.cwd)
+                    )), updateLastActionMessage: false)
+                }
+                if self.state.session(id: id)?.questionPrompt?.id != question.prompt.id {
+                    self.applyTrackedEvent(.questionAsked(QuestionAsked(
+                        sessionID: id, prompt: question.prompt, timestamp: .now
+                    )), updateLastActionMessage: false)
+                }
+            }
+            self.synchronizeSelection()
+            self.refreshOverlayPlacementIfVisible()
+            self.refreshSustainedCamera()
+        }
+        paseoQuestions.start()
     }
 
     // MARK: - Bridge observer connection
@@ -2723,6 +2756,28 @@ final class AppModel {
         guard let session = state.session(id: sessionID) else {
             return
         }
+
+        if let pending = paseoQuestions.questions[sessionID] {
+            Task { [weak self] in
+                guard let self else { return }
+                do {
+                    try await self.paseoQuestions.answer(sessionID: sessionID, promptID: pending.prompt.id, response: answer)
+                    guard self.state.session(id: sessionID)?.questionPrompt?.id == pending.prompt.id else { return }
+                    NotificationSoundService.play(.confirm, settings: self.settings.sound)
+                    self.dismissNotificationSurfaceIfPresent(for: sessionID)
+                    self.state.answerQuestion(sessionID: sessionID, response: answer)
+                    self.synchronizeSelection()
+                    self.refreshOverlayPlacementIfVisible()
+                    self.refreshSustainedCamera()
+                } catch {
+                    self.lastActionMessage = "Paseoへの回答を送信できませんでした。質問を再確認して再送してください。"
+                    await self.paseoQuestions.poll()
+                }
+            }
+            return
+        }
+        // A Paseo question must never fall through to terminal typing or hook approval.
+        if session.jumpTarget?.terminalApp == "Paseo" { return }
 
         NotificationSoundService.play(.confirm, settings: settings.sound)
         dismissNotificationSurfaceIfPresent(for: sessionID)
@@ -3812,6 +3867,7 @@ final class AppModel {
     }
 
     func quitApplication() {
+        paseoQuestions.stop()
         NSApplication.shared.terminate(nil)
     }
 
