@@ -162,7 +162,7 @@ public enum HookHealthCheck {
                         let strays = ClaudeHookInstaller.strayIslandHookCommands(
                             in: data,
                             excluding: ClaudeHookInstaller.hookCommand(for: binaryPath)
-                        )
+                        ).filter { $0 != ClaudeHookInstaller.hookCommand(for: managedHooksBinaryURL.standardizedFileURL.path) }
                         if !strays.isEmpty {
                             issues.append(.strayIslandHooksDetected(commands: strays))
                         }
