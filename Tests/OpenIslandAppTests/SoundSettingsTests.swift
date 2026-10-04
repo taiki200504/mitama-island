@@ -46,7 +46,7 @@ struct SoundSettingsTests {
     @Test
     func muteIsSharedWithTheIslandSpeakerButton() {
         let settings = makeSettings()
-        let model = AppModel(settings: settings)
+        let model = isolatedAppModel(settings: settings)
 
         model.isSoundMuted = true
         #expect(settings.sound.isMuted)

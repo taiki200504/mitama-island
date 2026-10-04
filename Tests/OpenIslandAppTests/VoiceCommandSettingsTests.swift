@@ -69,7 +69,7 @@ struct VoiceAnswerTargetTests {
         let name = "voice-target-\(UUID().uuidString)"
         let suite = UserDefaults(suiteName: name)!
         suite.removePersistentDomain(forName: name)
-        return AppModel(settings: SettingsStore(store: PreferenceStore(suite: suite)))
+        return isolatedAppModel(settings: SettingsStore(store: PreferenceStore(suite: suite)))
     }
 
     private func waiting(_ id: String) -> AgentSession {

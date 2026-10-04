@@ -82,6 +82,12 @@ private actor ForwardedPaseoMock {
             openCodeRecords: [], openCodeRecordsNeedPrune: false,
             cursorRecords: [], cursorRecordsNeedPrune: false,
             discoveredCodexRecords: [], discoveredClaudeSessions: [], hooksBinaryURL: nil))
+        var scanParent = parent
+        scanParent.questionPrompt = nil
+        scanParent.phase = .running
+        scanParent.updatedAt = .now.addingTimeInterval(20)
+        let merged = model.discovery.mergeDiscoveredSessions([scanParent])
+        model.state = SessionState(sessions: merged)
         await coordinator.poll()
         #expect(Set(model.state.sessions.map(\.id)) == ["child-native", "parent-native", "cached-codex"])
         #expect(model.state.session(id: "parent-native")?.questionPrompt == question.prompt)

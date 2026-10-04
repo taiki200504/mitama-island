@@ -446,7 +446,7 @@ struct SettingsPaneCoverageTests {
         let name = "usage-\(UUID().uuidString)"
         let suite = UserDefaults(suiteName: name)!
         suite.removePersistentDomain(forName: name)
-        let model = AppModel(settings: SettingsStore(store: PreferenceStore(suite: suite)))
+        let model = isolatedAppModel(settings: SettingsStore(store: PreferenceStore(suite: suite)))
 
         model.islandUsageDisplay = .hidden
         #expect(model.islandUsageDisplay == .hidden)

@@ -15,7 +15,7 @@ struct CodexUsageSettingsTests {
             if let previous { defaults.set(previous, forKey: key) }
             else { defaults.removeObject(forKey: key) }
         }
-        let model = AppModel()
+        let model = isolatedAppModel()
         defer { model.hooks.stopCodexUsageMonitoring() }
 
         #expect(!model.hooks.isCodexUsageMonitoring)

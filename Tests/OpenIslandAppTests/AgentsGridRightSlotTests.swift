@@ -21,7 +21,7 @@ struct AgentsGridRightSlotTests {
     /// session.firstSeenAt so historical order is preserved.
     @Test
     func bulkFirstObservationOrdersByHistoricalFirstSeenAt() {
-        let model = AppModel()
+        let model = isolatedAppModel()
         pinRightSlot(model, .agents)
 
         let now = Date(timeIntervalSince1970: 100_000)
@@ -56,7 +56,7 @@ struct AgentsGridRightSlotTests {
     /// observation-time.
     @Test
     func newlyObservedSessionAlwaysLandsAtTheEndRegardlessOfHistoricalTime() {
-        let model = AppModel()
+        let model = isolatedAppModel()
         pinRightSlot(model, .agents)
 
         let now = Date(timeIntervalSince1970: 200_000)
@@ -89,7 +89,7 @@ struct AgentsGridRightSlotTests {
     /// again — not re-observed as a newcomer.
     @Test
     func returningSessionKeepsItsOriginalSlot() {
-        let model = AppModel()
+        let model = isolatedAppModel()
         pinRightSlot(model, .agents)
 
         let now = Date(timeIntervalSince1970: 300_000)
@@ -120,7 +120,7 @@ struct AgentsGridRightSlotTests {
     /// overflow cell showing the remainder count.
     @Test
     func moreThanNineSessionsFoldIntoOverflow() {
-        let model = AppModel()
+        let model = isolatedAppModel()
         pinRightSlot(model, .agents)
         let now = Date(timeIntervalSince1970: 200_000)
 
@@ -151,7 +151,7 @@ struct AgentsGridRightSlotTests {
     /// everything else (completed, stale) to `.idle`.
     @Test
     func cellStateReflectsSessionPhase() {
-        let model = AppModel()
+        let model = isolatedAppModel()
         pinRightSlot(model, .agents)
         let now = Date(timeIntervalSince1970: 300_000)
 
