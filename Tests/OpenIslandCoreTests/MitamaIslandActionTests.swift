@@ -3,6 +3,7 @@ import Testing
 @testable import OpenIslandCore
 
 /// 島から mitama に手を出せる行為。ここで守っているのは「何を起こせないか」。
+@Suite(.serialized)
 struct MitamaIslandActionTests {
     private let now = Date(timeIntervalSince1970: 1_758_000_000)
 
