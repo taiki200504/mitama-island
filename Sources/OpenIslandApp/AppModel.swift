@@ -2834,10 +2834,13 @@ final class AppModel {
 
             do {
                 var target = jumpTarget
-                if target.terminalApp == "Paseo", target.paseoAgentID == nil || target.paseoServerID == nil {
+                if target.terminalApp == "Paseo" {
                     guard let self, let nativeID = target.terminalSessionID else { throw PaseoQuestionError.expired }
-                    let binding = try await self.paseoQuestions.resolveBinding(sessionID: nativeID)
+                    let binding = try await self.paseoQuestions.resolveBinding(sessionID: nativeID, agentID: target.paseoAgentID)
+                    try Task.checkCancellation()
+                    guard let serverID = PaseoServerIdentity.read() else { throw PaseoQuestionError.expired }
                     target = binding.jumpTarget
+                    target.paseoServerID = serverID
                     guard target.paseoAgentID != nil, target.paseoServerID != nil else { throw PaseoQuestionError.expired }
                     self.state.apply(.jumpTargetUpdated(JumpTargetUpdated(sessionID: nativeID, jumpTarget: target, timestamp: .now)))
                 }

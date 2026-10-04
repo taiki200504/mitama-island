@@ -371,10 +371,10 @@ struct TerminalJumpService {
                 if let server = Self.paseoLinkSegment(target.paseoServerID),
                    let agent = Self.paseoLinkSegment(target.paseoAgentID) {
                     try openAction(["-b", "sh.paseo.desktop", "paseo://h/\(server)/agent/\(agent)"])
-                    return "Opened the matching Paseo session."
+                    return "この会話を開くようPaseoへ送信しました。"
                 }
                 try openAction(["-b", "sh.paseo.desktop"])
-                return "Opened Paseo only; session identity is unavailable."
+                return "会話は特定できずPaseoだけ開きました。"
             case "com.googlecode.iterm2":
                 if try jumpToITermSession(target) {
                     return "Focused the matching iTerm session."

@@ -175,7 +175,7 @@ final class TerminalJumpServiceTests: XCTestCase {
             )
         )
 
-        XCTAssertEqual(result, "Opened Paseo only; session identity is unavailable.")
+        XCTAssertEqual(result, "会話は特定できずPaseoだけ開きました。")
         XCTAssertEqual(openedArguments.values, [["-b", "sh.paseo.desktop"]])
     }
 
@@ -189,7 +189,7 @@ final class TerminalJumpServiceTests: XCTestCase {
         )
         let target = JumpTarget(terminalApp: "Paseo", workspaceName: "mitama", paneTitle: "agent",
                                 paseoAgentID: "agent/?#%", paseoServerID: "srv_abc")
-        XCTAssertEqual(try service.jump(to: target), "Opened the matching Paseo session.")
+        XCTAssertEqual(try service.jump(to: target), "この会話を開くようPaseoへ送信しました。")
         XCTAssertEqual(opened.values, [["-b", "sh.paseo.desktop", "paseo://h/srv_abc/agent/agent%2F%3F%23%25"]])
     }
 
@@ -203,7 +203,7 @@ final class TerminalJumpServiceTests: XCTestCase {
             )
             let target = JumpTarget(terminalApp: "Paseo", workspaceName: "mitama", paneTitle: "agent",
                                     paseoAgentID: agent, paseoServerID: server)
-            XCTAssertEqual(try service.jump(to: target), "Opened Paseo only; session identity is unavailable.")
+            XCTAssertEqual(try service.jump(to: target), "会話は特定できずPaseoだけ開きました。")
             XCTAssertEqual(opened.values, [["-b", "sh.paseo.desktop"]])
         }
     }

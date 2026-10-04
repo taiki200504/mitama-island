@@ -172,6 +172,7 @@ public final class PaseoQuestionCoordinator {
     public var onHealthChange: ((PaseoConnectionState) -> Void)?
     private var sending: Set<String> = []
     private var bindings: [String: PaseoAgentBinding] = [:]
+    private var ambiguousBindingSessionIDs: Set<String> = []
     public private(set) var delegatedSessionIDs: Set<String> = []
     private var parentSessionIDs: [String: String] = [:]
     public func parentSessionID(for sessionID: String) -> String? { parentSessionIDs[sessionID] }
@@ -266,6 +267,7 @@ public final class PaseoQuestionCoordinator {
                 }
                 found[binding.sessionID] = pending
             }
+            ambiguousBindingSessionIDs.formUnion(ambiguous)
             try Task.checkCancellation()
             guard generation == lifecycleGeneration else { return }
             let previous = requests
@@ -280,12 +282,24 @@ public final class PaseoQuestionCoordinator {
         }
     }
 
-    /// Used only for an explicit jump lacking IDs, never as a polling scan.
-    public func resolveBinding(sessionID: String) async throws -> PaseoAgentBinding {
-        if let known = bindings[sessionID] { return known }
+    /// A known native identity needs one status check; only unbound sessions require discovery.
+    public func resolveBinding(sessionID: String, agentID: String? = nil) async throws -> PaseoAgentBinding {
+        guard !ambiguousBindingSessionIDs.contains(sessionID) else { throw PaseoQuestionError.expired }
+        let known = bindings[sessionID]
+        if let exactID = known?.agentID ?? agentID {
+            let result = try await call("get_agent_status", .object(["agentId": .string(exactID)]))
+            guard let snapshot = result.paseoObject?["snapshot"]?.paseoObject,
+                  Self.parentCanHandle(snapshot: snapshot, parentID: exactID),
+                  let current = Self.binding(snapshot: snapshot, agentID: exactID, aliases: providerAliases),
+                  current.sessionID == sessionID,
+                  known == nil || current.provider == known?.provider,
+                  agentID == nil || current.agentID == agentID else { throw PaseoQuestionError.expired }
+            bindings[sessionID] = current
+            return current
+        }
         let matches = try await reconcileBindings(sessionIDs: [sessionID])
         guard let match = matches[sessionID] else { throw PaseoQuestionError.expired }
-        return match
+        return try await resolveBinding(sessionID: sessionID, agentID: match.agentID)
     }
 
     public func reconcileBindings(sessionIDs: Set<String>) async throws -> [String: PaseoAgentBinding] {
@@ -306,7 +320,9 @@ public final class PaseoQuestionCoordinator {
             if snapshot["pendingPermissions"]?.paseoArray?.isEmpty == true { sessionsWithoutPending.insert(binding.sessionID) }
             else { sessionsWithoutPending.remove(binding.sessionID) }
         }
-        for id in ambiguous { matches.removeValue(forKey: id); sessionsWithoutPending.remove(id) }
+        ambiguousBindingSessionIDs.subtract(sessionIDs)
+        ambiguousBindingSessionIDs.formUnion(ambiguous)
+        for id in ambiguous { matches.removeValue(forKey: id); bindings.removeValue(forKey: id); sessionsWithoutPending.remove(id) }
         bindings.merge(matches) { _, current in current }
         return matches
     }
