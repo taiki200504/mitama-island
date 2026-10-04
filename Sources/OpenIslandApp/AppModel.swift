@@ -112,6 +112,11 @@ final class AppModel {
     @ObservationIgnored private var paseoDeferredEvents: [String: AgentEvent] = [:]
     @ObservationIgnored private var paseoBindingLookupTask: Task<Void, Never>?
     var paseoConnectionState: PaseoConnectionState = .checking
+    var forwardedQuestionTargets: [String: String] = [:]
+    @ObservationIgnored private var forwardedQuestionOriginals: [String: AgentSession] = [:]
+    @ObservationIgnored private var forwardedQuestionSnapshots: [String: AgentSession] = [:]
+    @ObservationIgnored private var paseoQuestionOrder: [String: Int] = [:]
+    @ObservationIgnored private var paseoQuestionTicket = 0
     var paseoSendingSessionIDs: Set<String> = []
     var paseoErrors: [String: String] = [:]
     var paseoSuccesses: [String: String] = [:]
@@ -1994,11 +1999,64 @@ final class AppModel {
                     else { self.applyTrackedEvent(event, updateLastActionMessage: false) }
                 }
             }
+            self.refreshForwardedPaseoQuestions()
             self.synchronizeSelection()
             self.refreshOverlayPlacementIfVisible()
             self.refreshSustainedCamera()
         }
         paseoQuestions.start()
+    }
+
+    func forwardedPaseoQuestionSource(sessionID: String) -> (childSessionID: String, title: String)? {
+        guard let child = forwardedQuestionTargets[sessionID], let pending = paseoQuestions.requests[child],
+              pending.question?.prompt.id == state.session(id: sessionID)?.questionPrompt?.id else { return nil }
+        return (child, pending.binding.title)
+    }
+
+    private func refreshForwardedPaseoQuestions() {
+        var sessions = state.sessions
+        for (parent, projected) in forwardedQuestionSnapshots {
+            if let index = sessions.firstIndex(where: { $0.id == parent }),
+               let original = forwardedQuestionOriginals[parent] {
+                if sessions[index] == projected { sessions[index] = original }
+                else if sessions[index].questionPrompt?.id == projected.questionPrompt?.id,
+                        paseoQuestions.requests[parent] == nil {
+                    sessions[index].questionPrompt = original.questionPrompt
+                    if sessions[index].phase == .waitingForAnswer { sessions[index].phase = original.phase }
+                    if sessions[index].summary == projected.summary { sessions[index].summary = original.summary }
+                }
+            }
+        }
+        forwardedQuestionTargets.removeAll()
+        forwardedQuestionSnapshots.removeAll()
+        forwardedQuestionOriginals.removeAll()
+        paseoQuestionOrder = paseoQuestionOrder.filter { paseoQuestions.questions[$0.key] != nil }
+        for child in paseoQuestions.questions.keys.sorted() where paseoQuestionOrder[child] == nil {
+            paseoQuestionOrder[child] = paseoQuestionTicket
+            paseoQuestionTicket += 1
+        }
+        let children = paseoQuestions.questions.keys.sorted { (paseoQuestionOrder[$0] ?? 0) < (paseoQuestionOrder[$1] ?? 0) }
+        for child in children {
+            guard let parent = paseoQuestions.parentSessionID(for: child),
+                  paseoQuestions.requests[parent] == nil, forwardedQuestionTargets[parent] == nil,
+                  let pending = paseoQuestions.requests[child], let question = pending.question,
+                  let binding = paseoQuestions.knownBinding(sessionID: parent) else { continue }
+            if !sessions.contains(where: { $0.id == parent }) {
+                sessions.append(AgentSession(id: parent, title: binding.title,
+                    tool: binding.provider == "codex" ? .codex : .claudeCode, phase: .running,
+                    summary: "Paseo", updatedAt: .now, jumpTarget: binding.jumpTarget))
+            }
+            guard let index = sessions.firstIndex(where: { $0.id == parent }),
+                  !sessions[index].phase.requiresAttention else { continue }
+            forwardedQuestionOriginals[parent] = sessions[index]
+            sessions[index].phase = .waitingForAnswer
+            sessions[index].summary = "子からの質問: \(pending.binding.title)"
+            sessions[index].questionPrompt = question.prompt
+            paseoSDKQuestionPromptIDs[parent] = question.prompt.id
+            forwardedQuestionTargets[parent] = child
+            forwardedQuestionSnapshots[parent] = sessions[index]
+        }
+        state = SessionState(sessions: sessions)
     }
 
     private func reconcilePaseoSessionsOnce() async {
@@ -2750,6 +2808,9 @@ final class AppModel {
     }
 
     private func paseoJumpTarget(for session: AgentSession) -> JumpTarget? {
+        if let source = forwardedPaseoQuestionSource(sessionID: session.id) {
+            return paseoQuestions.requests[source.childSessionID]?.binding.jumpTarget
+        }
         guard var target = session.jumpTarget else { return nil }
         if target.terminalApp == "Paseo", target.terminalSessionID == nil { target.terminalSessionID = session.id }
         return target
@@ -2934,7 +2995,8 @@ final class AppModel {
         }
 
         if let promptID, session.questionPrompt?.id != promptID { return }
-        if let request = paseoQuestions.requests[sessionID], let pending = request.question {
+        let targetSessionID = forwardedQuestionTargets[sessionID] ?? sessionID
+        if let request = paseoQuestions.requests[targetSessionID], let pending = request.question {
             guard session.questionPrompt?.id == pending.prompt.id,
                   paseoSendingSessionIDs.insert(sessionID).inserted else { return }
             paseoErrors.removeValue(forKey: sessionID)
@@ -2942,14 +3004,16 @@ final class AppModel {
                 guard let self else { return }
                 defer { self.paseoSendingSessionIDs.remove(sessionID) }
                 do {
-                    try await self.paseoQuestions.answer(sessionID: sessionID, promptID: pending.prompt.id, response: answer)
+                    try await self.paseoQuestions.answer(sessionID: targetSessionID, promptID: pending.prompt.id, response: answer)
                     _ = self.bridgeServer.resolveMatchingPaseoHook(request, answer: answer)
                     guard self.state.session(id: sessionID)?.questionPrompt?.id == pending.prompt.id else { return }
                     self.paseoSuccesses[sessionID] = "Paseoへ回答を送信しました。"
                     self.lastActionMessage = self.paseoSuccesses[sessionID] ?? ""
                     NotificationSoundService.play(.confirm, settings: self.settings.sound)
                     self.dismissNotificationSurfaceIfPresent(for: sessionID)
-                    self.state.answerQuestion(sessionID: sessionID, response: answer)
+                    self.state.answerQuestion(sessionID: targetSessionID, response: answer)
+                    self.refreshForwardedPaseoQuestions()
+                    await self.paseoQuestions.poll()
                     self.synchronizeSelection()
                     self.refreshOverlayPlacementIfVisible()
                     self.refreshSustainedCamera()
