@@ -166,6 +166,9 @@ public final class PaseoQuestionCoordinator {
     private var sending: Set<String> = []
     private var bindings: [String: PaseoAgentBinding] = [:]
     public private(set) var delegatedSessionIDs: Set<String> = []
+    private var parentSessionIDs: [String: String] = [:]
+    public func parentSessionID(for sessionID: String) -> String? { parentSessionIDs[sessionID] }
+    public func knownBinding(sessionID: String) -> PaseoAgentBinding? { bindings[sessionID] }
     public var onDelegationChange: ((Set<String>) -> Void)?
     public private(set) var sessionsWithoutPending: Set<String> = []
     public private(set) var requests: [String: PaseoPendingRequest] = [:]
@@ -192,6 +195,7 @@ public final class PaseoQuestionCoordinator {
     public func poll() async {
         guard !polling else { return }
         polling = true
+        let previousParentSessionIDs = parentSessionIDs
         defer { polling = false }
         do {
             let result = try await call("list_pending_permissions", .object([:]))
@@ -215,6 +219,10 @@ public final class PaseoQuestionCoordinator {
                 else { sessionsWithoutPending.remove(binding.sessionID) }
                 // One actionable card per native session; subsequent SDK requests are picked up after resolution.
                 guard var pending = Self.pending(snapshot: snapshot, binding: binding) else { continue }
+                if pending.question != nil && parentSessionIDs[binding.sessionID] == nil {
+                    delegatedSessionIDs.remove(binding.sessionID)
+                    onDelegationChange?(delegatedSessionIDs)
+                }
                 if ambiguous.contains(binding.sessionID) { continue }
                 if let other = found[binding.sessionID], other.binding.agentID != agentID {
                     found.removeValue(forKey: binding.sessionID)
@@ -235,7 +243,7 @@ public final class PaseoQuestionCoordinator {
             try Task.checkCancellation()
             let previous = requests
             requests = found
-            if previous != found {
+            if previous != found || previousParentSessionIDs != parentSessionIDs {
                 onRequestsChange?(found, previous)
                 onChange?(questions, previous.compactMapValues(\.question))
             }
@@ -276,10 +284,15 @@ public final class PaseoQuestionCoordinator {
     /// A child remains actionable internally; its existing parent owns its permission workflow.
     private func updateDelegation(_ binding: PaseoAgentBinding) async {
         var delegated = false
+        parentSessionIDs.removeValue(forKey: binding.sessionID)
         if let parentID = binding.parentAgentID, parentID != binding.agentID,
            let result = try? await call("get_agent_status", .object(["agentId": .string(parentID)])),
            let snapshot = result.paseoObject?["snapshot"]?.paseoObject {
             delegated = Self.parentCanHandle(snapshot: snapshot, parentID: parentID)
+            if delegated, let parent = Self.binding(snapshot: snapshot, agentID: parentID, aliases: providerAliases), parent.sessionID != binding.sessionID {
+                bindings[parent.sessionID] = parent
+                parentSessionIDs[binding.sessionID] = parent.sessionID
+            }
         }
         let previous = delegatedSessionIDs
         if delegated { delegatedSessionIDs.insert(binding.sessionID) }
