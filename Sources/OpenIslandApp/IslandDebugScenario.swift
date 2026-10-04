@@ -262,10 +262,11 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
         switch self {
         case .paseoApprovalCard, .paseoQuestionCard:
             let isQuestion = self == .paseoQuestionCard
-            let session = PaseoHarnessFixture.session(isQuestion: isQuestion, now: now)
+            let sessions = PaseoHarnessFixture.sessions(isQuestion: isQuestion, now: now)
+            let session = sessions[0]
             var snapshot = IslandDebugSnapshot(title: title, summary: summary, previewHeight: 420,
                 notchStatus: .opened, notchOpenReason: .notification,
-                islandSurface: .sessionList(actionableSessionID: session.id), sessions: [session], selectedSessionID: session.id)
+                islandSurface: .sessionList(actionableSessionID: session.id), sessions: sessions, selectedSessionID: session.id)
             snapshot.debugPaseoQuestion = isQuestion
             return snapshot
 
