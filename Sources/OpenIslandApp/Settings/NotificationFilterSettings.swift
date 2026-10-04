@@ -66,7 +66,7 @@ struct SilenceRule: Codable, Equatable, Identifiable, Sendable {
         case .workingDirectory:
             session.jumpTarget?.workingDirectory
         case .firstPrompt:
-            session.claudeMetadata?.initialUserPrompt
+            session.initialUserPromptText
         case .terminalApp:
             session.jumpTarget?.terminalApp
         }

@@ -323,6 +323,11 @@ final class AppModel {
         didSet {
             guard hasFinishedInit, showCodexUsage != oldValue else { return }
             UserDefaults.standard.set(showCodexUsage, forKey: Self.showCodexUsageDefaultsKey)
+            if showCodexUsage {
+                hooks.startCodexUsageMonitoringIfNeeded()
+            } else {
+                hooks.stopCodexUsageMonitoring()
+            }
         }
     }
     var completionReplyEnabled: Bool = false {

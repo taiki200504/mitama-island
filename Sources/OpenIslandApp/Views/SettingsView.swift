@@ -20,6 +20,7 @@ private struct HidesSidebarToggle: ViewModifier {
 struct SettingsView: View {
     var model: AppModel
     @State private var selectedTab: SettingsTab = .general
+    @State private var searchQuery = ""
 
     private var lang: LanguageManager { model.lang }
 
@@ -50,25 +51,60 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var sidebar: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 6) {
+                TextField(lang.t("settings.search.placeholder"), text: $searchQuery)
+                    .textFieldStyle(.roundedBorder)
+                    .accessibilityIdentifier("settings.search")
+                if !searchQuery.isEmpty {
+                    Button { searchQuery = "" } label: {
+                        Image(systemName: "xmark.circle.fill")
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel(lang.t("settings.search.clear"))
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.top, 12)
+            if matchingTabs.isEmpty {
+                Text(lang.t("settings.search.noResults"))
+                    .foregroundStyle(.secondary)
+                    .padding()
+                Spacer()
+            } else {
+                settingsSidebarList
+            }
+        }
+    }
+
+    private var matchingTabs: [SettingsTab] {
+        SettingsTab.matching(searchQuery, labels: Dictionary(uniqueKeysWithValues:
+            SettingsTab.allCases.map { ($0, $0.label(lang)) }))
+    }
+
+    private var settingsSidebarList: some View {
         List(selection: $selectedTab) {
             ForEach(SettingsSection.allCases, id: \.self) { section in
-                Section {
-                    ForEach(section.tabs) { tab in
-                        Label {
-                            Text(tab.label(lang))
-                        } icon: {
-                            SettingsIconChip(systemImage: tab.icon, tint: tab.tint)
+                if section.tabs.contains(where: matchingTabs.contains) {
+                    Section {
+                        ForEach(section.tabs.filter(matchingTabs.contains)) { tab in
+                            Label {
+                                Text(tab.label(lang))
+                            } icon: {
+                                SettingsIconChip(systemImage: tab.icon, tint: tab.tint)
+                            }
+                            .tag(tab)
+                            // A stable handle for driving the sidebar from a UI
+                            // test. Deliberately no other accessibility overrides
+                            // here: the row's native selection semantics are what
+                            // VoiceOver should see.
+                            .accessibilityIdentifier("settings.tab.\(tab.rawValue)")
                         }
-                        .tag(tab)
-                        // A stable handle for driving the sidebar from a UI
-                        // test. Deliberately no other accessibility overrides
-                        // here: the row's native selection semantics are what
-                        // VoiceOver should see.
-                        .accessibilityIdentifier("settings.tab.\(tab.rawValue)")
-                    }
-                } header: {
-                    if let header = section.header(lang) {
-                        Text(header)
+                    } header: {
+                        if let header = section.header(lang) {
+                            Text(header)
+                        }
                     }
                 }
             }

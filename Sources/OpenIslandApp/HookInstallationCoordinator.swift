@@ -105,6 +105,11 @@ final class HookInstallationCoordinator {
     private var codexUsageMonitorTask: Task<Void, Never>?
 
     @ObservationIgnored
+    private var codexUsageRefreshGeneration = 0
+
+    var isCodexUsageMonitoring: Bool { codexUsageMonitorTask != nil }
+
+    @ObservationIgnored
     private var relativeTimestampFormatter: RelativeDateTimeFormatter {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .short
@@ -780,6 +785,7 @@ final class HookInstallationCoordinator {
     }
 
     func refreshCodexUsageState() {
+        let generation = codexUsageRefreshGeneration
         Task { [weak self] in
             guard let self else { return }
 
@@ -787,8 +793,10 @@ final class HookInstallationCoordinator {
                 let snapshot = try await Task.detached(priority: .utility) {
                     try CodexUsageLoader.load()
                 }.value
+                guard generation == self.codexUsageRefreshGeneration else { return }
                 self.codexUsageSnapshot = snapshot
             } catch {
+                guard generation == self.codexUsageRefreshGeneration else { return }
                 self.onStatusMessage?("Failed to read Codex usage state: \(error.localizedDescription)")
             }
         }
@@ -1098,9 +1106,16 @@ final class HookInstallationCoordinator {
 
             while !Task.isCancelled {
                 self.refreshCodexUsageState()
-                try? await Task.sleep(for: .seconds(120))
+                do { try await Task.sleep(for: .seconds(120)) } catch { return }
             }
         }
+    }
+
+    func stopCodexUsageMonitoring() {
+        codexUsageMonitorTask?.cancel()
+        codexUsageMonitorTask = nil
+        codexUsageRefreshGeneration += 1
+        codexUsageSnapshot = nil
     }
 
     // MARK: - Internal: readClaudeUsageState

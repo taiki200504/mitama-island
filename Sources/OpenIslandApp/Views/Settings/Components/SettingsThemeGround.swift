@@ -16,7 +16,7 @@ private struct SettingsThemeGround: ViewModifier {
                     // A single wash from the top-left, the way a HUD is lit from
                     // one source. Flat ink reads as an unlit box.
                     LinearGradient(
-                        colors: [theme.accent.opacity(0.10), .clear],
+                        colors: [theme.accent.opacity(0.03), .clear],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )

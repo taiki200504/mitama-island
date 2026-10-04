@@ -606,7 +606,7 @@
 "settings.autoResponse.behavior.allowOnce" = "この確認だけ許可";
 "settings.autoResponse.behavior.acceptEdits" = "以後は編集だけ自動で許可";
 "settings.autoResponse.behavior.bypassPermissions" = "このセッションでは以後聞かない";
-"settings.autoResponse.claudeOnly" = "2つのモードは Claude Code のみ。他のエージェントでは一回きりの許可になります。";
+"settings.autoResponse.claudeOnly" = "2つのモードは Claude Code のみ。他のエージェントでは一回きりの許可になります。Paseo の会話には自動応答ルールを適用しません。";
 
 /* Agent icons */
 "settings.display.agentIcon" = "エージェントのアイコン";
@@ -912,3 +912,7 @@
 "settings.earshot.enabled.help" = "既定はオフ。声で答える機能とは別のスイッチで、片方だけ使えます。";
 "settings.earshot.pauseCalls" = "通話中は止める";
 "settings.earshot.pauseCalls.help" = "Zoom / Teams / FaceTime / Webex / Skype が起動している間は録らない。相手は同意していないため。";
+
+"settings.search.placeholder" = "設定を検索";
+"settings.search.noResults" = "該当する設定カテゴリがありません";
+"settings.search.clear" = "検索をクリア";
