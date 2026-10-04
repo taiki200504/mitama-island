@@ -20,6 +20,9 @@ private actor ForwardedPaseoMock {
             pending = false
             return .object(["success": .boolean(true)])
         }
+        if name == "list_agents" {
+            return .object(["agents": .array([.object(["id": .string(childID)]), .object(["id": .string("parent")])])])
+        }
         if name == "list_pending_permissions" {
             let ids = (pending ? [childID] : []) + (parentOwnRequest ? ["parent"] : [])
             return .object(["permissions": .array(ids.map { .object(["agentId": .string($0), "request": .object(["id": .string("q-" + $0 + requestVersion)])]) })])
@@ -98,6 +101,27 @@ private actor ForwardedPaseoMock {
         let deadline = ContinuousClock.now.advanced(by: .seconds(2))
         while model.paseoSendingSessionIDs.contains("parent-native"), ContinuousClock.now < deadline { await Task.yield() }
         #expect(await mock.sends == ["child"])
+    }
+
+    @Test func parentReconciliationDoesNotResolveItsForwardedChildQuestion() async throws {
+        let mock = ForwardedPaseoMock()
+        let coordinator = PaseoQuestionCoordinator(call: { await mock.call($0, $1) })
+        let model = model(coordinator)
+        model.connectPaseoQuestions(); coordinator.stop()
+        await coordinator.poll()
+        let question = try #require(coordinator.questions["child-native"])
+        await model.reconcilePaseoSessionsOnce()
+        #expect(coordinator.sessionsWithoutPending.contains("parent-native"))
+        #expect(!coordinator.sessionsWithoutPending.contains("child-native"))
+        #expect(model.state.session(id: "parent-native")?.phase == .waitingForAnswer)
+        #expect(model.state.session(id: "parent-native")?.questionPrompt?.id == question.prompt.id)
+        #expect(model.forwardedPaseoQuestionSource(sessionID: "parent-native")?.childSessionID == "child-native")
+        #expect(model.forwardedQuestionTargets["parent-native"] == "child-native")
+        model.answerQuestion(for: "parent-native", answer: .init(answer: "Yes"), promptID: question.prompt.id)
+        let deadline = ContinuousClock.now.advanced(by: .seconds(2))
+        while model.paseoSendingSessionIDs.contains("parent-native"), ContinuousClock.now < deadline { await Task.yield() }
+        #expect(await mock.sends == ["child"])
+        #expect(coordinator.requests["child-native"] == nil)
     }
 
     @Test func childQuestionProjectsAndAnswersChildOnly() async throws {

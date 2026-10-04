@@ -2040,7 +2040,9 @@ final class AppModel {
     }
 
     func forwardedPaseoQuestionSource(sessionID: String) -> (childSessionID: String, title: String)? {
-        guard let child = forwardedQuestionTargets[sessionID], let pending = paseoQuestions.requests[child],
+        guard let child = forwardedQuestionTargets[sessionID],
+              paseoQuestions.parentSessionID(for: child) == sessionID,
+              let pending = paseoQuestions.requests[child],
               pending.question?.prompt.id == state.session(id: sessionID)?.questionPrompt?.id else { return nil }
         return (child, pending.binding.title)
     }
@@ -2105,7 +2107,7 @@ final class AppModel {
         state = SessionState(sessions: sessions)
     }
 
-    private func reconcilePaseoSessionsOnce() async {
+    func reconcilePaseoSessionsOnce() async {
         let ids = Set(state.sessions.filter { $0.jumpTarget?.terminalApp == "Paseo" }.map(\.id))
         guard !ids.isEmpty else { return }
         do {
@@ -2114,7 +2116,9 @@ final class AppModel {
                 adoptPaseoTitle(binding)
                 state.apply(.jumpTargetUpdated(JumpTargetUpdated(sessionID: id, jumpTarget: binding.jumpTarget, timestamp: .now)))
                 paseoModeLabels[id] = binding.currentModeLabel ?? "モード情報なし"
-                if paseoQuestions.sessionsWithoutPending.contains(id), !bridgeServer.hasLivePendingHook(sessionID: id),
+                if paseoQuestions.sessionsWithoutPending.contains(id),
+                   forwardedPaseoQuestionSource(sessionID: id) == nil,
+                   !bridgeServer.hasLivePendingHook(sessionID: id),
                    state.session(id: id)?.phase.requiresAttention == true {
                     state.apply(.actionableStateResolved(ActionableStateResolved(sessionID: id,
                         summary: "Paseo側に未回答の要求はありません。", timestamp: .now)))
