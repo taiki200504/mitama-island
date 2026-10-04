@@ -605,7 +605,7 @@
 "settings.autoResponse.behavior.allowOnce" = "僅允許本次請求";
 "settings.autoResponse.behavior.acceptEdits" = "此後自動允許編輯";
 "settings.autoResponse.behavior.bypassPermissions" = "本工作階段此後不再詢問";
-"settings.autoResponse.claudeOnly" = "這兩種模式僅支援 Claude Code。其他代理將改為一次性允許。";
+"settings.autoResponse.claudeOnly" = "這兩種模式僅支援 Claude Code。其他代理將改為一次性允許。自動回應規則不適用於 Paseo 對話。";
 
 /* Agent icons */
 "settings.display.agentIcon" = "代理圖示";
@@ -911,3 +911,7 @@
 "settings.earshot.enabled.help" = "預設關閉。與語音回答是兩個獨立開關，可只開其一。";
 "settings.earshot.pauseCalls" = "通話時暫停";
 "settings.earshot.pauseCalls.help" = "當 Zoom / Teams / FaceTime / Webex / Skype 正在執行時停止錄製。對方並未同意被錄音。";
+
+"settings.search.placeholder" = "搜尋設定";
+"settings.search.noResults" = "沒有符合的設定類別";
+"settings.search.clear" = "清除搜尋";

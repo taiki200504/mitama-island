@@ -20,12 +20,8 @@ struct SettingsPane<Content: View>: View {
                     // back to the system face instead of vanishing into a
                     // display font that has no CJK glyphs.
                     Text(tab.label(lang))
-                        .saoCaps(size: 18, text: tab.label(lang))
+                        .font(.system(size: 18, weight: .semibold))
                 }
-                SAOGaugeShape(fraction: 1)
-                    .fill(SAOGrammar.selectionGradient)
-                    .frame(width: 96, height: 2)
-                    .accessibilityHidden(true)
             }
             .padding(.horizontal, 20)
             .padding(.top, 18)

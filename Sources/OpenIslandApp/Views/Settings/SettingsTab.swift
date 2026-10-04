@@ -29,6 +29,33 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 
     func label(_ lang: LanguageManager) -> String { lang.t(titleKey) }
 
+    static func matching(_ query: String, labels: [SettingsTab: String]) -> [SettingsTab] {
+        let terms = query.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+            .split(whereSeparator: \.isWhitespace).map(String.init)
+        return allCases.filter { tab in
+            let text = "\(labels[tab] ?? tab.rawValue) \(tab.rawValue) \(tab.searchKeywords)"
+                .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+            return terms.allSatisfy { text.contains($0) }
+        }
+    }
+
+    private var searchKeywords: String {
+        switch self {
+        case .general: "launch login language hover fullscreen sleep 起動 言語 ホバー 全画面 ログイン"
+        case .integrations: "agent hooks setup pairing watch claude codex cursor paseo 連携 エージェント フック 接続"
+        case .notifications: "alerts silence filters permissions approval auto response 通知 フィルター 許可 承認 自動応答"
+        case .display: "appearance theme font width height screen notch 表示 外観 テーマ フォント サイズ 画面 ノッチ"
+        case .island: "timer clipboard music now playing shelf hud タイマー クリップボード 音楽 再生 棚"
+        case .sound: "audio volume mute quiet hours 音量 音声 サウンド ミュート 消音"
+        case .usage: "quota rate limit reset claude codex 使用量 利用状況 上限 リセット"
+        case .shortcuts: "keyboard hotkey gesture camera microphone voice ショートカット キーボード ジェスチャー カメラ マイク"
+        case .sshRemote: "ssh remote terminal 遠隔 リモート ターミナル"
+        case .labs: "experimental naming 実験 ラボ 名前"
+        case .mitama: "feed automation jobs handoff scoreboard ミタマ 自動化 ジョブ 引継ぎ"
+        case .about: "version update help バージョン 更新 アプリ情報"
+        }
+    }
+
     var icon: String {
         switch self {
         case .general:       "gearshape.fill"

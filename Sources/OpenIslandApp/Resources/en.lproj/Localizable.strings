@@ -606,7 +606,7 @@
 "settings.autoResponse.behavior.allowOnce" = "Allow this request";
 "settings.autoResponse.behavior.acceptEdits" = "Auto-accept edits from here on";
 "settings.autoResponse.behavior.bypassPermissions" = "Stop asking for this session";
-"settings.autoResponse.claudeOnly" = "The two modes need Claude Code. Other agents get a one-off approval instead.";
+"settings.autoResponse.claudeOnly" = "The two modes need Claude Code. Other agents get a one-off approval instead. Auto-response rules do not apply to Paseo sessions.";
 
 /* Agent icons */
 "settings.display.agentIcon" = "Agent icons";
@@ -912,3 +912,7 @@
 "settings.earshot.enabled.help" = "Off by default. Separate from voice answers: you can have one without the other.";
 "settings.earshot.pauseCalls" = "Pause during calls";
 "settings.earshot.pauseCalls.help" = "Stops while Zoom, Teams, FaceTime, Webex, or Skype is running. The other side never agreed to this.";
+
+"settings.search.placeholder" = "Search settings";
+"settings.search.noResults" = "No matching settings categories";
+"settings.search.clear" = "Clear search";
