@@ -149,4 +149,20 @@ struct IslandDecisionPresentationTests {
         }
     }
 
+    @Test func questionHeadingHidesProviderInternalsAndDuplicateInstructions() {
+        let unsupported = StructuredQuestionPromptView(
+            prompt: QuestionPrompt(title: "future_provider_question", questions: []),
+            isPaseo: true, onAnswer: { _ in })
+        #expect(!unsupported.showsPromptTitle)
+        let questions = [QuestionPromptItem(question: "Which project?", header: "Project", options: []),
+                         QuestionPromptItem(question: "Which branch?", header: "Branch", options: [])]
+        let generic = StructuredQuestionPromptView(
+            prompt: QuestionPrompt(title: "質問に回答してください", questions: questions), onAnswer: { _ in })
+        #expect(!generic.showsPromptTitle)
+        let specific = StructuredQuestionPromptView(
+            prompt: QuestionPrompt(title: "Release decisions", questions: questions), onAnswer: { _ in })
+        #expect(specific.showsPromptTitle)
+        #expect(specific.prompt?.questions.map(\.question) == ["Which project?", "Which branch?"])
+    }
+
 }
