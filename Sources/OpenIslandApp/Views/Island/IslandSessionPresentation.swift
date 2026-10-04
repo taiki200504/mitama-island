@@ -68,3 +68,22 @@ extension Font {
         .system(size: max(size, IslandTypography.scaled(size)), weight: weight, design: design)
     }
 }
+
+/// A forwarded SDK request keeps the parent's identity while displaying the
+/// request owner's mode and response status. AppModel currently records user
+/// submissions under the visible parent; provider updates may use the child.
+struct IslandSDKPresentation {
+    let modeLabel: String?
+    let isSending: Bool
+    let error: String?
+    let success: String?
+
+    init(sessionID: String, forwardedSessionID: String?, modeLabels: [String: String],
+         sendingSessionIDs: Set<String>, errors: [String: String], successes: [String: String]) {
+        let sourceID = forwardedSessionID ?? sessionID
+        modeLabel = modeLabels[sourceID] ?? modeLabels[sessionID]
+        isSending = sendingSessionIDs.contains(sourceID) || sendingSessionIDs.contains(sessionID)
+        error = errors[sourceID] ?? errors[sessionID]
+        success = successes[sourceID] ?? successes[sessionID]
+    }
+}

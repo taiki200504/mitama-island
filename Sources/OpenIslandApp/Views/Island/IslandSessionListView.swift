@@ -251,6 +251,8 @@ extension IslandPanelView {
             // 描かれない——mitama の行が長いあいだそうなっていた。
 
             if isNotificationMode, let session = model.activeIslandCardSession {
+                let source = model.forwardedPaseoQuestionSource(sessionID: session.id)
+                let sdk = sdkPresentation(for: session, forwardedSessionID: source?.childSessionID)
                 IslandSessionRow(
                     session: session,
                     referenceDate: referenceDate,
@@ -263,11 +265,11 @@ extension IslandPanelView {
                     sideInset: sessionListSideInset,
                     cardFields: cardFields,
                     lang: model.lang,
-                    paseoModeLabel: model.paseoModeLabels[session.id],
-                    submissionIsSending: model.paseoSendingSessionIDs.contains(session.id),
-                    submissionError: model.paseoErrors[session.id],
-                    submissionSuccess: model.paseoSuccesses[session.id],
-                    forwardedQuestionSourceTitle: model.forwardedPaseoQuestionSource(sessionID: session.id)?.title,
+                    paseoModeLabel: sdk.modeLabel,
+                    submissionIsSending: sdk.isSending,
+                    submissionError: sdk.error,
+                    submissionSuccess: sdk.success,
+                    forwardedQuestionSourceTitle: source?.title,
                     onApprove: { model.approvePermission(for: session.id, action: $0, expectedRequestID: session.permissionRequest?.id) },
                     onResolveAll: session.jumpTarget?.terminalApp == "Paseo" ? nil : { model.resolveAllPendingApprovals($0) },
                     pendingApprovalCount: model.pendingApprovalSessions.count,
@@ -309,6 +311,8 @@ extension IslandPanelView {
                         }
 
                         ForEach(section.sessions) { session in
+                            let source = model.forwardedPaseoQuestionSource(sessionID: session.id)
+                            let sdk = sdkPresentation(for: session, forwardedSessionID: source?.childSessionID)
                             IslandSessionRow(
                                 session: session,
                                 referenceDate: referenceDate,
@@ -320,11 +324,11 @@ extension IslandPanelView {
                                 sideInset: sessionListSideInset,
                                 cardFields: cardFields,
                                 lang: model.lang,
-                                paseoModeLabel: model.paseoModeLabels[session.id],
-                    submissionIsSending: model.paseoSendingSessionIDs.contains(session.id),
-                    submissionError: model.paseoErrors[session.id],
-                    submissionSuccess: model.paseoSuccesses[session.id],
-                    forwardedQuestionSourceTitle: model.forwardedPaseoQuestionSource(sessionID: session.id)?.title,
+                                paseoModeLabel: sdk.modeLabel,
+                    submissionIsSending: sdk.isSending,
+                    submissionError: sdk.error,
+                    submissionSuccess: sdk.success,
+                    forwardedQuestionSourceTitle: source?.title,
                     onApprove: { model.approvePermission(for: session.id, action: $0, expectedRequestID: session.permissionRequest?.id) },
                                 onResolveAll: session.jumpTarget?.terminalApp == "Paseo" ? nil : { model.resolveAllPendingApprovals($0) },
                                 pendingApprovalCount: model.pendingApprovalSessions.count,
@@ -352,6 +356,12 @@ extension IslandPanelView {
                 sessionPanelFooter
             }
         }
+    }
+
+    private func sdkPresentation(for session: AgentSession, forwardedSessionID: String?) -> IslandSDKPresentation {
+        IslandSDKPresentation(sessionID: session.id, forwardedSessionID: forwardedSessionID,
+            modeLabels: model.paseoModeLabels, sendingSessionIDs: model.paseoSendingSessionIDs,
+            errors: model.paseoErrors, successes: model.paseoSuccesses)
     }
 
     private func notificationCardIdentity(for session: AgentSession) -> String {
@@ -389,6 +399,8 @@ extension IslandPanelView {
                 }
 
                 ForEach(section.sessions) { session in
+                    let source = model.forwardedPaseoQuestionSource(sessionID: session.id)
+                    let sdk = sdkPresentation(for: session, forwardedSessionID: source?.childSessionID)
                     IslandSessionRow(
                         session: session,
                         referenceDate: referenceDate,
@@ -400,11 +412,11 @@ extension IslandPanelView {
                         sideInset: sessionListSideInset,
                         cardFields: cardFields,
                         lang: model.lang,
-                        paseoModeLabel: model.paseoModeLabels[session.id],
-                    submissionIsSending: model.paseoSendingSessionIDs.contains(session.id),
-                    submissionError: model.paseoErrors[session.id],
-                    submissionSuccess: model.paseoSuccesses[session.id],
-                    forwardedQuestionSourceTitle: model.forwardedPaseoQuestionSource(sessionID: session.id)?.title,
+                        paseoModeLabel: sdk.modeLabel,
+                    submissionIsSending: sdk.isSending,
+                    submissionError: sdk.error,
+                    submissionSuccess: sdk.success,
+                    forwardedQuestionSourceTitle: source?.title,
                     onApprove: { model.approvePermission(for: session.id, action: $0, expectedRequestID: session.permissionRequest?.id) },
                         onResolveAll: session.jumpTarget?.terminalApp == "Paseo" ? nil : { model.resolveAllPendingApprovals($0) },
                         pendingApprovalCount: model.pendingApprovalSessions.count,

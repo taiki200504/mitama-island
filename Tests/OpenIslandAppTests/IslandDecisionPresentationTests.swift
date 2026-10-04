@@ -83,4 +83,26 @@ struct IslandDecisionPresentationTests {
         #expect(blank.questionConversationActionTitle == own.questionConversationActionTitle)
     }
 
+    @Test func forwardedRequestShowsSourceModeAndBothSubmissionOwnershipPaths() {
+        let child = IslandSDKPresentation(sessionID: "parent", forwardedSessionID: "child",
+            modeLabels: ["parent": "Plan", "child": "Full access"], sendingSessionIDs: ["child"],
+            errors: ["child": "Retry child"], successes: ["child": "Child answered"])
+        #expect(child.modeLabel == "Full access")
+        #expect(child.isSending)
+        #expect(child.error == "Retry child")
+        #expect(child.success == "Child answered")
+        let visible = IslandSDKPresentation(sessionID: "parent", forwardedSessionID: "child",
+            modeLabels: ["child": "Full access"], sendingSessionIDs: ["parent"],
+            errors: ["parent": "Retry visible question"], successes: [:])
+        #expect(visible.isSending)
+        #expect(visible.error == "Retry visible question")
+        let own = IslandSDKPresentation(sessionID: "parent", forwardedSessionID: nil,
+            modeLabels: ["parent": "Plan", "child": "Full access"], sendingSessionIDs: ["child"],
+            errors: ["child": "Unrelated error"], successes: ["parent": "Answered"])
+        #expect(own.modeLabel == "Plan")
+        #expect(!own.isSending)
+        #expect(own.error == nil)
+        #expect(own.success == "Answered")
+    }
+
 }
