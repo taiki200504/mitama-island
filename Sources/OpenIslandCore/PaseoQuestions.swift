@@ -9,6 +9,7 @@ public struct PaseoQuestion: Equatable, Sendable {
     public var cwd: String
     public var input: ClaudeHookJSONValue
     public var prompt: QuestionPrompt
+    public var isUnsupported: Bool { prompt.questions.isEmpty }
 }
 
 public enum PaseoQuestionError: Error { case invalidResponse, invalidAnswer, expired, sending }
@@ -301,6 +302,7 @@ public final class PaseoQuestionCoordinator {
 
     public func answer(sessionID: String, promptID: UUID, response: QuestionPromptResponse) async throws {
         guard let pending = requests[sessionID], let question = pending.question, question.prompt.id == promptID else { throw PaseoQuestionError.expired }
+        guard !question.isUnsupported else { throw PaseoQuestionError.invalidAnswer }
         var answers = response.answers
         if answers.isEmpty, question.prompt.questions.count == 1,
            let raw = response.rawAnswer, let item = question.prompt.questions.first { answers[item.responseKey] = raw }
@@ -401,6 +403,8 @@ public final class PaseoQuestionCoordinator {
     }
 
     static func pending(snapshot: [String: ClaudeHookJSONValue], binding: PaseoAgentBinding, requestID: String? = nil) -> PaseoPendingRequest? {
+        var unsupportedQuestion: PaseoPendingRequest?
+        var permission: PaseoPendingRequest?
         for raw in snapshot["pendingPermissions"]?.paseoArray ?? [] {
             guard let object = raw.paseoObject, let id = object["id"]?.paseoString, !id.isEmpty,
                   requestID == nil || requestID == id,
@@ -412,7 +416,8 @@ public final class PaseoQuestionCoordinator {
             var pending = PaseoPendingRequest(binding: binding, requestID: id, name: name, kind: kind,
                                              input: input, toolUseID: toolID, question: nil, permission: nil, originalRequest: raw)
             if kind == "question" || name == "AskUserQuestion" {
-                guard let prompt = questionPrompt(input: input, provider: binding.provider) else { continue }
+                let prompt = questionPrompt(input: input, provider: binding.provider)
+                    ?? QuestionPrompt(title: object["description"]?.paseoString ?? name, questions: [])
                 pending.question = PaseoQuestion(agentID: binding.agentID, requestID: id, sessionID: binding.sessionID,
                                                 title: binding.title, cwd: binding.cwd, input: input, prompt: prompt)
             } else {
@@ -438,9 +443,13 @@ public final class PaseoQuestionCoordinator {
                         provider: binding.provider, kind: kind, currentModeID: binding.currentModeID,
                         currentModeLabel: binding.currentModeLabel, actions: actions))
             }
-            return pending
+            if requestID != nil { return pending }
+            if let question = pending.question {
+                if !question.isUnsupported { return pending }
+                if unsupportedQuestion == nil { unsupportedQuestion = pending }
+            } else if permission == nil { permission = pending }
         }
-        return nil
+        return unsupportedQuestion ?? permission
     }
 
     private static func questionPrompt(input: ClaudeHookJSONValue, provider: String) -> QuestionPrompt? {

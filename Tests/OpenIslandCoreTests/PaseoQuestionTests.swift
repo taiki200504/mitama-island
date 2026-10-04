@@ -67,6 +67,68 @@ struct PaseoQuestionTests {
         #expect(throws: PaseoQuestionError.self) { try PaseoMCPClient.decode(Data(json.utf8), id: "wrong") }
     }
 
+    @Test @MainActor func prioritizesQuestionsAndKeepsExactRequestValidation() throws {
+        let snapshot = try #require(try paseoFixture(paseoSnapshot).paseoObject)
+        let binding = try #require(PaseoQuestionCoordinator.binding(snapshot: snapshot, agentID: "agent-1"))
+        let question = try #require(snapshot["pendingPermissions"]?.paseoArray?.first)
+        let tool = try paseoFixture(#"{"id":"tool-1","provider":"claude","name":"Bash","kind":"tool","input":{}}"#)
+        var reordered = snapshot
+        reordered["pendingPermissions"] = .array([tool, question])
+        #expect(PaseoQuestionCoordinator.pending(snapshot: reordered, binding: binding)?.requestID == "request-1")
+        #expect(PaseoQuestionCoordinator.pending(snapshot: reordered, binding: binding, requestID: "tool-1")?.permission != nil)
+        #expect(PaseoQuestionCoordinator.pending(snapshot: reordered, binding: binding, requestID: "missing") == nil)
+        let second = try paseoFixture(#"{"id":"question-2","name":"AskUserQuestion","input":{"questions":[{"question":"Second"}]}}"#)
+        reordered["pendingPermissions"] = .array([tool, second, question])
+        #expect(PaseoQuestionCoordinator.pending(snapshot: reordered, binding: binding)?.requestID == "question-2")
+        #expect(PaseoQuestionCoordinator.pending(snapshot: reordered, binding: binding, requestID: "request-1")?.requestID == "request-1")
+    }
+
+    @Test @MainActor func malformedQuestionsRemainVisibleAndCannotBeAnswered() async throws {
+        let mock = try PaseoMock()
+        try await mock.replace(paseoSnapshot.replacingOccurrences(of: "\"questions\":[", with: "\"unsupportedQuestions\":["))
+        let coordinator = PaseoQuestionCoordinator(call: { try await mock.call($0, $1) })
+        await coordinator.poll()
+        let question = try #require(coordinator.questions["native-session"])
+        #expect(question.isUnsupported)
+        #expect(coordinator.requests["native-session"]?.permission == nil)
+        let before = await mock.calls.count
+        do {
+            try await coordinator.answer(sessionID: question.sessionID, promptID: question.prompt.id, response: .init(answers: [:]))
+            Issue.record("Unsupported question must reject an answer")
+        } catch {}
+        #expect(await mock.calls.count == before)
+        #expect(coordinator.questions["native-session"] == question)
+    }
+
+    @Test @MainActor func unsupportedQuestionsPrecedeToolsButFollowValidQuestions() throws {
+        let snapshot = try #require(try paseoFixture(paseoSnapshot).paseoObject)
+        let binding = try #require(PaseoQuestionCoordinator.binding(snapshot: snapshot, agentID: "agent-1"))
+        let tool = try paseoFixture(#"{"id":"tool","name":"Bash","input":{}}"#)
+        let malformed = try paseoFixture(#"{"id":"unsupported","name":"request_user_input_async","kind":"question","description":"Open Paseo","input":{"questions":[{"header":"Invalid"}]}}"#)
+        var changed = snapshot
+        changed["pendingPermissions"] = .array([tool, malformed])
+        let pending = try #require(PaseoQuestionCoordinator.pending(snapshot: changed, binding: binding))
+        #expect(pending.requestID == "unsupported")
+        #expect(pending.question?.prompt.title == "Open Paseo")
+        #expect(pending.question?.isUnsupported == true)
+        #expect(pending.permission == nil)
+        let valid = try #require(snapshot["pendingPermissions"]?.paseoArray?.first)
+        changed["pendingPermissions"] = .array([malformed, tool, valid])
+        #expect(PaseoQuestionCoordinator.pending(snapshot: changed, binding: binding)?.requestID == "request-1")
+    }
+
+    @Test @MainActor func duplicateAnswerKeysBecomeUnsupportedInsteadOfPermission() throws {
+        var snapshot = try #require(try paseoFixture(paseoSnapshot).paseoObject)
+        let binding = try #require(PaseoQuestionCoordinator.binding(snapshot: snapshot, agentID: "agent-1"))
+        snapshot["pendingPermissions"] = .array([try paseoFixture(#"{"id":"duplicate","name":"AskUserQuestion","input":{"questions":[{"question":"Same","header":"One"},{"question":"Same","header":"Two"}]}}"#)])
+        let pending = try #require(PaseoQuestionCoordinator.pending(snapshot: snapshot, binding: binding))
+        #expect(pending.question?.isUnsupported == true)
+        #expect(pending.permission == nil)
+        var codexBinding = binding
+        codexBinding.provider = "codex"
+        #expect(PaseoQuestionCoordinator.pending(snapshot: snapshot, binding: codexBinding)?.question?.prompt.questions.map(\.responseKey) == ["One", "Two"])
+    }
+
     @Test @MainActor func discoversAndAnswersPreservingOriginalInput() async throws {
         let mock = try PaseoMock()
         let coordinator = PaseoQuestionCoordinator(call: { try await mock.call($0, $1) })
