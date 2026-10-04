@@ -7,6 +7,8 @@ private actor ForwardedPaseoMock {
     var pending = true
     var parentIdentity = true
     var parentOwnRequest = false
+    var parentApproval = false
+    func setParentApproval(_ value: Bool) { parentOwnRequest = value; parentApproval = value }
     var sends: [String] = []
     var childID = "child"
     var requestVersion = "1"
@@ -28,6 +30,9 @@ private actor ForwardedPaseoMock {
         if id == childID { snapshot["labels"] = .object(["paseo.parent-agent-id": .string("parent")]) }
         let hasQuestion = id == childID ? pending : parentOwnRequest
         snapshot["pendingPermissions"] = .array(hasQuestion ? [.object(["id": .string("q-" + id + requestVersion), "name": .string("AskUserQuestion"), "kind": .string("question"), "input": .object(["questions": .array([.object(["question": .string("Choose"), "header": .string("Choice")])])])])] : [])
+        if id == "parent", parentApproval {
+            snapshot["pendingPermissions"] = .array([.object(["id": .string("q-parent" + requestVersion), "name": .string("Bash"), "kind": .string("tool"), "input": .object(["command": .string("fixture read-only")])])])
+        }
         return .object(["snapshot": .object(snapshot)])
     }
 }
@@ -80,6 +85,34 @@ private actor ForwardedPaseoMock {
         #expect(model.liveAttentionCount == 1)
         model.answerQuestion(for: "parent-native", answer: .init(answer: "Yes"), promptID: first.id)
         #expect(await mock.sends.isEmpty)
+    }
+
+    @Test func parentApprovalKeepsChildPendingThenProjectsExactQuestionAfterResolution() async throws {
+        let mock = ForwardedPaseoMock()
+        await mock.setParentApproval(true)
+        let coordinator = PaseoQuestionCoordinator(call: { await mock.call($0, $1) })
+        let model = model(coordinator)
+        model.connectPaseoQuestions(); coordinator.stop()
+        await coordinator.poll()
+        let childQuestion = try #require(coordinator.questions["child-native"])
+        let parentApproval = try #require(model.state.session(id: "parent-native")?.permissionRequest)
+        #expect(parentApproval.paseoContext?.agentID == "parent")
+        #expect(model.state.session(id: "parent-native")?.phase == .waitingForApproval)
+        #expect(model.forwardedQuestionTargets.isEmpty)
+        #expect(Set(model.islandListSessions.map(\.id)) == ["parent-native"])
+        #expect(coordinator.delegatedSessionIDs.contains("child-native"))
+        #expect(await mock.sends.isEmpty)
+        await mock.setParentApproval(false)
+        await coordinator.poll()
+        #expect(model.state.session(id: "parent-native")?.permissionRequest == nil)
+        #expect(model.state.session(id: "parent-native")?.questionPrompt?.id == childQuestion.prompt.id)
+        #expect(coordinator.questions["child-native"]?.requestID == childQuestion.requestID)
+        #expect(model.forwardedQuestionTargets["parent-native"] == "child-native")
+        model.answerQuestion(for: "parent-native", answer: .init(answer: "Yes"), promptID: childQuestion.prompt.id)
+        let deadline = ContinuousClock.now.advanced(by: .seconds(2))
+        while model.paseoSendingSessionIDs.contains("parent-native"), ContinuousClock.now < deadline { await Task.yield() }
+        #expect(await mock.sends == ["child"])
+        #expect(coordinator.requests["child-native"] == nil)
     }
 
     @Test func unknownParentIdentityLeavesChildVisibleAndOwnQuestionWins() async throws {
