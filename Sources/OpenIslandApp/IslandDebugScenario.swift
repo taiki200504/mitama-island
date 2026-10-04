@@ -13,6 +13,7 @@ struct IslandDebugSnapshot {
     let islandSurface: IslandSurface
     let sessions: [AgentSession]
     let selectedSessionID: String?
+    var debugPaseoQuestion: Bool?
     /// The banner is a window of its own, so a scenario has to ask for it —
     /// loading sessions alone would never bring it up.
     var completionBanner: CompletionBannerContent?
@@ -94,6 +95,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
     case sessionList
     case approvalCard
     case questionCard
+    case paseoApprovalCard
+    case paseoQuestionCard
     case completionCard
     case longCompletionCard
     case planApproval
@@ -133,6 +136,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Session List"
         case .approvalCard:
             "Approval Card"
+        case .paseoApprovalCard: "Paseo Approval Card"
+        case .paseoQuestionCard: "Paseo Question Card"
         case .questionCard:
             "Question Card"
         case .completionCard:
@@ -200,6 +205,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
             "Auto-expanded permission surface with approve and deny actions."
         case .planApproval:
             "Leaving plan mode, with the modes the agent offered as buttons."
+        case .paseoApprovalCard: "Paseo SDK permission fixture with isolated local responses."
+        case .paseoQuestionCard: "Paseo Codex async question fixture with isolated local responses."
         case .questionCard:
             "Auto-expanded question surface with selectable answer buttons."
         case .completionCard:
@@ -253,6 +260,15 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
 
     func snapshot(at now: Date = .now) -> IslandDebugSnapshot {
         switch self {
+        case .paseoApprovalCard, .paseoQuestionCard:
+            let isQuestion = self == .paseoQuestionCard
+            let session = PaseoHarnessFixture.session(isQuestion: isQuestion, now: now)
+            var snapshot = IslandDebugSnapshot(title: title, summary: summary, previewHeight: 420,
+                notchStatus: .opened, notchOpenReason: .notification,
+                islandSurface: .sessionList(actionableSessionID: session.id), sessions: [session], selectedSessionID: session.id)
+            snapshot.debugPaseoQuestion = isQuestion
+            return snapshot
+
         case .closed:
             let sessions = DebugSessionFactory.listSessions(now: now)
             return IslandDebugSnapshot(

@@ -175,8 +175,44 @@ final class TerminalJumpServiceTests: XCTestCase {
             )
         )
 
-        XCTAssertEqual(result, "Activated Paseo.")
+        XCTAssertEqual(result, "Opened Paseo only; session identity is unavailable.")
         XCTAssertEqual(openedArguments.values, [["-b", "sh.paseo.desktop"]])
+    }
+
+    func testPaseoJumpOpensExactSessionWithEncodedSegments() throws {
+        let opened = OpenedArgumentsBox()
+        let service = TerminalJumpService(
+            applicationResolver: { _ in URL(fileURLWithPath: "/Applications/Paseo.app") },
+            appRunningChecker: { _ in true },
+            openAction: { opened.values.append($0) },
+            appleScriptRunner: { _ in "" }, processRunner: { _, _ in false }
+        )
+        let target = JumpTarget(terminalApp: "Paseo", workspaceName: "mitama", paneTitle: "agent",
+                                paseoAgentID: "agent/?#%", paseoServerID: "srv_abc")
+        XCTAssertEqual(try service.jump(to: target), "Opened the matching Paseo session.")
+        XCTAssertEqual(opened.values, [["-b", "sh.paseo.desktop", "paseo://h/srv_abc/agent/agent%2F%3F%23%25"]])
+    }
+
+    func testPaseoInvalidOrIncompleteIdentityOpensAppOnly() throws {
+        for (server, agent) in [("srv", Optional<String>.none), ("..", "agent"), ("srv", " bad"), ("srv", "a\n")] {
+            let opened = OpenedArgumentsBox()
+            let service = TerminalJumpService(
+                applicationResolver: { _ in URL(fileURLWithPath: "/Applications/Paseo.app") },
+                appRunningChecker: { _ in true }, openAction: { opened.values.append($0) },
+                appleScriptRunner: { _ in "" }, processRunner: { _, _ in false }
+            )
+            let target = JumpTarget(terminalApp: "Paseo", workspaceName: "mitama", paneTitle: "agent",
+                                    paseoAgentID: agent, paseoServerID: server)
+            XCTAssertEqual(try service.jump(to: target), "Opened Paseo only; session identity is unavailable.")
+            XCTAssertEqual(opened.values, [["-b", "sh.paseo.desktop"]])
+        }
+    }
+
+    func testLegacyJumpTargetDecodesWithoutPaseoIdentity() throws {
+        let data = Data(#"{"terminalApp":"Paseo","workspaceName":"mitama","paneTitle":"agent"}"#.utf8)
+        let target = try JSONDecoder().decode(JumpTarget.self, from: data)
+        XCTAssertNil(target.paseoAgentID)
+        XCTAssertNil(target.paseoServerID)
     }
 
     func testCursorJumpFallsBackToWorkspaceWhenAppNotRunning() throws {

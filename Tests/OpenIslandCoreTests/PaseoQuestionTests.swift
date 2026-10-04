@@ -138,7 +138,11 @@ struct PaseoQuestionTests {
         #expect(await mock.calls.map(\.0) == ["list_pending_permissions", "get_agent_status"])
         try await mock.replace(paseoSnapshot.replacingOccurrences(of: #","sessionId":"native-session","nativeHandle":"native-session""#, with: ""))
         await coordinator.poll()
-        #expect(coordinator.questions.isEmpty)
+        #expect(coordinator.questions["native-session"]?.agentID == "agent-1")
+        let unbound = PaseoQuestionCoordinator(call: { try await mock.call($0, $1) })
+        await unbound.poll()
+        #expect(unbound.questions.isEmpty)
+        #expect(unbound.requests.isEmpty)
     }
 
     @Test @MainActor func missingSuccessDoesNotClearQuestion() async throws {

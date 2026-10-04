@@ -4,6 +4,9 @@ import OpenIslandCore
 struct StructuredQuestionPromptView: View {
     let prompt: QuestionPrompt?
     var lang: LanguageManager = .shared
+    var isPaseo = false
+    var isSending = false
+    var errorMessage: String?
     let onAnswer: (QuestionPromptResponse) -> Void
 
     @State private var selections: [String: Set<String>] = [:]
@@ -14,10 +17,17 @@ struct StructuredQuestionPromptView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             if showsPromptTitle {
+                if isPaseo {
+                    Text(promptTitle)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(SAOGrammar.Palette.ink.opacity(0.92))
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
                 Text(promptTitle)
                     .saoCaps(size: 13, text: promptTitle)
                     .foregroundStyle(SAOGrammar.Palette.accentAmber)
                     .fixedSize(horizontal: false, vertical: true)
+                }
             }
 
             if structuredQuestions.isEmpty {
@@ -45,7 +55,7 @@ struct StructuredQuestionPromptView: View {
                     // the question unanswerable from the island at all.
                     AutoHeightScrollView(maxHeight: IslandChromeMetrics.questionOptionListMaxHeight) {
                         VStack(alignment: .leading, spacing: 8) {
-                            ForEach(structuredQuestions, id: \.question) { question in
+                            ForEach(structuredQuestions, id: \.responseKey) { question in
                                 questionRow(question)
                             }
                         }
@@ -68,6 +78,18 @@ struct StructuredQuestionPromptView: View {
                     .disabled(!canSubmit)
                 }
                 .transition(IslandTransition.resolved(IslandTransition.modal))
+            }
+        }
+        .disabled(isSending)
+        .overlay(alignment: .bottomTrailing) {
+            if isSending { ProgressView().controlSize(.small).padding(10) }
+        }
+        .safeAreaInset(edge: .bottom, spacing: 6) {
+            if let errorMessage {
+                Text(errorMessage).font(.system(size: 12)).foregroundStyle(SAOGrammar.Palette.danger)
+                    .fixedSize(horizontal: false, vertical: true).padding(.horizontal, 10)
+            } else if isSending {
+                Text("Paseoへ回答を送信中…").font(.system(size: 12)).foregroundStyle(SAOGrammar.Palette.ink)
             }
         }
         .padding(.horizontal, 10)
@@ -290,7 +312,7 @@ struct StructuredQuestionPromptView: View {
             guard !values.isEmpty else {
                 return nil
             }
-            return (question.question, values.joined(separator: ", "))
+            return (question.responseKey, values.joined(separator: ", "))
         })
     }
 
@@ -381,7 +403,7 @@ struct StructuredQuestionPromptView: View {
     }
 
     private func selectedLabels(for question: QuestionPromptItem) -> Set<String> {
-        selections[question.question] ?? []
+        selections[question.responseKey] ?? []
     }
 
     private func resolvedAnswers(for question: QuestionPromptItem) -> [String] {
@@ -402,11 +424,11 @@ struct StructuredQuestionPromptView: View {
     }
 
     private func freeformKey(for question: QuestionPromptItem, option: QuestionOption) -> String {
-        "\(question.question)|\(option.label)"
+        "\(question.responseKey)|\(option.label)"
     }
 
     private func optionKey(for question: QuestionPromptItem, option: QuestionOption) -> String {
-        "\(question.question)|\(option.label)"
+        "\(question.responseKey)|\(option.label)"
     }
 
     private func optionFillColor(isSelected: Bool, isHovered: Bool) -> Color {
@@ -435,7 +457,7 @@ struct StructuredQuestionPromptView: View {
     }
 
     private func toggle(option: String, for question: QuestionPromptItem) {
-        var selected = selections[question.question] ?? []
+        var selected = selections[question.responseKey] ?? []
 
         if question.multiSelect {
             if selected.contains(option) {
@@ -452,6 +474,6 @@ struct StructuredQuestionPromptView: View {
         }
 
         typedReply = ""
-        selections[question.question] = selected
+        selections[question.responseKey] = selected
     }
 }

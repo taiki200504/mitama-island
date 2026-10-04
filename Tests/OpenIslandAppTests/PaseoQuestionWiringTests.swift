@@ -11,7 +11,7 @@ private actor PaseoWiringMock {
     func clear() { hasQuestion = false }
     func call(_ name: String, _ input: ClaudeHookJSONValue) throws -> ClaudeHookJSONValue {
         let snapshot: ClaudeHookJSONValue = .object([
-            "id": .string("paseo-agent"), "title": .string("Paseo test"), "cwd": .string("/project"),
+            "id": .string("paseo-agent"), "provider": .string("claude"), "title": .string("Paseo test"), "cwd": .string("/project"),
             "persistence": .object(["sessionId": .string("exact-native-id")]),
             "pendingPermissions": .array(hasQuestion ? [.object([
                 "id": .string("question-request"), "name": .string("AskUserQuestion"),
@@ -23,7 +23,7 @@ private actor PaseoWiringMock {
         ])
         if name == "list_pending_permissions" {
             return .object(["permissions": .array(hasQuestion ? [.object([
-                "agentId": .string("paseo-agent"), "request": .object(["name": .string("AskUserQuestion")])
+                "agentId": .string("paseo-agent"), "request": .object(["id": .string("question-request"), "name": .string("AskUserQuestion")])
             ])] : [])])
         }
         if name == "get_agent_status" { return .object(["snapshot": snapshot]) }
@@ -36,6 +36,14 @@ private actor PaseoWiringMock {
 
 @MainActor
 struct PaseoQuestionWiringTests {
+    private func waitForSubmission(_ model: AppModel, sessionID: String) async throws {
+        let deadline = ContinuousClock.now + .seconds(3)
+        while model.paseoSendingSessionIDs.contains(sessionID), ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(100))
+        }
+        try #require(!model.paseoSendingSessionIDs.contains(sessionID))
+    }
+
     @Test func questionAppearsInAppModelAndOnlySuccessfulSendClearsWaiting() async throws {
         let mock = PaseoWiringMock()
         let coordinator = PaseoQuestionCoordinator(call: { try await mock.call($0, $1) })
@@ -52,12 +60,12 @@ struct PaseoQuestionWiringTests {
         #expect(session.questionPrompt?.questions.first?.question == "Choose")
         await mock.setFailure(true)
         model.answerQuestion(for: session.id, answer: .init(answers: ["Choose": "One"]))
-        try await Task.sleep(for: .milliseconds(100))
+        try await waitForSubmission(model, sessionID: session.id)
         #expect(model.state.session(id: session.id)?.questionPrompt != nil)
         #expect(model.state.session(id: session.id)?.phase == .waitingForAnswer)
         await mock.setFailure(false)
         model.answerQuestion(for: session.id, answer: .init(answers: ["Choose": "One"]))
-        try await Task.sleep(for: .milliseconds(100))
+        try await waitForSubmission(model, sessionID: session.id)
         #expect(model.state.session(id: session.id)?.questionPrompt == nil)
         #expect(model.state.session(id: session.id)?.phase == .running)
         #expect(await mock.sends == 2)
