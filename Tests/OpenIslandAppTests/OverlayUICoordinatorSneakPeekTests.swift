@@ -136,18 +136,42 @@ struct OverlayUICoordinatorSneakPeekTests {
         #expect(coordinator.sneakPeek == nil)
     }
 
-    @Test("A peek updated in place still expires on schedule despite its content changing", .enabled(if: !TestEnvironment.isCI, "wall-clock expiry; CI runners stall for seconds"))
+    @Test("A peek updated in place keeps its original expiry reservation despite content changing")
     func updatedSneakPeekStillExpires() async throws {
         let coordinator = OverlayUICoordinator()
-        let until = Date.now.addingTimeInterval(0.3)
+        let gate = PeekExpiryGate()
+        coordinator.sneakPeekExpiryWait = { deadline in await gate.wait(deadline) }
+        let before = ContinuousClock.now
+        let until = Date.now.addingTimeInterval(30)
         coordinator.presentSneakPeek(peek(.lockScan, text: "Taiki", until: until))
+        while !(await gate.isWaiting()) { await Task.yield() }
+        let reservation = await gate.deadlines()
+        #expect(reservation.count == 1)
+        let deadline = try #require(reservation.first)
+        #expect(deadline >= before.advanced(by: .seconds(29)))
+        #expect(deadline <= before.advanced(by: .seconds(31)))
 
         coordinator.updateSneakPeek(where: .lockScan) { current in
             IslandSneakPeek(kind: current.kind, text: current.text, icon: "face.smiling", gauge: current.gauge, until: current.until)
         }
-
-        try await poll(timeout: .seconds(2)) { coordinator.sneakPeek == nil }
+        #expect(coordinator.sneakPeek?.until == until)
+        #expect(coordinator.sneakPeek?.icon == "face.smiling")
+        #expect(await gate.deadlines() == reservation)
+        await gate.expire()
+        try await poll { coordinator.sneakPeek == nil }
 
         #expect(coordinator.sneakPeek == nil)
     }
+}
+
+private actor PeekExpiryGate {
+    private var captured: [ContinuousClock.Instant] = []
+    private var continuation: CheckedContinuation<Void, Never>?
+    func wait(_ deadline: ContinuousClock.Instant) async {
+        captured.append(deadline)
+        await withCheckedContinuation { continuation = $0 }
+    }
+    func isWaiting() -> Bool { continuation != nil }
+    func deadlines() -> [ContinuousClock.Instant] { captured }
+    func expire() { continuation?.resume(); continuation = nil }
 }

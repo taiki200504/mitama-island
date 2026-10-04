@@ -49,6 +49,9 @@ final class OverlayUICoordinator {
 
     @ObservationIgnored
     private var sneakPeekExpiryTask: Task<Void, Never>?
+    var sneakPeekExpiryWait: @Sendable (ContinuousClock.Instant) async throws -> Void = { deadline in
+        try await Task.sleep(until: deadline, clock: .continuous)
+    }
 
     /// How long a fresh sneak peek of `kind` gets. A seam rather than a
     /// direct call to `IslandSneakPeekPolicy.duration(for:)` so a test can
@@ -379,8 +382,12 @@ final class OverlayUICoordinator {
         sneakPeekExpiryTask?.cancel()
 
         let delay = max(0, peek.until.timeIntervalSince(now))
+        // Capture the deadline before the main actor task is scheduled: queueing
+        // delays must not grant a peek an additional full display duration.
+        let deadline = ContinuousClock.now.advanced(by: .seconds(delay))
+        let wait = sneakPeekExpiryWait
         sneakPeekExpiryTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .seconds(delay))
+            try? await wait(deadline)
             // Compares by `kind` + `until` rather than full equality so that
             // `updateSneakPeek` swapping the icon or text mid-flight (the
             // lock-scan face glyph) doesn't make this guard fail forever and
