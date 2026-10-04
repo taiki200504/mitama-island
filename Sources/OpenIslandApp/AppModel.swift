@@ -1764,8 +1764,9 @@ final class AppModel {
     }
 
     var focusedSession: AgentSession? {
-        let visible = state.sessions.filter { !delegatedSessionIDs.contains($0.id) }
-        let selected = state.session(id: selectedSessionID).flatMap { delegatedSessionIDs.contains($0.id) ? nil : $0 }
+        let delegatedIDs = delegatedSessionIDs
+        let visible = state.sessions.filter { !delegatedIDs.contains($0.id) }
+        let selected = state.session(id: selectedSessionID).flatMap { delegatedIDs.contains($0.id) ? nil : $0 }
         return selected ?? surfacedSessions.first ?? visible.first(where: { $0.phase.requiresAttention }) ?? visible.first
     }
 
@@ -3991,9 +3992,10 @@ final class AppModel {
     }
 
     private func synchronizeSelection() {
+        let delegatedIDs = delegatedSessionIDs
         let surfacedIDs = Set(surfacedSessions.map(\.id))
 
-        if let activeAction = state.sessions.first(where: { $0.phase.requiresAttention && !delegatedSessionIDs.contains($0.id) }) {
+        if let activeAction = state.sessions.first(where: { $0.phase.requiresAttention && !delegatedIDs.contains($0.id) }) {
             selectedSessionID = activeAction.id
             return
         }
@@ -4001,7 +4003,7 @@ final class AppModel {
         guard let selectedSessionID,
               surfacedIDs.contains(selectedSessionID),
               state.session(id: selectedSessionID) != nil else {
-            self.selectedSessionID = surfacedSessions.first?.id ?? state.sessions.first(where: { !delegatedSessionIDs.contains($0.id) })?.id
+            self.selectedSessionID = surfacedSessions.first?.id ?? state.sessions.first(where: { !delegatedIDs.contains($0.id) })?.id
             return
         }
     }
@@ -4067,10 +4069,11 @@ final class AppModel {
     }
 
     private func computeSessionBuckets() -> (primary: [AgentSession], restored: [AgentSession], overflow: [AgentSession]) {
+        let delegatedIDs = delegatedSessionIDs
         let now = Date.now
         // Silenced sessions drop out here rather than at the view, so they are
         // also absent from the counts, the notification surfaces and the sound.
-        let visibleSessions = state.sessions.filter { !settings.notificationFilters.isSilenced($0) && !delegatedSessionIDs.contains($0.id) }
+        let visibleSessions = state.sessions.filter { !settings.notificationFilters.isSilenced($0) && !delegatedIDs.contains($0.id) }
         let rankedSessions = visibleSessions.sorted { lhs, rhs in
             let lhsScore = displayPriority(for: lhs, now: now)
             let rhsScore = displayPriority(for: rhs, now: now)
