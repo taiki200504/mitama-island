@@ -2479,7 +2479,7 @@ public final class BridgeServer: @unchecked Sendable {
             return
         }
 
-        let updatedInput = mergedClaudeQuestionInput(
+        let updatedInput = Self.mergedClaudeQuestionInput(
             payload: payload,
             prompt: prompt,
             response: response
@@ -2513,7 +2513,7 @@ public final class BridgeServer: @unchecked Sendable {
         payload.toolUseID ?? pendingClaudeToolContexts[payload.permissionCorrelationKey]?.toolUseID
     }
 
-    private func mergedClaudeQuestionInput(
+    static func mergedClaudeQuestionInput(
         payload: ClaudeHookPayload,
         prompt: QuestionPrompt,
         response: QuestionPromptResponse
@@ -2556,7 +2556,10 @@ public final class BridgeServer: @unchecked Sendable {
         var updatedObject = existingObject
         updatedObject["answers"] = .object(answers.mapValues { .string($0) })
         if !annotationsObject.isEmpty {
-            updatedObject["annotations"] = .object(annotationsObject)
+            var mergedAnnotations: [String: ClaudeHookJSONValue] = [:]
+            if case let .object(existing) = updatedObject["annotations"] { mergedAnnotations = existing }
+            mergedAnnotations.merge(annotationsObject) { _, new in new }
+            updatedObject["annotations"] = .object(mergedAnnotations)
         }
 
         return .object(updatedObject)
