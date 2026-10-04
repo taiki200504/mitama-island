@@ -317,7 +317,7 @@
 "settings.display.showTasks" = "Show the task list";
 "settings.display.showTasks.help" = "Adds the task checklist to each session card.";
 "settings.display.showSubagents" = "Show subagents";
-"settings.display.showSubagents.help" = "Approvals and questions stay visible either way.";
+"settings.display.showSubagents.help" = "Paseo child conversations handled by a confirmed parent stay hidden. Approvals and questions remain visible when the parent cannot be verified.";
 "settings.display.showAgentActivity" = "Show what the agent is doing";
 "settings.timer.eyeBreakEnabled" = "Run the 20-20-20 eye break";
 "settings.timer.eyeBreakEnabled.help" = "Every 20 minutes, a 20-second break — starts now and restarts after every rest.";
@@ -657,22 +657,22 @@
 /* SAO theme wording. English uppercase in every locale on purpose: a
    translated heads-up display reads as an ordinary label again. */
 "banner.completed.sao" = "CONGRATULATIONS";
-"island.sessionList.title.sao" = "LINKS";
-"island.sessionOverview.running.sao" = "DIVING";
-"island.sessionOverview.runningCompact.sao" = "DIVE";
-"island.sessionOverview.waiting.sao" = "SYSTEM CALL";
-"island.sessionOverview.waitingCompact.sao" = "CALL";
-"island.sessionOverview.done.sao" = "CLEARED";
-"island.sessionOverview.idle.sao" = "STANDBY";
-"island.sessionOverview.total.sao" = "LINKED";
+"island.sessionList.title.sao" = "Sessions";
+"island.sessionOverview.running.sao" = "running";
+"island.sessionOverview.runningCompact.sao" = "run";
+"island.sessionOverview.waiting.sao" = "waiting";
+"island.sessionOverview.waitingCompact.sao" = "wait";
+"island.sessionOverview.done.sao" = "done";
+"island.sessionOverview.idle.sao" = "idle";
+"island.sessionOverview.total.sao" = "total";
 "banner.openHint" = "Open the summary";
 "approval.allowOnce.sao" = "YES";
 "approval.deny.sao" = "NO";
 "approval.allowAll.sao" = "YES TO ALL";
 "approval.denyAll.sao" = "NO TO ALL";
 "approval.goToTerminal.sao" = "TELEPORT";
-"question.submit.sao" = "CONFIRM";
-"question.answerAllFirst.sao" = "INCOMPLETE — ALL ENTRIES REQUIRED";
+"question.submit.sao" = "Submit Answers";
+"question.answerAllFirst.sao" = "Answer every question to send.";
 "setup.banner.noHooks.title.sao" = "LINK START";
 "settings.display.hideIdleSessions" = "Hide sessions that have gone quiet";
 "settings.display.hideIdleSessions.help" = "Keeps greyed-out rows out of the list. The last row is always kept, so the list never looks empty by mistake.";
@@ -916,3 +916,34 @@
 "settings.search.placeholder" = "Search settings";
 "settings.search.noResults" = "No matching settings categories";
 "settings.search.clear" = "Clear search";
+/* Clear conversation and decision surfaces */
+"island.priority.attention" = "Waiting for you";
+"island.priority.running" = "Running";
+"island.priority.completed" = "Completed";
+"decision.plan.title" = "Review plan";
+"decision.approval.title" = "Approve execution";
+"decision.question.title" = "Answer questions";
+"decision.scope" = "Your response applies to this request. Additional permissions apply only to the offered scope.";
+"decision.paseo.scope" = "Your response applies to this request. Additional permissions are limited to the scope offered by Paseo.";
+"decision.allowOnce" = "Allow once";
+"decision.deny" = "Deny";
+"decision.paseo.open" = "Open this conversation in Paseo";
+"decision.paseo.unsupported" = "Review and answer this type of request in Paseo.";
+"decision.paseo.sending" = "Sending to Paseo…";
+"decision.question.sending" = "Sending your answer…";
+"decision.question.retry" = "Retry answer";
+"decision.sending" = "Sending…";
+"decision.option.single" = "Choose one";
+"decision.option.multiple" = "Choose one or more";
+"decision.option.selected" = "Selected";
+"decision.option.unselected" = "Not selected";
+"decision.plan.implement" = "Implement plan";
+"decision.plan.resume" = "Implement with the previous Bypass mode";
+"decision.plan.acceptEdits" = "Execution switches permissions to automatic edit approval (acceptEdits).";
+"decision.conversation.open" = "Open this conversation: %@, %@";
+"island.empty.quiet" = "Nobody is waiting for you right now.";
+"island.empty.start" = "Start an AI conversation to see it here. Enjoy the quiet for a moment.";
+
+"decision.request" = "Request";
+"decision.continue" = "Continue as is";
+"decision.other" = "Other";

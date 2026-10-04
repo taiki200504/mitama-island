@@ -40,14 +40,39 @@ struct IslandActionButtonStyle: ButtonStyle {
     enum Surface {
         case darkShell
         case lightCard
+        case decisionCard
     }
 
     let kind: Kind
     var expands = false
     var surface: Surface = .darkShell
 
-    func makeBody(configuration: Configuration) -> some View {
-        IslandActionButtonBody(kind: kind, expands: expands, surface: surface, configuration: configuration)
+    @ViewBuilder func makeBody(configuration: Configuration) -> some View {
+        if surface == .decisionCard {
+            IslandDecisionButtonBody(kind: kind, expands: expands, configuration: configuration)
+        } else {
+            IslandActionButtonBody(kind: kind, expands: expands, surface: surface, configuration: configuration)
+        }
+    }
+}
+
+private struct IslandDecisionButtonBody: View {
+    let kind: IslandActionButtonStyle.Kind
+    let expands: Bool
+    let configuration: ButtonStyle.Configuration
+    @Environment(\.isEnabled) private var isEnabled
+
+    var body: some View {
+        configuration.label
+            .font(.islandDecision(size: 13, weight: .semibold))
+            .foregroundStyle(kind == .primary && isEnabled ? IslandThemes.current.ink : V6Palette.paper)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: expands ? .infinity : nil, minHeight: 20)
+            .padding(.horizontal, 12).padding(.vertical, 8)
+            .background(kind == .primary && isEnabled ? IslandThemes.current.accent : V6Palette.paper.opacity(0.09),
+                        in: RoundedRectangle(cornerRadius: 7))
+            .opacity(isEnabled ? (configuration.isPressed ? 0.8 : 1) : 0.5)
     }
 }
 
@@ -166,7 +191,7 @@ private struct IslandActionButtonBody: View {
             case .warning: return SAOGrammar.Palette.ink.opacity(0.92)
             case .secondary: return SAOGrammar.Palette.ink.opacity(isLit ? 0.92 : 0.72)
             }
-        case .darkShell:
+        case .darkShell, .decisionCard:
             guard isEnabled else { return theme.paper.opacity(0.42) }
             switch kind {
             case .primary: return theme.ink.opacity(0.9)
@@ -188,7 +213,7 @@ private struct IslandActionButtonBody: View {
             case .secondary:
                 return isLit ? theme.accent.opacity(0.55) : SAOGrammar.Palette.ink.opacity(0.12)
             }
-        case .darkShell:
+        case .darkShell, .decisionCard:
             guard isEnabled else { return V6Palette.paper.opacity(0.07) }
             switch kind {
             case .primary:
@@ -220,7 +245,7 @@ private struct IslandActionButtonBody: View {
                 if isPressed { return SAOGrammar.Palette.ink.opacity(0.12) }
                 return isLit ? theme.accent.opacity(0.14) : SAOGrammar.Palette.ink.opacity(0.045)
             }
-        case .darkShell:
+        case .darkShell, .decisionCard:
             guard isEnabled else { return V6Palette.paper.opacity(0.055) }
             switch kind {
             case .primary:

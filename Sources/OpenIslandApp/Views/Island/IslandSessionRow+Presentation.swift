@@ -100,10 +100,6 @@ extension IslandSessionRow {
     }
 
     var summaryHeadlineText: String {
-        if presentation == .notification, session.phase == .completed {
-            return notificationWorkspaceHeadlineText
-        }
-
         // Only when there is a prompt to derive from. Falling back to the
         // workspace is right: a blank headline would be worse than a repeated
         // one, which is the problem this setting exists to fix.
@@ -112,7 +108,8 @@ extension IslandSessionRow {
             return derived
         }
 
-        return session.spotlightHeadlineText
+        let title = session.title.trimmedForNotificationCard
+        return title.isEmpty ? session.spotlightHeadlineText : title
     }
 
     private var notificationWorkspaceHeadlineText: String {

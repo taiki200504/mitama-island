@@ -124,7 +124,8 @@ extension IslandPanelView {
                     .id(notice.id)
             }
 
-            if !model.hasAnyInstalledAgent {
+            if !model.hasAnyInstalledAgent,
+               !model.islandListSessions.contains(where: { model.paseoQuestions.requests[$0.id] != nil }) {
                 installHooksHint
                     .padding(.horizontal, 18)
                     .padding(.top, 8)
@@ -287,14 +288,14 @@ extension IslandPanelView {
     private var emptyState: some View {
         VStack(spacing: 12) {
             Spacer()
-            Text(model.lang.t("island.noTerminals"))
+            Text(model.lang.t("island.empty.quiet"))
                 .font(.islandText(size: 14, weight: .medium))
-                .foregroundStyle(V6Palette.paper.opacity(0.4))
+                .foregroundStyle(V6Palette.paper.opacity(0.92))
             Text(model.recentSessions.isEmpty
-                ? model.lang.t("island.startAgent")
+                ? model.lang.t("island.empty.start")
                 : model.lang.t("island.recentSessions"))
                 .font(.islandText(size: 12))
-                .foregroundStyle(V6Palette.paper.opacity(0.25))
+                .foregroundStyle(V6Palette.paper.opacity(0.78))
             Spacer()
         }
         .frame(maxWidth: .infinity)

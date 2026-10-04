@@ -656,22 +656,22 @@
 /* SAO theme wording. English uppercase in every locale on purpose: a
    translated heads-up display reads as an ordinary label again. */
 "banner.completed.sao" = "CONGRATULATIONS";
-"island.sessionList.title.sao" = "LINKS";
-"island.sessionOverview.running.sao" = "DIVING";
-"island.sessionOverview.runningCompact.sao" = "DIVE";
-"island.sessionOverview.waiting.sao" = "SYSTEM CALL";
-"island.sessionOverview.waitingCompact.sao" = "CALL";
-"island.sessionOverview.done.sao" = "CLEARED";
-"island.sessionOverview.idle.sao" = "STANDBY";
-"island.sessionOverview.total.sao" = "LINKED";
+"island.sessionList.title.sao" = "會話";
+"island.sessionOverview.running.sao" = "執行";
+"island.sessionOverview.runningCompact.sao" = "跑";
+"island.sessionOverview.waiting.sao" = "等待";
+"island.sessionOverview.waitingCompact.sao" = "待";
+"island.sessionOverview.done.sao" = "完成";
+"island.sessionOverview.idle.sao" = "閒置";
+"island.sessionOverview.total.sao" = "總計";
 "banner.openHint" = "開啟可查看內容";
 "approval.allowOnce.sao" = "YES";
 "approval.deny.sao" = "NO";
 "approval.allowAll.sao" = "YES TO ALL";
 "approval.denyAll.sao" = "NO TO ALL";
 "approval.goToTerminal.sao" = "TELEPORT";
-"question.submit.sao" = "CONFIRM";
-"question.answerAllFirst.sao" = "INCOMPLETE — ALL ENTRIES REQUIRED";
+"question.submit.sao" = "提交答案";
+"question.answerAllFirst.sao" = "請回答所有問題後再傳送。";
 "setup.banner.noHooks.title.sao" = "LINK START";
 "settings.display.hideIdleSessions" = "隱藏已停止活動的工作階段";
 "settings.display.hideIdleSessions.help" = "不在清單中顯示已變灰的項目。始終保留最後一行，以免看起來像遺失了。";
@@ -915,3 +915,34 @@
 "settings.search.placeholder" = "搜尋設定";
 "settings.search.noResults" = "沒有符合的設定類別";
 "settings.search.clear" = "清除搜尋";
+/* Clear conversation and decision surfaces */
+"island.priority.attention" = "等待您的答覆";
+"island.priority.running" = "執行中";
+"island.priority.completed" = "已完成";
+"decision.plan.title" = "確認計畫";
+"decision.approval.title" = "執行許可";
+"decision.question.title" = "回答問題";
+"decision.scope" = "您的答覆適用於此請求。額外許可僅適用於列出的範圍。";
+"decision.paseo.scope" = "您的答覆適用於此請求。額外許可僅限於Paseo列出的範圍。";
+"decision.allowOnce" = "僅允許此次";
+"decision.deny" = "拒絕";
+"decision.paseo.open" = "在Paseo中開啟此對話";
+"decision.paseo.unsupported" = "請在Paseo中查看並回答此類請求。";
+"decision.paseo.sending" = "正在傳送至Paseo…";
+"decision.question.sending" = "正在傳送答覆…";
+"decision.question.retry" = "重新傳送答覆";
+"decision.sending" = "正在傳送…";
+"decision.option.single" = "選擇一項";
+"decision.option.multiple" = "可選擇多項";
+"decision.option.selected" = "已選擇";
+"decision.option.unselected" = "未選擇";
+"decision.plan.implement" = "執行計畫";
+"decision.plan.resume" = "保留原Bypass模式並執行";
+"decision.plan.acceptEdits" = "執行時權限將切換為自動批准編輯（acceptEdits）。";
+"decision.conversation.open" = "開啟此對話：%@，%@";
+"island.empty.quiet" = "現在沒有人在等您。";
+"island.empty.start" = "開始AI對話後，此處會顯示。趁安靜，休息一下。";
+
+"decision.request" = "請求";
+"decision.continue" = "保持現狀繼續";
+"decision.other" = "其他";

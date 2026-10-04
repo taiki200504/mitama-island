@@ -75,14 +75,14 @@ extension IslandPanelView {
                     }
             } else {
                 VStack(spacing: 0) {
-                    // mitama の分は行の上。エージェントは「何が動いているか」に
-                    // 答えるが、こちらは「何が自分を待っているか」に答える。
-                    mitamaProposalSection
-                    mitamaFeedSection
                     sessionPanelHeader(referenceDate: referenceDate)
 
                     ScrollView(.vertical) {
-                        sessionRowsContent(referenceDate: referenceDate)
+                        VStack(spacing: 0) {
+                            sessionRowsContent(referenceDate: referenceDate)
+                            mitamaProposalSection
+                            mitamaFeedSection
+                        }
                     }
                     .scrollIndicators(.hidden)
                     .scrollBounceBehavior(.basedOnSize)
@@ -367,7 +367,20 @@ extension IslandPanelView {
 
     @ViewBuilder
     private func sessionRowsContent(referenceDate: Date) -> some View {
-        ForEach(model.islandSessionSections) { section in
+        ForEach(IslandSessionPriority.allCases) { priority in
+            let sections = model.islandSessionSections.compactMap { section -> IslandSessionSection? in
+                let sessions = section.sessions.filter(priority.contains)
+                return sessions.isEmpty ? nil : IslandSessionSection(id: section.id, title: section.title, sessions: sessions)
+            }
+            if !sections.isEmpty {
+                Text(priority.title)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(V6Palette.paper.opacity(0.86))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, sessionListSideInset)
+                    .padding(.top, 12).padding(.bottom, 6)
+            }
+            ForEach(sections) { section in
             VStack(alignment: .leading, spacing: 0) {
                 if model.islandSessionGroup != .none {
                     sessionSectionHeader(section)
@@ -409,6 +422,7 @@ extension IslandPanelView {
                     )
                 }
             }
+        }
         }
     }
 

@@ -253,9 +253,9 @@ struct SessionListPanelPreview: View {
             UnifiedBars(mode: .waiting, size: 22)
                 .frame(width: 24, height: 24)
 
-            Text(lang.t("island.sessionList.title").uppercased())
+            Text(lang.t("island.sessionList.title"))
                 .font(.islandMono(size: 10.5, weight: .semibold))
-                .tracking(1.4)
+
                 .foregroundStyle(V6Palette.paper.opacity(0.55))
 
             ViewThatFits(in: .horizontal) {
@@ -361,18 +361,23 @@ struct SessionListPanelPreview: View {
 
     private var listBody: some View {
         VStack(spacing: 0) {
-            ForEach(sections) { section in
-                if showsSections {
-                    sectionHeader(section)
+            ForEach(IslandSessionPriority.allCases) { priority in
+                let matching = sections.compactMap { section -> SessionPreviewSection? in
+                    let items = section.items.filter { priority.contains($0.previewSession) }
+                    return items.isEmpty ? nil : SessionPreviewSection(id: section.id, title: section.title, items: items)
                 }
-
-                ForEach(section.items) { item in
-                    SessionListLivePreviewRow(
-                        item: item,
-                        indicator: indicator,
-                        sideInset: sideInset,
-                        lang: lang
-                    )
+                if !matching.isEmpty {
+                    Text(priority.title)
+                        .font(.islandDecision(size: 12, weight: .semibold))
+                        .foregroundStyle(V6Palette.paper.opacity(0.86))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, sideInset).padding(.top, 12).padding(.bottom, 6)
+                }
+                ForEach(matching) { section in
+                    if showsSections { sectionHeader(section) }
+                    ForEach(section.items) { item in
+                        SessionListLivePreviewRow(item: item, indicator: indicator, sideInset: sideInset, lang: lang)
+                    }
                 }
             }
         }
@@ -426,205 +431,41 @@ struct SessionListLivePreviewRow: View {
     let lang: LanguageManager
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(alignment: .center, spacing: 10) {
-                if indicator != .tint {
-                    indicatorView
-                }
+        let session = item.previewSession
+        IslandSessionRow(session: session, referenceDate: .now, stateIndicator: indicator,
+            isActionable: session.phase.requiresAttention, useDrawingGroup: false, isInteractive: false,
+            sideInset: sideInset, lang: lang, onJump: {})
+            .allowsHitTesting(false)
+    }
+}
 
-                VStack(alignment: .leading, spacing: 3) {
-                    titleLine
-
-                    if let prompt = item.prompt {
-                        Text(prompt)
-                            .font(.system(size: 11.5, weight: .medium))
-                            .foregroundStyle(V6Palette.paper.opacity(item.phase == .idle ? 0.34 : 0.52))
-                            .lineLimit(1)
-                    }
-                }
-
-                Spacer(minLength: 10)
-
-                HStack(spacing: 6) {
-                    agentChip
-                    sideBadge(item.terminal)
-                    Text(item.age)
-                        .font(.islandMono(size: 10.5, weight: .medium))
-                        .foregroundStyle(V6Palette.paper.opacity(item.phase == .idle ? 0.32 : 0.45))
-                        .frame(minWidth: 30, alignment: .trailing)
-
-                    Image(systemName: item.phase == .idle ? "chevron.right" : "chevron.down")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(V6Palette.paper.opacity(item.phase == .idle ? 0.42 : 0.68))
-                        .frame(width: 28, height: 28)
-                        .background(
-                            Circle()
-                                .fill(V6Palette.paper.opacity(item.phase == .idle ? 0.02 : 0.045))
-                        )
-                }
-            }
-            .padding(.horizontal, rowLeadingPadding)
-            .padding(.vertical, 11)
-            .background(rowFill)
-
-            if item.phase != .idle {
-                detailPreview
-            }
+extension SessionPreviewItem {
+    var previewSession: AgentSession {
+        let tool: AgentTool = switch agentShort {
+        case "claude": .claudeCode
+        case "cursor": .cursor
+        case "gemini": .geminiCLI
+        default: .codex
         }
-        .overlay(alignment: .top) {
-            Rectangle()
-                .fill(V6Palette.paper.opacity(0.04))
-                .frame(height: 1)
+        let nativePhase: SessionPhase = switch phase {
+        case .approval: .waitingForApproval
+        case .answer: .waitingForAnswer
+        case .running: .running
+        case .done, .idle: .completed
         }
-        .overlay(alignment: .leading) {
-            if indicator == .bar {
-                IslandThemes.current.shape(cornerRadius: 999)
-                    .fill(tint)
-                    .frame(width: 3)
-                    .padding(.vertical, 8)
-                    .padding(.leading, 14)
-            }
+        var session = AgentSession(id: "preview-" + id, title: prompt ?? title, tool: tool,
+            origin: .demo, attachmentState: .attached, phase: nativePhase, summary: detail,
+            updatedAt: .now.addingTimeInterval(phase == .idle ? -7200 : -60),
+            jumpTarget: JumpTarget(terminalApp: terminal, workspaceName: project, paneTitle: title))
+        if phase == .approval {
+            session.permissionRequest = PermissionRequest(title: LanguageManager.shared.t("decision.approval.title"), summary: detail,
+                affectedPath: project, primaryActionTitle: LanguageManager.shared.t("decision.allowOnce"), secondaryActionTitle: LanguageManager.shared.t("decision.deny"), toolName: "Bash")
+        } else if phase == .answer {
+            session.questionPrompt = QuestionPrompt(title: detail, questions: [QuestionPromptItem(
+                question: prompt ?? detail, header: LanguageManager.shared.t("decision.question.title"), options: [QuestionOption(label: LanguageManager.shared.t("decision.continue")),
+                    QuestionOption(label: LanguageManager.shared.t("decision.other"), allowsFreeform: true)])])
         }
-        .opacity(item.phase == .idle ? 0.74 : 1)
-    }
-
-    private var titleLine: some View {
-        HStack(spacing: 0) {
-            Text(item.project)
-                .fontWeight(.semibold)
-                .foregroundStyle(projectColor)
-            if let branch = item.branch {
-                Text(" (\(branch))")
-                    .foregroundStyle(V6Palette.paper.opacity(0.55))
-            }
-            Text(" · ")
-                .foregroundStyle(V6Palette.paper.opacity(0.22))
-            Text(item.detail)
-                .foregroundStyle(V6Palette.paper.opacity(0.7))
-        }
-        .font(.system(size: 13, weight: .medium))
-        .lineLimit(1)
-    }
-
-    private var agentChip: some View {
-        Text(item.agentShort)
-            .font(.islandMono(size: 10.5, weight: .semibold))
-            .foregroundStyle(item.agentColor)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(item.agentColor.opacity(0.13), in: Capsule())
-            .overlay(Capsule().stroke(item.agentColor.opacity(0.35), lineWidth: 1))
-    }
-
-    private func sideBadge(_ text: String) -> some View {
-        Text(text)
-            .font(.islandMono(size: 10.5, weight: .medium))
-            .foregroundStyle(V6Palette.paper.opacity(0.7))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .background(V6Palette.paper.opacity(0.06), in: Capsule())
-    }
-
-    private var detailPreview: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            switch item.phase {
-            case .approval:
-                Text(lang.t("approval.toolPermissionRequested"))
-                    .font(.system(size: 12.5, weight: .semibold))
-                    .foregroundStyle(V6Palette.paper.opacity(0.86))
-                Text(lang.t("settings.appearance.preview.permissionBody"))
-                    .font(.islandMono(size: 11.5, weight: .semibold))
-                    .foregroundStyle(V6Palette.paper.opacity(0.78))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(V6Palette.paper.opacity(0.045), in: IslandThemes.current.shape(cornerRadius: 7))
-            case .answer:
-                Text(lang.t("settings.appearance.preview.pickOrTypeAnswer"))
-                    .font(.system(size: 12.5, weight: .semibold))
-                    .foregroundStyle(V6Palette.paper.opacity(0.82))
-            case .running:
-                Text(item.detail)
-                    .font(.islandMono(size: 11.5, weight: .semibold))
-                    .foregroundStyle(V6Palette.paper.opacity(0.78))
-            case .done:
-                Text(lang.t("settings.appearance.preview.replyAvailable"))
-                    .font(.system(size: 12.5, weight: .semibold))
-                    .foregroundStyle(V6Palette.paper.opacity(0.82))
-            case .idle:
-                EmptyView()
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.leading, detailLeadingPadding)
-        .padding(.trailing, sideInset)
-        .padding(.bottom, 12)
-        .background(V6Palette.paper.opacity(0.015))
-    }
-
-    @ViewBuilder
-    private var indicatorView: some View {
-        switch indicator {
-        case .animatedDot:
-            Circle()
-                .fill(tint)
-                .frame(width: 9, height: 9)
-                .shadow(color: tint.opacity(item.phase == .idle ? 0 : 0.44), radius: 5)
-                .frame(width: 20, height: 20)
-        case .bar:
-            EmptyView()
-        case .glyph:
-            glyphView
-                .frame(width: 20, height: 20)
-        case .tint:
-            EmptyView()
-        }
-    }
-
-    private var rowFill: Color {
-        guard indicator == .tint else { return Color.clear }
-        return tint.opacity(item.phase == .idle ? 0.015 : 0.045)
-    }
-
-    @ViewBuilder
-    private var glyphView: some View {
-        switch item.phase {
-        case .idle:
-            Circle()
-                .fill(V6Palette.paper.opacity(0.3))
-                .frame(width: 4, height: 4)
-        case .running:
-            UnifiedBars(mode: .running, size: 16, tint: tint)
-        case .approval, .answer:
-            UnifiedBars(mode: .waiting, size: 16, tint: tint)
-        case .done:
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(tint)
-        }
-    }
-
-    private var projectColor: Color {
-        indicator == .tint && item.phase != .idle ? tint : V6Palette.paper.opacity(item.phase == .idle ? 0.72 : 0.92)
-    }
-
-    private var tint: Color {
-        item.phase.tint
-    }
-
-    private var rowLeadingPadding: CGFloat {
-        switch indicator {
-        case .bar: max(28, sideInset)
-        case .tint: sideInset
-        case .animatedDot, .glyph: sideInset
-        }
-    }
-
-    private var detailLeadingPadding: CGFloat {
-        switch indicator {
-        case .bar: max(28, sideInset)
-        case .tint: sideInset
-        case .animatedDot, .glyph: sideInset + 30
-        }
+        return session
     }
 }
 

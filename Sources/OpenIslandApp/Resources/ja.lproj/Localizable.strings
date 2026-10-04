@@ -317,7 +317,7 @@
 "settings.display.showTasks" = "タスクリストを表示";
 "settings.display.showTasks.help" = "各セッションカードにタスクのチェックリストを出す。";
 "settings.display.showSubagents" = "サブエージェントを表示";
-"settings.display.showSubagents.help" = "承認と質問はどちらの設定でも表示される。";
+"settings.display.showSubagents.help" = "親に引き継がれるPaseoの子会話は表示しません。親を確認できない子の承認と質問は表示します。";
 "settings.display.showAgentActivity" = "エージェントの作業内容を表示";
 "settings.timer.eyeBreakEnabled" = "20-20-20 の目の休憩を実行";
 "settings.timer.eyeBreakEnabled.help" = "20分ごとに20秒の休憩。今すぐ開始し、休憩のたびに再開します。";
@@ -657,22 +657,22 @@
 /* SAO theme wording. English uppercase in every locale on purpose: a
    translated heads-up display reads as an ordinary label again. */
 "banner.completed.sao" = "CONGRATULATIONS";
-"island.sessionList.title.sao" = "LINKS";
-"island.sessionOverview.running.sao" = "DIVING";
-"island.sessionOverview.runningCompact.sao" = "DIVE";
-"island.sessionOverview.waiting.sao" = "SYSTEM CALL";
-"island.sessionOverview.waitingCompact.sao" = "CALL";
-"island.sessionOverview.done.sao" = "CLEARED";
-"island.sessionOverview.idle.sao" = "STANDBY";
-"island.sessionOverview.total.sao" = "LINKED";
+"island.sessionList.title.sao" = "セッション";
+"island.sessionOverview.running.sao" = "実行中";
+"island.sessionOverview.runningCompact.sao" = "実行";
+"island.sessionOverview.waiting.sao" = "確認待ち";
+"island.sessionOverview.waitingCompact.sao" = "確認";
+"island.sessionOverview.done.sao" = "完了";
+"island.sessionOverview.idle.sao" = "待機";
+"island.sessionOverview.total.sao" = "件";
 "banner.openHint" = "開くと内容が見られます";
 "approval.allowOnce.sao" = "YES";
 "approval.deny.sao" = "NO";
 "approval.allowAll.sao" = "YES TO ALL";
 "approval.denyAll.sao" = "NO TO ALL";
 "approval.goToTerminal.sao" = "TELEPORT";
-"question.submit.sao" = "CONFIRM";
-"question.answerAllFirst.sao" = "INCOMPLETE — ALL ENTRIES REQUIRED";
+"question.submit.sao" = "回答を送信";
+"question.answerAllFirst.sao" = "送るには全部の質問に答える。";
 "setup.banner.noHooks.title.sao" = "LINK START";
 "settings.display.hideIdleSessions" = "動きの止まったセッションを隠す";
 "settings.display.hideIdleSessions.help" = "灰色になった行を一覧に出しません。最後の1行は必ず残るので、見失ったように見えることはありません。";
@@ -916,3 +916,34 @@
 "settings.search.placeholder" = "設定を検索";
 "settings.search.noResults" = "該当する設定カテゴリがありません";
 "settings.search.clear" = "検索をクリア";
+/* Clear conversation and decision surfaces */
+"island.priority.attention" = "返事を待っています";
+"island.priority.running" = "実行中";
+"island.priority.completed" = "完了";
+"decision.plan.title" = "計画の確認";
+"decision.approval.title" = "実行の許可";
+"decision.question.title" = "質問への回答";
+"decision.scope" = "この要求に回答します。追加の許可は提示された範囲だけに適用されます。";
+"decision.paseo.scope" = "この要求についてだけ回答します。追加の許可はPaseoが提示した範囲に限られます。";
+"decision.allowOnce" = "今回だけ許可";
+"decision.deny" = "拒否";
+"decision.paseo.open" = "Paseoでこの会話を開く";
+"decision.paseo.unsupported" = "この種類の要求はPaseo側で内容を確認して回答してください。";
+"decision.paseo.sending" = "Paseoへ送信中…";
+"decision.question.sending" = "回答を送信中…";
+"decision.question.retry" = "回答を再送";
+"decision.sending" = "送信中…";
+"decision.option.single" = "1つ選択";
+"decision.option.multiple" = "複数選択可";
+"decision.option.selected" = "選択済み";
+"decision.option.unselected" = "未選択";
+"decision.plan.implement" = "計画を実行する";
+"decision.plan.resume" = "元のBypassを維持して実行";
+"decision.plan.acceptEdits" = "実行時の権限は編集の自動許可（acceptEdits）へ変わります。";
+"decision.conversation.open" = "この会話を開く: %@、%@";
+"island.empty.quiet" = "今は誰もあなたを待っていません。";
+"island.empty.start" = "AIの会話を始めると、ここに表示されます。静かなうちに、ひと息。";
+
+"decision.request" = "要求";
+"decision.continue" = "このまま続ける";
+"decision.other" = "その他";
