@@ -50,27 +50,27 @@ struct FocusTimerCoordinatorTests {
         #expect(coordinator.state == state)
     }
 
-    @Test(
-        "A finished countdown plays the finish sound and posts a timerDone sneak peek",
-        .enabled(if: !TestEnvironment.isCI, "wall-clock expiry; CI runners stall for seconds")
-    )
-    func finishPlaysSoundAndPeeks() async throws {
+    @Test("A finished countdown requests its exact finish cue and posts a timerDone sneak peek")
+    func finishPlaysSoundAndPeeks() {
         let coordinator = makeCoordinator()
-        var cues: [String] = []
-        NotificationSoundService.harnessSink = { cues.append($0) }
-        defer { NotificationSoundService.harnessSink = nil }
-
+        var events: [NotificationSoundEvent] = []
+        coordinator.finishSoundPlayer = { event, _ in events.append(event) }
+        coordinator.timerSettings.playsSound = true
+        coordinator.timerSettings.autoAdvance = false
         let overlay = OverlayUICoordinator()
         coordinator.overlay = overlay
 
-        coordinator.start(.countdown(0.05))
-
-        let deadline = ContinuousClock.now.advanced(by: .seconds(3))
-        while overlay.sneakPeek == nil, ContinuousClock.now < deadline {
-            try await Task.sleep(for: .milliseconds(20))
-        }
+        // The same completion path used after sleep/wake, with an already
+        // elapsed deadline. No task timing or shared audio sink is involved.
+        let elapsed = FocusTimerReducer.reduce(.idle, .start(.countdown(60)),
+            now: Date(timeIntervalSince1970: 0))
+        coordinator.loadDebugState(elapsed)
+        coordinator.recomputeAfterWake()
 
         #expect(overlay.sneakPeek?.kind == .timerDone)
-        #expect(cues.contains { $0.hasPrefix("sound.cue=") })
+        #expect(events == [.timerFinished])
+        // Another wake must not announce the same completion twice.
+        coordinator.recomputeAfterWake()
+        #expect(events == [.timerFinished])
     }
 }
