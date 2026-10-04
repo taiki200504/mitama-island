@@ -187,7 +187,7 @@ struct ShortcutsSettingsPane: View {
             }
             .onChange(of: shortcuts.modifier) { _, newValue in
                 model.shortcutHints.start(modifier: newValue)
-                model.panelHotkeys?.settingsDidChange(panelIsExpanded: true)
+                model.panelHotkeys?.settingsDidChange(panelIsExpanded: model.notchStatus == .opened)
             }
 
             SettingsRow(
@@ -395,7 +395,10 @@ struct ShortcutsSettingsPane: View {
                     title: lang.t(action.labelKey),
                     modifier: shortcuts.modifier,
                     keyLabel: shortcuts.key(for: action),
-                    onAssign: { shortcuts.setKey($0, for: action) }
+                    onAssign: {
+                        shortcuts.setKey($0, for: action)
+                        model.panelHotkeys?.settingsDidChange(panelIsExpanded: model.notchStatus == .opened)
+                    }
                 )
                 .help(
                     unresolvable.contains(action)
@@ -404,14 +407,6 @@ struct ShortcutsSettingsPane: View {
                 )
             }
 
-            ForEach(FixedPanelShortcut.allCases, id: \.self) { fixed in
-                ShortcutAssignmentRow(
-                    title: lang.t(fixed.labelKey),
-                    modifier: fixed.usesModifier ? shortcuts.modifier : nil,
-                    keyLabel: fixed.keyLabel,
-                    pendingNote: .inPanelTypedKeys
-                )
-            }
         } header: {
             Text(lang.t("settings.shortcuts.section.panel"))
         } footer: {
@@ -425,6 +420,7 @@ struct ShortcutsSettingsPane: View {
         Section {
             Button(lang.t("settings.shortcuts.reset")) {
                 shortcuts.resetToDefaults()
+                model.panelHotkeys?.settingsDidChange(panelIsExpanded: model.notchStatus == .opened)
             }
             .disabled(!shortcuts.isCustomised)
         }

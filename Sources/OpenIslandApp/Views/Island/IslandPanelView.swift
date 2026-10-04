@@ -190,6 +190,13 @@ struct IslandPanelView: View {
                 }
 
                 v6ClosedSurface()
+                    .accessibilityHidden(usesOpenedVisualState)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel(model.lang.t("statusItem.openIsland"))
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityAction {
+                        model.notchOpen(reason: .click)
+                    }
                     .opacity(usesOpenedVisualState ? 0 : 1)
                     .allowsHitTesting(!usesOpenedVisualState)
                     // The pill sits against the physical notch, so it cannot

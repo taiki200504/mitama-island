@@ -3332,13 +3332,18 @@ final class AppModel {
 
     /// The sessions the switcher cycles through, in the order they are shown.
     private var switcherSessionIDs: [String] {
-        state.sessions.filter(\.isVisibleInIsland).map(\.id)
+        islandListSessions.map(\.id)
     }
 
     /// One press of the switcher key: opens it, or moves along if already open.
     func toggleSwitcher(reversed: Bool) {
         let ids = switcherSessionIDs
-        guard ids.count > 1 else { return }
+        guard ids.count > 1 else {
+            switcher.cancel()
+            panelHotkeys?.switcherDidDeactivate()
+            overlay.notchOpen(reason: .switcher)
+            return
+        }
 
         if switcher.isActive {
             switcher.advance(sessions: ids, reversed: reversed)
@@ -3511,6 +3516,11 @@ final class AppModel {
     /// Falls back to the first session waiting on the user when no card is
     /// showing, so ⌃Y works from a list as well as from a card.
     func performShortcut(_ action: PanelShortcutAction) {
+        if action == .jumpToTerminal {
+            guard let session = focusedSession else { return }
+            jump(to: paseoJumpTarget(for: session))
+            return
+        }
         guard let session = activeIslandCardSession ?? pendingApprovalSessions.first else { return }
 
         switch action {
@@ -3525,7 +3535,7 @@ final class AppModel {
         case .skipPermissions:
             approvePermission(for: session.id, action: modeAction(.bypassPermissions, for: session), expectedRequestID: session.permissionRequest?.id)
         case .jumpToTerminal:
-            jumpToSession(session)
+            break
         }
     }
 

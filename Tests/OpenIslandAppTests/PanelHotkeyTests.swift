@@ -71,6 +71,35 @@ struct PanelHotkeyCoordinatorTests {
         return (coordinator, registrar, settings)
     }
 
+    @Test("Changing the modifier while closed updates persistent keys only")
+    func modifierChangePreservesClosedScope() {
+        let (coordinator, registrar, settings) = makeCoordinator()
+        coordinator.startPersistentBindings()
+        settings.modifier = .option
+        coordinator.settingsDidChange(panelIsExpanded: false)
+        let switcher = registrar.bindingsByScope[.persistent]?.first { $0.id == PanelHotkeyCoordinator.switcherBindingID }
+        #expect(switcher?.modifiers == NSEvent.ModifierFlags.option)
+        #expect(registrar.bindingsByScope[.panelExpanded]?.isEmpty == true)
+    }
+
+    @Test("Input source changes cannot enable approval keys while closed")
+    func layoutChangePreservesClosedScope() {
+        let (coordinator, registrar, _) = makeCoordinator()
+        coordinator.panelDidExpand()
+        coordinator.panelDidCollapse()
+        coordinator.keyboardLayoutDidChange()
+        #expect(registrar.bindingsByScope[.panelExpanded]?.isEmpty == true)
+        #expect(registrar.bindingsByScope[.persistent]?.isEmpty == false)
+    }
+
+    @Test("Input source changes preserve an expanded panel's shortcuts")
+    func layoutChangePreservesExpandedScope() {
+        let (coordinator, registrar, _) = makeCoordinator()
+        coordinator.panelDidExpand()
+        coordinator.keyboardLayoutDidChange()
+        #expect(registrar.bindingsByScope[.panelExpanded]?.isEmpty == false)
+    }
+
     @Test("Every default action gets a binding")
     func registersDefaults() {
         let (coordinator, registrar, _) = makeCoordinator()

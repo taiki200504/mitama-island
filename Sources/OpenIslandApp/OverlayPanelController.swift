@@ -50,6 +50,7 @@ final class OverlayPanelController {
     private var hoverCancelGrace: DispatchWorkItem?
     weak var model: AppModel?
     private(set) var notchRect: NSRect = .zero
+    private var preferredScreenID: String?
 
     var isVisible: Bool {
         panel?.isVisible == true
@@ -64,6 +65,7 @@ final class OverlayPanelController {
     }
 
     func ensurePanel(model: AppModel, preferredScreenID: String?) {
+        self.preferredScreenID = preferredScreenID
         self.model = model
         let panel = self.panel ?? makePanel(model: model)
         self.panel = panel
@@ -75,6 +77,7 @@ final class OverlayPanelController {
     }
 
     func show(model: AppModel, preferredScreenID: String?) -> OverlayPlacementDiagnostics? {
+        self.preferredScreenID = preferredScreenID
         self.model = model
         let panel = self.panel ?? makePanel(model: model)
         self.panel = panel
@@ -108,6 +111,7 @@ final class OverlayPanelController {
     }
 
     func reposition(preferredScreenID: String?) -> OverlayPlacementDiagnostics? {
+        self.preferredScreenID = preferredScreenID
         guard let panel else {
             return placementDiagnostics(preferredScreenID: preferredScreenID)
         }
@@ -236,7 +240,7 @@ final class OverlayPanelController {
         let screens = NSScreen.screens
         guard !screens.isEmpty else { return nil }
 
-        if let preferredScreenID,
+        if let preferredScreenID = preferredScreenID ?? self.preferredScreenID,
            let screen = screens.first(where: { OverlayDisplayResolver.screenID(for: $0) == preferredScreenID }) {
             return screen
         }

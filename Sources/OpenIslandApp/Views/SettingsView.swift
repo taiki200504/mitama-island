@@ -148,7 +148,7 @@ struct SettingsView: View {
                 MitamaSettingsPane(model: model)
             }
 
-            if model.updateChecker.hasUpdate, let version = model.updateChecker.latestVersion {
+            if model.updateChecker.isEnabled, model.updateChecker.hasUpdate, let version = model.updateChecker.latestVersion {
                 UpdateBanner(version: version, lang: lang) {
                     model.updateChecker.checkForUpdates()
                 }
@@ -192,18 +192,18 @@ struct AboutSettingsPane: View {
             Divider()
 
             Form {
-                Section {
-                    aboutActionRow(
-                        title: lang.t("settings.about.checkForUpdates"),
-                        systemImage: "arrow.triangle.2.circlepath",
-                        tint: primaryInk,
-                        action: {
-                            model.updateChecker.checkForUpdates()
-                        }
-                    )
-                    .disabled(!model.updateChecker.canCheckForUpdates)
-                    .opacity(model.updateChecker.canCheckForUpdates ? 1 : 0.55)
-                    .accessibilityIdentifier("settings.about.checkForUpdates")
+                if model.updateChecker.isEnabled {
+                    Section {
+                        aboutActionRow(
+                            title: lang.t("settings.about.checkForUpdates"),
+                            systemImage: "arrow.triangle.2.circlepath",
+                            tint: primaryInk,
+                            action: { model.updateChecker.checkForUpdates() }
+                        )
+                        .disabled(!model.updateChecker.canCheckForUpdates)
+                        .opacity(model.updateChecker.canCheckForUpdates ? 1 : 0.55)
+                        .accessibilityIdentifier("settings.about.checkForUpdates")
+                    }
                 }
 
                 // A GPL v3 fork bundling an OFL font owes both an acknowledgement.

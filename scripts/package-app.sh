@@ -133,11 +133,11 @@ cat > "$bundle_dir/Contents/Info.plist" <<EOF
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
     <key>SUFeedURL</key>
-    <string>${OPEN_ISLAND_SU_FEED_URL:-https://raw.githubusercontent.com/Octane0411/open-vibe-island/main/appcast.xml}</string>
+    <string>${OPEN_ISLAND_SU_FEED_URL:-}</string>
     <key>SUEnableAutomaticChecks</key>
-    <${OPEN_ISLAND_SU_AUTOMATIC_CHECKS:-true}/>
+    <${OPEN_ISLAND_SU_AUTOMATIC_CHECKS:-false}/>
     <key>SUPublicEDKey</key>
-    <string>${OPEN_ISLAND_EDDSA_PUBLIC_KEY:-3IF8txq9RRNanzE2FNhyGRcwhslTucCcJHpTkpxcgBQ=}</string>
+    <string>${OPEN_ISLAND_EDDSA_PUBLIC_KEY:-}</string>
 </dict>
 </plist>
 EOF

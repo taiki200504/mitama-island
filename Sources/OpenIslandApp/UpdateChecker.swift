@@ -17,13 +17,22 @@ final class UpdateChecker: NSObject {
     private(set) var latestVersion: String?
 
     @ObservationIgnored
-    private var updaterController: SPUStandardUpdaterController!
+    private var updaterController: SPUStandardUpdaterController?
+
+    let isEnabled: Bool
+    @ObservationIgnored private var started = false
 
     @ObservationIgnored
     private var cancellable: AnyCancellable?
 
-    override init() {
+    override convenience init() {
+        self.init(feedURL: Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") as? String)
+    }
+
+    init(feedURL: String?) {
+        isEnabled = Self.validFeedURL(feedURL) != nil
         super.init()
+        guard isEnabled else { return }
         updaterController = SPUStandardUpdaterController(
             startingUpdater: false,
             updaterDelegate: self,
@@ -31,39 +40,35 @@ final class UpdateChecker: NSObject {
         )
     }
 
-    /// Start Sparkle's automatic update checking schedule.
-    /// Call once after app launch.
-    func startIfNeeded() {
-        #if DEBUG
-        // Dev builds run from a local branch that often carries fixes not yet in
-        // the upstream appcast. Letting Sparkle prompt the user to "update" to
-        // 1.0.21 would overwrite the bundle and silently discard those fixes.
-        // Skip the auto-check entirely in debug — release bundles still update.
-        print("[UpdateChecker] skipped in DEBUG build")
-        return
-        #else
-        let updater = updaterController.updater
-        updater.automaticallyChecksForUpdates = true
-        updater.updateCheckInterval = 60 * 60 // 1 hour
-        updater.automaticallyDownloadsUpdates = false
-
-        do {
-            try updater.start()
-        } catch {
-            print("[UpdateChecker] Failed to start Sparkle updater: \(error)")
-        }
-
-        cancellable = updater.publisher(for: \.canCheckForUpdates)
-            .receive(on: RunLoop.main)
-            .sink { [weak self] value in
-                self?.canCheckForUpdates = value
-            }
-        #endif
+    static func validFeedURL(_ text: String?) -> URL? {
+        guard let text = text?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !text.isEmpty, let url = URL(string: text), url.scheme == "https",
+              url.host?.isEmpty == false, url.user == nil, url.password == nil,
+              url.fragment == nil else { return nil }
+        return url
     }
 
-    /// Manually trigger an update check (from Settings UI).
+    /// Local bundles carry no feed and never start Sparkle, in any build configuration.
+    func startIfNeeded() {
+        guard isEnabled, !started, let updater = updaterController?.updater else { return }
+        updater.automaticallyChecksForUpdates = Bundle.main.object(forInfoDictionaryKey: "SUEnableAutomaticChecks") as? Bool ?? false
+        updater.updateCheckInterval = 60 * 60
+        updater.automaticallyDownloadsUpdates = false
+        do {
+            try updater.start()
+            started = true
+        } catch {
+            print("[UpdateChecker] Failed to start Sparkle updater: \(error)")
+            return
+        }
+        cancellable = updater.publisher(for: \.canCheckForUpdates)
+            .receive(on: RunLoop.main)
+            .sink { [weak self] value in self?.canCheckForUpdates = value }
+    }
+
     func checkForUpdates() {
-        updaterController.checkForUpdates(nil)
+        guard isEnabled, canCheckForUpdates else { return }
+        updaterController?.checkForUpdates(nil)
     }
 }
 
@@ -77,6 +82,7 @@ extension UpdateChecker: SPUUpdaterDelegate {
     nonisolated func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
         let version = item.displayVersionString
         Task { @MainActor in
+            guard self.isEnabled else { return }
             self.hasUpdate = true
             self.latestVersion = version
         }
