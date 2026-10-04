@@ -105,4 +105,48 @@ struct IslandDecisionPresentationTests {
         #expect(own.success == "Answered")
     }
 
+    @Test func latestParentResponseSetCannotBeCoveredByAnOlderChildError() {
+        let completed = IslandSDKPresentation(sessionID: "parent", forwardedSessionID: "child", modeLabels: [:],
+            sendingSessionIDs: [], errors: ["child": "Old error"], successes: ["parent": "New success"])
+        #expect(completed.error == nil)
+        #expect(completed.success == "New success")
+        let retry = IslandSDKPresentation(sessionID: "parent", forwardedSessionID: "child", modeLabels: [:],
+            sendingSessionIDs: ["parent"], errors: ["child": "Old error"], successes: ["child": "Old success"])
+        #expect(retry.isSending)
+        #expect(retry.error == nil)
+        #expect(retry.success == nil)
+    }
+
+    @Test func contextHeightIncludesProviderEvenWithoutOptionalDetails() {
+        let item = session("running", phase: .running)
+        let fields = IslandSessionCardFields(showsTasks: false, showsSubagents: false, showsAgentActivity: false)
+        let base = item.estimatedIslandRowHeight(at: .now, fields: fields)
+        #expect(base >= 60)
+        var workspace = fields
+        workspace.showsProjectName = true
+        #expect(item.estimatedIslandRowHeight(at: .now, fields: workspace) > base)
+        let waiting = session("question", phase: .waitingForAnswer)
+        #expect(waiting.estimatedIslandRowHeight(at: .now, fields: fields) > base)
+    }
+
+    @Test func smallNotificationViewportFitsBothTheSavedHeightAndRealAvailableSpace() {
+        #expect(IslandChromeMetrics.notificationViewportHeight(maxPanelHeight: 280) == 232)
+        #expect(IslandChromeMetrics.notificationViewportHeight(maxPanelHeight: 560, availableHeight: 180) == 180)
+        #expect(IslandChromeMetrics.notificationViewportHeight(maxPanelHeight: 280, availableHeight: 0) == 0)
+        #expect(IslandChromeMetrics.questionOptionsViewportHeight(maxPanelHeight: 280) == 100)
+        #expect(IslandChromeMetrics.questionOptionsViewportHeight(maxPanelHeight: 560) == 200)
+    }
+
+    @Test func answerProgressPlacesAnsweredAndTotalCorrectlyInEveryLanguage() {
+        let manager = LanguageManager()
+        let previous = manager.language
+        defer { manager.language = previous }
+        let expected: [(LanguageManager.AppLanguage, String)] = [(.ja, "3問中0問に回答"),
+            (.en, "0 of 3 answered"), (.zhHans, "已回答 0 / 3"), (.zhHant, "已回答 0 / 3")]
+        for (language, text) in expected {
+            manager.language = language
+            #expect(manager.t("question.progress", "0", "3") == text)
+        }
+    }
+
 }

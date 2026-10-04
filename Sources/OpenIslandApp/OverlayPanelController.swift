@@ -13,13 +13,11 @@ final class OverlayPanelController {
     private static let preferredNotificationPanelWidth: CGFloat = 620
     private static let openedContentWidthPadding: CGFloat = 0
     private static let openedContentBottomPadding: CGFloat = 0
-    /// Must match `IslandPanelView.maxSessionListHeight` — the AutoHeightScrollView cap.
-    private static let maxSessionListHeight: CGFloat = 560
     private static let maxVisibleSessionRows: Int = 6
     private static let openedRowSpacing: CGFloat = 0
     // Content padding top + scroll padding + v8 list header/footer + bottom inset.
     // Rows are now full-width scan rows, so the old inter-card spacing is gone.
-    private static let openedContentVerticalInsets: CGFloat = 84
+    private static let openedContentVerticalInsets: CGFloat = 38
     /// The gap between what the card measures and the room the panel has to
     /// give it.
     ///
@@ -28,8 +26,8 @@ final class OverlayPanelController {
     /// how tall the card was, which is what pointed at this number rather than
     /// at any one card's layout. Verified against the `longQuestionCard`
     /// capture in `smoke-all`, where the submit button used to be cut in half.
-    private static let notificationMeasuredContentPadding: CGFloat = 48
-    private static let notificationEstimatedVerticalInsets: CGFloat = 36
+    private static let notificationMeasuredContentPadding = IslandChromeMetrics.notificationContentPadding
+    private static let notificationEstimatedVerticalInsets = IslandChromeMetrics.notificationContentPadding
     private static let openedEmptyStateHeight: CGFloat = 108
     private static let questionCardBaseHeight: CGFloat = 110
     /// Tall enough for a full option list at its scroll cap plus the chrome
@@ -753,7 +751,7 @@ final class OverlayPanelController {
         let contentHeight = openedContentHeight(for: model)
         // Use at least the empty-state height so the window doesn't shrink
         // when sessions come and go while opened.
-        let height = screen.notchSize.height + max(contentHeight, Self.openedEmptyStateHeight) + Self.openedContentBottomPadding + insets.bottom
+        let height = min(screen.visibleFrame.height, screen.notchSize.height + max(contentHeight, Self.openedEmptyStateHeight) + Self.openedContentBottomPadding + insets.bottom)
 
         return CGSize(
             width: panelWidth + Self.openedContentWidthPadding + (insets.horizontal * 2),
@@ -866,7 +864,7 @@ final class OverlayPanelController {
         if isNotificationMode {
             // Use SwiftUI-measured height when available (accurate after first render).
             if model.measuredNotificationContentHeight > 0 {
-                return model.measuredNotificationContentHeight + Self.notificationMeasuredContentPadding
+                return min(maxHeight, model.measuredNotificationContentHeight + Self.notificationMeasuredContentPadding)
             }
             // First render: estimate from the actionable session's content so the
             // initial window is close to the final size. This avoids a large blank
@@ -874,41 +872,37 @@ final class OverlayPanelController {
             // a measurement→reposition cycle.
             if let actionableID,
                let session = model.state.session(id: actionableID) {
-                let rowHeight = session.estimatedIslandRowHeight(at: now)
+                let rowHeight = session.estimatedIslandRowHeight(at: now, fields: IslandSessionCardFields(display: model.settings.display))
                 let bodyHeight = actionableBodyHeight(for: session, model: model)
-                return rowHeight + bodyHeight + Self.notificationEstimatedVerticalInsets
+                return min(maxHeight, rowHeight + bodyHeight + Self.notificationEstimatedVerticalInsets)
             }
-            return 300
+            return min(maxHeight, 300)
         }
 
+        let fields = IslandSessionCardFields(display: model.settings.display)
         let rowHeights = visibleSessions.map { session -> CGFloat in
-            if session.id == actionableID {
-                return session.estimatedIslandRowHeight(at: now)
-                    + actionableBodyHeight(for: session, model: model)
-            }
-            return session.estimatedIslandRowHeight(at: now)
+            let row = session.estimatedIslandRowHeight(at: now, fields: fields)
+            return row + (session.phase.requiresAttention || session.id == actionableID
+                ? actionableBodyHeight(for: session, model: model) : 0)
         }
-
         let rowsHeight = rowHeights.reduce(CGFloat.zero, +)
-        let spacingHeight = CGFloat(max(0, rowHeights.count - 1)) * Self.openedRowSpacing
-        let listHeight = rowsHeight + spacingHeight
-        // Cap to match AutoHeightScrollView's maxHeight in IslandPanelView.
-        let cappedListHeight = min(listHeight, Self.maxSessionListHeight)
-        return cappedListHeight + Self.openedContentVerticalInsets
+        let headingCount = IslandSessionPriority.allCases.filter { priority in visibleSessions.contains(where: priority.contains) }.count
+        let listHeight = rowsHeight + CGFloat(headingCount) * 36
+        return min(maxHeight, listHeight + Self.openedContentVerticalInsets)
     }
-
-    /// The warning or read-only strip `approvalActionBody` puts above the title.
-    private static let approvalRiskBannerHeight: CGFloat = 32
 
     /// Additional height for the actionable session's inline action area.
     private func actionableBodyHeight(for session: AgentSession, model: AppModel) -> CGFloat {
         switch session.phase {
         case .waitingForApproval:
-            // 118 for the card itself, plus the risk strip across its top —
-            // under-estimating here is what pushes Allow/Deny out of reach.
-            return 118 + Self.approvalRiskBannerHeight
+            let request = session.permissionRequest
+            let lines = max(1, Int(ceil(Double((request?.summary ?? session.summary).count) / 46)))
+            let extraActions = max(0, (request?.paseoContext?.actions.count ?? 0) - 1)
+                + (request?.suggestedUpdates.count ?? 0)
+            return 190 + CGFloat(lines) * 18 + CGFloat(extraActions) * 44
         case .waitingForAnswer:
-            return questionCardHeight(for: session.questionPrompt) - 44
+            return questionCardHeight(for: session.questionPrompt, maxPanelHeight: model.settings.display.maxPanelHeight)
+                + (session.jumpTarget?.terminalApp == "Paseo" ? 48 : 0)
         case .completed:
             return completionBodyHeight(for: session, model: model)
         case .running:
@@ -942,7 +936,7 @@ final class OverlayPanelController {
 
     /// Estimates the question card height based on prompt content (question count,
     /// option count per question, and whether the prompt title is shown).
-    private func questionCardHeight(for prompt: QuestionPrompt?) -> CGFloat {
+    private func questionCardHeight(for prompt: QuestionPrompt?, maxPanelHeight: CGFloat) -> CGFloat {
         guard let prompt else {
             return Self.questionCardBaseHeight
         }
@@ -966,14 +960,15 @@ final class OverlayPanelController {
         // matches the question text), reduce chrome because the body carries it.
         let titleSuppressed = questions.count == 1
             && prompt.title == questions.first?.question
-        let chromeHeight: CGFloat = titleSuppressed ? 82 : 102
+        let hasFreeform = questions.contains { $0.options.contains(where: \.allowsFreeform) }
+        let chromeHeight: CGFloat = (titleSuppressed ? 124 : 154) + (hasFreeform ? 0 : 38)
         var listHeight: CGFloat = 0
 
         for question in questions {
             if questions.count > 1 {
                 listHeight += 16 // header
             }
-            listHeight += 20 // question text
+            listHeight += 40 // question text + single/multiple-selection hint
             for option in question.options {
                 listHeight += Self.estimatedOptionRowHeight(for: option.label)
             }
@@ -985,7 +980,7 @@ final class OverlayPanelController {
         // The list scrolls past this, so the panel must be sized for the cap
         // rather than for the whole list — otherwise a long question pushes the
         // submit button outside the panel it is supposed to sit in.
-        let estimated = chromeHeight + min(listHeight, IslandChromeMetrics.questionOptionListMaxHeight)
+        let estimated = chromeHeight + min(listHeight, IslandChromeMetrics.questionOptionsViewportHeight(maxPanelHeight: maxPanelHeight))
         return min(Self.questionCardMaxHeight, max(Self.questionCardBaseHeight, estimated))
     }
 

@@ -199,6 +199,7 @@ extension IslandSessionRow {
                 isSending: submissionIsSending, errorMessage: submissionError,
                 onAnswer: { onAnswer?($0) }
             )
+            .id(session.questionPrompt?.id)
             if isPaseo {
                 Button(questionConversationActionTitle, action: onExplicitJump ?? onJump)
                     .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .decisionCard))

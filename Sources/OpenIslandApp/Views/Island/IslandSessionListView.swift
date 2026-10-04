@@ -49,7 +49,9 @@ extension IslandPanelView {
                 // disagree the last control in the card used to end up outside
                 // the window with no way to reach it. Now the worst case is a
                 // scroll rather than something unreachable.
-                AutoHeightScrollView(maxHeight: IslandChromeMetrics.notificationContentMaxHeight) {
+                GeometryReader { geometry in
+                AutoHeightScrollView(maxHeight: IslandChromeMetrics.notificationViewportHeight(
+                    maxPanelHeight: model.settings.display.maxPanelHeight, availableHeight: geometry.size.height)) {
                     sessionListContent(referenceDate: referenceDate)
                 }
                     .padding(.vertical, 2)
@@ -73,6 +75,7 @@ extension IslandPanelView {
                             model.measuredNotificationContentHeight = height
                         }
                     }
+                }
             } else {
                 VStack(spacing: 0) {
                     sessionPanelHeader(referenceDate: referenceDate)
@@ -80,6 +83,7 @@ extension IslandPanelView {
                     ScrollView(.vertical) {
                         VStack(spacing: 0) {
                             sessionRowsContent(referenceDate: referenceDate)
+                            IslandEcosystemSignalsStrip(model: model, sideInset: sessionListSideInset)
                             mitamaProposalSection
                             mitamaFeedSection
                         }
@@ -288,12 +292,12 @@ extension IslandPanelView {
                 )
                 .id(notificationCardIdentity(for: session))
 
-                if model.allSessions.count > 1 {
+                if model.islandListSessions.count > 1 {
                     Button {
                         let isCompletion = session.phase == .completed
                         model.expandNotificationToSessionList(clearExpansion: isCompletion)
                     } label: {
-                        Text(model.lang.t("island.showAll", model.allSessions.count))
+                        Text(model.lang.t("island.showAll", model.islandListSessions.count))
                             .font(.islandText(size: 10.5, weight: .medium))
                             .foregroundStyle(V6Palette.paper.opacity(0.36))
                             .frame(maxWidth: .infinity, alignment: .center)
@@ -460,9 +464,7 @@ extension IslandPanelView {
             .padding(.trailing, sessionListSideInset)
             .frame(height: 24)
 
-            // The rest of mitama — drawn only when it has something to say,
-            // so an idle machine keeps the list exactly where it was.
-            IslandEcosystemSignalsStrip(model: model, sideInset: sessionListSideInset)
+
         }
     }
 

@@ -523,7 +523,7 @@
 "approval.goToTerminal" = "ターミナルへ移動";
 
 /* Question progress */
-"question.progress" = "%@問中%@問に回答";
+"question.progress" = "%2$@問中%1$@問に回答";
 "question.answerAllFirst" = "送るには全部の質問に答える。";
 
 /* App name and Watch */

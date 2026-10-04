@@ -5,19 +5,19 @@ import OpenIslandCore
 
 extension AgentSession {
     /// Estimated row height matching `IslandSessionRow` layout for viewport sizing.
-    func estimatedIslandRowHeight(
+    @MainActor func estimatedIslandRowHeight(
         at date: Date,
         fields: IslandSessionCardFields = .all
     ) -> CGFloat {
         let presence = islandPresence(at: date)
-        // v8 list rows are full-width scan rows, not rounded cards.
-        // Base: vertical padding (22) + headline (~17) + divider rounding.
-        var height: CGFloat = 40
+        // The shared context always has title + provider/host/mode. Waiting
+        // rows permit a second title line and always identify the workspace.
+        let scale = max(1, IslandTypography.contentScale)
+        var height: CGFloat = 22 + 38 * scale
+        if fields.showsProjectName || phase.requiresAttention { height += 20 * scale }
+        if phase.requiresAttention { height += 18 * scale }
         guard presence != .inactive else { return height }
-        // The waiting row's health bar (5) and the gap above it (3).
-        if phase.requiresAttention { height += 8 }
-        if spotlightPromptLineText != nil { height += 17 }
-        if fields.showsAgentActivity, spotlightActivityLineText != nil { height += 20 }
+        if fields.showsAgentActivity, !phase.requiresAttention, spotlightActivityLineText != nil { height += 20 * scale }
         if fields.showsSubagents,
            let subagents = claudeMetadata?.activeSubagents, !subagents.isEmpty {
             height += 18

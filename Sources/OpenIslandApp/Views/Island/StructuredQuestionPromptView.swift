@@ -53,8 +53,8 @@ struct StructuredQuestionPromptView: View {
                     // put: with a long list it used to be pushed off the
                     // bottom of the card with no way to reach it, which left
                     // the question unanswerable from the island at all.
-                    AutoHeightScrollView(maxHeight: min(IslandChromeMetrics.questionOptionListMaxHeight,
-                        max(100, SettingsStore.shared.display.maxPanelHeight - 360))) {
+                    AutoHeightScrollView(maxHeight: IslandChromeMetrics.questionOptionsViewportHeight(
+                        maxPanelHeight: SettingsStore.shared.display.maxPanelHeight)) {
                         VStack(alignment: .leading, spacing: 8) {
                             ForEach(structuredQuestions, id: \.responseKey) { question in
                                 questionRow(question)

@@ -11,13 +11,18 @@ actor PaseoHarnessFixture {
     let variant: Variant
     var pending = true
     var failOnce: Bool
+    private let createdAt = Date.now
+    private let replacementDelay: TimeInterval?
     init(isQuestion: Bool, variant: Variant? = nil) {
         self.isQuestion = isQuestion
         self.variant = variant ?? Self.variant
         failOnce = ProcessInfo.processInfo.environment["OPEN_ISLAND_PASEO_MOCK_FAIL_ONCE"] == "true"
+        let delay = Double(ProcessInfo.processInfo.environment["OPEN_ISLAND_PASEO_MOCK_REPLACE_QUESTION_AFTER_SECONDS"] ?? "")
+        replacementDelay = delay.flatMap { $0.isFinite && $0 > 0 ? $0 : nil }
     }
     func call(_ name: String, _ input: ClaudeHookJSONValue) async throws -> ClaudeHookJSONValue {
         let provider = isQuestion ? "codex" : "claude"
+        let isReplacement = isQuestion && replacementDelay.map { Date.now.timeIntervalSince(createdAt) >= $0 } == true
         let basicQuestions: ClaudeHookJSONValue = .array([.object([
             "id": .string("0"), "header": .string("Question 1"), "question": .string("次の作業の進め方を選んでください。"),
             "options": .array([.object(["label": .string("現在の設定を維持して続ける")]), .object(["label": .string("Paseoで詳細を確認する")])])
@@ -38,7 +43,7 @@ actor PaseoHarnessFixture {
         let questions = variant == .basic ? basicQuestions : extendedQuestions
         let agentID = variant == .child ? "fixture-child" : "fixture-agent"
         let request: ClaudeHookJSONValue = .object([
-            "id": .string("fixture-request"), "provider": .string(provider),
+            "id": .string(isReplacement ? "fixture-request-next" : "fixture-request"), "provider": .string(provider),
             "name": .string(variant == .unknown ? "future_provider_question" : (isQuestion ? "request_user_input_async" : "Bash")),
             "kind": .string(isQuestion ? "question" : "tool"),
             "metadata": .object(["toolUseId": .string("fixture-tool")]),
@@ -61,7 +66,7 @@ actor PaseoHarnessFixture {
                 "id": .string(requestedID), "provider": .string(provider), "status": .string("running"),
                 "archivedAt": .null, "providerUnavailable": .boolean(false),
                 "labels": variant == .child && !isParent ? .object(["paseo.parent-agent-id": .string("fixture-parent")]) : .object([:]),
-                "title": .string(isParent ? "親：表示確認の担当" : "Paseo 表示確認"), "cwd": .string("paseo-sandbox"),
+                "title": .string(isParent ? "親：表示確認の担当" : (isReplacement ? "Paseo 表示確認（質問更新）" : "Paseo 表示確認")), "cwd": .string("paseo-sandbox"),
                 "currentModeId": .string(isQuestion ? "full-access" : "bypassPermissions"),
                 "availableModes": .array([.object(["id": .string(isQuestion ? "full-access" : "bypassPermissions"),
                                                   "label": .string(isQuestion ? "Full access" : "Bypass permissions")])]),
