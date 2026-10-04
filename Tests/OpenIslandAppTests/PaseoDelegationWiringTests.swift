@@ -5,7 +5,7 @@ import OpenIslandCore
 
 @MainActor
 struct PaseoDelegationWiringTests {
-    @Test func confirmedChildDoesNotBecomeFocusedOrSelectedOrRemainAnActiveCard() async throws {
+    @Test func confirmedChildProjectsOntoExactParentAndIsHiddenFromList() async throws {
         let snapshot: ClaudeHookJSONValue = .object([
             "id": .string("child"), "provider": .string("claude"), "status": .string("running"),
             "title": .string("Child"), "persistence": .object(["sessionId": .string("native-child")]),
@@ -23,7 +23,7 @@ struct PaseoDelegationWiringTests {
             }
             if name == "get_agent_status", case let .object(values) = input {
                 if values["agentId"] == .string("child") { return .object(["snapshot": snapshot]) }
-                return .object(["snapshot": .object(["id": .string("parent"), "status": .string("idle")])])
+                return .object(["snapshot": .object(["id": .string("parent"), "provider": .string("claude"), "status": .string("idle"), "persistence": .object(["sessionId": .string("native-parent")])])])
             }
             throw PaseoQuestionError.invalidResponse
         }, providerAliases: [:])
@@ -40,7 +40,10 @@ struct PaseoDelegationWiringTests {
         await coordinator.poll()
         #expect(model.selectedSessionID == "main")
         #expect(model.focusedSession?.id == "main")
-        #expect(model.liveAttentionCount == 1)
+        #expect(Set(model.islandListSessions.map(\.id)) == ["main", "native-parent"])
+        #expect(model.state.session(id: "native-parent")?.attachmentState == .attached)
+        #expect(model.forwardedPaseoQuestionSource(sessionID: "native-parent")?.childSessionID == "native-child")
+        #expect(model.liveAttentionCount == 2)
         model.islandSurface = .sessionList(actionableSessionID: "native-child")
         #expect(model.activeIslandCardSession == nil)
         #expect(!model.islandSurfaceAwaitsUserAction)

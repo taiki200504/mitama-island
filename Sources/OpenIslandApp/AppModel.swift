@@ -2015,6 +2015,8 @@ final class AppModel {
 
     private func refreshForwardedPaseoQuestions() {
         var sessions = state.sessions
+        let previousProjections = forwardedQuestionSnapshots
+        let previousTargets = forwardedQuestionTargets
         for (parent, projected) in forwardedQuestionSnapshots {
             if let index = sessions.firstIndex(where: { $0.id == parent }),
                let original = forwardedQuestionOriginals[parent] {
@@ -2043,7 +2045,7 @@ final class AppModel {
                   let binding = paseoQuestions.knownBinding(sessionID: parent) else { continue }
             if !sessions.contains(where: { $0.id == parent }) {
                 sessions.append(AgentSession(id: parent, title: binding.title,
-                    tool: binding.provider == "codex" ? .codex : .claudeCode, phase: .running,
+                    tool: binding.provider == "codex" ? .codex : .claudeCode, origin: .live, attachmentState: .attached, phase: .running,
                     summary: "Paseo", updatedAt: .now, jumpTarget: binding.jumpTarget))
             }
             guard let index = sessions.firstIndex(where: { $0.id == parent }),
@@ -2055,6 +2057,14 @@ final class AppModel {
             paseoSDKQuestionPromptIDs[parent] = question.prompt.id
             forwardedQuestionTargets[parent] = child
             forwardedQuestionSnapshots[parent] = sessions[index]
+        }
+        for parent in Set(previousTargets.keys).union(forwardedQuestionTargets.keys) {
+            if previousTargets[parent] != forwardedQuestionTargets[parent]
+                || previousProjections[parent]?.questionPrompt?.id != forwardedQuestionSnapshots[parent]?.questionPrompt?.id {
+                paseoErrors.removeValue(forKey: parent)
+                paseoSuccesses.removeValue(forKey: parent)
+                paseoSendingSessionIDs.remove(parent)
+            }
         }
         state = SessionState(sessions: sessions)
     }
@@ -3005,7 +3015,11 @@ final class AppModel {
             paseoErrors.removeValue(forKey: sessionID)
             Task { [weak self] in
                 guard let self else { return }
-                defer { self.paseoSendingSessionIDs.remove(sessionID) }
+                defer {
+                    if targetSessionID == sessionID || self.state.session(id: sessionID)?.questionPrompt?.id == pending.prompt.id {
+                        self.paseoSendingSessionIDs.remove(sessionID)
+                    }
+                }
                 do {
                     try await self.paseoQuestions.answer(sessionID: targetSessionID, promptID: pending.prompt.id, response: answer)
                     _ = self.bridgeServer.resolveMatchingPaseoHook(request, answer: answer)
@@ -3021,6 +3035,7 @@ final class AppModel {
                     self.refreshOverlayPlacementIfVisible()
                     self.refreshSustainedCamera()
                 } catch {
+                    guard self.state.session(id: sessionID)?.questionPrompt?.id == pending.prompt.id else { return }
                     self.paseoErrors[sessionID] = "Paseoへ回答を送信できませんでした。質問を確認して再送してください。"
                     self.lastActionMessage = self.paseoErrors[sessionID] ?? ""
                     await self.paseoQuestions.poll()
