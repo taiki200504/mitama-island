@@ -178,6 +178,53 @@ public final class BridgeServer: @unchecked Sendable {
         }
     }
 
+    /// A real hook can coexist with a provider SDK request. Only settle the exact
+    /// native tool correlation after the user's provider response succeeded.
+    public func resolveMatchingPaseoHook(_ pending: PaseoPendingRequest, resolution: PermissionResolution? = nil,
+                                        answer: QuestionPromptResponse? = nil) -> Bool {
+        queue.sync {
+            guard let expectedID = pending.toolUseID,
+                  let interaction = pendingClaudeInteractions[pending.sessionID] else { return false }
+            let payload: ClaudeHookPayload
+            switch interaction.kind {
+            case let .permission(value): payload = value
+            case let .question(value, _): payload = value
+            }
+            guard payload.sessionID == pending.sessionID, payload.toolName == pending.name,
+                  claudeToolUseID(for: payload) == expectedID, payload.toolInput == pending.input else { return false }
+            if let answer, case .question = interaction.kind {
+                resolvePendingClaudeQuestion(sessionID: pending.sessionID, response: answer)
+                return true
+            }
+            if let resolution, case .permission = interaction.kind {
+                resolvePendingClaudeInteraction(sessionID: pending.sessionID, resolution: resolution)
+                return true
+            }
+            return false
+        }
+    }
+
+    public func hasMatchingPaseoHook(_ pending: PaseoPendingRequest) -> Bool {
+        queue.sync {
+            guard let expectedID = pending.toolUseID,
+                  let interaction = pendingClaudeInteractions[pending.sessionID] else { return false }
+            let payload: ClaudeHookPayload
+            switch interaction.kind {
+            case let .permission(value): payload = value
+            case let .question(value, _): payload = value
+            }
+            return payload.sessionID == pending.sessionID && payload.toolName == pending.name
+                && claudeToolUseID(for: payload) == expectedID && payload.toolInput == pending.input
+        }
+    }
+
+    public func hasLivePendingHook(sessionID: String) -> Bool {
+        queue.sync {
+            pendingClaudeInteractions[sessionID] != nil || pendingApprovals[sessionID] != nil
+                || pendingOpenCodeInteractions[sessionID] != nil || pendingCursorInteractions[sessionID] != nil
+        }
+    }
+
     private func stopLocked() {
         pendingApprovals.removeAll()
         pendingClaudeInteractions.removeAll()

@@ -32,12 +32,17 @@ struct IslandSessionRow: View {
     var sideInset: CGFloat = 16
     var cardFields: IslandSessionCardFields = .all
     var lang: LanguageManager = .shared
+    var paseoModeLabel: String?
+    var submissionIsSending = false
+    var submissionError: String?
+    var submissionSuccess: String?
     var onApprove: ((ApprovalAction) -> Void)?
     /// Answers every queued request at once. Nil when batching makes no sense.
     var onResolveAll: ((ApprovalAction) -> Void)?
     var pendingApprovalCount: Int = 1
     var onAnswer: ((QuestionPromptResponse) -> Void)?
     var onReply: ((String) -> Void)?
+    var onExplicitJump: (() -> Void)?
     let onJump: () -> Void
     var onDismiss: (() -> Void)?
     /// Adds a rule that keeps this kind of session off the island for good.
@@ -91,6 +96,13 @@ struct IslandSessionRow: View {
                 .onTapGesture(perform: handlePrimaryTap)
                 .contextMenu { hideSessionMenuItems }
 
+            if let submissionSuccess {
+                Label(submissionSuccess, systemImage: "checkmark.circle.fill")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(V6Palette.paper.opacity(0.9))
+                    .padding(.horizontal, sideInset)
+                    .padding(.bottom, 6)
+            }
             if showsDetail {
                 rowAuxiliaryDetails(presence: presence)
 

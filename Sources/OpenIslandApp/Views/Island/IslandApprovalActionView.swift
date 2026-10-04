@@ -2,7 +2,9 @@ import SwiftUI
 import OpenIslandCore
 
 extension IslandSessionRow {
+    @ViewBuilder
     var approvalActionBody: some View {
+        if isPaseo { paseoApprovalActionBody } else {
         VStack(alignment: .leading, spacing: 8) {
             if !isPlanApproval {
                 riskBanner(PermissionRisk.of(toolName: session.permissionRequest?.toolName))
@@ -94,6 +96,94 @@ extension IslandSessionRow {
                 .stroke(SAOGrammar.Palette.danger.opacity(approvalIsElevated ? 0.7 : 0), lineWidth: 1.5)
         )
         .shadow(color: approvalIsElevated ? SAOGrammar.Palette.danger.opacity(0.28) : .clear, radius: 6)
+        }
+    }
+
+    var isPaseo: Bool { session.jumpTarget?.terminalApp == "Paseo" }
+
+    private var paseoContextHeader: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text("Paseo · \(session.tool.displayName)")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(SAOGrammar.Palette.ink.opacity(0.9))
+            Text("\(session.jumpTarget?.workspaceName ?? "") · \(session.title)")
+                .font(.system(size: 12))
+                .foregroundStyle(SAOGrammar.Palette.ink.opacity(0.8))
+                .lineLimit(2)
+            Text("現在のモード: \(paseoModeLabel ?? session.permissionRequest?.paseoContext?.currentModeLabel ?? "モード情報なし")")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(SAOGrammar.Palette.ink.opacity(0.86))
+        }
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var paseoApprovalActionBody: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("実行の許可")
+                .font(.system(size: 15, weight: .semibold))
+            paseoContextHeader
+            Text(session.permissionRequest?.toolName ?? "要求")
+                .font(.system(size: 13, weight: .semibold))
+            Text(session.permissionRequest?.summary ?? session.summary)
+                .font(.system(size: 13))
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("この要求についてだけ回答します。追加の許可はPaseoが提示した範囲に限られます。")
+                .font(.system(size: 12))
+                .foregroundStyle(SAOGrammar.Palette.ink.opacity(0.8))
+
+            if session.permissionRequest?.requiresTerminalApproval != true {
+                let context = session.permissionRequest?.paseoContext
+                if let context, !context.actions.isEmpty {
+                    ForEach(context.actions) { action in
+                        Button(paseoActionLabel(action)) {
+                            onApprove?(.paseoAction(requestID: context.requestID, actionID: action.id))
+                        }
+                        .buttonStyle(IslandActionButtonStyle(kind: action.variant == "primary" ? .primary : .secondary,
+                                                            expands: true, surface: .lightCard))
+                        if action.intent == "implement" {
+                            Text("実行時の権限は編集の自動許可（acceptEdits）へ変わります。")
+                                .font(.system(size: 12)).foregroundStyle(SAOGrammar.Palette.ink.opacity(0.8))
+                        }
+                    }
+                } else {
+                    HStack(spacing: 8) {
+                        Button("拒否") { onApprove?(.deny) }
+                            .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .lightCard))
+                        Button("今回だけ許可") { onApprove?(.allowOnce) }
+                            .buttonStyle(IslandActionButtonStyle(kind: .primary, expands: true, surface: .lightCard))
+                    }
+                }
+                ForEach(Array((session.permissionRequest?.suggestedUpdates ?? []).enumerated()), id: \.offset) { _, update in
+                    Button(update.displayLabel) { onApprove?(.allowWithUpdates([update])) }
+                        .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .lightCard))
+                }
+            } else {
+                Text("この種類の要求はPaseo側で内容を確認して回答してください。")
+                    .font(.system(size: 13))
+            }
+            if submissionIsSending {
+                HStack(spacing: 8) { ProgressView().controlSize(.small); Text("Paseoへ送信中…") }
+                    .font(.system(size: 12))
+            }
+            if let submissionError {
+                Text(submissionError).font(.system(size: 12)).foregroundStyle(SAOGrammar.Palette.danger)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Button("Paseoでこの会話を開く", action: onExplicitJump ?? onJump)
+                .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .lightCard))
+        }
+        .foregroundStyle(SAOGrammar.Palette.ink.opacity(0.92))
+        .padding(12)
+        .saoCard()
+        .disabled(submissionIsSending)
+    }
+
+    private func paseoActionLabel(_ action: PaseoPermissionAction) -> String {
+        if action.behavior == "deny" { return "拒否" }
+        if action.intent == "implement_resume" { return "元のBypassを維持して実行" }
+        if action.intent == "implement" { return "計画を実行する" }
+        return action.label
     }
 
     private var approvalIsElevated: Bool {
@@ -188,11 +278,25 @@ extension IslandSessionRow {
     }
 
     var questionActionBody: some View {
-        StructuredQuestionPromptView(
-            prompt: session.questionPrompt,
-            lang: lang,
-            onAnswer: { onAnswer?($0) }
-        )
+        VStack(alignment: .leading, spacing: 8) {
+            if isPaseo {
+                VStack(alignment: .leading, spacing: 7) {
+                    Text("質問への回答").font(.system(size: 15, weight: .semibold))
+                    paseoContextHeader
+                }
+                .foregroundStyle(SAOGrammar.Palette.ink.opacity(0.92))
+                .padding(12).saoCard()
+            }
+            StructuredQuestionPromptView(
+                prompt: session.questionPrompt, lang: lang, isPaseo: isPaseo,
+                isSending: submissionIsSending, errorMessage: submissionError,
+                onAnswer: { onAnswer?($0) }
+            )
+            if isPaseo {
+                Button("Paseoでこの会話を開く", action: onExplicitJump ?? onJump)
+                    .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .lightCard))
+            }
+        }
     }
 
     private var commandLabel: String {

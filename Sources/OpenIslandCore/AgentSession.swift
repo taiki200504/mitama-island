@@ -149,6 +149,8 @@ public struct JumpTarget: Equatable, Codable, Sendable {
     /// `"Codex.app"`, the jump uses the `codex://threads/<id>` URL scheme
     /// to open the conversation directly rather than just activating the app.
     public var codexThreadID: String?
+    public var paseoAgentID: String?
+    public var paseoServerID: String?
 
     public init(
         terminalApp: String,
@@ -160,7 +162,9 @@ public struct JumpTarget: Equatable, Codable, Sendable {
         tmuxTarget: String? = nil,
         tmuxSocketPath: String? = nil,
         warpPaneUUID: String? = nil,
-        codexThreadID: String? = nil
+        codexThreadID: String? = nil,
+        paseoAgentID: String? = nil,
+        paseoServerID: String? = nil
     ) {
         self.terminalApp = terminalApp
         self.workspaceName = workspaceName
@@ -172,6 +176,8 @@ public struct JumpTarget: Equatable, Codable, Sendable {
         self.tmuxSocketPath = tmuxSocketPath
         self.warpPaneUUID = warpPaneUUID
         self.codexThreadID = codexThreadID
+        self.paseoAgentID = paseoAgentID
+        self.paseoServerID = paseoServerID
     }
 }
 
@@ -186,6 +192,7 @@ public struct PermissionRequest: Equatable, Identifiable, Codable, Sendable {
     public var toolUseID: String?
     public var suggestedUpdates: [ClaudePermissionUpdate]
     public var requiresTerminalApproval: Bool
+    public var paseoContext: PaseoPermissionContext?
 
     public init(
         id: UUID = UUID(),
@@ -197,7 +204,8 @@ public struct PermissionRequest: Equatable, Identifiable, Codable, Sendable {
         toolName: String? = nil,
         toolUseID: String? = nil,
         suggestedUpdates: [ClaudePermissionUpdate] = [],
-        requiresTerminalApproval: Bool = false
+        requiresTerminalApproval: Bool = false,
+        paseoContext: PaseoPermissionContext? = nil
     ) {
         self.id = id
         self.title = title
@@ -209,6 +217,7 @@ public struct PermissionRequest: Equatable, Identifiable, Codable, Sendable {
         self.toolUseID = toolUseID
         self.suggestedUpdates = suggestedUpdates
         self.requiresTerminalApproval = requiresTerminalApproval
+        self.paseoContext = paseoContext
     }
 }
 
@@ -225,6 +234,9 @@ public extension AgentSession {
     /// silently downgrade it to a one-off allow, so they are not offered it.
     func permissionModeUpdate(for mode: ClaudePermissionMode) -> ClaudePermissionUpdate? {
         guard tool == .claudeCode, let request = permissionRequest else { return nil }
+        if jumpTarget?.terminalApp == "Paseo" {
+            return request.suggestedUpdates.first { $0.setsPermissionMode(mode) }
+        }
         return request.suggestedUpdates.first { $0.setsPermissionMode(mode) }
             ?? .setMode(destination: .session, mode: mode)
     }
@@ -266,17 +278,21 @@ public struct QuestionPromptItem: Equatable, Codable, Sendable {
     public var header: String
     public var options: [QuestionOption]
     public var multiSelect: Bool
+    public var answerKey: String?
+    public var responseKey: String { answerKey ?? question }
 
     public init(
         question: String,
         header: String,
         options: [QuestionOption],
-        multiSelect: Bool = false
+        multiSelect: Bool = false,
+        answerKey: String? = nil
     ) {
         self.question = question
         self.header = header
         self.options = options
         self.multiSelect = multiSelect
+        self.answerKey = answerKey
     }
 }
 
@@ -364,6 +380,7 @@ public enum ApprovalAction: Sendable {
     case deny
     case allowOnce
     case allowWithUpdates([ClaudePermissionUpdate])
+    case paseoAction(requestID: String, actionID: String)
 }
 
 public enum PermissionResolution: Equatable, Codable, Sendable {
