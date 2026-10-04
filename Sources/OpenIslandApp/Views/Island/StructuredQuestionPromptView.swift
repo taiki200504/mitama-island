@@ -7,6 +7,7 @@ struct StructuredQuestionPromptView: View {
     var isPaseo = false
     var isSending = false
     var errorMessage: String?
+    var allowsUnstructuredReply = true
     let onAnswer: (QuestionPromptResponse) -> Void
 
     @State private var selections: [String: Set<String>] = [:]
@@ -315,9 +316,9 @@ struct StructuredQuestionPromptView: View {
     }
 
     private var showsGlobalReplyField: Bool {
-        structuredQuestions.isEmpty || !structuredQuestions.contains { question in
+        allowsUnstructuredReply && (structuredQuestions.isEmpty || !structuredQuestions.contains { question in
             question.options.contains { $0.allowsFreeform }
-        }
+        })
     }
 
     private var primarySelectedAnswer: String? {

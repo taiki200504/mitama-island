@@ -615,17 +615,17 @@
 "settings.display.agentIcon.missing" = "尚未取得標誌，因此使用像素圖示。";
 
 /* Onboarding */
-"onboarding.welcome.title" = "所有正在執行的代理，匯於一處";
-"onboarding.welcome.body" = "Mitama Island 常駐於瀏海。它顯示每個代理正在做什麼，讓你無需切換視窗即可回應。";
+"onboarding.welcome.title" = "在一個島嶼中查看AI對話";
+"onboarding.welcome.body" = "查看哪個對話正在等待您。在螢幕頂部回答問題並批准單次請求。";
 "onboarding.cost.title" = "真正昂貴的是切換，而非等待";
 "onboarding.cost.body" = "尋找發問的終端比作答本身更耗時。島會把問題帶到你面前。";
 "onboarding.capabilities.title" = "從瀏海處批准、回答、跳轉";
 "onboarding.capabilities.body" = "權限請求和提問以卡片形式送達，可直接處理。點擊工作階段即可跳轉到其所在視窗。";
-"onboarding.detection.title" = "此 Mac 上的代理";
-"onboarding.detection.body" = "已找到：{agents}。之後可隨時在設定中安裝或移除掛鉤。";
+"onboarding.detection.title" = "檢查連線";
+"onboarding.detection.body" = "查看此Mac上已安裝的整合。您可以稍後新增或更改。";
 "onboarding.detection.none" = "暫無";
-"onboarding.finish.title" = "就是這些";
-"onboarding.finish.body" = "島位於螢幕頂部。啟動代理後即會出現。設定在選單列圖示或 ⌘, 中。";
+"onboarding.finish.title" = "練習在島嶼中回答";
+"onboarding.finish.body" = "此練習僅在此螢幕中進行。不會向AI傳送內容或執行命令。";
 "onboarding.skip" = "跳過";
 "onboarding.back" = "返回";
 "onboarding.next" = "下一步";
@@ -957,3 +957,23 @@
 "setup.paseo.noHooks" = "直接接收 Paseo 的問題和權限請求，無需安裝額外的鉤子。";
 "setup.paseo.retry" = "重新檢查";
 "setup.paseo.open" = "開啟 Paseo";
+
+"onboarding.openIsland" = "開啟島嶼";
+
+"onboarding.connection.none" = "尚未安裝hook整合。";
+
+"onboarding.connection.installed" = "已安裝的hook：%@";
+
+"onboarding.connection.hooksScope" = "此處檢查hook安裝狀態。Paseo連線將另行檢查。";
+
+"onboarding.connection.settings" = "開啟連線設定";
+
+"onboarding.practice.question" = "您想從哪裡開始？";
+
+"onboarding.practice.header" = "練習問題";
+
+"onboarding.practice.optionA" = "查看等待我的對話";
+
+"onboarding.practice.optionB" = "查看執行中的對話";
+
+"onboarding.practice.complete" = "練習完成。此答覆沒有打擾任何AI。";

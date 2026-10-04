@@ -124,7 +124,7 @@ extension IslandPanelView {
                     .id(notice.id)
             }
 
-            if !model.hasAnyInstalledAgent,
+            if !model.hasAnyAgentConnection,
                !model.islandListSessions.contains(where: { model.paseoQuestions.requests[$0.id] != nil }) {
                 installHooksHint
                     .padding(.horizontal, 18)
