@@ -100,7 +100,7 @@ final class AppModel {
     var selectedSessionID: String?
     let hooks = HookInstallationCoordinator()
     let overlay: OverlayUICoordinator
-    let discovery = SessionDiscoveryCoordinator()
+    let discovery: SessionDiscoveryCoordinator
     let monitoring = ProcessMonitoringCoordinator()
     let codexAppServer = CodexAppServerCoordinator()
     @ObservationIgnored var paseoQuestions: PaseoQuestionCoordinator
@@ -921,8 +921,10 @@ final class AppModel {
         },
         settings: SettingsStore = .shared,
         quietScenes: QuietSceneMonitor = QuietSceneMonitor(),
-        paseoQuestions: PaseoQuestionCoordinator = PaseoQuestionCoordinator()
+        paseoQuestions: PaseoQuestionCoordinator = PaseoQuestionCoordinator(),
+        discovery: SessionDiscoveryCoordinator = SessionDiscoveryCoordinator()
     ) {
+        self.discovery = discovery
         self.quietScenes = quietScenes
         self.paseoQuestions = paseoQuestions
         self.terminalJumpAction = terminalJumpAction
@@ -1958,10 +1960,14 @@ final class AppModel {
             return
         }
 
+        startAgentConnections { try bridgeServer.start() }
+    }
+
+    func startAgentConnections(bridgeStart: () throws -> Void) {
+        connectPaseoQuestions()
         do {
-            try bridgeServer.start()
+            try bridgeStart()
             connectBridgeObserver()
-            connectPaseoQuestions()
         } catch {
             isBridgeReady = false
             lastActionMessage = "Failed to start local bridge: \(error.localizedDescription)"
