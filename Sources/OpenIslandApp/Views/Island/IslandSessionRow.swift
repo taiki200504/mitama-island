@@ -63,6 +63,7 @@ struct IslandSessionRow: View {
     var isGestureHighlighted = false
     /// Prefer a name derived from the first prompt over the workspace name.
     var usesAutoNaming = false
+    var authoritativePaseoTitle: String? = nil
 
     @State var isHighlighted = false
     @State var detailOverride: Bool?

@@ -6,6 +6,8 @@ import Testing
 private actor ForwardedPaseoMock {
     var pending = true
     var parentIdentity = true
+    var parentProvider = "claude"
+    func useCodexParent() { parentProvider = "codex" }
     var parentOwnRequest = false
     var parentApproval = false
     func setParentApproval(_ value: Bool) { parentOwnRequest = value; parentApproval = value }
@@ -28,7 +30,7 @@ private actor ForwardedPaseoMock {
             return .object(["permissions": .array(ids.map { .object(["agentId": .string($0), "request": .object(["id": .string("q-" + $0 + requestVersion)])]) })])
         }
         guard case let .object(args) = input, case let .string(id)? = args["agentId"] else { return .null }
-        var snapshot: [String: ClaudeHookJSONValue] = ["id": .string(id), "provider": .string("claude"), "title": .string(id), "cwd": .string("/project"), "status": .string("running")]
+        var snapshot: [String: ClaudeHookJSONValue] = ["id": .string(id), "provider": .string(id == childID ? "claude" : parentProvider), "title": .string(id), "cwd": .string("/project"), "status": .string("running"), "currentModeId": .string(id == childID ? "bypassPermissions" : "full-access"), "availableModes": .array([.object(["id": .string(id == childID ? "bypassPermissions" : "full-access"), "label": .string(id == childID ? "Bypass" : "FullAccess")])])]
         if id == childID || parentIdentity { snapshot["persistence"] = .object(["sessionId": .string(id + "-native"), "nativeHandle": .string(id + "-native")]) }
         if id == childID { snapshot["labels"] = .object(["paseo.parent-agent-id": .string("parent")]) }
         let hasQuestion = id == childID ? pending : parentOwnRequest
@@ -122,6 +124,34 @@ private actor ForwardedPaseoMock {
         while model.paseoSendingSessionIDs.contains("parent-native"), ContinuousClock.now < deadline { await Task.yield() }
         #expect(await mock.sends == ["child"])
         #expect(coordinator.requests["child-native"] == nil)
+    }
+
+    @Test func nativeParentTitleAndModeWinOverInjectedPromptAndChildMode() async throws {
+        let mock = ForwardedPaseoMock()
+        await mock.useCodexParent()
+        let coordinator = PaseoQuestionCoordinator(call: { await mock.call($0, $1) })
+        let model = model(coordinator)
+        model.connectPaseoQuestions(); coordinator.stop()
+        await coordinator.poll()
+        var parent = try #require(model.state.session(id: "parent-native"))
+        parent.title = "# AGENTS.md instructions"
+        parent.codexMetadata = CodexSessionMetadata(initialUserPrompt: "# AGENTS.md instructions <INSTRUCTIONS>")
+        let row = IslandSessionRow(session: parent, referenceDate: .now, onJump: {},
+            usesAutoNaming: true, authoritativePaseoTitle: model.authoritativePaseoTitle(sessionID: parent.id))
+        #expect(row.summaryHeadlineText == "parent")
+        #expect(model.authoritativePaseoTitle(sessionID: "unknown") == nil)
+        let presentation = IslandSDKPresentation(sessionID: parent.id, forwardedSessionID: "child-native",
+            modeLabels: model.paseoModeLabels, sendingSessionIDs: [], errors: [:], successes: [:])
+        #expect(presentation.modeLabel == "FullAccess")
+        #expect(model.paseoModeLabels["child-native"] == "Bypass")
+        #expect(parent.tool == .codex)
+        #expect(coordinator.requests["child-native"]?.binding.provider == "claude")
+        let local = IslandSessionRow(session: parent, referenceDate: .now, onJump: {}, usesAutoNaming: true)
+        #expect(local.summaryHeadlineText == SessionAutoName.derive(from: parent.initialUserPromptText))
+        model.answerQuestion(for: "parent-native", answer: .init(answer: "Yes"), promptID: parent.questionPrompt?.id)
+        let deadline = ContinuousClock.now.advanced(by: .seconds(2))
+        while model.paseoSendingSessionIDs.contains("parent-native"), ContinuousClock.now < deadline { await Task.yield() }
+        #expect(await mock.sends == ["child"])
     }
 
     @Test func childQuestionProjectsAndAnswersChildOnly() async throws {

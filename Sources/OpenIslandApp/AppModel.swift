@@ -2039,6 +2039,12 @@ final class AppModel {
         paseoQuestions.start()
     }
 
+    func authoritativePaseoTitle(sessionID: String) -> String? {
+        guard let binding = paseoQuestions.knownBinding(sessionID: sessionID), binding.sessionID == sessionID else { return nil }
+        let title = binding.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        return title.isEmpty || title == "Paseo" ? nil : title
+    }
+
     func forwardedPaseoQuestionSource(sessionID: String) -> (childSessionID: String, title: String)? {
         guard let child = forwardedQuestionTargets[sessionID],
               paseoQuestions.parentSessionID(for: child) == sessionID,
@@ -2088,6 +2094,7 @@ final class AppModel {
                 sessions[index].title = title
             }
             guard !sessions[index].phase.requiresAttention else { continue }
+            paseoModeLabels[parent] = binding.currentModeLabel ?? "モード情報なし"
             forwardedQuestionOriginals[parent] = sessions[index]
             sessions[index].phase = .waitingForAnswer
             sessions[index].summary = "子からの質問: \(pending.binding.title)"

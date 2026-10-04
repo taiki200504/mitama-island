@@ -288,7 +288,8 @@ extension IslandPanelView {
                     agentIconStyle: model.agentIconStyle,
                     shortcutHint: model.shortcutHints.isModifierHeld ? model.settings.shortcuts : nil,
                     isSwitcherHighlighted: model.switcher.highlightedID == session.id,
-                    usesAutoNaming: model.settings.display.sessionAutoNaming
+                    usesAutoNaming: model.settings.display.sessionAutoNaming,
+                    authoritativePaseoTitle: model.authoritativePaseoTitle(sessionID: session.id)
                 )
                 .id(notificationCardIdentity(for: session))
 
@@ -349,7 +350,8 @@ extension IslandPanelView {
                     shortcutHint: model.shortcutHints.isModifierHeld ? model.settings.shortcuts : nil,
                     isSwitcherHighlighted: model.switcher.highlightedID == session.id,
                     isGestureHighlighted: gestureHighlightSessionID == session.id,
-                    usesAutoNaming: model.settings.display.sessionAutoNaming
+                    usesAutoNaming: model.settings.display.sessionAutoNaming,
+                    authoritativePaseoTitle: model.authoritativePaseoTitle(sessionID: session.id)
                             )
                         }
                     }
@@ -437,7 +439,8 @@ extension IslandPanelView {
                     shortcutHint: model.shortcutHints.isModifierHeld ? model.settings.shortcuts : nil,
                     isSwitcherHighlighted: model.switcher.highlightedID == session.id,
                     isGestureHighlighted: gestureHighlightSessionID == session.id,
-                    usesAutoNaming: model.settings.display.sessionAutoNaming
+                    usesAutoNaming: model.settings.display.sessionAutoNaming,
+                    authoritativePaseoTitle: model.authoritativePaseoTitle(sessionID: session.id)
                     )
                 }
             }

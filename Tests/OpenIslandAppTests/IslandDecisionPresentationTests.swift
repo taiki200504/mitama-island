@@ -83,11 +83,11 @@ struct IslandDecisionPresentationTests {
         #expect(blank.questionConversationActionTitle == own.questionConversationActionTitle)
     }
 
-    @Test func forwardedRequestShowsSourceModeAndBothSubmissionOwnershipPaths() {
+    @Test func forwardedRequestShowsParentModeAndBothSubmissionOwnershipPaths() {
         let child = IslandSDKPresentation(sessionID: "parent", forwardedSessionID: "child",
             modeLabels: ["parent": "Plan", "child": "Full access"], sendingSessionIDs: ["child"],
             errors: ["child": "Retry child"], successes: ["child": "Child answered"])
-        #expect(child.modeLabel == "Full access")
+        #expect(child.modeLabel == "Plan")
         #expect(child.isSending)
         #expect(child.error == "Retry child")
         #expect(child.success == "Child answered")

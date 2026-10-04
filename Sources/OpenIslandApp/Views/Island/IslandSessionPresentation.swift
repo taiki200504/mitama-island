@@ -81,7 +81,7 @@ struct IslandSDKPresentation {
     init(sessionID: String, forwardedSessionID: String?, modeLabels: [String: String],
          sendingSessionIDs: Set<String>, errors: [String: String], successes: [String: String]) {
         let sourceID = forwardedSessionID ?? sessionID
-        modeLabel = modeLabels[sourceID] ?? modeLabels[sessionID]
+        modeLabel = modeLabels[sessionID]
         isSending = sendingSessionIDs.contains(sourceID) || sendingSessionIDs.contains(sessionID)
         let responseID = sendingSessionIDs.contains(sessionID) || errors[sessionID] != nil || successes[sessionID] != nil
             ? sessionID : sourceID
