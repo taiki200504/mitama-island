@@ -27,12 +27,13 @@ struct PaseoDelegationTests {
         }, providerAliases: [:])
     }
 
-    @Test @MainActor func confirmedChildIsHiddenButQuestionRetainedInternally() async throws {
+    @Test @MainActor func parentWithoutNativeIdentityRequiresVisibleHandoff() async throws {
         let coordinator = try coordinator(parent: " parent ", parentSnapshot: #"{"id":"parent","status":"running","archivedAt":null}"#)
         await coordinator.poll()
-        #expect(coordinator.delegatedSessionIDs == ["native-child"])
+        #expect(coordinator.delegatedSessionIDs.isEmpty)
+        #expect(coordinator.parentSessionID(for: "native-child") == nil)
         #expect(coordinator.questions["native-child"] != nil)
-        #expect(!coordinator.needsParentHandoff(sessionID: "native-child"))
+        #expect(coordinator.needsParentHandoff(sessionID: "native-child"))
     }
 
     @Test @MainActor func mainQuestionRemainsVisible() async throws {
