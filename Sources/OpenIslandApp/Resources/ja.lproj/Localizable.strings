@@ -978,3 +978,7 @@
 "onboarding.practice.optionB" = "実行中の会話を見る";
 
 "onboarding.practice.complete" = "練習完了。AIには送っていないので、ひと安心。";
+
+"decision.paseo.parentPermissions" = "Paseoの継続的な許可は、親の会話で確認してください。";
+"decision.paseo.forwardedQuestion" = "子からの質問: %@";
+"decision.paseo.forwardedOpen" = "この質問の会話をPaseoで開く";

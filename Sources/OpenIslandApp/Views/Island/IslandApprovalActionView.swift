@@ -113,6 +113,7 @@ extension IslandSessionRow {
                 .foregroundStyle(V6Palette.paper.opacity(0.8))
 
             if session.permissionRequest?.requiresTerminalApproval != true {
+                Group {
                 let context = session.permissionRequest?.paseoContext
                 if let context, !context.actions.isEmpty {
                     ForEach(context.actions) { action in
@@ -138,6 +139,8 @@ extension IslandSessionRow {
                     Button(update.displayLabel) { onApprove?(.allowWithUpdates([update])) }
                         .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .decisionCard))
                 }
+                }
+                .disabled(submissionIsSending)
             } else {
                 Text(lang.t("decision.paseo.unsupported"))
                     .font(.islandDecision(size: 13))
@@ -155,7 +158,6 @@ extension IslandSessionRow {
         }
         .foregroundStyle(V6Palette.paper.opacity(0.92))
         .islandDecisionCard()
-        .disabled(submissionIsSending)
     }
 
     private func paseoActionLabel(_ action: PaseoPermissionAction) -> String {
@@ -185,16 +187,28 @@ extension IslandSessionRow {
 
     var questionActionBody: some View {
         VStack(alignment: .leading, spacing: 8) {
+            if let source = forwardedQuestionSourceTitle?.trimmedForNotificationCard, !source.isEmpty {
+                Text(lang.t("decision.paseo.forwardedQuestion", source))
+                    .font(.islandDecision(size: 12, weight: .medium))
+                    .foregroundStyle(V6Palette.paper.opacity(0.82))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             StructuredQuestionPromptView(
                 prompt: session.questionPrompt, lang: lang, isPaseo: isPaseo,
                 isSending: submissionIsSending, errorMessage: submissionError,
                 onAnswer: { onAnswer?($0) }
             )
             if isPaseo {
-                Button(lang.t("decision.paseo.open"), action: onExplicitJump ?? onJump)
+                Button(questionConversationActionTitle, action: onExplicitJump ?? onJump)
                     .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .decisionCard))
             }
         }
+    }
+
+    var questionConversationActionTitle: String {
+        let forwarded = forwardedQuestionSourceTitle?.trimmedForNotificationCard.isEmpty == false
+        return lang.t(forwarded ? "decision.paseo.forwardedOpen" : "decision.paseo.open")
     }
 
     private var commandLabel: String {

@@ -36,6 +36,7 @@ struct IslandSessionRow: View {
     var submissionIsSending = false
     var submissionError: String?
     var submissionSuccess: String?
+    var forwardedQuestionSourceTitle: String?
     var onApprove: ((ApprovalAction) -> Void)?
     /// Answers every queued request at once. Nil when batching makes no sense.
     var onResolveAll: ((ApprovalAction) -> Void)?
@@ -226,6 +227,9 @@ struct IslandSessionRow: View {
             ) {
                 onHide?(SilenceRule(field: .terminalApp, match: .equals, pattern: app))
             }
+        }
+        if isPaseo {
+            Text(lang.t("decision.paseo.parentPermissions"))
         }
         if !isPaseo, onAutoApprove != nil, let directory = session.jumpTarget?.workingDirectory, !directory.isEmpty {
             Button(

@@ -977,3 +977,7 @@
 "onboarding.practice.optionB" = "查看執行中的對話";
 
 "onboarding.practice.complete" = "練習完成。此答覆沒有打擾任何AI。";
+
+"decision.paseo.parentPermissions" = "請在父對話中檢查Paseo的持續許可。";
+"decision.paseo.forwardedQuestion" = "來自子對話的問題：%@";
+"decision.paseo.forwardedOpen" = "在Paseo中開啟此問題的對話";

@@ -69,4 +69,18 @@ struct IslandDecisionPresentationTests {
         #expect(!legacyFreeform.requiresPaseoQuestionHandoff)
     }
 
+    @Test func forwardedQuestionKeepsParentIdentityAndNamesTheChildJump() {
+        let parent = session("parent", phase: .waitingForAnswer)
+        let own = IslandSessionRow(session: parent, referenceDate: .now, onJump: {})
+        let child = IslandSessionRow(session: parent, referenceDate: .now,
+            forwardedQuestionSourceTitle: "Child conversation", onJump: {})
+        #expect(child.summaryHeadlineText == own.summaryHeadlineText)
+        #expect(child.session.jumpTarget?.workspaceName == own.session.jumpTarget?.workspaceName)
+        #expect(child.questionConversationActionTitle == LanguageManager.shared.t("decision.paseo.forwardedOpen"))
+        #expect(own.questionConversationActionTitle == LanguageManager.shared.t("decision.paseo.open"))
+        let blank = IslandSessionRow(session: parent, referenceDate: .now,
+            forwardedQuestionSourceTitle: "  ", onJump: {})
+        #expect(blank.questionConversationActionTitle == own.questionConversationActionTitle)
+    }
+
 }

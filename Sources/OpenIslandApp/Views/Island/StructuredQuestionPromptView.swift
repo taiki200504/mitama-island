@@ -81,7 +81,6 @@ struct StructuredQuestionPromptView: View {
                 .transition(IslandTransition.resolved(IslandTransition.modal))
             }
         }
-        .disabled(isSending)
         .overlay(alignment: .bottomTrailing) {
             if isSending { ProgressView().controlSize(.small).padding(10) }
         }

@@ -978,3 +978,7 @@
 "onboarding.practice.optionB" = "See running conversations";
 
 "onboarding.practice.complete" = "Practice complete. No AI was interrupted in the making of this answer.";
+
+"decision.paseo.parentPermissions" = "Review persistent Paseo permissions in the parent conversation.";
+"decision.paseo.forwardedQuestion" = "Question from a child conversation: %@";
+"decision.paseo.forwardedOpen" = "Open this question’s conversation in Paseo";
