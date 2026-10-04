@@ -49,7 +49,8 @@ final class OverlayUICoordinator {
 
     @ObservationIgnored
     private var sneakPeekExpiryTask: Task<Void, Never>?
-    var sneakPeekExpiryWait: @Sendable (ContinuousClock.Instant) async throws -> Void = { deadline in
+    @ObservationIgnored var sneakPeekNow: () -> Date = { .now }
+    @ObservationIgnored var sneakPeekExpiryWait: @Sendable (ContinuousClock.Instant) async throws -> Void = { deadline in
         try await Task.sleep(until: deadline, clock: .continuous)
     }
 
@@ -332,7 +333,7 @@ final class OverlayUICoordinator {
         guard notchStatus == .closed else { return }
         guard !(appModel?.quietScenes.shouldStayQuiet(under: settings.behaviour) ?? false) else { return }
 
-        let now = Date.now
+        let now = sneakPeekNow()
         guard !IslandSneakPeekPolicy.expired(candidate, now: now) else { return }
 
         let showing = sneakPeek
@@ -405,7 +406,7 @@ final class OverlayUICoordinator {
                 // Refreshed here so it gets its own full duration now that
                 // it's actually about to show, not whatever's left of the
                 // original window.
-                let refreshedUntil = Date.now.addingTimeInterval(self.sneakPeekDurationProvider(pending.kind))
+                let refreshedUntil = self.sneakPeekNow().addingTimeInterval(self.sneakPeekDurationProvider(pending.kind))
                 let refreshed = IslandSneakPeek(
                     kind: pending.kind,
                     text: pending.text,

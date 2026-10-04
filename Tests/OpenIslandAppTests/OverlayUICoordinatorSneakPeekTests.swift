@@ -58,26 +58,33 @@ struct OverlayUICoordinatorSneakPeekTests {
         #expect(coordinator.sneakPeek?.kind == .hudGauge)
     }
 
-    @Test("A pending timerDone re-appears with a freshly computed until, not the stale one it lost with", .enabled(if: !TestEnvironment.isCI, "wall-clock expiry; CI runners stall for seconds"))
+    @Test("A pending timerDone re-appears with a freshly computed until, not the stale one it lost with")
     func pendingTimerDoneGetsAFreshUntil() async throws {
         let coordinator = OverlayUICoordinator()
+        let gate = PeekExpiryGate()
+        coordinator.sneakPeekExpiryWait = { deadline in await gate.wait(deadline) }
         coordinator.sneakPeekDurationProvider = { kind in kind == .timerDone ? 2.0 : 0.2 }
-        let now = Date.now
-
-        // timerDone arrives first with a long window...
-        coordinator.presentSneakPeek(peek(.timerDone, text: "done", until: now.addingTimeInterval(30)))
-        // ...then a higher kind interrupts it almost immediately.
+        var now = Date(timeIntervalSince1970: 1_000_000_000)
+        coordinator.sneakPeekNow = { now }
+        let originalUntil = now.addingTimeInterval(30)
+        coordinator.presentSneakPeek(peek(.timerDone, text: "done", until: originalUntil))
         coordinator.presentSneakPeek(peek(.hudGauge, until: now.addingTimeInterval(0.2)))
         #expect(coordinator.sneakPeek?.kind == .hudGauge)
+        while !(await gate.isWaiting()) { await Task.yield() }
 
+        // The original timer window is now stale. Releasing the blocker
+        // must give the queued timer exactly its own duration from this now.
+        now = now.addingTimeInterval(40)
+        let expectedUntil = now.addingTimeInterval(2)
+        await gate.expire()
         try await poll { coordinator.sneakPeek?.kind == .timerDone }
-
-        #expect(coordinator.sneakPeek?.kind == .timerDone)
-        let remaining = coordinator.sneakPeek?.until.timeIntervalSinceNow ?? -1
-        // Close to its own fresh 2s window, not the 30s it originally lost
-        // with, and not already expired either.
-        #expect(remaining > 0.5)
-        #expect(remaining < 5)
+        #expect(coordinator.sneakPeek?.until == expectedUntil)
+        #expect(coordinator.sneakPeek?.until != originalUntil)
+        #expect(coordinator.sneakPeek?.text == "done")
+        while !(await gate.isWaiting()) { await Task.yield() }
+        await gate.expire()
+        try await poll { coordinator.sneakPeek == nil }
+        #expect(coordinator.sneakPeek == nil)
     }
 
     @Test("A pending timerDone that never gets bumped again simply expires on its own", .enabled(if: !TestEnvironment.isCI, "wall-clock expiry; CI runners stall for seconds"))
@@ -168,6 +175,7 @@ private actor PeekExpiryGate {
     private var captured: [ContinuousClock.Instant] = []
     private var continuation: CheckedContinuation<Void, Never>?
     func wait(_ deadline: ContinuousClock.Instant) async {
+        guard !Task.isCancelled else { return }
         captured.append(deadline)
         await withCheckedContinuation { continuation = $0 }
     }
