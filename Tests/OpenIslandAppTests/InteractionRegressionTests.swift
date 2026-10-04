@@ -8,7 +8,7 @@ import OpenIslandCore
 struct InteractionRegressionTests {
     private func makeModel(jump: @escaping @Sendable (JumpTarget) throws -> String = { _ in "jumped" }) -> AppModel {
         let suite = UserDefaults(suiteName: "interaction-\(UUID().uuidString)")!
-        return AppModel(terminalJumpAction: jump, settings: SettingsStore(store: PreferenceStore(suite: suite)))
+        return isolatedAppModel(terminalJumpAction: jump, settings: SettingsStore(store: PreferenceStore(suite: suite)))
     }
 
     private func session(_ id: String) -> AgentSession {

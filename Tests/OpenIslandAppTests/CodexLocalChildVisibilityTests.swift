@@ -15,7 +15,7 @@ import OpenIslandCore
         return session
     }
     private func model() -> AppModel {
-        AppModel(paseoQuestions: PaseoQuestionCoordinator(call: { _, _ in .object(["permissions": .array([])]) }))
+        isolatedAppModel(paseoQuestions: PaseoQuestionCoordinator(call: { _, _ in .object(["permissions": .array([])]) }))
     }
 
     @Test func runningCompletedAndPermissionChildrenLeaveOneCommonQueue() {
