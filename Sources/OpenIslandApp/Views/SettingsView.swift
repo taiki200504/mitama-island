@@ -292,13 +292,15 @@ struct SetupSettingsPane: View {
 
     var body: some View {
         Form {
-            if !model.hasAnyInstalledAgent {
+            if !model.hasAnyAgentConnection {
                 emptyStateBanner
             }
 
             if !model.sessionsPredatingHookInstall.isEmpty {
                 restartSessionsBanner
             }
+
+            paseoConnectionSection
 
             claudeConfigDirectorySection
 
@@ -608,6 +610,30 @@ struct SetupSettingsPane: View {
             Text(lang.t("setup.claudeConfigDir.footer"))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
+        }
+    }
+
+    private var paseoConnectionSection: some View {
+        Section("Paseo") {
+            LabeledContent(lang.t("setup.paseo.connection")) {
+                Text(lang.t("setup.paseo.state.\(model.paseoConnectionState.rawValue)"))
+                    .foregroundStyle(model.paseoConnectionState == .connected ? Color.green : Color.secondary)
+            }
+            Text(lang.t("setup.paseo.noHooks"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            HStack {
+                Button(lang.t("setup.paseo.retry")) {
+                    Task { await model.paseoQuestions.poll() }
+                }
+                .accessibilityIdentifier("settings.paseo.retry")
+                Button(lang.t("setup.paseo.open")) {
+                    guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "sh.paseo.desktop") else { return }
+                    NSWorkspace.shared.open(url)
+                }
+                .disabled(NSWorkspace.shared.urlForApplication(withBundleIdentifier: "sh.paseo.desktop") == nil)
+                .accessibilityIdentifier("settings.paseo.open")
+            }
         }
     }
 

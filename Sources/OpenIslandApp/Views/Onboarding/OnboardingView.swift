@@ -50,7 +50,7 @@ struct OnboardingView: View {
     private var detailText: String {
         let body = lang.t(flow.step.bodyKey)
         guard flow.step == .detection else { return body }
-        let found = model.installedAgentDisplayNames
+        let found = model.connectedAgentDisplayNames
         return body.replacingOccurrences(
             of: "{agents}",
             with: found.isEmpty ? lang.t("onboarding.detection.none") : found.joined(separator: ", ")

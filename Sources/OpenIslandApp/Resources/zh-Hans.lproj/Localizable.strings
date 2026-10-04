@@ -949,3 +949,12 @@
 "decision.other" = "其他";
 
 "decision.paseo.questionUnsupported" = "Island暂不支持回答此类问题。请在Paseo中查看。";
+// Paseo native connection
+"setup.paseo.connection" = "连接";
+"setup.paseo.state.checking" = "正在检查";
+"setup.paseo.state.connected" = "已连接";
+"setup.paseo.state.unavailable" = "无法连接。请打开 Paseo 后重试。";
+"setup.paseo.state.stopped" = "连接检查已停止";
+"setup.paseo.noHooks" = "直接接收 Paseo 的问题和权限请求，无需安装额外的钩子。";
+"setup.paseo.retry" = "重新检查";
+"setup.paseo.open" = "打开 Paseo";

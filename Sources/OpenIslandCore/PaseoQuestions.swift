@@ -156,6 +156,10 @@ public struct PaseoPendingRequest: Equatable, Sendable {
     }
 }
 
+public enum PaseoConnectionState: String, Equatable, Sendable {
+    case checking, connected, unavailable, stopped
+}
+
 @MainActor
 public final class PaseoQuestionCoordinator {
     public typealias Call = @Sendable (String, ClaudeHookJSONValue) async throws -> ClaudeHookJSONValue
@@ -163,6 +167,9 @@ public final class PaseoQuestionCoordinator {
     private let providerAliases: [String: String]
     private var task: Task<Void, Never>?
     private var polling = false
+    private var lifecycleGeneration: UInt64 = 0
+    public private(set) var healthState: PaseoConnectionState = .checking
+    public var onHealthChange: ((PaseoConnectionState) -> Void)?
     private var sending: Set<String> = []
     private var bindings: [String: PaseoAgentBinding] = [:]
     public private(set) var delegatedSessionIDs: Set<String> = []
@@ -180,6 +187,8 @@ public final class PaseoQuestionCoordinator {
     deinit { task?.cancel() }
     public func start() {
         guard task == nil else { return }
+        lifecycleGeneration &+= 1
+        updateHealth(.checking)
         task = Task { [weak self] in
             while !Task.isCancelled {
                 await self?.poll()
@@ -187,15 +196,32 @@ public final class PaseoQuestionCoordinator {
             }
         }
     }
-    public func stop() { task?.cancel(); task = nil }
+    public func stop() {
+        lifecycleGeneration &+= 1
+        task?.cancel()
+        task = nil
+        updateHealth(.stopped)
+    }
+
+    private func updateHealth(_ state: PaseoConnectionState) {
+        guard healthState != state else { return }
+        healthState = state
+        onHealthChange?(state)
+    }
 
     public func poll() async {
         guard !polling else { return }
         polling = true
+        let generation = lifecycleGeneration
+        var verifiedContact = false
+        if healthState == .stopped { updateHealth(.checking) }
         defer { polling = false }
         do {
             let result = try await call("list_pending_permissions", .object([:]))
+            guard generation == lifecycleGeneration else { return }
             guard let permissions = result.paseoObject?["permissions"]?.paseoArray else { throw PaseoQuestionError.invalidResponse }
+            verifiedContact = true
+            updateHealth(.connected)
             let agentIDs = Set(permissions.compactMap { value -> String? in
                 guard let object = value.paseoObject, object["request"]?.paseoObject?["id"]?.paseoString != nil,
                       let id = object["agentId"]?.paseoString, !id.isEmpty else { return nil }
@@ -233,13 +259,17 @@ public final class PaseoQuestionCoordinator {
                 found[binding.sessionID] = pending
             }
             try Task.checkCancellation()
+            guard generation == lifecycleGeneration else { return }
             let previous = requests
             requests = found
             if previous != found {
                 onRequestsChange?(found, previous)
                 onChange?(questions, previous.compactMapValues(\.question))
             }
-        } catch { /* Daemon unavailable: retain actionable cards and retry quietly. */ }
+        } catch {
+            if generation == lifecycleGeneration, !verifiedContact { updateHealth(.unavailable) }
+            // An unavailable daemon never erases retained actionable cards.
+        }
     }
 
     /// Used only for an explicit jump lacking IDs, never as a polling scan.

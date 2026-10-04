@@ -949,3 +949,12 @@
 "decision.other" = "その他";
 
 "decision.paseo.questionUnsupported" = "この質問形式はIslandでまだ回答できません。Paseoで確認してください。";
+// Paseo native connection
+"setup.paseo.connection" = "接続";
+"setup.paseo.state.checking" = "確認中";
+"setup.paseo.state.connected" = "接続済み";
+"setup.paseo.state.unavailable" = "接続できません。Paseoを開いて再確認してください。";
+"setup.paseo.state.stopped" = "接続確認を停止中";
+"setup.paseo.noHooks" = "Paseoの質問と許可は直接受け取ります。追加のフック導入は不要です。";
+"setup.paseo.retry" = "再確認";
+"setup.paseo.open" = "Paseoを開く";

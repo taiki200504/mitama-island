@@ -111,6 +111,7 @@ final class AppModel {
     @ObservationIgnored private var paseoLookedUpSessionIDs: Set<String> = []
     @ObservationIgnored private var paseoDeferredEvents: [String: AgentEvent] = [:]
     @ObservationIgnored private var paseoBindingLookupTask: Task<Void, Never>?
+    var paseoConnectionState: PaseoConnectionState = .checking
     var paseoSendingSessionIDs: Set<String> = []
     var paseoErrors: [String: String] = [:]
     var paseoSuccesses: [String: String] = [:]
@@ -213,6 +214,14 @@ final class AppModel {
             || hooks.geminiHooksInstalled
             || hooks.kimiHooksInstalled
     }
+    var hasAnyAgentConnection: Bool {
+        hasAnyInstalledAgent || paseoConnectionState == .connected
+    }
+
+    var connectedAgentDisplayNames: [String] {
+        installedAgentDisplayNames + (paseoConnectionState == .connected ? ["Paseo"] : [])
+    }
+
     func refreshCodexHookStatus() { hooks.refreshCodexHookStatus() }
     func refreshClaudeHookStatus() { hooks.refreshClaudeHookStatus() }
     func refreshOpenCodePluginStatus() { hooks.refreshOpenCodePluginStatus() }
@@ -1930,6 +1939,10 @@ final class AppModel {
     }
 
     func connectPaseoQuestions() {
+        paseoConnectionState = paseoQuestions.healthState
+        paseoQuestions.onHealthChange = { [weak self] state in
+            self?.paseoConnectionState = state
+        }
         paseoQuestions.onDelegationChange = { [weak self] ids in
             guard let self else { return }
             self.paseoDelegatedSessionIDs = ids

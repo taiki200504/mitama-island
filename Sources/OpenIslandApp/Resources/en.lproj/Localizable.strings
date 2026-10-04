@@ -949,3 +949,12 @@
 "decision.other" = "Other";
 
 "decision.paseo.questionUnsupported" = "This question format cannot be answered in Island yet. Please review it in Paseo.";
+// Paseo native connection
+"setup.paseo.connection" = "Connection";
+"setup.paseo.state.checking" = "Checking";
+"setup.paseo.state.connected" = "Connected";
+"setup.paseo.state.unavailable" = "Unavailable. Open Paseo and check again.";
+"setup.paseo.state.stopped" = "Connection checks stopped";
+"setup.paseo.noHooks" = "Questions and permissions arrive directly from Paseo. No additional hooks are needed.";
+"setup.paseo.retry" = "Check again";
+"setup.paseo.open" = "Open Paseo";

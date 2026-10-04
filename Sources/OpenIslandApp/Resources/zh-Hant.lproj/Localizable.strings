@@ -948,3 +948,12 @@
 "decision.other" = "其他";
 
 "decision.paseo.questionUnsupported" = "Island暫不支援回答此類問題。請在Paseo中查看。";
+// Paseo native connection
+"setup.paseo.connection" = "連線";
+"setup.paseo.state.checking" = "正在檢查";
+"setup.paseo.state.connected" = "已連線";
+"setup.paseo.state.unavailable" = "無法連線。請開啟 Paseo 後重試。";
+"setup.paseo.state.stopped" = "連線檢查已停止";
+"setup.paseo.noHooks" = "直接接收 Paseo 的問題和權限請求，無需安裝額外的鉤子。";
+"setup.paseo.retry" = "重新檢查";
+"setup.paseo.open" = "開啟 Paseo";
