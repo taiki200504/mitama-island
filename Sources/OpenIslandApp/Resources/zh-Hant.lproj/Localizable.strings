@@ -981,3 +981,5 @@
 "decision.paseo.parentPermissions" = "請在父對話中檢查Paseo的持續許可。";
 "decision.paseo.forwardedQuestion" = "來自子對話的問題：%@";
 "decision.paseo.forwardedOpen" = "在Paseo中開啟此問題的對話";
+
+"nowPlaying.unavailable" = "目前環境無法取得正在播放的資訊。";

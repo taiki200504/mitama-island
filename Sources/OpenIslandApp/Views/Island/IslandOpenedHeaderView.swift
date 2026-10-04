@@ -70,7 +70,9 @@ extension IslandPanelView {
                 }
             }
 
-            if model.settings.nowPlaying.enabled {
+            if model.settings.nowPlaying.enabled && NowPlayingPresentation.showsEntry(
+                isAvailable: model.nowPlaying.isAvailable, hasState: model.nowPlaying.state != nil
+            ) {
                 headerIconButton(
                     systemName: "music.note",
                     tint: model.nowPlaying.state?.isPlaying == true

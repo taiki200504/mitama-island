@@ -982,3 +982,5 @@
 "decision.paseo.parentPermissions" = "Review persistent Paseo permissions in the parent conversation.";
 "decision.paseo.forwardedQuestion" = "Question from a child conversation: %@";
 "decision.paseo.forwardedOpen" = "Open this question’s conversation in Paseo";
+
+"nowPlaying.unavailable" = "Now-playing information is unavailable in this environment.";

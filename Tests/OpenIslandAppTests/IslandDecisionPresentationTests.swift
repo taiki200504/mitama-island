@@ -165,4 +165,12 @@ struct IslandDecisionPresentationTests {
         #expect(specific.prompt?.questions.map(\.question) == ["Which project?", "Which branch?"])
     }
 
+    @Test func unavailableMediaBackendHasNoDeadEntryButDebugPlaybackRemainsReachable() {
+        #expect(!NowPlayingPresentation.showsEntry(isAvailable: false, hasState: false))
+        #expect(NowPlayingPresentation.showsEntry(isAvailable: true, hasState: false))
+        #expect(NowPlayingPresentation.showsEntry(isAvailable: false, hasState: true))
+        #expect(NowPlayingPresentation.emptyMessageKey(isAvailable: false) !=
+                NowPlayingPresentation.emptyMessageKey(isAvailable: true))
+    }
+
 }

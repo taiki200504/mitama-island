@@ -982,3 +982,5 @@
 "decision.paseo.parentPermissions" = "请在父对话中检查Paseo的持续许可。";
 "decision.paseo.forwardedQuestion" = "来自子对话的问题：%@";
 "decision.paseo.forwardedOpen" = "在Paseo中打开此问题的对话";
+
+"nowPlaying.unavailable" = "当前环境无法获取正在播放的信息。";

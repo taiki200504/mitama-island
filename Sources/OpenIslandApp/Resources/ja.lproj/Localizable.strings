@@ -982,3 +982,5 @@
 "decision.paseo.parentPermissions" = "Paseoの継続的な許可は、親の会話で確認してください。";
 "decision.paseo.forwardedQuestion" = "子からの質問: %@";
 "decision.paseo.forwardedOpen" = "この質問の会話をPaseoで開く";
+
+"nowPlaying.unavailable" = "この環境では再生中の情報を取得できません。";
