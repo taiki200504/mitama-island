@@ -6,6 +6,16 @@ private func paseoFixture(_ text: String) throws -> ClaudeHookJSONValue {
     try JSONDecoder().decode(ClaudeHookJSONValue.self, from: Data(text.utf8))
 }
 
+private func paseoTestObject(_ value: ClaudeHookJSONValue) -> [String: ClaudeHookJSONValue]? {
+    guard case let .object(object) = value else { return nil }
+    return object
+}
+
+private func paseoTestArray(_ value: ClaudeHookJSONValue?) -> [ClaudeHookJSONValue]? {
+    guard case let .array(array)? = value else { return nil }
+    return array
+}
+
 private let paseoSnapshot = """
 {"id":"agent-1","provider":"claude","cwd":"/project","title":"Test Paseo","status":"running",
  "persistence":{"provider":"claude","sessionId":"native-session","nativeHandle":"native-session"},
@@ -68,9 +78,9 @@ struct PaseoQuestionTests {
     }
 
     @Test @MainActor func prioritizesQuestionsAndKeepsExactRequestValidation() throws {
-        let snapshot = try #require(try paseoFixture(paseoSnapshot).paseoObject)
+        let snapshot = try #require(paseoTestObject(try paseoFixture(paseoSnapshot)))
         let binding = try #require(PaseoQuestionCoordinator.binding(snapshot: snapshot, agentID: "agent-1"))
-        let question = try #require(snapshot["pendingPermissions"]?.paseoArray?.first)
+        let question = try #require(paseoTestArray(snapshot["pendingPermissions"])?.first)
         let tool = try paseoFixture(#"{"id":"tool-1","provider":"claude","name":"Bash","kind":"tool","input":{}}"#)
         var reordered = snapshot
         reordered["pendingPermissions"] = .array([tool, question])
@@ -101,7 +111,7 @@ struct PaseoQuestionTests {
     }
 
     @Test @MainActor func unsupportedQuestionsPrecedeToolsButFollowValidQuestions() throws {
-        let snapshot = try #require(try paseoFixture(paseoSnapshot).paseoObject)
+        let snapshot = try #require(paseoTestObject(try paseoFixture(paseoSnapshot)))
         let binding = try #require(PaseoQuestionCoordinator.binding(snapshot: snapshot, agentID: "agent-1"))
         let tool = try paseoFixture(#"{"id":"tool","name":"Bash","input":{}}"#)
         let malformed = try paseoFixture(#"{"id":"unsupported","name":"request_user_input_async","kind":"question","description":"Open Paseo","input":{"questions":[{"header":"Invalid"}]}}"#)
@@ -112,13 +122,13 @@ struct PaseoQuestionTests {
         #expect(pending.question?.prompt.title == "Open Paseo")
         #expect(pending.question?.isUnsupported == true)
         #expect(pending.permission == nil)
-        let valid = try #require(snapshot["pendingPermissions"]?.paseoArray?.first)
+        let valid = try #require(paseoTestArray(snapshot["pendingPermissions"])?.first)
         changed["pendingPermissions"] = .array([malformed, tool, valid])
         #expect(PaseoQuestionCoordinator.pending(snapshot: changed, binding: binding)?.requestID == "request-1")
     }
 
     @Test @MainActor func duplicateAnswerKeysBecomeUnsupportedInsteadOfPermission() throws {
-        var snapshot = try #require(try paseoFixture(paseoSnapshot).paseoObject)
+        var snapshot = try #require(paseoTestObject(try paseoFixture(paseoSnapshot)))
         let binding = try #require(PaseoQuestionCoordinator.binding(snapshot: snapshot, agentID: "agent-1"))
         snapshot["pendingPermissions"] = .array([try paseoFixture(#"{"id":"duplicate","name":"AskUserQuestion","input":{"questions":[{"question":"Same","header":"One"},{"question":"Same","header":"Two"}]}}"#)])
         let pending = try #require(PaseoQuestionCoordinator.pending(snapshot: snapshot, binding: binding))
