@@ -49,6 +49,7 @@ struct ShortcutsSettingsPane: View {
                     get: { cameraGesture.isEnabled },
                     set: {
                         cameraGesture.isEnabled = $0
+                        if !$0 { model.cameraActivation.stop() }
                         model.panelHotkeys?.touchlessActivationEnabled = $0
                         model.panelHotkeys?.startPersistentBindings()
                     }
@@ -250,6 +251,7 @@ struct ShortcutsSettingsPane: View {
                     get: { voiceCommand.isEnabled },
                     set: {
                         voiceCommand.isEnabled = $0
+                        if !$0 { model.voiceAnswer.stop() }
                         model.panelHotkeys?.voiceAnswerEnabled = $0
                         model.panelHotkeys?.startPersistentBindings()
                     }
