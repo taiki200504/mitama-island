@@ -326,11 +326,6 @@ struct StructuredQuestionPromptView: View {
     }
 
     private var primarySelectedAnswer: String? {
-        let genericTitles = ["質問に回答してください", lang.t("question.answerNeeded"), lang.t("decision.question.title")]
-        if genericTitles.contains(where: { $0.caseInsensitiveCompare(promptTitle) == .orderedSame }) {
-            return false
-        }
-
         guard structuredQuestions.count == 1,
               let question = structuredQuestions.first else {
             return nil
