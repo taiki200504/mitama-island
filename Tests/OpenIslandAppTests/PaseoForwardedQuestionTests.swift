@@ -60,6 +60,32 @@ private actor ForwardedPaseoMock {
         #expect(model.forwardedQuestionTargets.isEmpty)
         #expect(model.state.session(id: "parent-native")?.phase == .running)
     }
+    @Test func exactParentBindingReplacesHookTitleWithoutChangingQuestionTarget() async throws {
+        let mock = ForwardedPaseoMock()
+        let coordinator = PaseoQuestionCoordinator(call: { await mock.call($0, $1) })
+        let model = model(coordinator)
+        model.state = SessionState(sessions: [AgentSession(id: "parent-native", title: "# AGENTS.md instructions",
+            tool: .claudeCode, origin: .live, attachmentState: .attached, phase: .running,
+            summary: "Hook", updatedAt: .now,
+            jumpTarget: JumpTarget(terminalApp: "Paseo", workspaceName: "project", paneTitle: "hook")),
+            AgentSession(id: "independent", title: "Independent conversation", tool: .claudeCode,
+                origin: .live, attachmentState: .attached, phase: .running, summary: "", updatedAt: .now)])
+        model.connectPaseoQuestions(); coordinator.stop()
+        await coordinator.poll()
+        #expect(model.state.session(id: "parent-native")?.title == "parent")
+        #expect(model.state.session(id: "independent")?.title == "Independent conversation")
+        #expect(model.forwardedPaseoQuestionSource(sessionID: "parent-native")?.childSessionID == "child-native")
+        let prompt = try #require(model.state.session(id: "parent-native")?.questionPrompt)
+        await coordinator.poll()
+        #expect(model.state.session(id: "parent-native")?.questionPrompt?.id == prompt.id)
+        #expect(model.state.session(id: "parent-native")?.title == "parent")
+        model.answerQuestion(for: "parent-native", answer: .init(answer: "Yes"), promptID: prompt.id)
+        let deadline = ContinuousClock.now.advanced(by: .seconds(2))
+        while model.paseoSendingSessionIDs.contains("parent-native"), ContinuousClock.now < deadline { await Task.yield() }
+        #expect(await mock.sends == ["child"])
+        #expect(model.state.session(id: "parent-native")?.title == "parent")
+    }
+
     @Test func sameQuestionKeepsRetryStateButNextChildClearsDisplayState() async throws {
         let mock = ForwardedPaseoMock()
         let coordinator = PaseoQuestionCoordinator(call: { await mock.call($0, $1) })

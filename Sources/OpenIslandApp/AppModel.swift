@@ -2048,8 +2048,12 @@ final class AppModel {
                     tool: binding.provider == "codex" ? .codex : .claudeCode, origin: .live, attachmentState: .attached, phase: .running,
                     summary: "Paseo", updatedAt: .now, jumpTarget: binding.jumpTarget))
             }
-            guard let index = sessions.firstIndex(where: { $0.id == parent }),
-                  !sessions[index].phase.requiresAttention else { continue }
+            guard let index = sessions.firstIndex(where: { $0.id == parent }) else { continue }
+            let title = binding.title.trimmingCharacters(in: .whitespacesAndNewlines)
+            if sessions[index].jumpTarget?.terminalApp == "Paseo", !title.isEmpty, title != "Paseo" {
+                sessions[index].title = title
+            }
+            guard !sessions[index].phase.requiresAttention else { continue }
             forwardedQuestionOriginals[parent] = sessions[index]
             sessions[index].phase = .waitingForAnswer
             sessions[index].summary = "子からの質問: \(pending.binding.title)"
