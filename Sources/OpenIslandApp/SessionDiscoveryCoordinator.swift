@@ -161,7 +161,7 @@ final class SessionDiscoveryCoordinator {
 
         // Restore persisted Codex sessions.
         if !payload.codexRecords.isEmpty {
-            state = SessionState(sessions: payload.codexRecords.map(\.restorableSession))
+            state = SessionState(sessions: mergeDiscoveredSessions(payload.codexRecords.map(\.restorableSession)))
             onStatusMessage?("Restored \(payload.codexRecords.count) recent Codex session(s) from local cache.")
         }
 
@@ -240,7 +240,9 @@ final class SessionDiscoveryCoordinator {
 
     private func merge(discovered: AgentSession, into existing: AgentSession) -> AgentSession {
         var merged = existing
-        let discoveredIsNewer = discovered.updatedAt >= existing.updatedAt
+        let preservesLiveRequest = existing.attachmentState == .attached && existing.phase.requiresAttention
+            && discovered.attachmentState == .stale
+        let discoveredIsNewer = discovered.updatedAt >= existing.updatedAt && !preservesLiveRequest
 
         if discoveredIsNewer {
             merged.title = discovered.title

@@ -62,6 +62,38 @@ private actor ForwardedPaseoMock {
         #expect(Set(try registry.load().map(\.sessionID)) == ["parent-native", "child-native"])
     }
 
+    @Test func startupCacheMergePreservesAnAlreadyReceivedSDKQuestion() async throws {
+        let mock = ForwardedPaseoMock()
+        let coordinator = PaseoQuestionCoordinator(call: { await mock.call($0, $1) })
+        let model = model(coordinator)
+        model.connectPaseoQuestions(); coordinator.stop()
+        await coordinator.poll()
+        let question = try #require(coordinator.questions["child-native"])
+        let parent = try #require(model.state.session(id: "parent-native"))
+        var staleParent = parent
+        staleParent.questionPrompt = nil
+        staleParent.phase = .completed
+        staleParent.updatedAt = .now.addingTimeInterval(10)
+        let cachedCodex = AgentSession(id: "cached-codex", title: "Cached", tool: .codex,
+            origin: .live, phase: .running, summary: "Cached", updatedAt: .now)
+        model.discovery.applyStartupDiscoveryPayload(.init(
+            codexRecords: [CodexTrackedSessionRecord(session: cachedCodex)], codexRecordsNeedPrune: false,
+            claudeRecords: [ClaudeTrackedSessionRecord(session: staleParent)], claudeRecordsNeedPrune: false,
+            openCodeRecords: [], openCodeRecordsNeedPrune: false,
+            cursorRecords: [], cursorRecordsNeedPrune: false,
+            discoveredCodexRecords: [], discoveredClaudeSessions: [], hooksBinaryURL: nil))
+        await coordinator.poll()
+        #expect(Set(model.state.sessions.map(\.id)) == ["child-native", "parent-native", "cached-codex"])
+        #expect(model.state.session(id: "parent-native")?.questionPrompt == question.prompt)
+        #expect(model.state.session(id: "parent-native")?.jumpTarget == parent.jumpTarget)
+        #expect(model.forwardedQuestionTargets["parent-native"] == "child-native")
+        #expect(coordinator.questions["child-native"]?.input == question.input)
+        model.answerQuestion(for: "parent-native", answer: .init(answer: "Yes"), promptID: question.prompt.id)
+        let deadline = ContinuousClock.now.advanced(by: .seconds(2))
+        while model.paseoSendingSessionIDs.contains("parent-native"), ContinuousClock.now < deadline { await Task.yield() }
+        #expect(await mock.sends == ["child"])
+    }
+
     @Test func childQuestionProjectsAndAnswersChildOnly() async throws {
         let mock = ForwardedPaseoMock()
         let coordinator = PaseoQuestionCoordinator(call: { await mock.call($0, $1) })
