@@ -76,7 +76,7 @@ actor PaseoHarnessFixture {
         }
         guard name == "respond_to_permission" else { throw PaseoQuestionError.invalidResponse }
         guard case let .object(arguments) = input,
-              arguments["agentId"] == .string(agentID), arguments["requestId"] == .string("fixture-request") else {
+              arguments["agentId"] == .string(agentID), arguments["requestId"] == .string(isReplacement ? "fixture-request-next" : "fixture-request") else {
             throw PaseoQuestionError.expired
         }
         try await Task.sleep(for: .milliseconds(800))
