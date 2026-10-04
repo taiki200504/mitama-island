@@ -947,3 +947,5 @@
 "decision.request" = "Request";
 "decision.continue" = "Continue as is";
 "decision.other" = "Other";
+
+"decision.paseo.questionUnsupported" = "This question format cannot be answered in Island yet. Please review it in Paseo.";

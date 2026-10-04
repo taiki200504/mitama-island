@@ -947,3 +947,5 @@
 "decision.request" = "请求";
 "decision.continue" = "保持现状继续";
 "decision.other" = "其他";
+
+"decision.paseo.questionUnsupported" = "Island暂不支持回答此类问题。请在Paseo中查看。";

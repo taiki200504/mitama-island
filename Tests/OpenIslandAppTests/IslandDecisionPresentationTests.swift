@@ -55,4 +55,18 @@ struct IslandDecisionPresentationTests {
         #expect(sessions.first(where: { $0.phase == .waitingForApproval })?.permissionRequest?.suggestedUpdates.isEmpty == true)
         #expect(sessions.allSatisfy { !$0.title.isEmpty && $0.jumpTarget?.workspaceName.isEmpty == false })
     }
+    @Test func unsupportedPaseoQuestionsOnlyHandOffToTheExactConversation() {
+        let empty = QuestionPrompt(title: "Provider description", questions: [])
+        let unsupported = StructuredQuestionPromptView(prompt: empty, isPaseo: true, onAnswer: { _ in
+            Issue.record("Unsupported questions must not submit an answer")
+        })
+        #expect(unsupported.requiresPaseoQuestionHandoff)
+        let supported = StructuredQuestionPromptView(prompt: QuestionPrompt(title: "Choose", questions: [
+            QuestionPromptItem(question: "Choose", header: "Choice", options: [QuestionOption(label: "One")])
+        ]), isPaseo: true, onAnswer: { _ in })
+        #expect(!supported.requiresPaseoQuestionHandoff)
+        let legacyFreeform = StructuredQuestionPromptView(prompt: empty, onAnswer: { _ in })
+        #expect(!legacyFreeform.requiresPaseoQuestionHandoff)
+    }
+
 }

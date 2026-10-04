@@ -24,7 +24,12 @@ struct StructuredQuestionPromptView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            if structuredQuestions.isEmpty {
+            if requiresPaseoQuestionHandoff {
+                Text(lang.t("decision.paseo.questionUnsupported"))
+                    .font(.islandDecision(size: 13))
+                    .foregroundStyle(V6Palette.paper.opacity(0.86))
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if structuredQuestions.isEmpty {
                 freeformAnswerBody
                     .transition(IslandTransition.resolved(IslandTransition.modal))
             } else {
@@ -329,8 +334,12 @@ struct StructuredQuestionPromptView: View {
         return values.joined(separator: ", ")
     }
 
+    var requiresPaseoQuestionHandoff: Bool {
+        isPaseo && prompt?.questions.isEmpty == true
+    }
+
     private var canSubmit: Bool {
-        !trimmedReply.isEmpty || (!structuredQuestions.isEmpty && hasCompleteSelection)
+        !requiresPaseoQuestionHandoff && (!trimmedReply.isEmpty || (!structuredQuestions.isEmpty && hasCompleteSelection))
     }
 
     private var submitButtonTitle: String {

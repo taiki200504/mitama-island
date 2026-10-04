@@ -947,3 +947,5 @@
 "decision.request" = "要求";
 "decision.continue" = "このまま続ける";
 "decision.other" = "その他";
+
+"decision.paseo.questionUnsupported" = "この質問形式はIslandでまだ回答できません。Paseoで確認してください。";
