@@ -21,6 +21,8 @@ public struct StatusMenuInputs: Sendable {
     /// What's playing, or `nil` while nothing is (or the adapter has no
     /// title to report yet) — nil is what hides the row entirely.
     public var nowPlayingTrack: NowPlayingTrack?
+    /// The current state of the Raphael companion, or `nil` if unavailable.
+    public var raphaelStatus: RaphaelStatus?
 
     public struct NowPlayingTrack: Equatable, Sendable {
         public var title: String
@@ -39,7 +41,8 @@ public struct StatusMenuInputs: Sendable {
         waitingCount: Int,
         timerRunningLabel: String? = nil,
         clipboardIsEnabled: Bool = false,
-        nowPlayingTrack: NowPlayingTrack? = nil
+        nowPlayingTrack: NowPlayingTrack? = nil,
+        raphaelStatus: RaphaelStatus? = nil
     ) {
         self.isMuted = isMuted
         self.cameraIsWatching = cameraIsWatching
@@ -48,6 +51,7 @@ public struct StatusMenuInputs: Sendable {
         self.timerRunningLabel = timerRunningLabel
         self.clipboardIsEnabled = clipboardIsEnabled
         self.nowPlayingTrack = nowPlayingTrack
+        self.raphaelStatus = raphaelStatus
     }
 }
 
@@ -62,6 +66,8 @@ public enum StatusMenuEntry: Equatable, Sendable {
     case stopTimer
     case openClipboard
     case nowPlayingTrack(title: String, isPlaying: Bool)
+    /// Raphael companion control submenu. nil if not available.
+    case raphael(status: RaphaelStatus?)
     case shelfHeader(count: Int)
     case shelfItem(name: String)
     case clearShelf
@@ -104,6 +110,8 @@ public enum StatusMenuLayout {
         if let track = inputs.nowPlayingTrack {
             entries.append(.nowPlayingTrack(title: track.title, isPlaying: track.isPlaying))
         }
+
+        entries.append(.raphael(status: inputs.raphaelStatus))
 
         if !inputs.shelfItemNames.isEmpty {
             entries.append(.separator)

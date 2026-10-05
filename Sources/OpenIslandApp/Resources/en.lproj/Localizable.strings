@@ -849,6 +849,11 @@
 "statusItem.clipboard.open" = "Clipboard…";
 "statusItem.nowPlaying.playing" = "Now Playing: %@";
 "statusItem.nowPlaying.paused" = "Paused: %@";
+"statusItem.raphael" = "Raphael";
+"statusItem.raphael.enable" = "Show";
+"statusItem.raphael.micMute" = "Mute Microphone";
+"statusItem.raphael.voiceMute" = "Mute Voice";
+"statusItem.raphael.notInstalled" = "Raphael (Not Installed)";
 "statusItem.shelf.header" = "Set Aside (%d)";
 "statusItem.settings" = "Settings…";
 "session.stalled" = "No activity for a while";
