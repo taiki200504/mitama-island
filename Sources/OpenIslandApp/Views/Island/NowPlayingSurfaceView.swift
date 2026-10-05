@@ -6,6 +6,16 @@ import OpenIslandCore
 /// draggable seek bar, transport controls and the source app. Only this view
 /// refreshes on a 1-second clock — the closed-island accessory and the menu
 /// bar both read `NowPlayingCoordinator.state` on demand instead of ticking.
+enum NowPlayingPresentation {
+    static func showsEntry(isAvailable: Bool, hasState: Bool) -> Bool {
+        isAvailable || hasState
+    }
+
+    static func emptyMessageKey(isAvailable: Bool) -> String {
+        isAvailable ? "nowPlaying.empty" : "nowPlaying.unavailable"
+    }
+}
+
 struct NowPlayingSurfaceView: View {
     var model: AppModel
 
@@ -33,8 +43,10 @@ struct NowPlayingSurfaceView: View {
             Image(systemName: "music.note")
                 .font(.system(size: 26, weight: .light))
                 .foregroundStyle(V6Palette.paper.opacity(0.28))
-            Text(lang.t("nowPlaying.empty"))
-                .saoCaps(size: 12)
+            Text(lang.t(NowPlayingPresentation.emptyMessageKey(isAvailable: coordinator.isAvailable)))
+                .font(.islandDecision(size: 13))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 18)
                 .foregroundStyle(V6Palette.paper.opacity(0.4))
             Spacer()
         }

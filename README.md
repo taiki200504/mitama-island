@@ -62,6 +62,7 @@ Think of it as an open-source [Vibe Island](https://vibeisland.app/) — **free,
 | Agent | Status | Description |
 |---|---|---|
 | **Claude Code** | Supported | Hook integration, JSONL session discovery, status line bridge, usage tracking |
+| **Paseo** | Supported | Claude Code / Codex agents spawned by the Paseo desktop app. Detected via `__CFBundleIdentifier=sh.paseo.desktop` (or `PASEO_AGENT_ID`); TTY-less, so liveness follows the running Paseo app; jump-back activates Paseo; `AskUserQuestion` choices and free text can be answered in the island through Paseo’s local MCP endpoint (`127.0.0.1:6767`) |
 | **Claude Code (Desktop App)** | Supported | Same hooks as the CLI. Claude Desktop runs Claude Code as a TTY-less subprocess invisible to process discovery, so liveness follows the running desktop app (like Codex.app); jump-back activates Claude. Usage panel is account-wide but seeded by the CLI status line — see note below |
 | **Codex** (CLI) | Supported | Hook integration (SessionStart, UserPromptSubmit, Stop by default; PreToolUse/PostToolUse parseable but not default), usage tracking |
 | **Codex Desktop App** | Supported | Hook integration + app-server JSON-RPC connection for real-time thread/turn lifecycle. Precise conversation jump via `codex://threads/<id>` deep-link |

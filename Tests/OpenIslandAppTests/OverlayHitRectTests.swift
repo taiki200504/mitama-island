@@ -18,7 +18,7 @@ struct OverlayHitRectTests {
         let suite = UserDefaults(suiteName: name)!
         suite.removePersistentDomain(forName: name)
         let settings = SettingsStore(store: PreferenceStore(suite: suite))
-        return AppModel(settings: settings)
+        return isolatedAppModel(settings: settings)
     }
 
     // MARK: - resolveOpenedContentHeight (pure)

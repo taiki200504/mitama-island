@@ -29,7 +29,7 @@ struct MenuBarIconPreferenceTests {
         let suite = UserDefaults(suiteName: name)!
         suite.removePersistentDomain(forName: name)
         let settings = SettingsStore(store: PreferenceStore(suite: suite))
-        return AppModel(settings: settings)
+        return isolatedAppModel(settings: settings)
     }
 
     @Test("Defaults to on, so a first launch is always reachable")

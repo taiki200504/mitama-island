@@ -568,6 +568,22 @@ final class ProcessMonitoringCoordinator {
             }
         }
 
+        // Paseo sessions: same TTY-less shape as Claude Desktop — the Paseo
+        // daemon spawns the agent without a terminal, so keep hook-tagged
+        // "Paseo" sessions alive while Paseo.app is running.
+        if Self.isPaseoAppRunning() {
+            for session in sessions
+            where !session.isDemoSession
+                && session.jumpTarget?.terminalApp == "Paseo" {
+                if session.isSessionEnded { continue }
+                let isStale = session.phase == .completed
+                    && session.updatedAt.addingTimeInterval(Self.claudeDesktopStalenessTimeout) < Date.now
+                if !isStale {
+                    aliveIDs.insert(session.id)
+                }
+            }
+        }
+
         // Synthetic sessions: always alive if the process exists.
         let syntheticSessions = sessions.filter { isSyntheticClaudeSession($0) }
         for session in syntheticSessions {
@@ -1294,6 +1310,12 @@ final class ProcessMonitoringCoordinator {
         }
     }
 
+    static func isPaseoAppRunning() -> Bool {
+        NSWorkspace.shared.runningApplications.contains { app in
+            app.bundleIdentifier == "sh.paseo.desktop"
+        }
+    }
+
     private func processIdentityKey(_ process: ActiveProcessSnapshot) -> String {
         [
             process.sessionID,
@@ -1370,6 +1392,8 @@ final class ProcessMonitoringCoordinator {
             return "WezTerm"
         case "zellij":
             return "Zellij"
+        case "paseo":
+            return "Paseo"
         // VS Code family
         case "vscode", "code", "visual studio code":
             return "VS Code"

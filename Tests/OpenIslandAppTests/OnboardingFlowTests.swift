@@ -1,11 +1,12 @@
 import Testing
+import OpenIslandCore
 @testable import OpenIslandApp
 
 @Suite("Onboarding flow")
 struct OnboardingFlowTests {
-    @Test("Five screens, no purchase step")
-    func fiveSteps() {
-        #expect(OnboardingStep.allCases.count == 5)
+    @Test("Three screens, connection and practice")
+    func threeSteps() {
+        #expect(OnboardingStep.allCases == [.welcome, .detection, .finish])
         #expect(OnboardingStep.allCases.first == .welcome)
         #expect(OnboardingStep.allCases.last == .finish)
     }
@@ -37,7 +38,7 @@ struct OnboardingFlowTests {
         #expect(flow.step == .welcome)
     }
 
-    /// Skipping has to count as finishing. Otherwise the same five screens
+    /// Skipping has to count as finishing. Otherwise the same three screens
     /// appear again next launch, which reads as the app ignoring the user.
     @Test("Skipping finishes the flow")
     func skipFinishes() {
@@ -49,20 +50,31 @@ struct OnboardingFlowTests {
     @Test("Progress counts from one")
     func progressText() {
         var flow = OnboardingFlow()
-        #expect(flow.progressText == "1/5")
+        #expect(flow.progressText == "1/3")
         flow.advance()
-        #expect(flow.progressText == "2/5")
+        #expect(flow.progressText == "2/3")
     }
 
     /// Advancing past the end must finish rather than fall off the sequence.
     @Test("The last screen finishes instead of advancing")
     func lastFinishes() {
         var flow = OnboardingFlow()
-        for _ in 0..<4 { flow.advance() }
+        for _ in 0..<2 { flow.advance() }
         #expect(flow.step == .finish)
         #expect(flow.isFinished == false)
         flow.advance()
         #expect(flow.isFinished)
         #expect(flow.step == .finish)
     }
+    @Test("Only the local practice question's offered answers complete practice")
+    func localPracticeValidatesAnswer() {
+        var practice = OnboardingPractice()
+        practice.answer(.init(answers: ["another-question": "A"]), allowedAnswers: ["A", "B"])
+        #expect(!practice.isComplete)
+        practice.answer(.init(answers: [OnboardingPractice.answerKey: "unknown"]), allowedAnswers: ["A", "B"])
+        #expect(!practice.isComplete)
+        practice.answer(.init(answers: [OnboardingPractice.answerKey: "B"]), allowedAnswers: ["A", "B"])
+        #expect(practice.isComplete)
+    }
+
 }

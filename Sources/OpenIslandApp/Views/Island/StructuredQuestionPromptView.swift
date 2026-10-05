@@ -4,6 +4,10 @@ import OpenIslandCore
 struct StructuredQuestionPromptView: View {
     let prompt: QuestionPrompt?
     var lang: LanguageManager = .shared
+    var isPaseo = false
+    var isSending = false
+    var errorMessage: String?
+    var allowsUnstructuredReply = true
     let onAnswer: (QuestionPromptResponse) -> Void
 
     @State private var selections: [String: Set<String>] = [:]
@@ -13,14 +17,20 @@ struct StructuredQuestionPromptView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
+            Text(lang.t("decision.question.title"))
+                .font(.islandDecision(size: 15, weight: .semibold))
             if showsPromptTitle {
                 Text(promptTitle)
-                    .saoCaps(size: 13, text: promptTitle)
-                    .foregroundStyle(SAOGrammar.Palette.accentAmber)
+                    .font(.islandDecision(size: 14, weight: .semibold))
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            if structuredQuestions.isEmpty {
+            if requiresPaseoQuestionHandoff {
+                Text(lang.t("decision.paseo.questionUnsupported"))
+                    .font(.islandDecision(size: 13))
+                    .foregroundStyle(V6Palette.paper.opacity(0.86))
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if structuredQuestions.isEmpty {
                 freeformAnswerBody
                     .transition(IslandTransition.resolved(IslandTransition.modal))
             } else {
@@ -35,17 +45,18 @@ struct StructuredQuestionPromptView: View {
                             String(answeredQuestionCount),
                             String(structuredQuestions.count)
                         ))
-                        .font(.islandMono(size: 10, weight: .medium))
-                        .foregroundStyle(SAOGrammar.Palette.ink.opacity(0.5))
+                        .font(.islandDecision(size: 12))
+                        .foregroundStyle(V6Palette.paper.opacity(0.78))
                     }
 
                     // Only the questions scroll. The submit button below stays
                     // put: with a long list it used to be pushed off the
                     // bottom of the card with no way to reach it, which left
                     // the question unanswerable from the island at all.
-                    AutoHeightScrollView(maxHeight: IslandChromeMetrics.questionOptionListMaxHeight) {
+                    AutoHeightScrollView(maxHeight: IslandChromeMetrics.questionOptionsViewportHeight(
+                        maxPanelHeight: SettingsStore.shared.display.maxPanelHeight)) {
                         VStack(alignment: .leading, spacing: 8) {
-                            ForEach(structuredQuestions, id: \.question) { question in
+                            ForEach(structuredQuestions, id: \.responseKey) { question in
                                 questionRow(question)
                             }
                         }
@@ -57,23 +68,33 @@ struct StructuredQuestionPromptView: View {
                     // user to hunt for the question they missed.
                     if !canSubmit, answeredQuestionCount < structuredQuestions.count {
                         Text(lang.t("question.answerAllFirst"))
-                            .font(.islandText(size: 10.5, weight: .medium))
+                            .font(.islandDecision(size: 12))
                             .foregroundStyle(IslandDesignPalette.Status.waitingForAnswer.opacity(0.8))
                     }
 
                     Button(submitButtonTitle) {
                         submitAnswer()
                     }
-                    .buttonStyle(IslandActionButtonStyle(kind: canSubmit ? .primary : .secondary, expands: true, surface: .lightCard))
-                    .disabled(!canSubmit)
+                    .buttonStyle(IslandActionButtonStyle(kind: canSubmit ? .primary : .secondary, expands: true, surface: .decisionCard))
+                    .disabled(isSending || !canSubmit)
                 }
                 .transition(IslandTransition.resolved(IslandTransition.modal))
             }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
+        .overlay(alignment: .bottomTrailing) {
+            if isSending { ProgressView().controlSize(.small).padding(10) }
+        }
+        .safeAreaInset(edge: .bottom, spacing: 6) {
+            if let errorMessage {
+                Text(errorMessage).font(.system(size: 12)).foregroundStyle(SAOGrammar.Palette.danger)
+                    .fixedSize(horizontal: false, vertical: true).padding(.horizontal, 10)
+            } else if isSending {
+                Text(isPaseo ? lang.t("decision.paseo.sending") : lang.t("decision.question.sending")).font(.system(size: 12)).foregroundStyle(V6Palette.paper)
+            }
+        }
+        .foregroundStyle(V6Palette.paper)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .saoCard()
+        .islandDecisionCard()
     }
 
     // MARK: - Per-question row
@@ -84,16 +105,19 @@ struct StructuredQuestionPromptView: View {
         VStack(alignment: .leading, spacing: 6) {
             if structuredQuestions.count > 1 {
                 Text(question.header)
-                    .font(.islandText(size: 10, weight: .bold))
-                    .foregroundStyle(SAOGrammar.Palette.ink.opacity(0.5))
+                    .font(.islandDecision(size: 12, weight: .semibold))
+                    .foregroundStyle(V6Palette.paper.opacity(0.78))
             }
 
             Text(question.question)
-                .font(.islandText(size: 12, weight: .medium))
-                .foregroundStyle(SAOGrammar.Palette.ink.opacity(0.88))
+                .font(.islandDecision(size: 14, weight: .medium))
+                .foregroundStyle(V6Palette.paper.opacity(0.88))
                 .fixedSize(horizontal: false, vertical: true)
 
-            VStack(alignment: .leading, spacing: 4) {
+            Text(question.multiSelect ? lang.t("decision.option.multiple") : lang.t("decision.option.single"))
+                .font(.islandDecision(size: 12))
+                .foregroundStyle(V6Palette.paper.opacity(0.78))
+            VStack(alignment: .leading, spacing: 6) {
                 ForEach(Array(question.options.enumerated()), id: \.element.id) { index, option in
                     optionRow(option, optionIndex: index, question: question)
                 }
@@ -118,29 +142,24 @@ struct StructuredQuestionPromptView: View {
                 toggle(option: option.label, for: question)
             } label: {
                 HStack(spacing: 10) {
-                    Text("\(optionIndex + 1)")
-                        .font(.islandMono(size: 10.5, weight: .semibold))
-                        .foregroundStyle(isSelected ? SAOGrammar.Palette.panelWhite : SAOGrammar.Palette.ink.opacity(0.42))
-                        .frame(width: 22, height: 20)
-                        .background(
-                            SAOPanelShape(cornerRadius: 5, cuts: [.bottomTrailing], cutDepth: 5)
-                                .fill(isSelected ? AnyShapeStyle(SAOGrammar.selectionGradient) : AnyShapeStyle(SAOGrammar.Palette.ink.opacity(0.045)))
-                        )
-                        .overlay(
-                            SAOPanelShape(cornerRadius: 5, cuts: [.bottomTrailing], cutDepth: 5)
-                                .strokeBorder(SAOGrammar.Palette.ink.opacity(isSelected ? 0 : 0.08))
-                        )
+                    Image(systemName: question.multiSelect
+                        ? (isSelected ? "checkmark.square.fill" : "square")
+                        : (isSelected ? "largecircle.fill.circle" : "circle"))
+                        .font(.system(size: 16))
+                        .foregroundStyle(isSelected ? IslandThemes.current.accent : V6Palette.paper.opacity(0.78))
+                        .frame(width: 22)
+                        .accessibilityHidden(true)
 
                     VStack(alignment: .leading, spacing: 1) {
                         Text(option.label)
-                            .font(.islandText(size: 12.2, weight: .medium))
-                            .foregroundStyle(SAOGrammar.Palette.ink.opacity(isSelected ? 1 : 0.78))
+                            .font(.islandDecision(size: 13, weight: .medium))
+                            .foregroundStyle(V6Palette.paper.opacity(isSelected ? 1 : 0.78))
 
                         if !option.description.isEmpty {
                             Text(option.description)
-                                .font(.islandText(size: 10.5))
-                                .foregroundStyle(SAOGrammar.Palette.ink.opacity(isHovered || isSelected ? 0.48 : 0.38))
-                                .lineLimit(1)
+                                .font(.islandDecision(size: 12))
+                                .foregroundStyle(V6Palette.paper.opacity(0.78))
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
 
@@ -157,10 +176,14 @@ struct StructuredQuestionPromptView: View {
                 .padding(.horizontal, 11)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(option.label)
+            .accessibilityValue(isSelected ? lang.t("decision.option.selected") : lang.t("decision.option.unselected"))
+            .accessibilityHint(option.description)
+            .accessibilityAddTraits(isSelected ? .isSelected : [])
 
             if showsFreeform {
                 Divider()
-                    .overlay(SAOGrammar.Palette.ink.opacity(0.08))
+                    .overlay(V6Palette.paper.opacity(0.08))
                 freeformField(for: option, question: question)
             }
         }
@@ -172,14 +195,6 @@ struct StructuredQuestionPromptView: View {
             IslandThemes.current.shape(cornerRadius: 8)
                 .strokeBorder(optionStrokeColor(isSelected: isSelected, isHovered: isHovered))
         )
-        .overlay(alignment: .leading) {
-            if isSelected {
-                RoundedRectangle(cornerRadius: 1.5, style: .continuous)
-                    .fill(SAOGrammar.Palette.accentOrange)
-                    .frame(width: 3)
-                    .padding(.vertical, 5)
-            }
-        }
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.12)) {
                 hoveredOptionKey = hovering ? key : (hoveredOptionKey == key ? nil : hoveredOptionKey)
@@ -197,10 +212,11 @@ struct StructuredQuestionPromptView: View {
                 set: { freeformTexts[key] = $0 }
             ),
             onSubmit: {
-                if hasCompleteSelection {
+                if !isSending, hasCompleteSelection {
                     onAnswer(QuestionPromptResponse(answers: answerMap))
                 }
-            }
+            },
+            requestsInitialFocus: true
         )
         .frame(height: 22)
         .padding(.vertical, 6)
@@ -211,11 +227,11 @@ struct StructuredQuestionPromptView: View {
         VStack(alignment: .leading, spacing: 8) {
             quickReplyField
 
-            Button(lang.t("question.submit")) {
+            Button(submitButtonTitle) {
                 submitAnswer()
             }
-            .buttonStyle(IslandActionButtonStyle(kind: canSubmit ? .primary : .secondary, expands: true, surface: .lightCard))
-            .disabled(!canSubmit)
+            .buttonStyle(IslandActionButtonStyle(kind: canSubmit ? .primary : .secondary, expands: true, surface: .decisionCard))
+            .disabled(isSending || !canSubmit)
         }
     }
 
@@ -227,7 +243,7 @@ struct StructuredQuestionPromptView: View {
                     placeholder: lang.t("question.otherPlaceholder"),
                     text: $typedReply,
                     onSubmit: {
-                        if canSubmit {
+                        if !isSending, canSubmit {
                             submitAnswer()
                         }
                     }
@@ -238,11 +254,11 @@ struct StructuredQuestionPromptView: View {
             .padding(.vertical, 4)
             .background(
                 IslandThemes.current.shape(cornerRadius: 10)
-                    .fill(SAOGrammar.Palette.ink.opacity(0.035))
+                    .fill(V6Palette.paper.opacity(0.035))
             )
             .overlay(
                 IslandThemes.current.shape(cornerRadius: 10)
-                    .strokeBorder(SAOGrammar.Palette.ink.opacity(0.055))
+                    .strokeBorder(V6Palette.paper.opacity(0.055))
             )
         }
     }
@@ -271,8 +287,13 @@ struct StructuredQuestionPromptView: View {
         prompt?.title.trimmedForNotificationCard ?? lang.t("question.answerNeeded")
     }
 
-    private var showsPromptTitle: Bool {
-        guard !promptTitle.isEmpty else {
+    var showsPromptTitle: Bool {
+        guard !requiresPaseoQuestionHandoff, !promptTitle.isEmpty else {
+            return false
+        }
+
+        let genericTitles = ["質問に回答してください", lang.t("question.answerNeeded"), lang.t("decision.question.title")]
+        if genericTitles.contains(where: { $0.caseInsensitiveCompare(promptTitle) == .orderedSame }) {
             return false
         }
 
@@ -290,7 +311,7 @@ struct StructuredQuestionPromptView: View {
             guard !values.isEmpty else {
                 return nil
             }
-            return (question.question, values.joined(separator: ", "))
+            return (question.responseKey, values.joined(separator: ", "))
         })
     }
 
@@ -299,9 +320,9 @@ struct StructuredQuestionPromptView: View {
     }
 
     private var showsGlobalReplyField: Bool {
-        structuredQuestions.isEmpty || !structuredQuestions.contains { question in
+        allowsUnstructuredReply && (structuredQuestions.isEmpty || !structuredQuestions.contains { question in
             question.options.contains { $0.allowsFreeform }
-        }
+        })
     }
 
     private var primarySelectedAnswer: String? {
@@ -318,11 +339,17 @@ struct StructuredQuestionPromptView: View {
         return values.joined(separator: ", ")
     }
 
+    var requiresPaseoQuestionHandoff: Bool {
+        isPaseo && prompt?.questions.isEmpty == true
+    }
+
     private var canSubmit: Bool {
-        !trimmedReply.isEmpty || (!structuredQuestions.isEmpty && hasCompleteSelection)
+        !requiresPaseoQuestionHandoff && (!trimmedReply.isEmpty || (!structuredQuestions.isEmpty && hasCompleteSelection))
     }
 
     private var submitButtonTitle: String {
+        if isSending { return lang.t("decision.sending") }
+        if errorMessage != nil { return lang.t("decision.question.retry") }
         if !trimmedReply.isEmpty {
             return lang.t("question.sendReply")
         }
@@ -335,6 +362,7 @@ struct StructuredQuestionPromptView: View {
     }
 
     private func submitAnswer() {
+        guard !isSending, canSubmit else { return }
         if !trimmedReply.isEmpty {
             onAnswer(QuestionPromptResponse(answer: trimmedReply))
             return
@@ -381,7 +409,7 @@ struct StructuredQuestionPromptView: View {
     }
 
     private func selectedLabels(for question: QuestionPromptItem) -> Set<String> {
-        selections[question.question] ?? []
+        selections[question.responseKey] ?? []
     }
 
     private func resolvedAnswers(for question: QuestionPromptItem) -> [String] {
@@ -402,11 +430,11 @@ struct StructuredQuestionPromptView: View {
     }
 
     private func freeformKey(for question: QuestionPromptItem, option: QuestionOption) -> String {
-        "\(question.question)|\(option.label)"
+        "\(question.responseKey)|\(option.label)"
     }
 
     private func optionKey(for question: QuestionPromptItem, option: QuestionOption) -> String {
-        "\(question.question)|\(option.label)"
+        "\(question.responseKey)|\(option.label)"
     }
 
     private func optionFillColor(isSelected: Bool, isHovered: Bool) -> Color {
@@ -414,19 +442,19 @@ struct StructuredQuestionPromptView: View {
             return SAOGrammar.Palette.accentOrange.opacity(0.18)
         }
         if isHovered {
-            return SAOGrammar.Palette.ink.opacity(0.065)
+            return V6Palette.paper.opacity(0.065)
         }
-        return SAOGrammar.Palette.ink.opacity(0.028)
+        return V6Palette.paper.opacity(0.028)
     }
 
     private func optionStrokeColor(isSelected: Bool, isHovered: Bool) -> Color {
         if isSelected {
-            return SAOGrammar.Palette.ink.opacity(0.36)
+            return V6Palette.paper.opacity(0.36)
         }
         if isHovered {
-            return SAOGrammar.Palette.ink.opacity(0.13)
+            return V6Palette.paper.opacity(0.13)
         }
-        return SAOGrammar.Palette.ink.opacity(0.045)
+        return V6Palette.paper.opacity(0.045)
     }
 
     private func trimmedFreeform(for question: QuestionPromptItem, option: QuestionOption) -> String {
@@ -435,7 +463,7 @@ struct StructuredQuestionPromptView: View {
     }
 
     private func toggle(option: String, for question: QuestionPromptItem) {
-        var selected = selections[question.question] ?? []
+        var selected = selections[question.responseKey] ?? []
 
         if question.multiSelect {
             if selected.contains(option) {
@@ -452,6 +480,6 @@ struct StructuredQuestionPromptView: View {
         }
 
         typedReply = ""
-        selections[question.question] = selected
+        selections[question.responseKey] = selected
     }
 }

@@ -49,6 +49,10 @@ final class OverlayUICoordinator {
 
     @ObservationIgnored
     private var sneakPeekExpiryTask: Task<Void, Never>?
+    @ObservationIgnored var sneakPeekNow: () -> Date = { .now }
+    @ObservationIgnored var sneakPeekExpiryWait: @Sendable (ContinuousClock.Instant) async throws -> Void = { deadline in
+        try await Task.sleep(until: deadline, clock: .continuous)
+    }
 
     /// How long a fresh sneak peek of `kind` gets. A seam rather than a
     /// direct call to `IslandSneakPeekPolicy.duration(for:)` so a test can
@@ -329,7 +333,7 @@ final class OverlayUICoordinator {
         guard notchStatus == .closed else { return }
         guard !(appModel?.quietScenes.shouldStayQuiet(under: settings.behaviour) ?? false) else { return }
 
-        let now = Date.now
+        let now = sneakPeekNow()
         guard !IslandSneakPeekPolicy.expired(candidate, now: now) else { return }
 
         let showing = sneakPeek
@@ -379,8 +383,12 @@ final class OverlayUICoordinator {
         sneakPeekExpiryTask?.cancel()
 
         let delay = max(0, peek.until.timeIntervalSince(now))
+        // Capture the deadline before the main actor task is scheduled: queueing
+        // delays must not grant a peek an additional full display duration.
+        let deadline = ContinuousClock.now.advanced(by: .seconds(delay))
+        let wait = sneakPeekExpiryWait
         sneakPeekExpiryTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .seconds(delay))
+            try? await wait(deadline)
             // Compares by `kind` + `until` rather than full equality so that
             // `updateSneakPeek` swapping the icon or text mid-flight (the
             // lock-scan face glyph) doesn't make this guard fail forever and
@@ -398,7 +406,7 @@ final class OverlayUICoordinator {
                 // Refreshed here so it gets its own full duration now that
                 // it's actually about to show, not whatever's left of the
                 // original window.
-                let refreshedUntil = Date.now.addingTimeInterval(self.sneakPeekDurationProvider(pending.kind))
+                let refreshedUntil = self.sneakPeekNow().addingTimeInterval(self.sneakPeekDurationProvider(pending.kind))
                 let refreshed = IslandSneakPeek(
                     kind: pending.kind,
                     text: pending.text,

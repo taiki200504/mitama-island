@@ -605,7 +605,7 @@
 "settings.autoResponse.behavior.allowOnce" = "僅允許本次請求";
 "settings.autoResponse.behavior.acceptEdits" = "此後自動允許編輯";
 "settings.autoResponse.behavior.bypassPermissions" = "本工作階段此後不再詢問";
-"settings.autoResponse.claudeOnly" = "這兩種模式僅支援 Claude Code。其他代理將改為一次性允許。";
+"settings.autoResponse.claudeOnly" = "這兩種模式僅支援 Claude Code。其他代理將改為一次性允許。自動回應規則不適用於 Paseo 對話。";
 
 /* Agent icons */
 "settings.display.agentIcon" = "代理圖示";
@@ -615,17 +615,17 @@
 "settings.display.agentIcon.missing" = "尚未取得標誌，因此使用像素圖示。";
 
 /* Onboarding */
-"onboarding.welcome.title" = "所有正在執行的代理，匯於一處";
-"onboarding.welcome.body" = "Mitama Island 常駐於瀏海。它顯示每個代理正在做什麼，讓你無需切換視窗即可回應。";
+"onboarding.welcome.title" = "在一個島嶼中查看AI對話";
+"onboarding.welcome.body" = "查看哪個對話正在等待您。在螢幕頂部回答問題並批准單次請求。";
 "onboarding.cost.title" = "真正昂貴的是切換，而非等待";
 "onboarding.cost.body" = "尋找發問的終端比作答本身更耗時。島會把問題帶到你面前。";
 "onboarding.capabilities.title" = "從瀏海處批准、回答、跳轉";
 "onboarding.capabilities.body" = "權限請求和提問以卡片形式送達，可直接處理。點擊工作階段即可跳轉到其所在視窗。";
-"onboarding.detection.title" = "此 Mac 上的代理";
-"onboarding.detection.body" = "已找到：{agents}。之後可隨時在設定中安裝或移除掛鉤。";
+"onboarding.detection.title" = "檢查連線";
+"onboarding.detection.body" = "查看此Mac上已安裝的整合。您可以稍後新增或更改。";
 "onboarding.detection.none" = "暫無";
-"onboarding.finish.title" = "就是這些";
-"onboarding.finish.body" = "島位於螢幕頂部。啟動代理後即會出現。設定在選單列圖示或 ⌘, 中。";
+"onboarding.finish.title" = "練習在島嶼中回答";
+"onboarding.finish.body" = "此練習僅在此螢幕中進行。不會向AI傳送內容或執行命令。";
 "onboarding.skip" = "跳過";
 "onboarding.back" = "返回";
 "onboarding.next" = "下一步";
@@ -656,22 +656,22 @@
 /* SAO theme wording. English uppercase in every locale on purpose: a
    translated heads-up display reads as an ordinary label again. */
 "banner.completed.sao" = "CONGRATULATIONS";
-"island.sessionList.title.sao" = "LINKS";
-"island.sessionOverview.running.sao" = "DIVING";
-"island.sessionOverview.runningCompact.sao" = "DIVE";
-"island.sessionOverview.waiting.sao" = "SYSTEM CALL";
-"island.sessionOverview.waitingCompact.sao" = "CALL";
-"island.sessionOverview.done.sao" = "CLEARED";
-"island.sessionOverview.idle.sao" = "STANDBY";
-"island.sessionOverview.total.sao" = "LINKED";
+"island.sessionList.title.sao" = "會話";
+"island.sessionOverview.running.sao" = "執行";
+"island.sessionOverview.runningCompact.sao" = "跑";
+"island.sessionOverview.waiting.sao" = "等待";
+"island.sessionOverview.waitingCompact.sao" = "待";
+"island.sessionOverview.done.sao" = "完成";
+"island.sessionOverview.idle.sao" = "閒置";
+"island.sessionOverview.total.sao" = "總計";
 "banner.openHint" = "開啟可查看內容";
 "approval.allowOnce.sao" = "YES";
 "approval.deny.sao" = "NO";
 "approval.allowAll.sao" = "YES TO ALL";
 "approval.denyAll.sao" = "NO TO ALL";
 "approval.goToTerminal.sao" = "TELEPORT";
-"question.submit.sao" = "CONFIRM";
-"question.answerAllFirst.sao" = "INCOMPLETE — ALL ENTRIES REQUIRED";
+"question.submit.sao" = "提交答案";
+"question.answerAllFirst.sao" = "請回答所有問題後再傳送。";
 "setup.banner.noHooks.title.sao" = "LINK START";
 "settings.display.hideIdleSessions" = "隱藏已停止活動的工作階段";
 "settings.display.hideIdleSessions.help" = "不在清單中顯示已變灰的項目。始終保留最後一行，以免看起來像遺失了。";
@@ -911,3 +911,75 @@
 "settings.earshot.enabled.help" = "預設關閉。與語音回答是兩個獨立開關，可只開其一。";
 "settings.earshot.pauseCalls" = "通話時暫停";
 "settings.earshot.pauseCalls.help" = "當 Zoom / Teams / FaceTime / Webex / Skype 正在執行時停止錄製。對方並未同意被錄音。";
+
+"settings.search.placeholder" = "搜尋設定";
+"settings.search.noResults" = "沒有符合的設定類別";
+"settings.search.clear" = "清除搜尋";
+/* Clear conversation and decision surfaces */
+"island.priority.attention" = "等待您的答覆";
+"island.priority.running" = "執行中";
+"island.priority.completed" = "已完成";
+"decision.plan.title" = "確認計畫";
+"decision.approval.title" = "執行許可";
+"decision.question.title" = "回答問題";
+"decision.scope" = "您的答覆適用於此請求。額外許可僅適用於列出的範圍。";
+"decision.paseo.scope" = "您的答覆適用於此請求。額外許可僅限於Paseo列出的範圍。";
+"decision.allowOnce" = "僅允許此次";
+"decision.deny" = "拒絕";
+"decision.paseo.open" = "在Paseo中開啟此對話";
+"decision.paseo.unsupported" = "請在Paseo中查看並回答此類請求。";
+"decision.paseo.sending" = "正在傳送至Paseo…";
+"decision.question.sending" = "正在傳送答覆…";
+"decision.question.retry" = "重新傳送答覆";
+"decision.sending" = "正在傳送…";
+"decision.option.single" = "選擇一項";
+"decision.option.multiple" = "可選擇多項";
+"decision.option.selected" = "已選擇";
+"decision.option.unselected" = "未選擇";
+"decision.plan.implement" = "執行計畫";
+"decision.plan.resume" = "保留原Bypass模式並執行";
+"decision.plan.acceptEdits" = "執行時權限將切換為自動批准編輯（acceptEdits）。";
+"decision.conversation.open" = "開啟此對話：%@，%@";
+"island.empty.quiet" = "現在沒有人在等您。";
+"island.empty.start" = "開始AI對話後，此處會顯示。趁安靜，休息一下。";
+
+"decision.request" = "請求";
+"decision.continue" = "保持現狀繼續";
+"decision.other" = "其他";
+
+"decision.paseo.questionUnsupported" = "Island暫不支援回答此類問題。請在Paseo中查看。";
+// Paseo native connection
+"setup.paseo.connection" = "連線";
+"setup.paseo.state.checking" = "正在檢查";
+"setup.paseo.state.connected" = "已連線";
+"setup.paseo.state.unavailable" = "無法連線。請開啟 Paseo 後重試。";
+"setup.paseo.state.stopped" = "連線檢查已停止";
+"setup.paseo.noHooks" = "直接接收 Paseo 的問題和權限請求，無需安裝額外的鉤子。";
+"setup.paseo.retry" = "重新檢查";
+"setup.paseo.open" = "開啟 Paseo";
+
+"onboarding.openIsland" = "開啟島嶼";
+
+"onboarding.connection.none" = "尚未安裝hook整合。";
+
+"onboarding.connection.installed" = "已安裝的hook：%@";
+
+"onboarding.connection.hooksScope" = "此處檢查hook安裝狀態。Paseo連線將另行檢查。";
+
+"onboarding.connection.settings" = "開啟連線設定";
+
+"onboarding.practice.question" = "您想從哪裡開始？";
+
+"onboarding.practice.header" = "練習問題";
+
+"onboarding.practice.optionA" = "查看等待我的對話";
+
+"onboarding.practice.optionB" = "查看執行中的對話";
+
+"onboarding.practice.complete" = "練習完成。此答覆沒有打擾任何AI。";
+
+"decision.paseo.parentPermissions" = "請在父對話中檢查Paseo的持續許可。";
+"decision.paseo.forwardedQuestion" = "來自子對話的問題：%@";
+"decision.paseo.forwardedOpen" = "在Paseo中開啟此問題的對話";
+
+"nowPlaying.unavailable" = "目前環境無法取得正在播放的資訊。";

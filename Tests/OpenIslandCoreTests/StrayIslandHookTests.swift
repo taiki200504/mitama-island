@@ -63,6 +63,34 @@ struct StrayIslandHookTests {
         #expect(ClaudeHookInstaller.strayIslandHookCommands(in: after, excluding: ours).isEmpty)
     }
 
+    @Test func installedManagedHelperIsNotAnotherIslandWhenBundleHelperIsResolved() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let managed = directory.appendingPathComponent("Application Support/OpenIsland/bin/OpenIslandHooks")
+        let bundle = directory.appendingPathComponent("Mitama Island.app/Contents/Helpers/OpenIslandHooks")
+        // The name promises a resolved bundle helper; without the file the check
+        // falls back to whatever helper this machine happens to have installed.
+        for helper in [managed, bundle] {
+            try FileManager.default.createDirectory(at: helper.deletingLastPathComponent(), withIntermediateDirectories: true)
+            #expect(FileManager.default.createFile(atPath: helper.path, contents: Data(), attributes: [.posixPermissions: 0o755]))
+        }
+        let managedCommand = ClaudeHookInstaller.hookCommand(for: managed.path)
+        let original = settings(["PermissionRequest": [managedCommand, vibeCommand, "node custom-user-hook.js"]])
+        let settingsURL = directory.appendingPathComponent("settings.json")
+        try original.write(to: settingsURL)
+        let report = HookHealthCheck.checkClaude(claudeDirectory: directory, hooksBinaryURL: bundle, managedHooksBinaryURL: managed)
+        let conflicts = report.issues.compactMap { issue -> [String]? in
+            if case let .strayIslandHooksDetected(commands) = issue { return commands }
+            return nil
+        }.flatMap { $0 }
+        #expect(conflicts == [vibeCommand])
+        #expect(try Data(contentsOf: settingsURL) == original)
+        try settings(["PermissionRequest": [managedCommand]]).write(to: settingsURL)
+        let ownOnly = HookHealthCheck.checkClaude(claudeDirectory: directory, hooksBinaryURL: bundle, managedHooksBinaryURL: managed)
+        #expect(!ownOnly.issues.contains { if case .strayIslandHooksDetected = $0 { return true }; return false })
+    }
+
     /// Without a command to exclude, our own rows read as someone else's — the
     /// reason the health check skips this whole test when it cannot resolve the
     /// binary rather than accusing the island of squatting on itself.

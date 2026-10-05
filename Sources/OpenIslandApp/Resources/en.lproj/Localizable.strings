@@ -317,7 +317,7 @@
 "settings.display.showTasks" = "Show the task list";
 "settings.display.showTasks.help" = "Adds the task checklist to each session card.";
 "settings.display.showSubagents" = "Show subagents";
-"settings.display.showSubagents.help" = "Approvals and questions stay visible either way.";
+"settings.display.showSubagents.help" = "Paseo child conversations handled by a confirmed parent stay hidden. Approvals and questions remain visible when the parent cannot be verified.";
 "settings.display.showAgentActivity" = "Show what the agent is doing";
 "settings.timer.eyeBreakEnabled" = "Run the 20-20-20 eye break";
 "settings.timer.eyeBreakEnabled.help" = "Every 20 minutes, a 20-second break — starts now and restarts after every rest.";
@@ -606,7 +606,7 @@
 "settings.autoResponse.behavior.allowOnce" = "Allow this request";
 "settings.autoResponse.behavior.acceptEdits" = "Auto-accept edits from here on";
 "settings.autoResponse.behavior.bypassPermissions" = "Stop asking for this session";
-"settings.autoResponse.claudeOnly" = "The two modes need Claude Code. Other agents get a one-off approval instead.";
+"settings.autoResponse.claudeOnly" = "The two modes need Claude Code. Other agents get a one-off approval instead. Auto-response rules do not apply to Paseo sessions.";
 
 /* Agent icons */
 "settings.display.agentIcon" = "Agent icons";
@@ -616,17 +616,17 @@
 "settings.display.agentIcon.missing" = "No logos have been fetched, so the pixel marks are in use.";
 
 /* Onboarding */
-"onboarding.welcome.title" = "One place for every agent you have running";
-"onboarding.welcome.body" = "Mitama Island lives in the notch. It shows what each coding agent is doing and lets you answer them without going to find the window.";
+"onboarding.welcome.title" = "One island for your AI conversations";
+"onboarding.welcome.body" = "See which conversation is waiting for you. Answer questions and approve individual requests from the top of your screen.";
 "onboarding.cost.title" = "The expensive part is switching, not waiting";
 "onboarding.cost.body" = "Finding the terminal that asked you something costs more than the answer does. The island brings the question to you instead.";
 "onboarding.capabilities.title" = "Approve, answer and jump — from the notch";
 "onboarding.capabilities.body" = "Permission requests and questions arrive as cards you can act on directly. Tapping a session takes you to the window it is running in.";
-"onboarding.detection.title" = "What is on this Mac";
-"onboarding.detection.body" = "Found: {agents}. You can install or remove hooks for any of them later in Settings.";
+"onboarding.detection.title" = "Check your connections";
+"onboarding.detection.body" = "See the integrations installed on this Mac. You can add or change them later.";
 "onboarding.detection.none" = "nothing yet";
-"onboarding.finish.title" = "That is everything";
-"onboarding.finish.body" = "The island is at the top of your screen. Start an agent and it will appear. Settings are under the menu bar icon or ⌘,.";
+"onboarding.finish.title" = "Try answering on the island";
+"onboarding.finish.body" = "This practice stays in this screen. It sends nothing to an AI and runs no commands.";
 "onboarding.skip" = "Skip";
 "onboarding.back" = "Back";
 "onboarding.next" = "Next";
@@ -657,22 +657,22 @@
 /* SAO theme wording. English uppercase in every locale on purpose: a
    translated heads-up display reads as an ordinary label again. */
 "banner.completed.sao" = "CONGRATULATIONS";
-"island.sessionList.title.sao" = "LINKS";
-"island.sessionOverview.running.sao" = "DIVING";
-"island.sessionOverview.runningCompact.sao" = "DIVE";
-"island.sessionOverview.waiting.sao" = "SYSTEM CALL";
-"island.sessionOverview.waitingCompact.sao" = "CALL";
-"island.sessionOverview.done.sao" = "CLEARED";
-"island.sessionOverview.idle.sao" = "STANDBY";
-"island.sessionOverview.total.sao" = "LINKED";
+"island.sessionList.title.sao" = "Sessions";
+"island.sessionOverview.running.sao" = "running";
+"island.sessionOverview.runningCompact.sao" = "run";
+"island.sessionOverview.waiting.sao" = "waiting";
+"island.sessionOverview.waitingCompact.sao" = "wait";
+"island.sessionOverview.done.sao" = "done";
+"island.sessionOverview.idle.sao" = "idle";
+"island.sessionOverview.total.sao" = "total";
 "banner.openHint" = "Open the summary";
 "approval.allowOnce.sao" = "YES";
 "approval.deny.sao" = "NO";
 "approval.allowAll.sao" = "YES TO ALL";
 "approval.denyAll.sao" = "NO TO ALL";
 "approval.goToTerminal.sao" = "TELEPORT";
-"question.submit.sao" = "CONFIRM";
-"question.answerAllFirst.sao" = "INCOMPLETE — ALL ENTRIES REQUIRED";
+"question.submit.sao" = "Submit Answers";
+"question.answerAllFirst.sao" = "Answer every question to send.";
 "setup.banner.noHooks.title.sao" = "LINK START";
 "settings.display.hideIdleSessions" = "Hide sessions that have gone quiet";
 "settings.display.hideIdleSessions.help" = "Keeps greyed-out rows out of the list. The last row is always kept, so the list never looks empty by mistake.";
@@ -912,3 +912,75 @@
 "settings.earshot.enabled.help" = "Off by default. Separate from voice answers: you can have one without the other.";
 "settings.earshot.pauseCalls" = "Pause during calls";
 "settings.earshot.pauseCalls.help" = "Stops while Zoom, Teams, FaceTime, Webex, or Skype is running. The other side never agreed to this.";
+
+"settings.search.placeholder" = "Search settings";
+"settings.search.noResults" = "No matching settings categories";
+"settings.search.clear" = "Clear search";
+/* Clear conversation and decision surfaces */
+"island.priority.attention" = "Waiting for you";
+"island.priority.running" = "Running";
+"island.priority.completed" = "Completed";
+"decision.plan.title" = "Review plan";
+"decision.approval.title" = "Approve execution";
+"decision.question.title" = "Answer questions";
+"decision.scope" = "Your response applies to this request. Additional permissions apply only to the offered scope.";
+"decision.paseo.scope" = "Your response applies to this request. Additional permissions are limited to the scope offered by Paseo.";
+"decision.allowOnce" = "Allow once";
+"decision.deny" = "Deny";
+"decision.paseo.open" = "Open this conversation in Paseo";
+"decision.paseo.unsupported" = "Review and answer this type of request in Paseo.";
+"decision.paseo.sending" = "Sending to Paseo…";
+"decision.question.sending" = "Sending your answer…";
+"decision.question.retry" = "Retry answer";
+"decision.sending" = "Sending…";
+"decision.option.single" = "Choose one";
+"decision.option.multiple" = "Choose one or more";
+"decision.option.selected" = "Selected";
+"decision.option.unselected" = "Not selected";
+"decision.plan.implement" = "Implement plan";
+"decision.plan.resume" = "Implement with the previous Bypass mode";
+"decision.plan.acceptEdits" = "Execution switches permissions to automatic edit approval (acceptEdits).";
+"decision.conversation.open" = "Open this conversation: %@, %@";
+"island.empty.quiet" = "Nobody is waiting for you right now.";
+"island.empty.start" = "Start an AI conversation to see it here. Enjoy the quiet for a moment.";
+
+"decision.request" = "Request";
+"decision.continue" = "Continue as is";
+"decision.other" = "Other";
+
+"decision.paseo.questionUnsupported" = "This question format cannot be answered in Island yet. Please review it in Paseo.";
+// Paseo native connection
+"setup.paseo.connection" = "Connection";
+"setup.paseo.state.checking" = "Checking";
+"setup.paseo.state.connected" = "Connected";
+"setup.paseo.state.unavailable" = "Unavailable. Open Paseo and check again.";
+"setup.paseo.state.stopped" = "Connection checks stopped";
+"setup.paseo.noHooks" = "Questions and permissions arrive directly from Paseo. No additional hooks are needed.";
+"setup.paseo.retry" = "Check again";
+"setup.paseo.open" = "Open Paseo";
+
+"onboarding.openIsland" = "Open the island";
+
+"onboarding.connection.none" = "No hook integrations are installed yet.";
+
+"onboarding.connection.installed" = "Installed hooks: %@";
+
+"onboarding.connection.hooksScope" = "This checks hook installation. Paseo connectivity is checked separately.";
+
+"onboarding.connection.settings" = "Open connection settings";
+
+"onboarding.practice.question" = "Where would you like to start?";
+
+"onboarding.practice.header" = "Practice question";
+
+"onboarding.practice.optionA" = "See conversations waiting for me";
+
+"onboarding.practice.optionB" = "See running conversations";
+
+"onboarding.practice.complete" = "Practice complete. No AI was interrupted in the making of this answer.";
+
+"decision.paseo.parentPermissions" = "Review persistent Paseo permissions in the parent conversation.";
+"decision.paseo.forwardedQuestion" = "Question from a child conversation: %@";
+"decision.paseo.forwardedOpen" = "Open this question’s conversation in Paseo";
+
+"nowPlaying.unavailable" = "Now-playing information is unavailable in this environment.";

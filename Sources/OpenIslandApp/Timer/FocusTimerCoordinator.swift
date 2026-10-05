@@ -15,6 +15,9 @@ final class FocusTimerCoordinator {
 
     @ObservationIgnored var soundSettings: SoundSettings = .init()
     @ObservationIgnored var timerSettings: TimerSettings = .init()
+    @ObservationIgnored var finishSoundPlayer: (NotificationSoundEvent, SoundSettings) -> Void = {
+        NotificationSoundService.play($0, settings: $1)
+    }
     @ObservationIgnored var lang: LanguageManager = .shared
     /// Weak: the coordinator outlives no overlay, but nothing about a timer
     /// finishing should keep the overlay coordinator alive past its own
@@ -103,7 +106,7 @@ final class FocusTimerCoordinator {
     /// long enough nap can wake up past a phase's `endsAt` with the timer
     /// still reporting itself `.running`. Re-checking here is what turns
     /// that into a same-tick `.finished`.
-    private func recomputeAfterWake() {
+    func recomputeAfterWake() {
         guard case .running = state.phase else { return }
         applyTick(now: .now)
     }
@@ -143,7 +146,7 @@ final class FocusTimerCoordinator {
 
     private func playFinishSound() {
         guard timerSettings.playsSound else { return }
-        NotificationSoundService.play(.timerFinished, settings: soundSettings)
+        finishSoundPlayer(.timerFinished, soundSettings)
     }
 
     /// Announces the phase that just ended. Read before `.advance` runs, so

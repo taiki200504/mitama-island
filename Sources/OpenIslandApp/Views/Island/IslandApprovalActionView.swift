@@ -2,39 +2,38 @@ import SwiftUI
 import OpenIslandCore
 
 extension IslandSessionRow {
+    @ViewBuilder
     var approvalActionBody: some View {
+        if isPaseo { paseoApprovalActionBody } else {
         VStack(alignment: .leading, spacing: 8) {
-            if !isPlanApproval {
-                riskBanner(PermissionRisk.of(toolName: session.permissionRequest?.toolName))
-            }
-
             HStack(spacing: 6) {
-                Text(lang.t(isPlanApproval ? "approval.planReady" : "approval.toolPermissionRequested"))
-                    .saoCaps(size: 12.5, text: lang.t(isPlanApproval ? "approval.planReady" : "approval.toolPermissionRequested"))
-                    .foregroundStyle(SAOGrammar.Palette.ink.opacity(0.86))
+                Text(isPlanApproval ? lang.t("decision.plan.title") : lang.t("decision.approval.title"))
+                    .font(.islandDecision(size: 15, weight: .semibold))
+                    .foregroundStyle(V6Palette.paper.opacity(0.86))
 
                 if pendingApprovalCount > 1 {
                     Text(lang.t("approval.pendingCount", String(pendingApprovalCount)))
                         .font(.islandMono(size: 10, weight: .medium))
                         .padding(.horizontal, 6)
                         .padding(.vertical, 1.5)
-                        .background(SAOGrammar.Palette.ink.opacity(0.1), in: Capsule())
-                        .foregroundStyle(SAOGrammar.Palette.ink.opacity(0.6))
+                        .background(V6Palette.paper.opacity(0.1), in: Capsule())
+                        .foregroundStyle(V6Palette.paper.opacity(0.6))
                 }
             }
 
             VStack(alignment: .leading, spacing: 8) {
                 Text(commandPreviewText)
-                    .font(.islandMono(size: 11.5, weight: .semibold))
-                    .foregroundStyle(SAOGrammar.Palette.ink.opacity(0.78))
+                    .font(.islandDecision(size: 13, design: .monospaced))
+                    .textSelection(.enabled)
+                    .foregroundStyle(V6Palette.paper.opacity(0.78))
                     .fixedSize(horizontal: false, vertical: true)
 
                 if let path = session.permissionRequest?.affectedPath.trimmedForNotificationCard,
                    !path.isEmpty {
                     Text(path)
-                        .font(.islandText(size: 10.5, weight: .medium))
-                        .foregroundStyle(SAOGrammar.Palette.ink.opacity(0.42))
-                        .lineLimit(1)
+                        .font(.islandDecision(size: 12))
+                        .foregroundStyle(V6Palette.paper.opacity(0.78))
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .padding(.horizontal, 10)
@@ -43,22 +42,25 @@ extension IslandSessionRow {
             .fixedSize(horizontal: false, vertical: true)
             .background(
                 IslandThemes.current.shape(cornerRadius: 7)
-                    .fill(SAOGrammar.Palette.ink.opacity(0.06))
+                    .fill(V6Palette.paper.opacity(0.06))
             )
 
             HStack(spacing: 8) {
                 Button(shortcutHinted(session.permissionRequest?.secondaryActionTitle ?? lang.t("approval.deny"), .deny)) {
                     onApprove?(.deny)
                 }
-                .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .lightCard))
+                .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .decisionCard))
                 Button(shortcutHinted(session.permissionRequest?.primaryActionTitle ?? lang.t("approval.allowOnce"), .approve)) {
                     onApprove?(.allowOnce)
                 }
                 // The card's own primary action, not a warning — the
                 // selection gradient carries "this is the one you want" the
                 // way it does everywhere else in this grammar.
-                .buttonStyle(IslandActionButtonStyle(kind: .primary, expands: true, surface: .lightCard))
+                .buttonStyle(IslandActionButtonStyle(kind: .primary, expands: true, surface: .decisionCard))
             }
+
+            Text(lang.t("decision.scope"))
+                .font(.islandDecision(size: 12)).foregroundStyle(V6Palette.paper.opacity(0.78))
 
             // Whatever else the agent offered — "bypass permissions",
             // "accept edits", a scoped always-allow. These arrive in
@@ -68,87 +70,102 @@ extension IslandSessionRow {
                 Button(update.displayLabel) {
                     onApprove?(.allowWithUpdates([update]))
                 }
-                .buttonStyle(IslandActionButtonStyle(kind: .primary, expands: true, surface: .lightCard))
+                .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .decisionCard))
             }
 
             // Only worth offering when there is more than one thing queued.
-            if pendingApprovalCount > 1 {
+            if pendingApprovalCount > 1, onResolveAll != nil {
                 HStack(spacing: 8) {
                     Button(lang.t("approval.denyAll")) { onResolveAll?(.deny) }
-                        .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .lightCard))
+                        .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .decisionCard))
                     Button(lang.t("approval.allowAll")) { onResolveAll?(.allowOnce) }
-                        .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .lightCard))
+                        .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .decisionCard))
                 }
             }
 
             Button(shortcutHinted(lang.t("approval.goToTerminal"), .jumpToTerminal)) { onJump() }
-                .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .lightCard))
+                .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .decisionCard))
         }
-        .padding(10)
-        .saoCard()
-        // A red edge for anything that changes the machine. A soft halo was
-        // the first try and it bled through the white card until the whole
-        // thing read pink; a line stays outside the paper.
-        .overlay(
-            SAOPanelShape(cornerRadius: 10, cutDepth: 14)
-                .stroke(SAOGrammar.Palette.danger.opacity(approvalIsElevated ? 0.7 : 0), lineWidth: 1.5)
-        )
-        .shadow(color: approvalIsElevated ? SAOGrammar.Palette.danger.opacity(0.28) : .clear, radius: 6)
+        .foregroundStyle(V6Palette.paper)
+        .islandDecisionCard()
+        }
     }
 
-    private var approvalIsElevated: Bool {
-        !isPlanApproval && PermissionRisk.of(toolName: session.permissionRequest?.toolName) == .elevated
-    }
+    var isPaseo: Bool { session.jumpTarget?.terminalApp == "Paseo" }
 
-    /// The system-message strip across the top of the card: hazard stripes and
-    /// a caution for anything that writes, runs or deletes; a quiet tag for
-    /// tools that only look. Same classification the voice gate uses, so the
-    /// card and the second "yes" never disagree about what is dangerous.
-    @ViewBuilder
-    private func riskBanner(_ risk: PermissionRisk) -> some View {
-        switch risk {
-        case .elevated:
-            HStack(spacing: 7) {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 11, weight: .bold))
-                Text("WARNING")
-                    .saoCaps(size: 11.5, text: "WARNING")
-                Text(lang.t("approval.risk.elevated"))
-                    .font(.islandText(size: 10.5, weight: .semibold))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                Spacer(minLength: 0)
+    private var paseoApprovalActionBody: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(lang.t("decision.approval.title"))
+                .font(.islandDecision(size: 15, weight: .semibold))
+            Text(session.permissionRequest?.toolName ?? lang.t("decision.request"))
+                .font(.islandDecision(size: 13, weight: .semibold))
+            Text(session.permissionRequest?.summary ?? session.summary)
+                .font(.islandDecision(size: 13))
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+            if let path = session.permissionRequest?.affectedPath.trimmedForNotificationCard, !path.isEmpty {
+                Text(path).font(.islandDecision(size: 12))
+                    .foregroundStyle(V6Palette.paper.opacity(0.78))
+                    .textSelection(.enabled).lineLimit(2).help(path)
             }
-            .foregroundStyle(.white)
-            .padding(.horizontal, 9)
-            .padding(.vertical, 5)
-            .background(
-                ZStack {
-                    SAOGrammar.Palette.danger
-                    HazardStripes()
-                        .fill(Color.black.opacity(0.16))
+            Text(lang.t("decision.paseo.scope"))
+                .font(.islandDecision(size: 12))
+                .foregroundStyle(V6Palette.paper.opacity(0.8))
+
+            if session.permissionRequest?.requiresTerminalApproval != true {
+                Group {
+                let context = session.permissionRequest?.paseoContext
+                if let context, !context.actions.isEmpty {
+                    ForEach(context.actions) { action in
+                        Button(paseoActionLabel(action)) {
+                            onApprove?(.paseoAction(requestID: context.requestID, actionID: action.id))
+                        }
+                        .buttonStyle(IslandActionButtonStyle(kind: action.id == preferredPaseoActionID ? .primary : .secondary,
+                                                            expands: true, surface: .decisionCard))
+                        if action.intent == "implement" {
+                            Text(lang.t("decision.plan.acceptEdits"))
+                                .font(.islandDecision(size: 12)).foregroundStyle(V6Palette.paper.opacity(0.8))
+                        }
+                    }
+                } else {
+                    HStack(spacing: 8) {
+                        Button(lang.t("decision.deny")) { onApprove?(.deny) }
+                            .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .decisionCard))
+                        Button(lang.t("decision.allowOnce")) { onApprove?(.allowOnce) }
+                            .buttonStyle(IslandActionButtonStyle(kind: .primary, expands: true, surface: .decisionCard))
+                    }
                 }
-                .clipShape(Self.bannerShape)
-            )
-            .overlay(Self.bannerShape.stroke(Color.black.opacity(0.35), lineWidth: 1))
-            .accessibilityElement(children: .combine)
-        case .ordinary:
-            HStack(spacing: 5) {
-                Image(systemName: "eye")
-                    .font(.system(size: 9, weight: .semibold))
-                Text(lang.t("approval.risk.ordinary"))
-                    .font(.islandMono(size: 9.5, weight: .semibold))
+                ForEach(Array((session.permissionRequest?.suggestedUpdates ?? []).enumerated()), id: \.offset) { _, update in
+                    Button(update.displayLabel) { onApprove?(.allowWithUpdates([update])) }
+                        .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .decisionCard))
+                }
+                }
+                .disabled(submissionIsSending)
+            } else {
+                Text(lang.t("decision.paseo.unsupported"))
+                    .font(.islandDecision(size: 13))
             }
-            .foregroundStyle(SAOGrammar.Palette.systemCyan)
-            .padding(.horizontal, 7)
-            .padding(.vertical, 2.5)
-            .background(Self.bannerShape.fill(SAOGrammar.Palette.systemCyan.opacity(0.12)))
-            .overlay(Self.bannerShape.stroke(SAOGrammar.Palette.systemCyan.opacity(0.4), lineWidth: 0.75))
-            .accessibilityElement(children: .combine)
+            if submissionIsSending {
+                HStack(spacing: 8) { ProgressView().controlSize(.small); Text(lang.t("decision.paseo.sending")) }
+                    .font(.islandDecision(size: 12))
+            }
+            if let submissionError {
+                Text(submissionError).font(.islandDecision(size: 12)).foregroundStyle(SAOGrammar.Palette.danger)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Button(lang.t("decision.paseo.open"), action: onExplicitJump ?? onJump)
+                .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .decisionCard))
         }
+        .foregroundStyle(V6Palette.paper.opacity(0.92))
+        .islandDecisionCard()
     }
 
-    private static let bannerShape = SAOPanelShape(cornerRadius: 3, cuts: [.topLeading, .bottomTrailing], cutDepth: 6)
+    private func paseoActionLabel(_ action: PaseoPermissionAction) -> String {
+        if action.behavior == "deny" { return lang.t("decision.deny") }
+        if action.intent == "implement_resume" { return lang.t("decision.plan.resume") }
+        if action.intent == "implement" { return lang.t("decision.plan.implement") }
+        return action.label
+    }
 
     /// Appends the key that also triggers this button, but only while the
     /// modifier is held — a permanent "⌃Y" on every button is clutter, and one
@@ -158,41 +175,41 @@ extension IslandSessionRow {
         return "\(title)  \(hint.modifier.symbol)\(hint.key(for: action))"
     }
 
-    /// The agent's own options, falling back to a session-scoped always-allow
-    /// when it offered none — which is what the card used to hard-code.
-    ///
-    /// The mode choices are appended when the agent left them out, because it
-    /// only volunteers those for mode-shaped prompts like a plan-mode exit, and
-    /// without them the island cannot answer "stop asking" at all. They go last,
-    /// widest-reaching at the bottom, so the safe answers stay under the cursor.
-    private var suggestedApprovalUpdates: [ClaudePermissionUpdate] {
-        var options = session.permissionRequest?.suggestedUpdates ?? []
+    var suggestedApprovalUpdates: [ClaudePermissionUpdate] {
+        session.permissionRequest?.suggestedUpdates ?? []
+    }
 
-        if options.isEmpty, let toolName = session.permissionRequest?.toolName {
-            options.append(
-                .addRules(
-                    destination: .session,
-                    rules: [ClaudePermissionRuleValue(toolName: toolName)],
-                    behavior: .allow
-                )
-            )
-        }
-
-        for mode in [ClaudePermissionMode.acceptEdits, .bypassPermissions] {
-            guard !options.contains(where: { $0.setsPermissionMode(mode) }),
-                  let update = session.permissionModeUpdate(for: mode) else { continue }
-            options.append(update)
-        }
-
-        return options
+    private var preferredPaseoActionID: String? {
+        let actions = session.permissionRequest?.paseoContext?.actions ?? []
+        return actions.first(where: { $0.intent == "implement_resume" })?.id
+            ?? actions.first(where: { $0.variant == "primary" && $0.behavior == "allow" })?.id
     }
 
     var questionActionBody: some View {
-        StructuredQuestionPromptView(
-            prompt: session.questionPrompt,
-            lang: lang,
-            onAnswer: { onAnswer?($0) }
-        )
+        VStack(alignment: .leading, spacing: 8) {
+            if let source = forwardedQuestionSourceTitle?.trimmedForNotificationCard, !source.isEmpty {
+                Text(lang.t("decision.paseo.forwardedQuestion", source))
+                    .font(.islandDecision(size: 12, weight: .medium))
+                    .foregroundStyle(V6Palette.paper.opacity(0.82))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            StructuredQuestionPromptView(
+                prompt: session.questionPrompt, lang: lang, isPaseo: isPaseo,
+                isSending: submissionIsSending, errorMessage: submissionError,
+                onAnswer: { onAnswer?($0) }
+            )
+            .id(session.questionPrompt?.id)
+            if isPaseo {
+                Button(questionConversationActionTitle, action: onExplicitJump ?? onJump)
+                    .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .decisionCard))
+            }
+        }
+    }
+
+    var questionConversationActionTitle: String {
+        let forwarded = forwardedQuestionSourceTitle?.trimmedForNotificationCard.isEmpty == false
+        return lang.t(forwarded ? "decision.paseo.forwardedOpen" : "decision.paseo.open")
     }
 
     private var commandLabel: String {

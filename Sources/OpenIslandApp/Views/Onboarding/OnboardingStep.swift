@@ -1,15 +1,13 @@
 import Foundation
 import OpenIslandCore
 
-/// The five screens shown once, on a genuinely first launch.
+/// The three screens shown once, on a genuinely first launch.
 ///
 /// No paywall and no licence entry — the reference product's two commercial
 /// screens have no counterpart here, and inventing something to fill the gap
 /// would only lengthen the thing standing between the user and the app.
 enum OnboardingStep: Int, CaseIterable, Identifiable, Sendable {
     case welcome
-    case cost
-    case capabilities
     case detection
     case finish
 
@@ -20,8 +18,6 @@ enum OnboardingStep: Int, CaseIterable, Identifiable, Sendable {
     var symbolName: String {
         switch self {
         case .welcome: "circle.hexagongrid.fill"
-        case .cost: "arrow.triangle.branch"
-        case .capabilities: "bell.badge.fill"
         case .detection: "magnifyingglass"
         case .finish: "checkmark.seal.fill"
         }
@@ -30,8 +26,6 @@ enum OnboardingStep: Int, CaseIterable, Identifiable, Sendable {
     private var name: String {
         switch self {
         case .welcome: "welcome"
-        case .cost: "cost"
-        case .capabilities: "capabilities"
         case .detection: "detection"
         case .finish: "finish"
         }
@@ -68,8 +62,21 @@ struct OnboardingFlow: Equatable, Sendable {
     }
 
     /// Skipping is finishing. Someone who skips has decided; showing them the
-    /// same five screens next launch would read as the app not listening.
+    /// same three screens next launch would read as the app not listening.
     mutating func skip() {
         isFinished = true
+    }
+}
+
+/// Only a valid answer to the local practice question completes the exercise.
+/// This value has no agent, SDK, bridge, or session-state dependency.
+struct OnboardingPractice: Equatable, Sendable {
+    static let answerKey = "onboarding-practice"
+    private(set) var isComplete = false
+
+    mutating func answer(_ response: QuestionPromptResponse, allowedAnswers: [String]) {
+        guard let answer = response.answers[Self.answerKey], !answer.isEmpty,
+              allowedAnswers.contains(answer) else { return }
+        isComplete = true
     }
 }

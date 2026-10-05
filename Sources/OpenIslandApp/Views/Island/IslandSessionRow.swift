@@ -32,12 +32,18 @@ struct IslandSessionRow: View {
     var sideInset: CGFloat = 16
     var cardFields: IslandSessionCardFields = .all
     var lang: LanguageManager = .shared
+    var paseoModeLabel: String?
+    var submissionIsSending = false
+    var submissionError: String?
+    var submissionSuccess: String?
+    var forwardedQuestionSourceTitle: String?
     var onApprove: ((ApprovalAction) -> Void)?
     /// Answers every queued request at once. Nil when batching makes no sense.
     var onResolveAll: ((ApprovalAction) -> Void)?
     var pendingApprovalCount: Int = 1
     var onAnswer: ((QuestionPromptResponse) -> Void)?
     var onReply: ((String) -> Void)?
+    var onExplicitJump: (() -> Void)?
     let onJump: () -> Void
     var onDismiss: (() -> Void)?
     /// Adds a rule that keeps this kind of session off the island for good.
@@ -57,6 +63,7 @@ struct IslandSessionRow: View {
     var isGestureHighlighted = false
     /// Prefer a name derived from the first prompt over the workspace name.
     var usesAutoNaming = false
+    var authoritativePaseoTitle: String? = nil
 
     @State var isHighlighted = false
     @State var detailOverride: Bool?
@@ -87,10 +94,15 @@ struct IslandSessionRow: View {
             // approve/deny/answer controls, and a press on one of those must
             // not also count as "clicked this session".
             rowSummary(presence: presence, showsDetail: showsDetail)
-                .contentShape(Rectangle())
-                .onTapGesture(perform: handlePrimaryTap)
                 .contextMenu { hideSessionMenuItems }
 
+            if let submissionSuccess {
+                Label(submissionSuccess, systemImage: "checkmark.circle.fill")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(V6Palette.paper.opacity(0.9))
+                    .padding(.horizontal, sideInset)
+                    .padding(.bottom, 6)
+            }
             if showsDetail {
                 rowAuxiliaryDetails(presence: presence)
 
@@ -217,7 +229,10 @@ struct IslandSessionRow: View {
                 onHide?(SilenceRule(field: .terminalApp, match: .equals, pattern: app))
             }
         }
-        if onAutoApprove != nil, let directory = session.jumpTarget?.workingDirectory, !directory.isEmpty {
+        if isPaseo {
+            Text(lang.t("decision.paseo.parentPermissions"))
+        }
+        if !isPaseo, onAutoApprove != nil, let directory = session.jumpTarget?.workingDirectory, !directory.isEmpty {
             Button(
                 LanguageManager.shared.t("island.session.autoApproveFolder")
                     .replacingOccurrences(of: "{name}", with: (directory as NSString).lastPathComponent)
@@ -252,33 +267,17 @@ struct IslandSessionRow: View {
                     .frame(width: 20, alignment: .top)
             }
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text(summaryHeadlineText)
-                    .font(summaryTitleFont)
-                    .foregroundStyle(titleColor(for: presence))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-
-                if showsDetail {
-                    vitalsGauge
-                }
-
-                if showsDetail,
-                   let promptLine = summaryPromptLineText {
-                    Text(promptLine)
-                        .font(.islandText(size: 11.2, weight: .medium))
-                        .foregroundStyle(summaryPromptColor(for: presence))
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                }
+            Button(action: handlePrimaryTap) {
+                IslandSessionContextView(session: session, title: summaryHeadlineText,
+                    modeLabel: paseoModeLabel ?? session.permissionRequest?.paseoContext?.currentModeLabel,
+                    showsWorkspace: isActionable || cardFields.showsProjectName, expanded: isActionable)
             }
+            .buttonStyle(.plain)
+            .accessibilityLabel(lang.t("decision.conversation.open", summaryHeadlineText, session.spotlightWorkspaceName))
 
             Spacer(minLength: 10)
 
             HStack(spacing: 6) {
-                if cardFields.showsProjectName, let project = session.spotlightProjectBadge {
-                    sideBadge(project)
-                }
                 if cardFields.showsWorktree, let branch = session.claudeMetadata?.worktreeBranch,
                    !branch.isEmpty {
                     sideBadge(branch)
@@ -290,12 +289,8 @@ struct IslandSessionRow: View {
                 if isStalledForBadge {
                     stallBadge
                 }
-                agentBadge
                 if session.isRemote {
                     sideBadge("SSH")
-                }
-                if let terminalBadge = session.spotlightTerminalBadge {
-                    sideBadge(terminalBadge)
                 }
                 Text(session.spotlightAgeBadge)
                     .font(.islandMono(size: 10.5, weight: .medium))

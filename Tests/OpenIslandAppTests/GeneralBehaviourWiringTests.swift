@@ -32,7 +32,7 @@ struct GeneralBehaviourWiringTests {
         suite.removePersistentDomain(forName: name)
         let settings = SettingsStore(store: PreferenceStore(suite: suite))
         let log = JumpLog()
-        let model = AppModel(
+        let model = isolatedAppModel(
             terminalJumpAction: { target in
                 log.record(target)
                 return "jumped"

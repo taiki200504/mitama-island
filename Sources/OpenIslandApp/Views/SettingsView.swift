@@ -20,6 +20,7 @@ private struct HidesSidebarToggle: ViewModifier {
 struct SettingsView: View {
     var model: AppModel
     @State private var selectedTab: SettingsTab = .general
+    @State private var searchQuery = ""
 
     private var lang: LanguageManager { model.lang }
 
@@ -50,25 +51,60 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var sidebar: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 6) {
+                TextField(lang.t("settings.search.placeholder"), text: $searchQuery)
+                    .textFieldStyle(.roundedBorder)
+                    .accessibilityIdentifier("settings.search")
+                if !searchQuery.isEmpty {
+                    Button { searchQuery = "" } label: {
+                        Image(systemName: "xmark.circle.fill")
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel(lang.t("settings.search.clear"))
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.top, 12)
+            if matchingTabs.isEmpty {
+                Text(lang.t("settings.search.noResults"))
+                    .foregroundStyle(.secondary)
+                    .padding()
+                Spacer()
+            } else {
+                settingsSidebarList
+            }
+        }
+    }
+
+    private var matchingTabs: [SettingsTab] {
+        SettingsTab.matching(searchQuery, labels: Dictionary(uniqueKeysWithValues:
+            SettingsTab.allCases.map { ($0, $0.label(lang)) }))
+    }
+
+    private var settingsSidebarList: some View {
         List(selection: $selectedTab) {
             ForEach(SettingsSection.allCases, id: \.self) { section in
-                Section {
-                    ForEach(section.tabs) { tab in
-                        Label {
-                            Text(tab.label(lang))
-                        } icon: {
-                            SettingsIconChip(systemImage: tab.icon, tint: tab.tint)
+                if section.tabs.contains(where: matchingTabs.contains) {
+                    Section {
+                        ForEach(section.tabs.filter(matchingTabs.contains)) { tab in
+                            Label {
+                                Text(tab.label(lang))
+                            } icon: {
+                                SettingsIconChip(systemImage: tab.icon, tint: tab.tint)
+                            }
+                            .tag(tab)
+                            // A stable handle for driving the sidebar from a UI
+                            // test. Deliberately no other accessibility overrides
+                            // here: the row's native selection semantics are what
+                            // VoiceOver should see.
+                            .accessibilityIdentifier("settings.tab.\(tab.rawValue)")
                         }
-                        .tag(tab)
-                        // A stable handle for driving the sidebar from a UI
-                        // test. Deliberately no other accessibility overrides
-                        // here: the row's native selection semantics are what
-                        // VoiceOver should see.
-                        .accessibilityIdentifier("settings.tab.\(tab.rawValue)")
-                    }
-                } header: {
-                    if let header = section.header(lang) {
-                        Text(header)
+                    } header: {
+                        if let header = section.header(lang) {
+                            Text(header)
+                        }
                     }
                 }
             }
@@ -112,7 +148,7 @@ struct SettingsView: View {
                 MitamaSettingsPane(model: model)
             }
 
-            if model.updateChecker.hasUpdate, let version = model.updateChecker.latestVersion {
+            if model.updateChecker.isEnabled, model.updateChecker.hasUpdate, let version = model.updateChecker.latestVersion {
                 UpdateBanner(version: version, lang: lang) {
                     model.updateChecker.checkForUpdates()
                 }
@@ -156,18 +192,18 @@ struct AboutSettingsPane: View {
             Divider()
 
             Form {
-                Section {
-                    aboutActionRow(
-                        title: lang.t("settings.about.checkForUpdates"),
-                        systemImage: "arrow.triangle.2.circlepath",
-                        tint: primaryInk,
-                        action: {
-                            model.updateChecker.checkForUpdates()
-                        }
-                    )
-                    .disabled(!model.updateChecker.canCheckForUpdates)
-                    .opacity(model.updateChecker.canCheckForUpdates ? 1 : 0.55)
-                    .accessibilityIdentifier("settings.about.checkForUpdates")
+                if model.updateChecker.isEnabled {
+                    Section {
+                        aboutActionRow(
+                            title: lang.t("settings.about.checkForUpdates"),
+                            systemImage: "arrow.triangle.2.circlepath",
+                            tint: primaryInk,
+                            action: { model.updateChecker.checkForUpdates() }
+                        )
+                        .disabled(!model.updateChecker.canCheckForUpdates)
+                        .opacity(model.updateChecker.canCheckForUpdates ? 1 : 0.55)
+                        .accessibilityIdentifier("settings.about.checkForUpdates")
+                    }
                 }
 
                 // A GPL v3 fork bundling an OFL font owes both an acknowledgement.
@@ -256,13 +292,15 @@ struct SetupSettingsPane: View {
 
     var body: some View {
         Form {
-            if !model.hasAnyInstalledAgent {
+            if !model.hasAnyAgentConnection {
                 emptyStateBanner
             }
 
             if !model.sessionsPredatingHookInstall.isEmpty {
                 restartSessionsBanner
             }
+
+            paseoConnectionSection
 
             claudeConfigDirectorySection
 
@@ -572,6 +610,30 @@ struct SetupSettingsPane: View {
             Text(lang.t("setup.claudeConfigDir.footer"))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
+        }
+    }
+
+    private var paseoConnectionSection: some View {
+        Section("Paseo") {
+            LabeledContent(lang.t("setup.paseo.connection")) {
+                Text(lang.t("setup.paseo.state.\(model.paseoConnectionState.rawValue)"))
+                    .foregroundStyle(model.paseoConnectionState == .connected ? Color.green : Color.secondary)
+            }
+            Text(lang.t("setup.paseo.noHooks"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            HStack {
+                Button(lang.t("setup.paseo.retry")) {
+                    Task { await model.paseoQuestions.poll() }
+                }
+                .accessibilityIdentifier("settings.paseo.retry")
+                Button(lang.t("setup.paseo.open")) {
+                    guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "sh.paseo.desktop") else { return }
+                    NSWorkspace.shared.open(url)
+                }
+                .disabled(NSWorkspace.shared.urlForApplication(withBundleIdentifier: "sh.paseo.desktop") == nil)
+                .accessibilityIdentifier("settings.paseo.open")
+            }
         }
     }
 

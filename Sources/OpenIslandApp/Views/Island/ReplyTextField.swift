@@ -33,6 +33,7 @@ struct ReplyTextField: NSViewRepresentable {
     var placeholder: String
     @Binding var text: String
     var onSubmit: () -> Void
+    var requestsInitialFocus = false
 
     func makeNSView(context: Context) -> NSTextField {
         let field = ReplyField()
@@ -55,6 +56,14 @@ struct ReplyTextField: NSViewRepresentable {
         field.delegate = context.coordinator
         field.cell?.lineBreakMode = .byTruncatingTail
         field.cell?.usesSingleLineMode = true
+        if requestsInitialFocus {
+            DispatchQueue.main.async { [weak field] in
+                guard let field, let window = field.window else { return }
+                TextInputFocusHandoff.take()
+                window.makeKey()
+                window.makeFirstResponder(field)
+            }
+        }
         return field
     }
 

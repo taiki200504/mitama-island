@@ -26,6 +26,15 @@ enum IslandChromeMetrics {
     /// The backstop for the panel getting its own height slightly wrong: past
     /// this the card scrolls, so nothing inside it can be out of reach.
     static let notificationContentMaxHeight: CGFloat = 520
+    static let notificationContentPadding: CGFloat = 48
+
+    static func notificationViewportHeight(maxPanelHeight: CGFloat, availableHeight: CGFloat = .greatestFiniteMagnitude) -> CGFloat {
+        max(0, min(notificationContentMaxHeight, maxPanelHeight - notificationContentPadding, availableHeight))
+    }
+
+    static func questionOptionsViewportHeight(maxPanelHeight: CGFloat) -> CGFloat {
+        min(questionOptionListMaxHeight, max(100, maxPanelHeight - 360))
+    }
 
     // MARK: - Floating pill (non-notched displays, closed island)
 

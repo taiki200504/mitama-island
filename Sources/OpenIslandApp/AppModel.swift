@@ -100,9 +100,53 @@ final class AppModel {
     var selectedSessionID: String?
     let hooks = HookInstallationCoordinator()
     let overlay: OverlayUICoordinator
-    let discovery = SessionDiscoveryCoordinator()
+    let discovery: SessionDiscoveryCoordinator
     let monitoring = ProcessMonitoringCoordinator()
     let codexAppServer = CodexAppServerCoordinator()
+    @ObservationIgnored var paseoQuestions: PaseoQuestionCoordinator
+    private var paseoDelegatedSessionIDs: Set<String> = [] {
+        didSet { _cachedSessionBuckets = nil }
+    }
+    private func liveLocalCodexParent(of child: AgentSession) -> AgentSession? {
+        guard child.tool == .codex, let parentID = child.codexMetadata?.parentThreadID,
+              parentID != child.id, let parent = state.session(id: parentID),
+              parent.tool == .codex, parent.origin == .live, !parent.isSessionEnded,
+              parent.attachmentState.isLive,
+              parent.isProcessAlive || (parent.isHookManaged && parent.phase != .completed) else { return nil }
+        return parent
+    }
+
+    private var delegatedSessionIDs: Set<String> {
+        let local = state.sessions.compactMap { child -> String? in
+            guard child.questionPrompt == nil, child.phase != .waitingForAnswer,
+                  liveLocalCodexParent(of: child) != nil else { return nil }
+            return child.id
+        }
+        return paseoDelegatedSessionIDs.union(local)
+    }
+
+    func localCodexQuestionSourceTitle(sessionID: String) -> String? {
+        guard let child = state.session(id: sessionID),
+              child.questionPrompt != nil || child.phase == .waitingForAnswer,
+              let parent = liveLocalCodexParent(of: child) else { return nil }
+        return "\(child.title)（親: \(parent.title)）"
+    }
+
+    @ObservationIgnored private var paseoLookupSessionIDs: Set<String> = []
+    @ObservationIgnored private var paseoLookedUpSessionIDs: Set<String> = []
+    @ObservationIgnored private var paseoDeferredEvents: [String: AgentEvent] = [:]
+    @ObservationIgnored private var paseoBindingLookupTask: Task<Void, Never>?
+    var paseoConnectionState: PaseoConnectionState = .checking
+    var forwardedQuestionTargets: [String: String] = [:]
+    @ObservationIgnored private var forwardedQuestionOriginals: [String: AgentSession] = [:]
+    @ObservationIgnored private var forwardedQuestionSnapshots: [String: AgentSession] = [:]
+    @ObservationIgnored private var paseoQuestionOrder: [String: Int] = [:]
+    @ObservationIgnored private var paseoQuestionTicket = 0
+    var paseoSendingSessionIDs: Set<String> = []
+    var paseoErrors: [String: String] = [:]
+    var paseoSuccesses: [String: String] = [:]
+    var paseoModeLabels: [String: String] = [:]
+    @ObservationIgnored private var paseoSDKQuestionPromptIDs: [String: UUID] = [:]
     let updateChecker = UpdateChecker()
 
     var notchStatus: NotchStatus {
@@ -200,6 +244,14 @@ final class AppModel {
             || hooks.geminiHooksInstalled
             || hooks.kimiHooksInstalled
     }
+    var hasAnyAgentConnection: Bool {
+        hasAnyInstalledAgent || paseoConnectionState == .connected
+    }
+
+    var connectedAgentDisplayNames: [String] {
+        installedAgentDisplayNames + (paseoConnectionState == .connected ? ["Paseo"] : [])
+    }
+
     func refreshCodexHookStatus() { hooks.refreshCodexHookStatus() }
     func refreshClaudeHookStatus() { hooks.refreshClaudeHookStatus() }
     func refreshOpenCodePluginStatus() { hooks.refreshOpenCodePluginStatus() }
@@ -310,6 +362,11 @@ final class AppModel {
         didSet {
             guard hasFinishedInit, showCodexUsage != oldValue else { return }
             UserDefaults.standard.set(showCodexUsage, forKey: Self.showCodexUsageDefaultsKey)
+            if showCodexUsage {
+                hooks.startCodexUsageMonitoringIfNeeded()
+            } else {
+                hooks.stopCodexUsageMonitoring()
+            }
         }
     }
     var completionReplyEnabled: Bool = false {
@@ -748,7 +805,7 @@ final class AppModel {
             // Safe to call from any queue — reads a snapshot count.
             guard let self else { return 0 }
             return MainActor.assumeIsolated {
-                self.state.sessions.count
+                self.islandListSessions.count
             }
         }
     }
@@ -863,9 +920,13 @@ final class AppModel {
             await ForegroundTerminalSessionProbe().matches(session: session)
         },
         settings: SettingsStore = .shared,
-        quietScenes: QuietSceneMonitor = QuietSceneMonitor()
+        quietScenes: QuietSceneMonitor = QuietSceneMonitor(),
+        paseoQuestions: PaseoQuestionCoordinator = PaseoQuestionCoordinator(),
+        discovery: SessionDiscoveryCoordinator = SessionDiscoveryCoordinator()
     ) {
+        self.discovery = discovery
         self.quietScenes = quietScenes
+        self.paseoQuestions = paseoQuestions
         self.terminalJumpAction = terminalJumpAction
         self.isNotificationSessionAlreadyFrontmost = isNotificationSessionAlreadyFrontmost
         self.settings = settings
@@ -1705,7 +1766,10 @@ final class AppModel {
     }
 
     var focusedSession: AgentSession? {
-        state.session(id: selectedSessionID) ?? surfacedSessions.first ?? state.activeActionableSession ?? state.sessions.first
+        let delegatedIDs = delegatedSessionIDs
+        let visible = state.sessions.filter { !delegatedIDs.contains($0.id) }
+        let selected = state.session(id: selectedSessionID).flatMap { delegatedIDs.contains($0.id) ? nil : $0 }
+        return selected ?? surfacedSessions.first ?? visible.first(where: { $0.phase.requiresAttention }) ?? visible.first
     }
 
     var activeIslandCardSession: AgentSession? {
@@ -1713,6 +1777,7 @@ final class AppModel {
             return nil
         }
 
+        guard !delegatedSessionIDs.contains(sessionID) else { return nil }
         return state.session(id: sessionID)
     }
 
@@ -1859,6 +1924,7 @@ final class AppModel {
                 let full = self.discovery.loadStartupDiscoveryPayload()
                 await MainActor.run {
                     self.applyStartupDiscoveryPayload(full)
+                    Task { await self.reconcilePaseoSessionsOnce() }
                 }
             }
 
@@ -1894,13 +1960,218 @@ final class AppModel {
             return
         }
 
+        startAgentConnections { try bridgeServer.start() }
+    }
+
+    func startAgentConnections(bridgeStart: () throws -> Void) {
+        connectPaseoQuestions()
         do {
-            try bridgeServer.start()
+            try bridgeStart()
             connectBridgeObserver()
         } catch {
             isBridgeReady = false
             lastActionMessage = "Failed to start local bridge: \(error.localizedDescription)"
             harnessRuntimeMonitor?.recordMilestone("bridgeStartFailed", message: lastActionMessage)
+        }
+    }
+
+    func connectPaseoQuestions() {
+        paseoConnectionState = paseoQuestions.healthState
+        paseoQuestions.onHealthChange = { [weak self] state in
+            self?.paseoConnectionState = state
+        }
+        paseoQuestions.onDelegationChange = { [weak self] ids in
+            guard let self else { return }
+            self.paseoDelegatedSessionIDs = ids
+            if let id = self.islandSurface.sessionID, ids.contains(id) { self.islandSurface = .sessionList() }
+            self.synchronizeSelection()
+        }
+        paseoQuestions.onRequestsChange = { [weak self] requests, previous in
+            guard let self else { return }
+            for (id, old) in previous where requests[id] == nil {
+                guard !self.bridgeServer.hasLivePendingHook(sessionID: id) else { continue }
+                let session = self.state.session(id: id)
+                if session?.questionPrompt?.id == old.question?.prompt.id && old.question != nil
+                    || session?.permissionRequest?.id == old.permission?.id && old.permission != nil {
+                    self.state.apply(.actionableStateResolved(ActionableStateResolved(sessionID: id,
+                        summary: "Paseo側で要求が解消されました。", timestamp: .now)))
+                }
+            }
+            for (id, pending) in requests {
+                self.adoptPaseoTitle(pending.binding)
+                self.paseoModeLabels[id] = pending.binding.currentModeLabel ?? "モード情報なし"
+                if previous[id]?.requestID != pending.requestID {
+                    self.paseoErrors.removeValue(forKey: id)
+                    self.paseoSuccesses.removeValue(forKey: id)
+                }
+                if self.state.session(id: id) == nil {
+                    self.applyTrackedEvent(.sessionStarted(SessionStarted(
+                        sessionID: id, title: pending.binding.title,
+                        tool: pending.binding.provider == "codex" ? .codex : .claudeCode,
+                        summary: pending.question?.prompt.title ?? pending.permission?.summary ?? pending.name,
+                        timestamp: .now, jumpTarget: pending.binding.jumpTarget
+                    )), updateLastActionMessage: false)
+                }
+                if self.state.session(id: id)?.jumpTarget != pending.binding.jumpTarget {
+                    self.state.apply(.jumpTargetUpdated(JumpTargetUpdated(sessionID: id,
+                        jumpTarget: pending.binding.jumpTarget, timestamp: .now)))
+                }
+                if self.paseoQuestions.needsParentHandoff(sessionID: id) {
+                    self.paseoErrors[id] = "親への引継ぎが必要です。ここから回答できます。"
+                }
+                let mergesHook = self.bridgeServer.hasMatchingPaseoHook(pending)
+                if let question = pending.question { self.paseoSDKQuestionPromptIDs[id] = question.prompt.id }
+                if let question = pending.question, self.state.session(id: id)?.questionPrompt?.id != question.prompt.id {
+                    let event = AgentEvent.questionAsked(QuestionAsked(sessionID: id, prompt: question.prompt, timestamp: .now))
+                    if mergesHook || previous[id]?.requestID == pending.requestID || self.paseoDelegatedSessionIDs.contains(id) { self.state.apply(event) }
+                    else { self.applyTrackedEvent(event, updateLastActionMessage: false) }
+                } else if let permission = pending.permission, self.state.session(id: id)?.permissionRequest?.id != permission.id {
+                    let event = AgentEvent.permissionRequested(PermissionRequested(sessionID: id, request: permission, timestamp: .now))
+                    if mergesHook || previous[id]?.requestID == pending.requestID || self.paseoDelegatedSessionIDs.contains(id) { self.state.apply(event) }
+                    else { self.applyTrackedEvent(event, updateLastActionMessage: false) }
+                }
+            }
+            self.refreshForwardedPaseoQuestions()
+            self.synchronizeSelection()
+            self.refreshOverlayPlacementIfVisible()
+            self.refreshSustainedCamera()
+        }
+        paseoQuestions.start()
+    }
+
+    func authoritativePaseoTitle(sessionID: String) -> String? {
+        guard let binding = paseoQuestions.knownBinding(sessionID: sessionID), binding.sessionID == sessionID else { return nil }
+        let title = binding.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        return title.isEmpty || title == "Paseo" ? nil : title
+    }
+
+    func forwardedPaseoQuestionSource(sessionID: String) -> (childSessionID: String, title: String)? {
+        guard let child = forwardedQuestionTargets[sessionID],
+              paseoQuestions.parentSessionID(for: child) == sessionID,
+              let pending = paseoQuestions.requests[child],
+              pending.question?.prompt.id == state.session(id: sessionID)?.questionPrompt?.id else { return nil }
+        return (child, pending.binding.title)
+    }
+
+    private func refreshForwardedPaseoQuestions() {
+        var sessions = state.sessions
+        let previousProjections = forwardedQuestionSnapshots
+        let previousTargets = forwardedQuestionTargets
+        for (parent, projected) in forwardedQuestionSnapshots {
+            if let index = sessions.firstIndex(where: { $0.id == parent }),
+               let original = forwardedQuestionOriginals[parent] {
+                if sessions[index] == projected { sessions[index] = original }
+                else if sessions[index].questionPrompt?.id == projected.questionPrompt?.id,
+                        paseoQuestions.requests[parent] == nil {
+                    sessions[index].questionPrompt = original.questionPrompt
+                    if sessions[index].phase == .waitingForAnswer { sessions[index].phase = original.phase }
+                    if sessions[index].summary == projected.summary { sessions[index].summary = original.summary }
+                }
+            }
+        }
+        forwardedQuestionTargets.removeAll()
+        forwardedQuestionSnapshots.removeAll()
+        forwardedQuestionOriginals.removeAll()
+        paseoQuestionOrder = paseoQuestionOrder.filter { paseoQuestions.questions[$0.key] != nil }
+        for child in paseoQuestions.questions.keys.sorted() where paseoQuestionOrder[child] == nil {
+            paseoQuestionOrder[child] = paseoQuestionTicket
+            paseoQuestionTicket += 1
+        }
+        let children = paseoQuestions.questions.keys.sorted { (paseoQuestionOrder[$0] ?? 0) < (paseoQuestionOrder[$1] ?? 0) }
+        for child in children {
+            guard let parent = paseoQuestions.parentSessionID(for: child),
+                  paseoQuestions.requests[parent] == nil, forwardedQuestionTargets[parent] == nil,
+                  let pending = paseoQuestions.requests[child], let question = pending.question,
+                  let binding = paseoQuestions.knownBinding(sessionID: parent) else { continue }
+            if !sessions.contains(where: { $0.id == parent }) {
+                sessions.append(AgentSession(id: parent, title: binding.title,
+                    tool: binding.provider == "codex" ? .codex : .claudeCode, origin: .live, attachmentState: .attached, phase: .running,
+                    summary: "Paseo", updatedAt: .now, jumpTarget: binding.jumpTarget))
+            }
+            guard let index = sessions.firstIndex(where: { $0.id == parent }) else { continue }
+            let title = binding.title.trimmingCharacters(in: .whitespacesAndNewlines)
+            if sessions[index].jumpTarget?.terminalApp == "Paseo", !title.isEmpty, title != "Paseo" {
+                sessions[index].title = title
+            }
+            guard !sessions[index].phase.requiresAttention else { continue }
+            paseoModeLabels[parent] = binding.currentModeLabel ?? "モード情報なし"
+            forwardedQuestionOriginals[parent] = sessions[index]
+            sessions[index].phase = .waitingForAnswer
+            sessions[index].summary = "子からの質問: \(pending.binding.title)"
+            sessions[index].questionPrompt = question.prompt
+            paseoSDKQuestionPromptIDs[parent] = question.prompt.id
+            forwardedQuestionTargets[parent] = child
+            forwardedQuestionSnapshots[parent] = sessions[index]
+        }
+        for parent in Set(previousTargets.keys).union(forwardedQuestionTargets.keys) {
+            if previousTargets[parent] != forwardedQuestionTargets[parent]
+                || previousProjections[parent]?.questionPrompt?.id != forwardedQuestionSnapshots[parent]?.questionPrompt?.id {
+                paseoErrors.removeValue(forKey: parent)
+                paseoSuccesses.removeValue(forKey: parent)
+                paseoSendingSessionIDs.remove(parent)
+            }
+        }
+        state = SessionState(sessions: sessions)
+    }
+
+    func reconcilePaseoSessionsOnce() async {
+        let ids = Set(state.sessions.filter { $0.jumpTarget?.terminalApp == "Paseo" }.map(\.id))
+        guard !ids.isEmpty else { return }
+        do {
+            let bindings = try await paseoQuestions.reconcileBindings(sessionIDs: ids)
+            for (id, binding) in bindings {
+                adoptPaseoTitle(binding)
+                state.apply(.jumpTargetUpdated(JumpTargetUpdated(sessionID: id, jumpTarget: binding.jumpTarget, timestamp: .now)))
+                paseoModeLabels[id] = binding.currentModeLabel ?? "モード情報なし"
+                if paseoQuestions.sessionsWithoutPending.contains(id),
+                   forwardedPaseoQuestionSource(sessionID: id) == nil,
+                   !bridgeServer.hasLivePendingHook(sessionID: id),
+                   state.session(id: id)?.phase.requiresAttention == true {
+                    state.apply(.actionableStateResolved(ActionableStateResolved(sessionID: id,
+                        summary: "Paseo側に未回答の要求はありません。", timestamp: .now)))
+                }
+            }
+            synchronizeSelection()
+        } catch { /* Leave unmatched or unavailable sessions intact. */ }
+    }
+
+    private func adoptPaseoTitle(_ binding: PaseoAgentBinding) {
+        let title = binding.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty, title != "Paseo", state.session(id: binding.sessionID)?.title != title else { return }
+        var sessions = state.sessions
+        guard let index = sessions.firstIndex(where: { $0.id == binding.sessionID }) else { return }
+        sessions[index].title = title
+        state = SessionState(sessions: sessions)
+    }
+
+    private func schedulePaseoBindingLookup(sessionID: String) {
+        guard !paseoLookedUpSessionIDs.contains(sessionID) else { return }
+        paseoLookupSessionIDs.insert(sessionID)
+        guard paseoBindingLookupTask == nil else { return }
+        paseoBindingLookupTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(150))
+            guard let self else { return }
+            while !self.paseoLookupSessionIDs.isEmpty {
+                let ids = self.paseoLookupSessionIDs
+                self.paseoLookedUpSessionIDs.formUnion(ids)
+                do {
+                    let bindings = try await self.paseoQuestions.reconcileBindings(sessionIDs: ids)
+                    for (id, binding) in bindings {
+                        self.adoptPaseoTitle(binding)
+                        self.state.apply(.jumpTargetUpdated(JumpTargetUpdated(sessionID: id, jumpTarget: binding.jumpTarget, timestamp: .now)))
+                        self.paseoModeLabels[id] = binding.currentModeLabel ?? "モード情報なし"
+                    }
+                } catch { /* Restore user notifications when lookup cannot confirm ownership. */ }
+                self.paseoLookupSessionIDs.subtract(ids)
+                self._cachedSessionBuckets = nil
+                for id in ids {
+                    if let event = self.paseoDeferredEvents.removeValue(forKey: id), !self.paseoDelegatedSessionIDs.contains(id) {
+                        self.applyTrackedEvent(event)
+                    }
+                }
+                self.synchronizeSelection()
+            }
+            self.paseoBindingLookupTask = nil
         }
     }
 
@@ -2292,12 +2563,12 @@ final class AppModel {
                 return
             }
             voiceApprovalPending = nil
-            approvePermission(for: target.session.id, action: .allowOnce)
+            approvePermission(for: target.session.id, action: .allowOnce, expectedRequestID: target.session.permissionRequest?.id)
         case .deny:
             // No second question on the way out. Refusing is the safe answer,
             // and making it harder than approving would be the wrong shape.
             voiceApprovalPending = nil
-            approvePermission(for: target.session.id, action: .deny)
+            approvePermission(for: target.session.id, action: .deny, expectedRequestID: target.session.permissionRequest?.id)
         case let .chooseOption(index):
             guard index < target.options.count else {
                 present(notice: voiceNotUnderstood(heard))
@@ -2368,6 +2639,13 @@ final class AppModel {
         selectedSessionID = snapshot.selectedSessionID ?? snapshot.sessions.first?.id
         lastActionMessage = "Loaded debug scenario: \(snapshot.title)."
         harnessRuntimeMonitor?.recordMilestone("scenarioLoaded", message: snapshot.title)
+        if let isQuestion = snapshot.debugPaseoQuestion {
+            paseoQuestions.stop()
+            paseoQuestions = PaseoHarnessFixture.coordinator(isQuestion: isQuestion)
+            connectPaseoQuestions()
+            Task { await paseoQuestions.poll() }
+        }
+
 
         overlay.applyOverlayState(from: snapshot, presentOverlay: presentOverlay, autoCollapseNotificationCards: autoCollapseNotificationCards)
 
@@ -2547,7 +2825,7 @@ final class AppModel {
     }
 
     func jumpToFocusedSession() {
-        jump(to: focusedSession?.jumpTarget)
+        jump(to: focusedSession.flatMap { paseoJumpTarget(for: $0) })
     }
 
     /// 画面共有の有無と設定から、机を隠すかどうかを決めて反映する。
@@ -2568,7 +2846,7 @@ final class AppModel {
     /// 「クリックで飛ばない」設定には従わない——従うと、押しても何も起きない
     /// ボタンになる。セッションが既に無ければ黙って何もしない。
     func jumpToSavedSession(id: String) {
-        guard let target = state.session(id: id)?.jumpTarget,
+        guard let session = state.session(id: id), let target = paseoJumpTarget(for: session),
               target.terminalApp.lowercased() != "unknown" else { return }
         jump(to: target)
     }
@@ -2578,12 +2856,21 @@ final class AppModel {
         // call `jump(to:)` directly and stay available either way.
         guard !settings.behaviour.disableClickToJump else { return }
 
-        guard let jumpTarget = session.jumpTarget,
+        guard let jumpTarget = paseoJumpTarget(for: session),
               jumpTarget.terminalApp.lowercased() != "unknown" else {
             lastActionMessage = "Cannot jump: terminal app is unknown."
             return
         }
         jump(to: jumpTarget)
+    }
+
+    private func paseoJumpTarget(for session: AgentSession) -> JumpTarget? {
+        if let source = forwardedPaseoQuestionSource(sessionID: session.id) {
+            return paseoQuestions.requests[source.childSessionID]?.binding.jumpTarget
+        }
+        guard var target = session.jumpTarget else { return nil }
+        if target.terminalApp == "Paseo", target.terminalSessionID == nil { target.terminalSessionID = session.id }
+        return target
     }
 
     private func jump(to jumpTarget: JumpTarget?) {
@@ -2603,8 +2890,20 @@ final class AppModel {
             }
 
             do {
+                var target = jumpTarget
+                if target.terminalApp == "Paseo" {
+                    guard let self, let nativeID = target.terminalSessionID else { throw PaseoQuestionError.expired }
+                    let binding = try await self.paseoQuestions.resolveBinding(sessionID: nativeID, agentID: target.paseoAgentID)
+                    try Task.checkCancellation()
+                    guard let serverID = PaseoServerIdentity.read() else { throw PaseoQuestionError.expired }
+                    target = binding.jumpTarget
+                    target.paseoServerID = serverID
+                    guard target.paseoAgentID != nil, target.paseoServerID != nil else { throw PaseoQuestionError.expired }
+                    self.state.apply(.jumpTargetUpdated(JumpTargetUpdated(sessionID: nativeID, jumpTarget: target, timestamp: .now)))
+                }
+                let resolvedTarget = target
                 let result = try await Task.detached(priority: .userInitiated) {
-                    try jumpAction(jumpTarget)
+                    try jumpAction(resolvedTarget)
                 }.value
 
                 guard !Task.isCancelled else {
@@ -2625,22 +2924,8 @@ final class AppModel {
     }
 
     func approvePermission(for sessionID: String, approved: Bool) {
-        guard let session = state.session(id: sessionID) else {
-            return
-        }
-
-        let resolution = permissionResolution(for: approved)
-        dismissNotificationSurfaceIfPresent(for: sessionID)
-        state.resolvePermission(sessionID: session.id, resolution: resolution)
-        synchronizeSelection()
-        refreshOverlayPlacementIfVisible()
-
-        send(
-            .resolvePermission(sessionID: session.id, resolution: resolution),
-            userMessage: approved
-                ? "Approving permission for \(session.title)."
-                : "Denying permission for \(session.title)."
-        )
+        approvePermission(for: sessionID, action: approved ? .allowOnce : .deny,
+                          expectedRequestID: state.session(id: sessionID)?.permissionRequest?.id)
     }
 
     /// Sessions blocked on a permission decision right now.
@@ -2656,7 +2941,7 @@ final class AppModel {
     /// not one per session, which is what "Allow All" on nine sessions would
     /// otherwise sound like.
     func resolveAllPendingApprovals(_ action: ApprovalAction) {
-        let sessions = pendingApprovalSessions
+        let sessions = pendingApprovalSessions.filter { $0.jumpTarget?.terminalApp != "Paseo" }
         for session in sessions {
             approvePermission(for: session.id, action: action, playsSound: false)
         }
@@ -2664,18 +2949,59 @@ final class AppModel {
         switch action {
         case .deny:
             NotificationSoundService.play(.reject, settings: settings.sound)
-        case .allowOnce, .allowWithUpdates:
+        case .allowOnce, .allowWithUpdates, .paseoAction:
             NotificationSoundService.play(.approve, settings: settings.sound)
         }
     }
 
     /// - Parameter playsSound: False when called from `resolveAllPendingApprovals`,
     ///   which plays one sound for the whole batch instead of one per session.
-    func approvePermission(for sessionID: String, action: ApprovalAction, playsSound: Bool = true) {
+    func approvePermission(for sessionID: String, action: ApprovalAction, playsSound: Bool = true, expectedRequestID: UUID? = nil) {
         guard let session = state.session(id: sessionID) else {
             return
         }
 
+        if let expectedRequestID, session.permissionRequest?.id != expectedRequestID { return }
+        if let pending = paseoQuestions.requests[sessionID], pending.permission != nil {
+            guard session.permissionRequest?.paseoContext?.requestID == pending.requestID else {
+                paseoErrors[sessionID] = "要求が更新されました。表示を確認して回答してください。"
+                return
+            }
+            guard paseoSendingSessionIDs.insert(sessionID).inserted else { return }
+            paseoErrors.removeValue(forKey: sessionID)
+            Task { [weak self] in
+                guard let self else { return }
+                defer { self.paseoSendingSessionIDs.remove(sessionID) }
+                do {
+                    let resolution = try await self.paseoQuestions.approve(sessionID: sessionID, requestID: pending.requestID, action: action)
+                    _ = self.bridgeServer.resolveMatchingPaseoHook(pending, resolution: resolution)
+                    guard self.state.session(id: sessionID)?.permissionRequest?.id == pending.permission?.id else { return }
+                    self.state.resolvePermission(sessionID: sessionID, resolution: resolution)
+                    self.paseoSuccesses[sessionID] = resolution.isApproved ? "Paseoへ許可を送信しました。" : "Paseoへ拒否を送信しました。"
+                    self.lastActionMessage = self.paseoSuccesses[sessionID] ?? ""
+                    if playsSound { NotificationSoundService.play(resolution.isApproved ? .approve : .reject, settings: self.settings.sound) }
+                    self.dismissNotificationSurfaceIfPresent(for: sessionID)
+                    self.synchronizeSelection()
+                    self.refreshOverlayPlacementIfVisible()
+                    self.refreshSustainedCamera()
+                } catch {
+                    self.paseoErrors[sessionID] = "Paseoへ送信できませんでした。要求を確認して再送してください。"
+                    self.lastActionMessage = self.paseoErrors[sessionID] ?? ""
+                    await self.paseoQuestions.poll()
+                }
+            }
+            return
+        }
+        if session.jumpTarget?.terminalApp == "Paseo",
+           session.permissionRequest?.paseoContext != nil || !bridgeServer.hasLivePendingHook(sessionID: sessionID) {
+            paseoErrors[sessionID] = "Paseoの要求が更新されました。Paseoでこの会話を開いて確認してください。"
+            return
+        }
+        // Preserve genuine hook-only approvals; never synthesize a provider action.
+        if case .paseoAction = action {
+            if session.jumpTarget?.terminalApp == "Paseo" { paseoErrors[sessionID] = "この追加操作はPaseoから提示されていません。" }
+            return
+        }
         let resolution: PermissionResolution
         let message: String
 
@@ -2692,7 +3018,11 @@ final class AppModel {
             if playsSound {
                 NotificationSoundService.play(.approve, settings: settings.sound)
             }
+        case .paseoAction:
+            return
         case let .allowWithUpdates(updates):
+            if session.jumpTarget?.terminalApp == "Paseo",
+               !updates.allSatisfy({ session.permissionRequest?.suggestedUpdates.contains($0) == true }) { return }
             resolution = .allowOnce(updatedPermissions: updates)
             message = "Always allowing for \(session.title)."
             if playsSound {
@@ -2719,8 +3049,50 @@ final class AppModel {
         refreshSustainedCamera()
     }
 
-    func answerQuestion(for sessionID: String, answer: QuestionPromptResponse) {
+    func answerQuestion(for sessionID: String, answer: QuestionPromptResponse, promptID: UUID? = nil) {
         guard let session = state.session(id: sessionID) else {
+            return
+        }
+
+        if let promptID, session.questionPrompt?.id != promptID { return }
+        let targetSessionID = forwardedQuestionTargets[sessionID] ?? sessionID
+        if let request = paseoQuestions.requests[targetSessionID], let pending = request.question {
+            guard session.questionPrompt?.id == pending.prompt.id,
+                  paseoSendingSessionIDs.insert(sessionID).inserted else { return }
+            paseoErrors.removeValue(forKey: sessionID)
+            Task { [weak self] in
+                guard let self else { return }
+                defer {
+                    if targetSessionID == sessionID || self.state.session(id: sessionID)?.questionPrompt?.id == pending.prompt.id {
+                        self.paseoSendingSessionIDs.remove(sessionID)
+                    }
+                }
+                do {
+                    try await self.paseoQuestions.answer(sessionID: targetSessionID, promptID: pending.prompt.id, response: answer)
+                    _ = self.bridgeServer.resolveMatchingPaseoHook(request, answer: answer)
+                    guard self.state.session(id: sessionID)?.questionPrompt?.id == pending.prompt.id else { return }
+                    self.paseoSuccesses[sessionID] = "Paseoへ回答を送信しました。"
+                    self.lastActionMessage = self.paseoSuccesses[sessionID] ?? ""
+                    NotificationSoundService.play(.confirm, settings: self.settings.sound)
+                    self.dismissNotificationSurfaceIfPresent(for: sessionID)
+                    self.state.answerQuestion(sessionID: targetSessionID, response: answer)
+                    self.refreshForwardedPaseoQuestions()
+                    await self.paseoQuestions.poll()
+                    self.synchronizeSelection()
+                    self.refreshOverlayPlacementIfVisible()
+                    self.refreshSustainedCamera()
+                } catch {
+                    guard self.state.session(id: sessionID)?.questionPrompt?.id == pending.prompt.id else { return }
+                    self.paseoErrors[sessionID] = "Paseoへ回答を送信できませんでした。質問を確認して再送してください。"
+                    self.lastActionMessage = self.paseoErrors[sessionID] ?? ""
+                    await self.paseoQuestions.poll()
+                }
+            }
+            return
+        }
+        if session.jumpTarget?.terminalApp == "Paseo",
+           paseoSDKQuestionPromptIDs[sessionID] == session.questionPrompt?.id || !bridgeServer.hasLivePendingHook(sessionID: sessionID) {
+            paseoErrors[sessionID] = "Paseoの要求が見つかりません。Paseoでこの会話を開いて確認してください。"
             return
         }
 
@@ -2786,6 +3158,17 @@ final class AppModel {
         updateLastActionMessage: Bool = true,
         ingress: TrackedEventIngress = .bridge
     ) {
+        if case .bridge = ingress {
+            switch event {
+            case let .permissionRequested(payload):
+                if let pending = paseoQuestions.requests[payload.sessionID],
+                   pending.toolUseID != nil, pending.toolUseID == payload.request.toolUseID,
+                   pending.name == payload.request.toolName, bridgeServer.hasMatchingPaseoHook(pending) { return }
+            case let .questionAsked(payload):
+                if let pending = paseoQuestions.requests[payload.sessionID], bridgeServer.hasMatchingPaseoHook(pending) { return }
+            default: break
+            }
+        }
         // A card can stop waiting without anyone answering it — the agent gives
         // up, the session ends, a rule answers it silently. This function
         // returns early on several of those paths, and every one of them leaves
@@ -2819,7 +3202,7 @@ final class AppModel {
 
         state.apply(event)
         reconcileIslandSurfaceAfterStateChange()
-        if ingress == .bridge {
+        if case .bridge = ingress {
             monitoring.markSessionAttached(for: event)
             monitoring.markSessionProcessAlive(for: event)
         }
@@ -2834,6 +3217,34 @@ final class AppModel {
         // A request the user has standing instructions for is answered here and
         // goes no further — no card, no sound, no push to the Watch. Being told
         // about a decision already made is the noise the rule was written to end.
+        let paseoEventID: String? = {
+            switch event {
+            case let .sessionStarted(payload): return payload.sessionID
+            case let .permissionRequested(payload): return payload.sessionID
+            case let .questionAsked(payload): return payload.sessionID
+            case let .activityUpdated(payload): return payload.sessionID
+            case let .sessionCompleted(payload): return payload.sessionID
+            case let .jumpTargetUpdated(payload): return payload.sessionID
+            case let .sessionMetadataUpdated(payload): return payload.sessionID
+            case let .claudeSessionMetadataUpdated(payload): return payload.sessionID
+            case let .geminiSessionMetadataUpdated(payload): return payload.sessionID
+            case let .openCodeSessionMetadataUpdated(payload): return payload.sessionID
+            case let .cursorSessionMetadataUpdated(payload): return payload.sessionID
+            case let .actionableStateResolved(payload): return payload.sessionID
+            }
+        }()
+        if let id = paseoEventID, state.session(id: id)?.jumpTarget?.terminalApp == "Paseo" {
+            if state.session(id: id)?.jumpTarget?.paseoAgentID == nil {
+                schedulePaseoBindingLookup(sessionID: id)
+            }
+            if paseoLookupSessionIDs.contains(id) {
+                if case .permissionRequested = event { paseoDeferredEvents[id] = event }
+                if case .questionAsked = event { paseoDeferredEvents[id] = event }
+                return
+            }
+            if delegatedSessionIDs.contains(id) { return }
+        }
+        if let id = paseoEventID, delegatedSessionIDs.contains(id) { return }
         if autoAnsweredPermission(for: event) {
             return
         }
@@ -3070,13 +3481,18 @@ final class AppModel {
 
     /// The sessions the switcher cycles through, in the order they are shown.
     private var switcherSessionIDs: [String] {
-        state.sessions.filter(\.isVisibleInIsland).map(\.id)
+        islandListSessions.map(\.id)
     }
 
     /// One press of the switcher key: opens it, or moves along if already open.
     func toggleSwitcher(reversed: Bool) {
         let ids = switcherSessionIDs
-        guard ids.count > 1 else { return }
+        guard ids.count > 1 else {
+            switcher.cancel()
+            panelHotkeys?.switcherDidDeactivate()
+            overlay.notchOpen(reason: .switcher)
+            return
+        }
 
         if switcher.isActive {
             switcher.advance(sessions: ids, reversed: reversed)
@@ -3119,7 +3535,7 @@ final class AppModel {
         panelHotkeys?.switcherDidDeactivate()
         overlay.notchClose()
         guard let session = state.session(id: sessionID) else { return }
-        jump(to: session.jumpTarget)
+        jump(to: paseoJumpTarget(for: session))
     }
 
     private func startPanelHotkeys() {
@@ -3249,21 +3665,26 @@ final class AppModel {
     /// Falls back to the first session waiting on the user when no card is
     /// showing, so ⌃Y works from a list as well as from a card.
     func performShortcut(_ action: PanelShortcutAction) {
+        if action == .jumpToTerminal {
+            guard let session = focusedSession else { return }
+            jump(to: paseoJumpTarget(for: session))
+            return
+        }
         guard let session = activeIslandCardSession ?? pendingApprovalSessions.first else { return }
 
         switch action {
         case .approve:
-            approvePermission(for: session.id, action: .allowOnce)
+            approvePermission(for: session.id, action: .allowOnce, expectedRequestID: session.permissionRequest?.id)
         case .deny:
-            approvePermission(for: session.id, action: .deny)
+            approvePermission(for: session.id, action: .deny, expectedRequestID: session.permissionRequest?.id)
         case .alwaysAllow:
-            approvePermission(for: session.id, action: alwaysAllowAction(for: session))
+            approvePermission(for: session.id, action: alwaysAllowAction(for: session), expectedRequestID: session.permissionRequest?.id)
         case .acceptEdits:
-            approvePermission(for: session.id, action: modeAction(.acceptEdits, for: session))
+            approvePermission(for: session.id, action: modeAction(.acceptEdits, for: session), expectedRequestID: session.permissionRequest?.id)
         case .skipPermissions:
-            approvePermission(for: session.id, action: modeAction(.bypassPermissions, for: session))
+            approvePermission(for: session.id, action: modeAction(.bypassPermissions, for: session), expectedRequestID: session.permissionRequest?.id)
         case .jumpToTerminal:
-            jumpToSession(session)
+            break
         }
     }
 
@@ -3272,7 +3693,12 @@ final class AppModel {
     /// approval rather than claiming a permission was stored.
     private func alwaysAllowAction(for session: AgentSession) -> ApprovalAction {
         let updates = session.permissionRequest?.suggestedUpdates ?? []
-        guard let rule = updates.first(where: { $0.isRuleAddition }) else { return .allowOnce }
+        guard let rule = updates.first(where: { $0.isRuleAddition }) else {
+            if session.jumpTarget?.terminalApp == "Paseo" {
+                return .paseoAction(requestID: session.permissionRequest?.paseoContext?.requestID ?? "unavailable", actionID: "unsupported-standing-permission")
+            }
+            return .allowOnce
+        }
         return .allowWithUpdates([rule])
     }
 
@@ -3285,6 +3711,7 @@ final class AppModel {
         guard case let .permissionRequested(payload) = event,
               let session = state.session(id: payload.sessionID),
               session.phase == .waitingForApproval,
+              session.jumpTarget?.terminalApp != "Paseo",
               !settings.notificationFilters.isSilenced(session),
               let rule = settings.autoResponse.rule(for: session) else {
             return false
@@ -3306,7 +3733,12 @@ final class AppModel {
     /// change back, so the shortcut still answers the prompt rather than
     /// claiming a mode the agent will never enter.
     private func modeAction(_ mode: ClaudePermissionMode, for session: AgentSession) -> ApprovalAction {
-        guard let update = session.permissionModeUpdate(for: mode) else { return .allowOnce }
+        guard let update = session.permissionModeUpdate(for: mode) else {
+            if session.jumpTarget?.terminalApp == "Paseo" {
+                return .paseoAction(requestID: session.permissionRequest?.paseoContext?.requestID ?? "unavailable", actionID: "unsupported-mode")
+            }
+            return .allowOnce
+        }
         return .allowWithUpdates([update])
     }
 
@@ -3519,6 +3951,7 @@ final class AppModel {
 
     var islandSurfaceAwaitsUserAction: Bool {
         guard let sessionID = islandSurface.sessionID,
+              !delegatedSessionIDs.contains(sessionID),
               let session = state.session(id: sessionID) else {
             return false
         }
@@ -3564,6 +3997,7 @@ final class AppModel {
         ingress: TrackedEventIngress
     ) -> Bool {
         guard let sessionID = surface.sessionID,
+              !delegatedSessionIDs.contains(sessionID),
               let session = state.session(id: sessionID) else {
             return false
         }
@@ -3575,9 +4009,10 @@ final class AppModel {
     }
 
     private func synchronizeSelection() {
+        let delegatedIDs = delegatedSessionIDs
         let surfacedIDs = Set(surfacedSessions.map(\.id))
 
-        if let activeAction = state.activeActionableSession {
+        if let activeAction = state.sessions.first(where: { $0.phase.requiresAttention && !delegatedIDs.contains($0.id) }) {
             selectedSessionID = activeAction.id
             return
         }
@@ -3585,7 +4020,7 @@ final class AppModel {
         guard let selectedSessionID,
               surfacedIDs.contains(selectedSessionID),
               state.session(id: selectedSessionID) != nil else {
-            self.selectedSessionID = surfacedSessions.first?.id ?? state.sessions.first?.id
+            self.selectedSessionID = surfacedSessions.first?.id ?? state.sessions.first(where: { !delegatedIDs.contains($0.id) })?.id
             return
         }
     }
@@ -3651,10 +4086,11 @@ final class AppModel {
     }
 
     private func computeSessionBuckets() -> (primary: [AgentSession], restored: [AgentSession], overflow: [AgentSession]) {
+        let delegatedIDs = delegatedSessionIDs
         let now = Date.now
         // Silenced sessions drop out here rather than at the view, so they are
         // also absent from the counts, the notification surfaces and the sound.
-        let visibleSessions = state.sessions.filter { !settings.notificationFilters.isSilenced($0) }
+        let visibleSessions = state.sessions.filter { !settings.notificationFilters.isSilenced($0) && !delegatedIDs.contains($0.id) }
         let rankedSessions = visibleSessions.sorted { lhs, rhs in
             let lhsScore = displayPriority(for: lhs, now: now)
             let rhsScore = displayPriority(for: rhs, now: now)
@@ -3812,6 +4248,7 @@ final class AppModel {
     }
 
     func quitApplication() {
+        paseoQuestions.stop()
         NSApplication.shared.terminate(nil)
     }
 

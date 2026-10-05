@@ -317,7 +317,7 @@
 "settings.display.showTasks" = "タスクリストを表示";
 "settings.display.showTasks.help" = "各セッションカードにタスクのチェックリストを出す。";
 "settings.display.showSubagents" = "サブエージェントを表示";
-"settings.display.showSubagents.help" = "承認と質問はどちらの設定でも表示される。";
+"settings.display.showSubagents.help" = "親に引き継がれるPaseoの子会話は表示しません。親を確認できない子の承認と質問は表示します。";
 "settings.display.showAgentActivity" = "エージェントの作業内容を表示";
 "settings.timer.eyeBreakEnabled" = "20-20-20 の目の休憩を実行";
 "settings.timer.eyeBreakEnabled.help" = "20分ごとに20秒の休憩。今すぐ開始し、休憩のたびに再開します。";
@@ -523,7 +523,7 @@
 "approval.goToTerminal" = "ターミナルへ移動";
 
 /* Question progress */
-"question.progress" = "%@問中%@問に回答";
+"question.progress" = "%2$@問中%1$@問に回答";
 "question.answerAllFirst" = "送るには全部の質問に答える。";
 
 /* App name and Watch */
@@ -606,7 +606,7 @@
 "settings.autoResponse.behavior.allowOnce" = "この確認だけ許可";
 "settings.autoResponse.behavior.acceptEdits" = "以後は編集だけ自動で許可";
 "settings.autoResponse.behavior.bypassPermissions" = "このセッションでは以後聞かない";
-"settings.autoResponse.claudeOnly" = "2つのモードは Claude Code のみ。他のエージェントでは一回きりの許可になります。";
+"settings.autoResponse.claudeOnly" = "2つのモードは Claude Code のみ。他のエージェントでは一回きりの許可になります。Paseo の会話には自動応答ルールを適用しません。";
 
 /* Agent icons */
 "settings.display.agentIcon" = "エージェントのアイコン";
@@ -616,17 +616,17 @@
 "settings.display.agentIcon.missing" = "ロゴが取得されていないため、ドット絵を使っています。";
 
 /* Onboarding */
-"onboarding.welcome.title" = "動いているエージェントを、ひとつの場所で";
-"onboarding.welcome.body" = "Mitama Island はノッチに常駐します。どのエージェントが何をしているかを表示し、ウィンドウを探しに行かずに応答できます。";
+"onboarding.welcome.title" = "AIの返事待ちを、ひとつの島に";
+"onboarding.welcome.body" = "誰の、どの会話が返事を待っているか。質問への回答と今回の許可を、画面上部から操作できます。";
 "onboarding.cost.title" = "重いのは待ち時間ではなく、切り替え";
 "onboarding.cost.body" = "「何か聞いてきたターミナル」を探す手間は、答えそのものより高くつきます。島の側から質問を持ってきます。";
 "onboarding.capabilities.title" = "承認・回答・移動を、ノッチから";
 "onboarding.capabilities.body" = "許可の確認と質問はカードで届き、その場で応答できます。セッションを押せば、それが動いているウィンドウへ移動します。";
-"onboarding.detection.title" = "この Mac にあるもの";
-"onboarding.detection.body" = "見つかったもの: {agents}。フックの導入・解除は後から設定でいつでも変えられます。";
+"onboarding.detection.title" = "接続を確認する";
+"onboarding.detection.body" = "このMacで導入済みの接続を表示します。あとから追加・変更できます。";
 "onboarding.detection.none" = "まだありません";
-"onboarding.finish.title" = "以上です";
-"onboarding.finish.body" = "島は画面の上端にあります。エージェントを動かせば現れます。設定はメニューバーのアイコンか ⌘, から。";
+"onboarding.finish.title" = "島で回答する練習";
+"onboarding.finish.body" = "これはこの画面だけの練習です。実際のAIへは送信せず、コマンドも実行しません。";
 "onboarding.skip" = "スキップ";
 "onboarding.back" = "戻る";
 "onboarding.next" = "次へ";
@@ -657,22 +657,22 @@
 /* SAO theme wording. English uppercase in every locale on purpose: a
    translated heads-up display reads as an ordinary label again. */
 "banner.completed.sao" = "CONGRATULATIONS";
-"island.sessionList.title.sao" = "LINKS";
-"island.sessionOverview.running.sao" = "DIVING";
-"island.sessionOverview.runningCompact.sao" = "DIVE";
-"island.sessionOverview.waiting.sao" = "SYSTEM CALL";
-"island.sessionOverview.waitingCompact.sao" = "CALL";
-"island.sessionOverview.done.sao" = "CLEARED";
-"island.sessionOverview.idle.sao" = "STANDBY";
-"island.sessionOverview.total.sao" = "LINKED";
+"island.sessionList.title.sao" = "セッション";
+"island.sessionOverview.running.sao" = "実行中";
+"island.sessionOverview.runningCompact.sao" = "実行";
+"island.sessionOverview.waiting.sao" = "確認待ち";
+"island.sessionOverview.waitingCompact.sao" = "確認";
+"island.sessionOverview.done.sao" = "完了";
+"island.sessionOverview.idle.sao" = "待機";
+"island.sessionOverview.total.sao" = "件";
 "banner.openHint" = "開くと内容が見られます";
 "approval.allowOnce.sao" = "YES";
 "approval.deny.sao" = "NO";
 "approval.allowAll.sao" = "YES TO ALL";
 "approval.denyAll.sao" = "NO TO ALL";
 "approval.goToTerminal.sao" = "TELEPORT";
-"question.submit.sao" = "CONFIRM";
-"question.answerAllFirst.sao" = "INCOMPLETE — ALL ENTRIES REQUIRED";
+"question.submit.sao" = "回答を送信";
+"question.answerAllFirst.sao" = "送るには全部の質問に答える。";
 "setup.banner.noHooks.title.sao" = "LINK START";
 "settings.display.hideIdleSessions" = "動きの止まったセッションを隠す";
 "settings.display.hideIdleSessions.help" = "灰色になった行を一覧に出しません。最後の1行は必ず残るので、見失ったように見えることはありません。";
@@ -912,3 +912,75 @@
 "settings.earshot.enabled.help" = "既定はオフ。声で答える機能とは別のスイッチで、片方だけ使えます。";
 "settings.earshot.pauseCalls" = "通話中は止める";
 "settings.earshot.pauseCalls.help" = "Zoom / Teams / FaceTime / Webex / Skype が起動している間は録らない。相手は同意していないため。";
+
+"settings.search.placeholder" = "設定を検索";
+"settings.search.noResults" = "該当する設定カテゴリがありません";
+"settings.search.clear" = "検索をクリア";
+/* Clear conversation and decision surfaces */
+"island.priority.attention" = "返事を待っています";
+"island.priority.running" = "実行中";
+"island.priority.completed" = "完了";
+"decision.plan.title" = "計画の確認";
+"decision.approval.title" = "実行の許可";
+"decision.question.title" = "質問への回答";
+"decision.scope" = "この要求に回答します。追加の許可は提示された範囲だけに適用されます。";
+"decision.paseo.scope" = "この要求についてだけ回答します。追加の許可はPaseoが提示した範囲に限られます。";
+"decision.allowOnce" = "今回だけ許可";
+"decision.deny" = "拒否";
+"decision.paseo.open" = "Paseoでこの会話を開く";
+"decision.paseo.unsupported" = "この種類の要求はPaseo側で内容を確認して回答してください。";
+"decision.paseo.sending" = "Paseoへ送信中…";
+"decision.question.sending" = "回答を送信中…";
+"decision.question.retry" = "回答を再送";
+"decision.sending" = "送信中…";
+"decision.option.single" = "1つ選択";
+"decision.option.multiple" = "複数選択可";
+"decision.option.selected" = "選択済み";
+"decision.option.unselected" = "未選択";
+"decision.plan.implement" = "計画を実行する";
+"decision.plan.resume" = "元のBypassを維持して実行";
+"decision.plan.acceptEdits" = "実行時の権限は編集の自動許可（acceptEdits）へ変わります。";
+"decision.conversation.open" = "この会話を開く: %@、%@";
+"island.empty.quiet" = "今は誰もあなたを待っていません。";
+"island.empty.start" = "AIの会話を始めると、ここに表示されます。静かなうちに、ひと息。";
+
+"decision.request" = "要求";
+"decision.continue" = "このまま続ける";
+"decision.other" = "その他";
+
+"decision.paseo.questionUnsupported" = "この質問形式はIslandでまだ回答できません。Paseoで確認してください。";
+// Paseo native connection
+"setup.paseo.connection" = "接続";
+"setup.paseo.state.checking" = "確認中";
+"setup.paseo.state.connected" = "接続済み";
+"setup.paseo.state.unavailable" = "接続できません。Paseoを開いて再確認してください。";
+"setup.paseo.state.stopped" = "接続確認を停止中";
+"setup.paseo.noHooks" = "Paseoの質問と許可は直接受け取ります。追加のフック導入は不要です。";
+"setup.paseo.retry" = "再確認";
+"setup.paseo.open" = "Paseoを開く";
+
+"onboarding.openIsland" = "島を開く";
+
+"onboarding.connection.none" = "導入済みのhook接続はありません。";
+
+"onboarding.connection.installed" = "導入済みのhook: %@";
+
+"onboarding.connection.hooksScope" = "ここではhookの導入状態を確認します。Paseoの接続は別に確認されます。";
+
+"onboarding.connection.settings" = "接続設定を開く";
+
+"onboarding.practice.question" = "どちらから始めますか？";
+
+"onboarding.practice.header" = "練習用の質問";
+
+"onboarding.practice.optionA" = "返事待ちの会話を見る";
+
+"onboarding.practice.optionB" = "実行中の会話を見る";
+
+"onboarding.practice.complete" = "練習完了。AIには送っていないので、ひと安心。";
+
+"decision.paseo.parentPermissions" = "Paseoの継続的な許可は、親の会話で確認してください。";
+"decision.paseo.forwardedQuestion" = "子からの質問: %@";
+"decision.paseo.forwardedOpen" = "この質問の会話をPaseoで開く";
+
+"nowPlaying.unavailable" = "この環境では再生中の情報を取得できません。";

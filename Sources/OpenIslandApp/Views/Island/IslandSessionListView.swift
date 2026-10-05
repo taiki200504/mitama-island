@@ -49,7 +49,9 @@ extension IslandPanelView {
                 // disagree the last control in the card used to end up outside
                 // the window with no way to reach it. Now the worst case is a
                 // scroll rather than something unreachable.
-                AutoHeightScrollView(maxHeight: IslandChromeMetrics.notificationContentMaxHeight) {
+                GeometryReader { geometry in
+                AutoHeightScrollView(maxHeight: IslandChromeMetrics.notificationViewportHeight(
+                    maxPanelHeight: model.settings.display.maxPanelHeight, availableHeight: geometry.size.height)) {
                     sessionListContent(referenceDate: referenceDate)
                 }
                     .padding(.vertical, 2)
@@ -73,16 +75,18 @@ extension IslandPanelView {
                             model.measuredNotificationContentHeight = height
                         }
                     }
+                }
             } else {
                 VStack(spacing: 0) {
-                    // mitama の分は行の上。エージェントは「何が動いているか」に
-                    // 答えるが、こちらは「何が自分を待っているか」に答える。
-                    mitamaProposalSection
-                    mitamaFeedSection
                     sessionPanelHeader(referenceDate: referenceDate)
 
                     ScrollView(.vertical) {
-                        sessionRowsContent(referenceDate: referenceDate)
+                        VStack(spacing: 0) {
+                            sessionRowsContent(referenceDate: referenceDate)
+                            IslandEcosystemSignalsStrip(model: model, sideInset: sessionListSideInset)
+                            mitamaProposalSection
+                            mitamaFeedSection
+                        }
                     }
                     .scrollIndicators(.hidden)
                     .scrollBounceBehavior(.basedOnSize)
@@ -251,6 +255,8 @@ extension IslandPanelView {
             // 描かれない——mitama の行が長いあいだそうなっていた。
 
             if isNotificationMode, let session = model.activeIslandCardSession {
+                let source = model.forwardedPaseoQuestionSource(sessionID: session.id)
+                let sdk = sdkPresentation(for: session, forwardedSessionID: source?.childSessionID)
                 IslandSessionRow(
                     session: session,
                     referenceDate: referenceDate,
@@ -263,12 +269,18 @@ extension IslandPanelView {
                     sideInset: sessionListSideInset,
                     cardFields: cardFields,
                     lang: model.lang,
-                    onApprove: { model.approvePermission(for: session.id, action: $0) },
-                    onResolveAll: { model.resolveAllPendingApprovals($0) },
+                    paseoModeLabel: sdk.modeLabel,
+                    submissionIsSending: sdk.isSending,
+                    submissionError: sdk.error,
+                    submissionSuccess: sdk.success,
+                    forwardedQuestionSourceTitle: source?.title ?? model.localCodexQuestionSourceTitle(sessionID: session.id),
+                    onApprove: { model.approvePermission(for: session.id, action: $0, expectedRequestID: session.permissionRequest?.id) },
+                    onResolveAll: session.jumpTarget?.terminalApp == "Paseo" ? nil : { model.resolveAllPendingApprovals($0) },
                     pendingApprovalCount: model.pendingApprovalSessions.count,
-                    onAnswer: { model.answerQuestion(for: session.id, answer: $0) },
+                    onAnswer: { model.answerQuestion(for: session.id, answer: $0, promptID: session.questionPrompt?.id) },
                     onReply: TerminalTextSender.canReply(to: session, enabled: model.completionReplyEnabled)
                         ? { model.replyToSession(session, text: $0) } : nil,
+                    onExplicitJump: { model.jumpToSavedSession(id: session.id) },
                     onJump: { model.jumpToSession(session) },
                     onHide: { model.hideSessions(matching: $0) },
                     onOpenLog: model.conversationLogOpener(for: session),
@@ -276,16 +288,17 @@ extension IslandPanelView {
                     agentIconStyle: model.agentIconStyle,
                     shortcutHint: model.shortcutHints.isModifierHeld ? model.settings.shortcuts : nil,
                     isSwitcherHighlighted: model.switcher.highlightedID == session.id,
-                    usesAutoNaming: model.settings.display.sessionAutoNaming
+                    usesAutoNaming: model.settings.display.sessionAutoNaming,
+                    authoritativePaseoTitle: model.authoritativePaseoTitle(sessionID: session.id)
                 )
                 .id(notificationCardIdentity(for: session))
 
-                if model.allSessions.count > 1 {
+                if model.islandListSessions.count > 1 {
                     Button {
                         let isCompletion = session.phase == .completed
                         model.expandNotificationToSessionList(clearExpansion: isCompletion)
                     } label: {
-                        Text(model.lang.t("island.showAll", model.allSessions.count))
+                        Text(model.lang.t("island.showAll", model.islandListSessions.count))
                             .font(.islandText(size: 10.5, weight: .medium))
                             .foregroundStyle(V6Palette.paper.opacity(0.36))
                             .frame(maxWidth: .infinity, alignment: .center)
@@ -303,6 +316,8 @@ extension IslandPanelView {
                         }
 
                         ForEach(section.sessions) { session in
+                            let source = model.forwardedPaseoQuestionSource(sessionID: session.id)
+                            let sdk = sdkPresentation(for: session, forwardedSessionID: source?.childSessionID)
                             IslandSessionRow(
                                 session: session,
                                 referenceDate: referenceDate,
@@ -314,13 +329,19 @@ extension IslandPanelView {
                                 sideInset: sessionListSideInset,
                                 cardFields: cardFields,
                                 lang: model.lang,
-                                onApprove: { model.approvePermission(for: session.id, action: $0) },
-                                onResolveAll: { model.resolveAllPendingApprovals($0) },
+                                paseoModeLabel: sdk.modeLabel,
+                    submissionIsSending: sdk.isSending,
+                    submissionError: sdk.error,
+                    submissionSuccess: sdk.success,
+                    forwardedQuestionSourceTitle: source?.title ?? model.localCodexQuestionSourceTitle(sessionID: session.id),
+                    onApprove: { model.approvePermission(for: session.id, action: $0, expectedRequestID: session.permissionRequest?.id) },
+                                onResolveAll: session.jumpTarget?.terminalApp == "Paseo" ? nil : { model.resolveAllPendingApprovals($0) },
                                 pendingApprovalCount: model.pendingApprovalSessions.count,
-                                onAnswer: { model.answerQuestion(for: session.id, answer: $0) },
+                                onAnswer: { model.answerQuestion(for: session.id, answer: $0, promptID: session.questionPrompt?.id) },
                                 onReply: TerminalTextSender.canReply(to: session, enabled: model.completionReplyEnabled)
                                     ? { model.replyToSession(session, text: $0) } : nil,
-                                onJump: { model.jumpToSession(session) },
+                                onExplicitJump: { model.jumpToSavedSession(id: session.id) },
+                    onJump: { model.jumpToSession(session) },
                                 onDismiss: session.isRemote ? { model.dismissSession(session.id) } : nil,
                                 onHide: { model.hideSessions(matching: $0) },
                     onOpenLog: model.conversationLogOpener(for: session),
@@ -329,7 +350,8 @@ extension IslandPanelView {
                     shortcutHint: model.shortcutHints.isModifierHeld ? model.settings.shortcuts : nil,
                     isSwitcherHighlighted: model.switcher.highlightedID == session.id,
                     isGestureHighlighted: gestureHighlightSessionID == session.id,
-                    usesAutoNaming: model.settings.display.sessionAutoNaming
+                    usesAutoNaming: model.settings.display.sessionAutoNaming,
+                    authoritativePaseoTitle: model.authoritativePaseoTitle(sessionID: session.id)
                             )
                         }
                     }
@@ -340,6 +362,12 @@ extension IslandPanelView {
                 sessionPanelFooter
             }
         }
+    }
+
+    private func sdkPresentation(for session: AgentSession, forwardedSessionID: String?) -> IslandSDKPresentation {
+        IslandSDKPresentation(sessionID: session.id, forwardedSessionID: forwardedSessionID,
+            modeLabels: model.paseoModeLabels, sendingSessionIDs: model.paseoSendingSessionIDs,
+            errors: model.paseoErrors, successes: model.paseoSuccesses)
     }
 
     private func notificationCardIdentity(for session: AgentSession) -> String {
@@ -357,13 +385,28 @@ extension IslandPanelView {
 
     @ViewBuilder
     private func sessionRowsContent(referenceDate: Date) -> some View {
-        ForEach(model.islandSessionSections) { section in
+        ForEach(IslandSessionPriority.allCases) { priority in
+            let sections = model.islandSessionSections.compactMap { section -> IslandSessionSection? in
+                let sessions = section.sessions.filter(priority.contains)
+                return sessions.isEmpty ? nil : IslandSessionSection(id: section.id, title: section.title, sessions: sessions)
+            }
+            if !sections.isEmpty {
+                Text(priority.title)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(V6Palette.paper.opacity(0.86))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, sessionListSideInset)
+                    .padding(.top, 12).padding(.bottom, 6)
+            }
+            ForEach(sections) { section in
             VStack(alignment: .leading, spacing: 0) {
                 if model.islandSessionGroup != .none {
                     sessionSectionHeader(section)
                 }
 
                 ForEach(section.sessions) { session in
+                    let source = model.forwardedPaseoQuestionSource(sessionID: session.id)
+                    let sdk = sdkPresentation(for: session, forwardedSessionID: source?.childSessionID)
                     IslandSessionRow(
                         session: session,
                         referenceDate: referenceDate,
@@ -375,13 +418,19 @@ extension IslandPanelView {
                         sideInset: sessionListSideInset,
                         cardFields: cardFields,
                         lang: model.lang,
-                        onApprove: { model.approvePermission(for: session.id, action: $0) },
-                        onResolveAll: { model.resolveAllPendingApprovals($0) },
+                        paseoModeLabel: sdk.modeLabel,
+                    submissionIsSending: sdk.isSending,
+                    submissionError: sdk.error,
+                    submissionSuccess: sdk.success,
+                    forwardedQuestionSourceTitle: source?.title ?? model.localCodexQuestionSourceTitle(sessionID: session.id),
+                    onApprove: { model.approvePermission(for: session.id, action: $0, expectedRequestID: session.permissionRequest?.id) },
+                        onResolveAll: session.jumpTarget?.terminalApp == "Paseo" ? nil : { model.resolveAllPendingApprovals($0) },
                         pendingApprovalCount: model.pendingApprovalSessions.count,
-                        onAnswer: { model.answerQuestion(for: session.id, answer: $0) },
+                        onAnswer: { model.answerQuestion(for: session.id, answer: $0, promptID: session.questionPrompt?.id) },
                         onReply: TerminalTextSender.canReply(to: session, enabled: model.completionReplyEnabled)
                             ? { model.replyToSession(session, text: $0) } : nil,
-                        onJump: { model.jumpToSession(session) },
+                        onExplicitJump: { model.jumpToSavedSession(id: session.id) },
+                    onJump: { model.jumpToSession(session) },
                         onDismiss: session.isRemote ? { model.dismissSession(session.id) } : nil,
                         onHide: { model.hideSessions(matching: $0) },
                     onOpenLog: model.conversationLogOpener(for: session),
@@ -390,10 +439,12 @@ extension IslandPanelView {
                     shortcutHint: model.shortcutHints.isModifierHeld ? model.settings.shortcuts : nil,
                     isSwitcherHighlighted: model.switcher.highlightedID == session.id,
                     isGestureHighlighted: gestureHighlightSessionID == session.id,
-                    usesAutoNaming: model.settings.display.sessionAutoNaming
+                    usesAutoNaming: model.settings.display.sessionAutoNaming,
+                    authoritativePaseoTitle: model.authoritativePaseoTitle(sessionID: session.id)
                     )
                 }
             }
+        }
         }
     }
 
@@ -416,9 +467,7 @@ extension IslandPanelView {
             .padding(.trailing, sessionListSideInset)
             .frame(height: 24)
 
-            // The rest of mitama — drawn only when it has something to say,
-            // so an idle machine keeps the list exactly where it was.
-            IslandEcosystemSignalsStrip(model: model, sideInset: sessionListSideInset)
+
         }
     }
 

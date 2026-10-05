@@ -78,6 +78,14 @@ final class VoiceCommandSession {
     var onStatus: ((String?) -> Void)?
 
     private let settings: VoiceCommandSettings
+    private let microphoneAuthorization: () -> AVAuthorizationStatus
+    private let requestMicrophoneAccess: (@escaping @Sendable (Bool) -> Void) -> Void
+    private let speechAuthorization: () -> SFSpeechRecognizerAuthorizationStatus
+    private let requestSpeechAuthorization: (@escaping @Sendable (SFSpeechRecognizerAuthorizationStatus) -> Void) -> Void
+    private let recognitionStart: (() -> Void)?
+    private var permissionGeneration: UInt64 = 0
+    private var permissionIntentActive = false
+    private var permissionPending = false
 
     private let engine = AVAudioEngine()
     private var recogniseTask: Task<Void, Never>?
@@ -87,11 +95,23 @@ final class VoiceCommandSession {
     /// option's own words both work. Empty for an approval card.
     private var options: [String] = []
 
-    init(settings: VoiceCommandSettings) {
+    init(
+        settings: VoiceCommandSettings,
+        microphoneAuthorization: @escaping () -> AVAuthorizationStatus = { AVCaptureDevice.authorizationStatus(for: .audio) },
+        requestMicrophoneAccess: @escaping (@escaping @Sendable (Bool) -> Void) -> Void = { AVCaptureDevice.requestAccess(for: .audio, completionHandler: $0) },
+        speechAuthorization: @escaping () -> SFSpeechRecognizerAuthorizationStatus = { SFSpeechRecognizer.authorizationStatus() },
+        requestSpeechAuthorization: @escaping (@escaping @Sendable (SFSpeechRecognizerAuthorizationStatus) -> Void) -> Void = { SFSpeechRecognizer.requestAuthorization($0) },
+        recognitionStart: (() -> Void)? = nil
+    ) {
         self.settings = settings
+        self.microphoneAuthorization = microphoneAuthorization
+        self.requestMicrophoneAccess = requestMicrophoneAccess
+        self.speechAuthorization = speechAuthorization
+        self.requestSpeechAuthorization = requestSpeechAuthorization
+        self.recognitionStart = recognitionStart
     }
 
-    var isRunning: Bool { phase == .preparing || phase == .listening }
+    var isRunning: Bool { permissionPending || phase == .preparing || phase == .listening }
 
     /// Opens the window. Pressing again while listening cancels — the same
     /// escape hatch the camera has, so the key is never a one-way door.
@@ -108,17 +128,25 @@ final class VoiceCommandSession {
 
         self.options = options
 
-        switch AVCaptureDevice.authorizationStatus(for: .audio) {
+        permissionGeneration &+= 1
+        let generation = permissionGeneration
+        permissionIntentActive = true
+        switch microphoneAuthorization() {
         case .authorized:
-            startAfterSpeechAuthorisation()
+            startAfterSpeechAuthorisation(generation: generation)
         case .notDetermined:
+            permissionPending = true
             onStatus?(LanguageManager.shared.t("voice.status.requesting"))
-            AVCaptureDevice.requestAccess(for: .audio) { @Sendable [weak self] granted in
+            requestMicrophoneAccess { @Sendable [weak self] granted in
                 Task { @MainActor in
-                    guard let self else { return }
+                    guard let self, self.permissionGeneration == generation,
+                          self.permissionIntentActive, self.permissionPending else { return }
+                    self.permissionPending = false
+                    guard self.settings.isEnabled else { self.stop(); return }
                     if granted {
-                        self.startAfterSpeechAuthorisation()
+                        self.startAfterSpeechAuthorisation(generation: generation)
                     } else {
+                        self.permissionIntentActive = false
                         self.phase = .denied
                         self.onStatus?(LanguageManager.shared.t("voice.status.denied"))
                     }
@@ -133,6 +161,9 @@ final class VoiceCommandSession {
     }
 
     func stop() {
+        permissionGeneration &+= 1
+        permissionIntentActive = false
+        permissionPending = false
         timeout?.cancel()
         timeout = nil
         recogniseTask?.cancel()
@@ -162,11 +193,13 @@ final class VoiceCommandSession {
     /// Recognising speech is a second permission, separate from the microphone.
     /// Without it the audio arrives and nothing is ever transcribed — the window
     /// would close saying nothing was heard, whatever was said into it.
-    private func startAfterSpeechAuthorisation() {
-        switch SFSpeechRecognizer.authorizationStatus() {
+    private func startAfterSpeechAuthorisation(generation: UInt64) {
+        guard permissionGeneration == generation, permissionIntentActive, settings.isEnabled else { return }
+        switch speechAuthorization() {
         case .authorized:
             start()
         case .notDetermined:
+            permissionPending = true
             onStatus?(LanguageManager.shared.t("voice.status.requesting"))
             // `@Sendable` is load-bearing. Without it Swift 6 infers the
             // closure inherits this method's main-actor isolation, then TCC
@@ -174,12 +207,16 @@ final class VoiceCommandSession {
             // traps before the first line runs. The camera's callback next door
             // is already `@Sendable` in its own declaration, which is why that
             // one never had the problem.
-            SFSpeechRecognizer.requestAuthorization { @Sendable [weak self] status in
+            requestSpeechAuthorization { @Sendable [weak self] status in
                 Task { @MainActor in
-                    guard let self else { return }
+                    guard let self, self.permissionGeneration == generation,
+                          self.permissionIntentActive, self.permissionPending else { return }
+                    self.permissionPending = false
+                    guard self.settings.isEnabled else { self.stop(); return }
                     if status == .authorized {
                         self.start()
                     } else {
+                        self.permissionIntentActive = false
                         self.phase = .denied
                         self.onStatus?(LanguageManager.shared.t("voice.status.speechDenied"))
                     }
@@ -194,6 +231,12 @@ final class VoiceCommandSession {
     }
 
     private func start() {
+        guard permissionIntentActive, settings.isEnabled else { return }
+        if let recognitionStart {
+            phase = .listening
+            recognitionStart()
+            return
+        }
         phase = .preparing
         onStatus?(LanguageManager.shared.t("voice.status.preparing"))
 
@@ -218,6 +261,7 @@ final class VoiceCommandSession {
     }
 
     private func listen() async throws {
+        guard !Task.isCancelled, permissionIntentActive, settings.isEnabled else { return }
         // Speech's streaming analyzer arrived in macOS 26. The app still runs on
         // 14, where this feature simply does not exist rather than crashing.
         guard #available(macOS 26.0, *) else {
@@ -271,6 +315,7 @@ final class VoiceCommandSession {
             onStatus?(LanguageManager.shared.t("voice.status.unavailable"))
             return
         }
+        guard !Task.isCancelled, permissionIntentActive, settings.isEnabled else { return }
         let box = AudioConverterBox(converter: converter, outputFormat: analyzerFormat)
 
         // `@Sendable` again, and for the sharpest version of the same reason:

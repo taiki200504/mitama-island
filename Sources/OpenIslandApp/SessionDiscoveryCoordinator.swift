@@ -40,16 +40,16 @@ final class SessionDiscoveryCoordinator {
     var onAgentEvent: ((AgentEvent) -> Void)?
 
     @ObservationIgnored
-    private let codexSessionStore = CodexSessionStore()
+    private let codexSessionStore: CodexSessionStore
 
     @ObservationIgnored
-    private let claudeSessionRegistry = ClaudeSessionRegistry()
+    private let claudeSessionRegistry: ClaudeSessionRegistry
 
     @ObservationIgnored
-    private let openCodeSessionRegistry = OpenCodeSessionRegistry()
+    private let openCodeSessionRegistry: OpenCodeSessionRegistry
 
     @ObservationIgnored
-    private let cursorSessionRegistry = CursorSessionRegistry()
+    private let cursorSessionRegistry: CursorSessionRegistry
 
     @ObservationIgnored
     let codexRolloutWatcher = CodexRolloutWatcher()
@@ -71,6 +71,16 @@ final class SessionDiscoveryCoordinator {
 
     @ObservationIgnored
     private var cursorSessionPersistenceTask: Task<Void, Never>?
+
+    init(codexSessionStore: CodexSessionStore = CodexSessionStore(),
+         claudeSessionRegistry: ClaudeSessionRegistry = ClaudeSessionRegistry(),
+         openCodeSessionRegistry: OpenCodeSessionRegistry = OpenCodeSessionRegistry(),
+         cursorSessionRegistry: CursorSessionRegistry = CursorSessionRegistry()) {
+        self.codexSessionStore = codexSessionStore
+        self.claudeSessionRegistry = claudeSessionRegistry
+        self.openCodeSessionRegistry = openCodeSessionRegistry
+        self.cursorSessionRegistry = cursorSessionRegistry
+    }
 
     private var state: SessionState {
         get { stateAccessor?() ?? SessionState() }
@@ -151,7 +161,7 @@ final class SessionDiscoveryCoordinator {
 
         // Restore persisted Codex sessions.
         if !payload.codexRecords.isEmpty {
-            state = SessionState(sessions: payload.codexRecords.map(\.restorableSession))
+            state = SessionState(sessions: mergeDiscoveredSessions(payload.codexRecords.map(\.restorableSession)))
             onStatusMessage?("Restored \(payload.codexRecords.count) recent Codex session(s) from local cache.")
         }
 
@@ -230,7 +240,9 @@ final class SessionDiscoveryCoordinator {
 
     private func merge(discovered: AgentSession, into existing: AgentSession) -> AgentSession {
         var merged = existing
-        let discoveredIsNewer = discovered.updatedAt >= existing.updatedAt
+        let preservesLiveRequest = existing.attachmentState == .attached && existing.phase.requiresAttention
+            && (discovered.attachmentState == .stale || !discovered.phase.requiresAttention)
+        let discoveredIsNewer = discovered.updatedAt >= existing.updatedAt && !preservesLiveRequest
 
         if discoveredIsNewer {
             merged.title = discovered.title
@@ -334,6 +346,7 @@ final class SessionDiscoveryCoordinator {
         }
 
         let merged = CodexSessionMetadata(
+            parentThreadID: discovered.parentThreadID ?? existing.parentThreadID,
             transcriptPath: discovered.transcriptPath ?? existing.transcriptPath,
             initialUserPrompt: existing.initialUserPrompt ?? discovered.initialUserPrompt ?? discovered.lastUserPrompt,
             lastUserPrompt: discovered.lastUserPrompt ?? existing.lastUserPrompt,

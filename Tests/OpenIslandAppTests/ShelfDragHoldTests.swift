@@ -6,7 +6,7 @@ import Testing
 struct ShelfDragHoldTests {
     @Test
     func aNoticeExpiringDoesNotCloseTheIslandUnderACarriedFile() {
-        let model = AppModel()
+        let model = isolatedAppModel()
         model.carriedFileDragProbe = { true }
 
         model.present(notice: "聞いています")
@@ -21,7 +21,7 @@ struct ShelfDragHoldTests {
 
     @Test
     func aNoticeExpiringClosesTheIslandWhenNothingIsBeingCarried() {
-        let model = AppModel()
+        let model = isolatedAppModel()
         model.carriedFileDragProbe = { false }
 
         model.present(notice: "聞いています")
@@ -34,7 +34,7 @@ struct ShelfDragHoldTests {
 
     @Test(.enabled(if: !TestEnvironment.isCI, "wall-clock collapse timing; CI runners stall for seconds"))
     func theIslandFoldsAwayOnceTheFileHasLanded() async throws {
-        let model = AppModel()
+        let model = isolatedAppModel()
         nonisolated(unsafe) var carrying = true
         model.carriedFileDragProbe = { carrying }
 
@@ -56,7 +56,7 @@ struct ShelfDragHoldTests {
 
     @Test
     func aCarriedFileDefersTheTimedNotificationCollapse() {
-        let model = AppModel()
+        let model = isolatedAppModel()
         model.notchStatus = .opened
         model.carriedFileDragProbe = { true }
 

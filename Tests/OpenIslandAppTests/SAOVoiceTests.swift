@@ -12,11 +12,18 @@ struct SAOVoiceTests {
         body()
     }
 
-    @Test("The SAO theme speaks in its own vocabulary")
-    func saoSpeaksSAO() {
+    @Test("The theme keeps session states in the reader's language")
+    func saoKeepsSessionStatesReadable() {
         #expect(LanguageManager.shared.t("banner.completed") == "CONGRATULATIONS")
-        #expect(LanguageManager.shared.t("island.sessionOverview.running") == "DIVING")
-        #expect(LanguageManager.shared.t("island.sessionOverview.waiting") == "SYSTEM CALL")
+        for language in [LanguageManager.AppLanguage.en, .ja, .zhHans, .zhHant] {
+            withLanguage(language) {
+                for key in ["island.sessionOverview.running", "island.sessionOverview.waiting"] {
+                    let plain = LanguageManager.shared.bundle.localizedString(forKey: key, value: nil, table: nil)
+                    #expect(plain != key)
+                    #expect(LanguageManager.shared.t(key) == plain)
+                }
+            }
+        }
         #expect(LanguageManager.shared.t("setup.banner.noHooks.title") == "LINK START")
     }
 

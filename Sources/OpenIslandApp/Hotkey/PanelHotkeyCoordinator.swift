@@ -15,6 +15,7 @@ final class PanelHotkeyCoordinator {
 
     private let registrar: any HotkeyRegistering
     private let settings: ShortcutSettings
+    private var panelIsExpanded = false
     private var resolver: KeycodeResolver
     private let layoutObserver = DistributedObserverBox()
 
@@ -130,7 +131,10 @@ final class PanelHotkeyCoordinator {
 
     /// The one always-live shortcut. Registered at startup and never released.
     func startPersistentBindings() {
-        guard settings.keyboardShortcutsEnabled else { return }
+        guard settings.keyboardShortcutsEnabled else {
+            registrar.removeBindings(for: .persistent)
+            return
+        }
         var bindings = [
             HotkeyBinding(
                 id: Self.switcherBindingID,
@@ -208,6 +212,7 @@ final class PanelHotkeyCoordinator {
     /// without this the ⌃` and feature keys stayed claimed until relaunch, and
     /// toggling a feature while off silently kept the stale table.
     func setEnabled(_ enabled: Bool, panelIsExpanded: Bool) {
+        self.panelIsExpanded = panelIsExpanded
         if enabled {
             startPersistentBindings()
             if panelIsExpanded { panelDidExpand() }
@@ -241,21 +246,29 @@ final class PanelHotkeyCoordinator {
 
     /// Registers the panel shortcuts. Called when the panel expands.
     func panelDidExpand() {
+        panelIsExpanded = true
         guard settings.keyboardShortcutsEnabled else { return }
         registrar.setBindings(bindings(), for: .panelExpanded)
     }
 
     /// Releases them again, so a single letter is only ours while the panel is up.
     func panelDidCollapse() {
+        panelIsExpanded = false
         registrar.removeBindings(for: .panelExpanded)
     }
 
     /// Re-registers with the current assignments, for when the user edits them
     /// while the panel happens to be open.
     func settingsDidChange(panelIsExpanded: Bool) {
-        guard panelIsExpanded else { return }
-        panelDidCollapse()
-        panelDidExpand()
+        self.panelIsExpanded = panelIsExpanded
+        startPersistentBindings()
+        registrar.removeBindings(for: .panelExpanded)
+        if panelIsExpanded { panelDidExpand() }
+    }
+
+    func keyboardLayoutDidChange() {
+        resolver = KeycodeResolver()
+        settingsDidChange(panelIsExpanded: panelIsExpanded)
     }
 
     /// The bindings the current settings describe.
@@ -301,8 +314,7 @@ final class PanelHotkeyCoordinator {
         ) { [weak self] _ in
             MainActor.assumeIsolated {
                 guard let self else { return }
-                self.resolver = KeycodeResolver()
-                self.settingsDidChange(panelIsExpanded: true)
+                self.keyboardLayoutDidChange()
             }
         }
     }

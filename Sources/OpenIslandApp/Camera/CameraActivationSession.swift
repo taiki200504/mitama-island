@@ -43,6 +43,12 @@ final class CameraActivationSession {
     var onStatus: ((String?) -> Void)?
 
     private let settings: CameraGestureSettings
+    private let cameraAuthorization: () -> AVAuthorizationStatus
+    private let requestCameraAccess: (@escaping @Sendable (Bool) -> Void) -> Void
+    private let captureStart: (() -> Void)?
+    private var permissionGeneration: UInt64 = 0
+    private var permissionIntentActive = false
+    private var permissionPending = false
 
     private let queue = DispatchQueue(label: "app.openisland.camera", qos: .userInitiated)
     private var captureSession: AVCaptureSession?
@@ -71,11 +77,19 @@ final class CameraActivationSession {
         builtInCamera()?.isInUseByAnotherApplication ?? false
     }
 
-    init(settings: CameraGestureSettings) {
+    init(
+        settings: CameraGestureSettings,
+        cameraAuthorization: @escaping () -> AVAuthorizationStatus = { AVCaptureDevice.authorizationStatus(for: .video) },
+        requestCameraAccess: @escaping (@escaping @Sendable (Bool) -> Void) -> Void = { AVCaptureDevice.requestAccess(for: .video, completionHandler: $0) },
+        captureStart: (() -> Void)? = nil
+    ) {
         self.settings = settings
+        self.cameraAuthorization = cameraAuthorization
+        self.requestCameraAccess = requestCameraAccess
+        self.captureStart = captureStart
     }
 
-    var isRunning: Bool { phase != .idle && phase != .denied && phase != .unavailable }
+    var isRunning: Bool { permissionPending || (phase != .idle && phase != .denied && phase != .unavailable) }
 
     /// Opens the window. Called again while already open, it gives up on the
     /// camera and opens the island directly.
@@ -94,20 +108,28 @@ final class CameraActivationSession {
 
         guard settings.isEnabled else { return false }
 
-        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        permissionGeneration &+= 1
+        let generation = permissionGeneration
+        permissionIntentActive = true
+        switch cameraAuthorization() {
         case .authorized:
             start()
         case .notDetermined:
             // The prompt arrives on its own schedule and can land behind other
             // windows. Saying what is being waited for is the difference between
             // "nothing happened" and "answer the dialog".
+            permissionPending = true
             onStatus?(LanguageManager.shared.t("camera.status.requesting"))
-            AVCaptureDevice.requestAccess(for: .video) { @Sendable [weak self] granted in
+            requestCameraAccess { @Sendable [weak self] granted in
                 Task { @MainActor in
-                    guard let self else { return }
+                    guard let self, self.permissionGeneration == generation,
+                          self.permissionIntentActive, self.permissionPending else { return }
+                    self.permissionPending = false
+                    guard self.settings.isEnabled else { self.stop(); return }
                     if granted {
                         self.start()
                     } else {
+                        self.permissionIntentActive = false
                         self.phase = .denied
                         self.onStatus?(LanguageManager.shared.t("camera.status.denied"))
                     }
@@ -119,6 +141,7 @@ final class CameraActivationSession {
             // times against a denied camera and the island stayed silent and
             // shut — indistinguishable from the app being broken. A shortcut
             // that does nothing and explains nothing is worse than no shortcut.
+            permissionIntentActive = false
             phase = .denied
             onStatus?(LanguageManager.shared.t("camera.status.denied"))
             return true
@@ -192,6 +215,9 @@ final class CameraActivationSession {
     }
 
     func stop() {
+        permissionGeneration &+= 1
+        permissionIntentActive = false
+        permissionPending = false
         keepsCameraOpen = false
         isRehearsing = false
         timeout?.cancel()
@@ -298,6 +324,12 @@ final class CameraActivationSession {
     // MARK: - Private
 
     private func start(window: TimeInterval? = nil) {
+        guard settings.isEnabled else { stop(); return }
+        if let captureStart {
+            phase = .awaitingGesture
+            captureStart()
+            return
+        }
         guard let session = makeCaptureSession() else {
             phase = .unavailable
             return

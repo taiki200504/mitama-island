@@ -84,6 +84,11 @@ struct TerminalJumpService {
             aliases: ["claude.app"]
         ),
         TerminalAppDescriptor(
+            displayName: "Paseo",
+            bundleIdentifier: "sh.paseo.desktop",
+            aliases: ["paseo"]
+        ),
+        TerminalAppDescriptor(
             displayName: "Kaku",
             bundleIdentifier: "fun.tw93.kaku",
             aliases: ["kaku"]
@@ -362,6 +367,14 @@ struct TerminalJumpService {
                 // per-session deep link, so just bring the app forward.
                 try openAction(["-b", "com.anthropic.claudefordesktop"])
                 return "Activated Claude."
+            case "sh.paseo.desktop":
+                if let server = Self.paseoLinkSegment(target.paseoServerID),
+                   let agent = Self.paseoLinkSegment(target.paseoAgentID) {
+                    try openAction(["-b", "sh.paseo.desktop", "paseo://h/\(server)/agent/\(agent)"])
+                    return "この会話を開くようPaseoへ送信しました。"
+                }
+                try openAction(["-b", "sh.paseo.desktop"])
+                return "会話は特定できずPaseoだけ開きました。"
             case "com.googlecode.iterm2":
                 if try jumpToITermSession(target) {
                     return "Focused the matching iTerm session."
@@ -450,6 +463,17 @@ struct TerminalJumpService {
         }
 
         throw TerminalJumpError.unsupportedTerminal(target.terminalApp)
+    }
+
+    /// Encode each identity as one URL path segment, never as URL syntax.
+    private static func paseoLinkSegment(_ value: String?) -> String? {
+        guard let value,
+              !value.isEmpty,
+              value == value.trimmingCharacters(in: .whitespacesAndNewlines),
+              value != ".", value != "..",
+              value.rangeOfCharacter(from: .controlCharacters) == nil else { return nil }
+        let allowed = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~")
+        return value.addingPercentEncoding(withAllowedCharacters: allowed)
     }
 
     private func jumpToITermSession(_ target: JumpTarget) throws -> Bool {
