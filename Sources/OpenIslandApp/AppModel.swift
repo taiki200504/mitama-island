@@ -1686,7 +1686,9 @@ final class AppModel {
         case .none:
             return nil
         case .count:
-            let n = sessions.count
+            // The rows the opened list shows, not every surfaced session, so
+            // the badge never reads ×9 over a list of two rows.
+            let n = liveSessionCount
             guard n > 0 else { return nil }
             return .count(n)
         case .agents:

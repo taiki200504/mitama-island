@@ -191,7 +191,10 @@ struct IslandPanelView: View {
 
                 v6ClosedSurface()
                     .accessibilityHidden(usesOpenedVisualState)
-                    .accessibilityElement(children: .combine)
+                    // `.contain`, not `.combine`: the pill stays one openable
+                    // element, but who is waiting and how many still reach
+                    // VoiceOver instead of being replaced by the button label.
+                    .accessibilityElement(children: .contain)
                     .accessibilityLabel(model.lang.t("statusItem.openIsland"))
                     .accessibilityAddTraits(.isButton)
                     .accessibilityAction {
