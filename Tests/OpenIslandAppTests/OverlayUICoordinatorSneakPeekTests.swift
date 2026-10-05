@@ -46,14 +46,26 @@ struct OverlayUICoordinatorSneakPeekTests {
     @Test("A higher-priority peek replacing a shorter one leaves no old expiry task able to clobber it")
     func supersededPeekDoesNotExpireLater() async throws {
         let coordinator = OverlayUICoordinator()
-        let now = Date.now
+        let now = Date(timeIntervalSince1970: 1_000_000_000)
+        coordinator.sneakPeekNow = { now }
+        // The superseded .shelf deadline (0.2s out) is reported as already
+        // passed; the .hudGauge one (3s out) never arrives. No wall-clock
+        // wait, so a stalled CI runner can't expire the gauge by accident.
+        let cutoff = ContinuousClock.now.advanced(by: .seconds(1.5))
+        let released = ExpiredDeadlineCounter()
+        coordinator.sneakPeekExpiryWait = { deadline in
+            if deadline < cutoff {
+                await released.increment()
+                return
+            }
+            try await Task.sleep(for: .seconds(3600))
+        }
         coordinator.presentSneakPeek(peek(.shelf, until: now.addingTimeInterval(0.2)))
         coordinator.presentSneakPeek(peek(.hudGauge, until: now.addingTimeInterval(3)))
 
-        // Past the .shelf peek's own (superseded) deadline, but nowhere near
-        // the still-active .hudGauge one — if the old .shelf expiry task had
-        // survived the replacement, it would have cleared this out by now.
-        try await Task.sleep(for: .milliseconds(700))
+        while await released.count() == 0 { await Task.yield() }
+        // Give a surviving .shelf task every chance to clear the gauge.
+        try await poll(timeout: .milliseconds(300)) { coordinator.sneakPeek?.kind != .hudGauge }
 
         #expect(coordinator.sneakPeek?.kind == .hudGauge)
     }
@@ -169,6 +181,12 @@ struct OverlayUICoordinatorSneakPeekTests {
 
         #expect(coordinator.sneakPeek == nil)
     }
+}
+
+private actor ExpiredDeadlineCounter {
+    private var value = 0
+    func increment() { value += 1 }
+    func count() -> Int { value }
 }
 
 private actor PeekExpiryGate {

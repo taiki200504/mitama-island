@@ -10,7 +10,13 @@ import OpenIslandCore
         await ForegroundTerminalSessionProbe().matches(session: session)
     },
     settings: SettingsStore? = nil,
-    quietScenes: QuietSceneMonitor = QuietSceneMonitor(),
+    // The real Focus database, lock screen and screen-sharing apps on the
+    // developer's Mac must not decide whether a test's notification shows.
+    quietScenes: QuietSceneMonitor = QuietSceneMonitor(
+        assertionsURL: FileManager.default.temporaryDirectory.appendingPathComponent("island-test-no-focus-" + UUID().uuidString + ".json"),
+        runningBundleIdentifiers: { [] },
+        screenIsLocked: { false }
+    ),
     paseoQuestions: PaseoQuestionCoordinator = PaseoQuestionCoordinator(),
     discovery: SessionDiscoveryCoordinator? = nil,
     registryDirectory: URL = FileManager.default.temporaryDirectory.appendingPathComponent("island-test-" + UUID().uuidString)
