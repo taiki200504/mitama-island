@@ -61,3 +61,11 @@ This index is the repository map for humans and coding agents. Read these files 
 - [docs/installed-app-bundle-analysis.md](./installed-app-bundle-analysis.md) for installed-app bundle observations
 - [docs/references/vibe-parity-checklist.md](./references/vibe-parity-checklist.md) for the settings-surface gap checklist against the paid reference product
 - [docs/references/mediaremote-adapter.md](./references/mediaremote-adapter.md) for how Now Playing reads media info on macOS 15.4+
+
+## Local Island Overhaul Verification
+
+- [docs/1005-independent-critique.md](./1005-independent-critique.md) for the independent Grok critique and identified risks.
+- [docs/1005-island-overhaul-acceptance.md](./1005-island-overhaul-acceptance.md) for local scope and verified acceptance evidence.
+- [docs/settings-integration-audit-1005.md](./settings-integration-audit-1005.md) for the associated local implementation audit.
+
+- [docs/testing/paseo-fixture.md](./testing/paseo-fixture.md) for isolated native question, child, and unsupported-request fixtures.
