@@ -103,19 +103,24 @@ public struct PaseoAgentBinding: Equatable, Sendable {
     }
 }
 
-private enum PaseoProviderAliases {
+enum PaseoProviderAliases {
+    /// Paseo persists custom providers as `agents.providers.<id>.extends`.
     struct Configuration: Decodable {
-        struct Providers: Decodable {
-            struct Custom: Decodable { var extends: String }
-            var custom: [String: Custom]?
+        struct Agents: Decodable {
+            struct Provider: Decodable { var extends: String? }
+            var providers: [String: Provider]?
         }
-        var providers: Providers?
+        var agents: Agents?
     }
     static let values: [String: String] = {
         let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".paseo/config.json")
-        guard let data = try? Data(contentsOf: url), let config = try? JSONDecoder().decode(Configuration.self, from: data) else { return [:] }
-        return config.providers?.custom?.mapValues(\.extends) ?? [:]
+        guard let data = try? Data(contentsOf: url) else { return [:] }
+        return aliases(fromConfig: data)
     }()
+    static func aliases(fromConfig data: Data) -> [String: String] {
+        guard let config = try? JSONDecoder().decode(Configuration.self, from: data) else { return [:] }
+        return config.agents?.providers?.compactMapValues(\.extends) ?? [:]
+    }
     static func canonical(_ provider: String, aliases: [String: String]) -> String? {
         var value = provider
         var seen: Set<String> = []
