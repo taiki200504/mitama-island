@@ -190,13 +190,23 @@ struct IslandPanelView: View {
                 }
 
                 v6ClosedSurface()
-                    .accessibilityHidden(usesOpenedVisualState)
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel(model.lang.t("statusItem.openIsland"))
-                    .accessibilityAddTraits(.isButton)
-                    .accessibilityAction {
-                        model.notchOpen(reason: .click)
+                    // Who is waiting and how many stay readable as the pill's
+                    // own children; opening is a separate button element,
+                    // because a `.contain` container does not perform AXPress
+                    // and `.combine` + a label hid the contents.
+                    .overlay {
+                        Rectangle()
+                            .fill(.clear)
+                            .allowsHitTesting(false)
+                            .accessibilityElement()
+                            .accessibilityLabel(model.lang.t("statusItem.openIsland"))
+                            .accessibilityAddTraits(.isButton)
+                            .accessibilityAction {
+                                model.notchOpen(reason: .click)
+                            }
                     }
+                    .accessibilityElement(children: .contain)
+                    .accessibilityHidden(usesOpenedVisualState)
                     .opacity(usesOpenedVisualState ? 0 : 1)
                     .allowsHitTesting(!usesOpenedVisualState)
                     // The pill sits against the physical notch, so it cannot

@@ -139,6 +139,27 @@ struct IslandCountConsistencyTests {
         #expect(model.liveSessionCount == model.islandListSessions.count)
     }
 
+    /// The ×N badge on the closed island is drawn from its own call, which
+    /// still counted the grey rows after the count above was fixed.
+    @Test("The closed badge shows the same number as the rows")
+    func closedBadgeMatchesRows() {
+        let model = makeModel()
+        model.state = SessionState(sessions: [
+            session(id: "live", phase: .running, minutesAgo: 0),
+            session(id: "fresh", phase: .completed, minutesAgo: 1),
+            session(id: "grey-a", phase: .completed, minutesAgo: 10),
+            session(id: "grey-b", phase: .completed, minutesAgo: 12),
+        ])
+        model.settings.display.hideIdleSessions = true
+        model.islandRightSlot = .count
+        guard case let .count(n)? = model.islandClosedRightSlotContent() else {
+            Issue.record("expected a count badge")
+            return
+        }
+        #expect(n == model.islandListSessions.count)
+        #expect(n < 4)
+    }
+
     @Test("They still match with hiding turned off")
     func countMatchesWithHidingOff() {
         let model = makeModel()

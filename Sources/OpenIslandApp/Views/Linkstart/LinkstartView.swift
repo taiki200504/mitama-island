@@ -342,6 +342,18 @@ private struct LinkstartSenseDiscsView: View {
             }
         }
         .allowsHitTesting(false)
+        // 円盤の文字は Canvas に焼いた絵なので、そのままでは読み上げにも
+        // ハーネスにも見えない。いま通り過ぎている五感と、確認済みかを文字で添える。
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Self.accessibilitySummary(at: elapsed, holding: reducesMotion))
+    }
+
+    static func accessibilitySummary(at elapsed: TimeInterval, holding: Bool) -> String {
+        LinkstartSenses.discs(at: elapsed, holding: holding)
+            // 名前のない飾りの円盤（variant が五感の数以上）は数えない。
+            .filter { !$0.label.isEmpty && $0.variant < LinkstartSenses.beats.count }
+            .map { $0.label == $0.sense.plateLabel ? $0.label : "\($0.sense.plateLabel) \($0.label)" }
+            .joined(separator: ", ")
     }
 
     private func draw(

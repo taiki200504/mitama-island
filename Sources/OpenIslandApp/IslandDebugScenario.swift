@@ -548,7 +548,7 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                 // (OPEN_ISLAND_HARNESS_LINKSTART_ELAPSED), which is how the
                 // tunnel and the HUD get checked against their reference
                 // without launching the app on someone's screen.
-                linkstartElapsedOverride: Self.harnessLinkstartElapsed ?? 5.2
+                linkstartElapsedOverride: Self.harnessLinkstartElapsed ?? 6.2
             )
 
         case .sneakPeekPop:
