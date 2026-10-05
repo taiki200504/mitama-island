@@ -69,6 +69,12 @@ struct StrayIslandHookTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let managed = directory.appendingPathComponent("Application Support/OpenIsland/bin/OpenIslandHooks")
         let bundle = directory.appendingPathComponent("Mitama Island.app/Contents/Helpers/OpenIslandHooks")
+        // The name promises a resolved bundle helper; without the file the check
+        // falls back to whatever helper this machine happens to have installed.
+        for helper in [managed, bundle] {
+            try FileManager.default.createDirectory(at: helper.deletingLastPathComponent(), withIntermediateDirectories: true)
+            #expect(FileManager.default.createFile(atPath: helper.path, contents: Data(), attributes: [.posixPermissions: 0o755]))
+        }
         let managedCommand = ClaudeHookInstaller.hookCommand(for: managed.path)
         let original = settings(["PermissionRequest": [managedCommand, vibeCommand, "node custom-user-hook.js"]])
         let settingsURL = directory.appendingPathComponent("settings.json")
