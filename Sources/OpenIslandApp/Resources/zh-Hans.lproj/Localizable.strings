@@ -849,6 +849,11 @@
 "statusItem.clipboard.open" = "剪贴板…";
 "statusItem.nowPlaying.playing" = "正在播放：%@";
 "statusItem.nowPlaying.paused" = "已暂停：%@";
+"statusItem.raphael" = "拉斐尔";
+"statusItem.raphael.enable" = "显示";
+"statusItem.raphael.micMute" = "静音麦克风";
+"statusItem.raphael.voiceMute" = "静音语音";
+"statusItem.raphael.notInstalled" = "拉斐尔（未安装）";
 "statusItem.shelf.header" = "暂存（%d）";
 "statusItem.settings" = "设置…";
 "session.stalled" = "一段时间没有响应";
