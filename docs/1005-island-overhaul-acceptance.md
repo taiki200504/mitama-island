@@ -62,3 +62,5 @@ experience UI・settings integration・interactions/privacyは専用worktreeで�
 3260405で、親自身のpending0を理由に親カードへ投影中の子質問を消す最後の同期不具合を修正。正確な親子mappingと現questionUUID一致時のみ解消を防ぎ、直接親自身のstale要求解消は維持。SDK先受信→親pending0/子pending1同期→質問保持→子への回答の回帰PASS。通常起動1303の実Paseo SDK質問が保持され、親の一行へ表示されることをCUA確認。
 
 8805637で、全3row/通知の共有headlineへexact known Paseo binding titleを渡し、自動命名が内部初期promptを再採用しないようにした。unknown/Paseo仮名/ローカル自動名は従来通り。転送質問の親rowmodeは親binding自身のラベルに統一し、子ClaudeBypassを親CodexFullAccessと誤表示しない。送信/エラーroutingは子の現SDKrequestのまま。Grok最終実証blockerと親子mode回帰を含む。
+
+64e99dbで、Paseoの独自プロバイダ（`auto` など）を `agents.providers.<id>.extends` から読むよう修正（旧実装は存在しない `providers.custom` を読んでいた）。常用版でnative再確認: `auto` プロバイダの子がAskUserQuestionを出すと、親行に親のPaseo会話名、「子からの質問」に子のPaseo会話名、モードに「Claude Code · Bypass」と表示。島で選択→回答し、子が `ISLAND_ALIAS_TITLE_TEST_OK` を返したことを `paseo logs` で照合。テスト子は確認後にarchive。
