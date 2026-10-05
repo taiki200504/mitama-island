@@ -46,16 +46,25 @@ struct OverlayUICoordinatorSneakPeekTests {
     @Test("A higher-priority peek replacing a shorter one leaves no old expiry task able to clobber it")
     func supersededPeekDoesNotExpireLater() async throws {
         let coordinator = OverlayUICoordinator()
-        let now = Date.now
+        let clock = ManualPeekExpiryClock()
+        coordinator.sneakPeekExpiryWait = { @MainActor deadline in await clock.wait(deadline) }
+        let now = Date(timeIntervalSince1970: 1_000_000_000)
+        coordinator.sneakPeekNow = { now }
         coordinator.presentSneakPeek(peek(.shelf, until: now.addingTimeInterval(0.2)))
         coordinator.presentSneakPeek(peek(.hudGauge, until: now.addingTimeInterval(3)))
+        while clock.waitingCount < 2 { await Task.yield() }
 
-        // Past the .shelf peek's own (superseded) deadline, but nowhere near
-        // the still-active .hudGauge one — if the old .shelf expiry task had
-        // survived the replacement, it would have cleared this out by now.
-        try await Task.sleep(for: .milliseconds(700))
-
+        // Only the superseded .shelf deadline arrives. Nothing here waits on
+        // the wall clock, so a stalled runner cannot let the gauge's own
+        // deadline pass first and pose as the old task clobbering it.
+        clock.expireEarliest()
+        await clock.untilExpired(count: 1)
         #expect(coordinator.sneakPeek?.kind == .hudGauge)
+
+        // The gauge's own deadline still clears it.
+        clock.expireEarliest()
+        await clock.untilExpired(count: 2)
+        #expect(coordinator.sneakPeek == nil)
     }
 
     @Test("A pending timerDone re-appears with a freshly computed until, not the stale one it lost with")
@@ -182,4 +191,30 @@ private actor PeekExpiryGate {
     func isWaiting() -> Bool { continuation != nil }
     func deadlines() -> [ContinuousClock.Instant] { captured }
     func expire() { continuation?.resume(); continuation = nil }
+}
+
+/// Expiry deadlines that arrive only when the test says so. Runs on the main
+/// actor, so the expiry task resumes in the same job that records it.
+@MainActor
+private final class ManualPeekExpiryClock {
+    private var waiters: [(deadline: ContinuousClock.Instant, continuation: CheckedContinuation<Void, Never>)] = []
+    private var expiredCount = 0
+    var waitingCount: Int { waiters.count }
+
+    func wait(_ deadline: ContinuousClock.Instant) async {
+        await withCheckedContinuation { waiters.append((deadline, $0)) }
+        expiredCount += 1
+    }
+
+    func expireEarliest() {
+        guard let index = waiters.indices.min(by: { waiters[$0].deadline < waiters[$1].deadline }) else { return }
+        waiters.remove(at: index).continuation.resume()
+    }
+
+    /// Returns once `count` expiries have resumed and the main-actor work
+    /// queued behind them has run.
+    func untilExpired(count: Int) async {
+        while expiredCount < count { await Task.yield() }
+        await Task.yield()
+    }
 }
