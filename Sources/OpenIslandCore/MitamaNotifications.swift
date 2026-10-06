@@ -196,6 +196,8 @@ public struct MitamaNotificationClient: Sendable {
             URLQueryItem(name: "select", value: "id,level,title,body,created_at"),
             URLQueryItem(name: "read", value: "eq.false"),
             URLQueryItem(name: "level", value: "in.(\(levels))"),
+            // The island's own remote-answer requests ('island:<id>') must not bounce back onto it.
+            URLQueryItem(name: "or", value: "(source_ref.is.null,source_ref.not.like.island:*)"),
             URLQueryItem(name: "order", value: "created_at.desc"),
             URLQueryItem(name: "limit", value: String(limit)),
         ]

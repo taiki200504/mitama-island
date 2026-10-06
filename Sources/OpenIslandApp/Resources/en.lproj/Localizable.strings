@@ -876,6 +876,9 @@
 "settings.mitama.signal.jobs.help" = "Running, queued and finished-today counts, plus a short note on the island each time one finishes.";
 "settings.mitama.signal.codex" = "Show Codex review findings";
 "settings.mitama.signal.codex.help" = "Flags projects whose latest Codex review reported [P1]. Tap the line to read the findings.";
+"settings.mitama.section.remote" = "Answer from iPhone";
+"settings.mitama.remoteAnswer" = "Answer from iPhone (via mitama)";
+"settings.mitama.remoteAnswer.help" = "Sends permission and question prompts (title, a trimmed summary, options) to mitama so you can answer from your iPhone. The folder path is never sent. Turn off to send nothing.";
 "island.signal.camera" = "The camera is watching";
 "island.signal.automation" = "Driving";
 "island.signal.jobs" = "mitama · %1$d running · %2$d queued · %3$d done today";

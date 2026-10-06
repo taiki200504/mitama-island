@@ -875,6 +875,9 @@
 "settings.mitama.signal.jobs.help" = "顯示進行中、排隊中與今日完成的數量，每完成一件在島上提示一次。";
 "settings.mitama.signal.codex" = "顯示 Codex 的問題";
 "settings.mitama.signal.codex.help" = "最近一次 Codex 審查出現 [P1] 的專案會標紅，點擊可查看內容。";
+"settings.mitama.section.remote" = "iPhone 回覆";
+"settings.mitama.remoteAnswer" = "用 iPhone 回覆（經由 mitama）";
+"settings.mitama.remoteAnswer.help" = "將權限確認與提問（標題、摘要節選、選項）傳送到 mitama，以便在 iPhone 上回覆。不會傳送工作目錄路徑。關閉後不傳送任何內容。";
 "island.signal.camera" = "相機正在看";
 "island.signal.automation" = "自動操作中";
 "island.signal.jobs" = "mitama · 進行中 %1$d ・排隊 %2$d ・今日完成 %3$d";
