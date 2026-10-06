@@ -204,6 +204,45 @@ struct MitamaRemoteRelayTests {
         #expect(relay.pendingCountForTests() == 0)
     }
 
+    // MARK: replaced prompts
+
+    @Test
+    func answerToAReplacedPromptIsNotClaimedAsApplied() async {
+        let http = FakeHTTP()
+        http.respond = { call in
+            switch (call.method, call.table) {
+            case ("GET", "mos_island_requests"): return #"[{"id":"r1","answer":"Yes"}]"#
+            case ("PATCH", _): return #"[{"id":"r1"}]"#
+            default: return "[]"
+            }
+        }
+        let relay = makeRelay(http)
+        relay.isCurrent = { _, _ in false }
+        let answered = Recorder()
+        relay.onAnswerQuestion = { answered.record("\($0):\($2)") }
+        await register(relay, kind: .question, options: ["Yes", "No"])
+        await relay.pollOnce()
+
+        #expect(answered.values.isEmpty)
+        #expect(relay.pendingCountForTests() == 0)
+        let patches = http.calls.filter { $0.method == "PATCH" }
+        #expect(patches.map { $0.body["status"] as? String } == ["resolved_elsewhere"])
+    }
+
+    @Test
+    func aNewerPromptInTheSameSessionRetiresTheOlderCard() async {
+        let http = FakeHTTP()
+        let relay = makeRelay(http)
+        relay.isCurrent = { _, requestID in requestID == "r2" }
+        await register(relay, id: "r1", kind: .question, options: ["Yes"])
+        await register(relay, id: "r2", kind: .question, options: ["Yes"])
+
+        let patch = http.calls.first { $0.method == "PATCH" }
+        #expect(patch?.body["status"] as? String == "resolved_elsewhere")
+        #expect(patch?.query.contains("r1") == true && patch?.query.contains("r2") == false)
+        #expect(relay.pendingCountForTests() == 1)
+    }
+
     // MARK: resolved on the Mac
 
     @Test

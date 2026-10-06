@@ -33,6 +33,11 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
     /// requestID is passed so the app can refuse an answer meant for a prompt that is no longer the current one.
     public var onResolvePermission: (@Sendable (_ sessionID: String, _ requestID: String, _ approved: Bool) -> Void)?
     public var onAnswerQuestion: (@Sendable (_ sessionID: String, _ requestID: String, _ answer: String) -> Void)?
+    /// Whether the prompt is still the one the session is waiting on. A session can be asked the
+    /// same thing twice (the Claude hook and Paseo both report it) and only the newer one is live;
+    /// without this check an answer to the older card was claimed as applied and then silently dropped.
+    /// nil means every tracked request counts as current.
+    public var isCurrent: (@Sendable @MainActor (_ sessionID: String, _ requestID: String) -> Bool)?
 
     enum Kind: String, Sendable { case permission, question }
 
@@ -177,7 +182,30 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
             "source_ref": "island:\(id)",
         ])
 
+        await retireSuperseded(sessionID: sessionID, keeping: id)
         startPollingIfNeeded()
+    }
+
+    /// Takes the session's older cards off the phone once a newer prompt has replaced them.
+    private func retireSuperseded(sessionID: String, keeping id: String) async {
+        let others = locked { pending.filter { $0.key != id && $0.value.sessionID == sessionID }.map(\.key) }
+        var stale: [String] = []
+        for other in others where !(await isStillCurrent(sessionID: sessionID, requestID: other)) {
+            stale.append(other)
+        }
+        await retire(stale)
+    }
+
+    private func isStillCurrent(sessionID: String, requestID: String) async -> Bool {
+        guard let isCurrent else { return true }
+        return await isCurrent(sessionID, requestID)
+    }
+
+    private func retire(_ ids: [String]) async {
+        guard !ids.isEmpty, let env = await resolvedEnvironment() else { return }
+        locked { ids.forEach { pending.removeValue(forKey: $0) } }
+        _ = await patch(env, filters: ["id": "in.(\(ids.joined(separator: ",")))", "status": "in.(pending,answered)"],
+                        body: ["status": "resolved_elsewhere"])
     }
 
     // MARK: - Poll
@@ -237,6 +265,12 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
                 Self.logger.notice("Dropped an answer that is not one of the offered options")
                 locked { _ = pending.removeValue(forKey: id) }
                 _ = await patch(env, filters: ["id": "eq.\(id)", "status": "eq.answered"], body: ["status": "expired"])
+                continue
+            }
+
+            guard await isStillCurrent(sessionID: entry.sessionID, requestID: id) else {
+                Self.logger.notice("Answer arrived for a prompt that has been replaced; not applied")
+                await retire([id])
                 continue
             }
 
