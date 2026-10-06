@@ -30,7 +30,9 @@ struct MitamaRemoteRelayTests {
     private let env = MitamaEnvironment(url: URL(string: "https://example.supabase.co")!, apiKey: "k")
 
     private func makeRelay(_ http: FakeHTTP, now: @escaping @Sendable () -> Date = { Date() }) -> MitamaRemoteRelay {
-        MitamaRemoteRelay(http: http, environmentLoader: { env }, now: now, autoPoll: false)
+        let relay = MitamaRemoteRelay(http: http, environmentLoader: { env }, now: now, autoPoll: false)
+        relay.isEnabled = true
+        return relay
     }
 
     private func register(
@@ -119,7 +121,7 @@ struct MitamaRemoteRelayTests {
         }
         let relay = makeRelay(http)
         let applied = Recorder()
-        relay.onResolvePermission = { applied.record("\($0):\($1)") }
+        relay.onResolvePermission = { applied.record("\($0):\($2)") }
         await register(relay)
         await relay.pollOnce()
 
@@ -141,7 +143,7 @@ struct MitamaRemoteRelayTests {
         }
         let relay = makeRelay(http)
         let applied = Recorder()
-        relay.onResolvePermission = { applied.record("\($0):\($1)") }
+        relay.onResolvePermission = { applied.record("\($0):\($2)") }
         await register(relay)
         await relay.pollOnce()
 
@@ -160,7 +162,7 @@ struct MitamaRemoteRelayTests {
         }
         let relay = makeRelay(http)
         let answered = Recorder()
-        relay.onAnswerQuestion = { answered.record("\($0):\($1)") }
+        relay.onAnswerQuestion = { answered.record("\($0):\($2)") }
         await register(relay, kind: .question, options: ["Yes", "No"])
         await relay.pollOnce()
 
@@ -180,7 +182,7 @@ struct MitamaRemoteRelayTests {
         }
         let relay = makeRelay(http)
         let answered = Recorder()
-        relay.onAnswerQuestion = { answered.record("\($0):\($1)") }
+        relay.onAnswerQuestion = { answered.record("\($0):\($2)") }
         await register(relay, kind: .question, options: ["Yes", "No"])
         await relay.pollOnce()
 

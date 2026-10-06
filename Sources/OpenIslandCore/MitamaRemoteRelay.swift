@@ -30,8 +30,9 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
     static let summaryHead = 350
     static let summaryTail = 150
 
-    public var onResolvePermission: (@Sendable (_ sessionID: String, _ approved: Bool) -> Void)?
-    public var onAnswerQuestion: (@Sendable (_ sessionID: String, _ answer: String) -> Void)?
+    /// requestID is passed so the app can refuse an answer meant for a prompt that is no longer the current one.
+    public var onResolvePermission: (@Sendable (_ sessionID: String, _ requestID: String, _ approved: Bool) -> Void)?
+    public var onAnswerQuestion: (@Sendable (_ sessionID: String, _ requestID: String, _ answer: String) -> Void)?
 
     enum Kind: String, Sendable { case permission, question }
 
@@ -48,7 +49,8 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
     private let autoPoll: Bool
 
     private let lock = NSLock()
-    private var enabled = true
+    /// Off until the app turns it on: a model built in tests must never write to the real mitama.
+    private var enabled = false
     private var pending: [String: Pending] = [:]
     private var environment: MitamaEnvironment?
     private var pollTask: Task<Void, Never>?
@@ -250,8 +252,8 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
 
             locked { _ = pending.removeValue(forKey: id) }
             switch entry.kind {
-            case .permission: onResolvePermission?(entry.sessionID, answer == "allow")
-            case .question: onAnswerQuestion?(entry.sessionID, answer)
+            case .permission: onResolvePermission?(entry.sessionID, id, answer == "allow")
+            case .question: onAnswerQuestion?(entry.sessionID, id, answer)
             }
         }
     }

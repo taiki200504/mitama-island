@@ -774,7 +774,7 @@ final class AppModel {
         didSet {
             guard remoteAnswerEnabled != oldValue else { return }
             UserDefaults.standard.set(remoteAnswerEnabled, forKey: Self.remoteAnswerEnabledKey)
-            remoteRelay.isEnabled = remoteAnswerEnabled
+            remoteRelay.isEnabled = remoteAnswerEnabled && hasStarted
         }
     }
 
@@ -783,14 +783,20 @@ final class AppModel {
 
     /// Same resolution path as the Watch relay: an answer from elsewhere is applied exactly as a local tap.
     private func setupRemoteRelayCallbacks() {
-        remoteRelay.onResolvePermission = { [weak self] sessionID, approved in
+        // Applied only if that exact prompt is still the one waiting: a late answer
+        // must not land on a newer prompt in the same session.
+        remoteRelay.onResolvePermission = { [weak self] sessionID, requestID, approved in
             Task { @MainActor [weak self] in
-                self?.approvePermission(for: sessionID, approved: approved)
+                guard let self,
+                      self.state.session(id: sessionID)?.permissionRequest?.id.uuidString == requestID else { return }
+                self.approvePermission(for: sessionID, approved: approved)
             }
         }
-        remoteRelay.onAnswerQuestion = { [weak self] sessionID, answer in
+        remoteRelay.onAnswerQuestion = { [weak self] sessionID, requestID, answer in
             Task { @MainActor [weak self] in
-                self?.answerQuestion(for: sessionID, answer: QuestionPromptResponse(answer: answer))
+                guard let self,
+                      self.state.session(id: sessionID)?.questionPrompt?.id.uuidString == requestID else { return }
+                self.answerQuestion(for: sessionID, answer: QuestionPromptResponse(answer: answer))
             }
         }
     }
@@ -1909,6 +1915,8 @@ final class AppModel {
             return
         }
         hasStarted = true
+        // Only a launched app mirrors prompts; models built in tests stay off the network.
+        remoteRelay.isEnabled = remoteAnswerEnabled && startBridge
 
         shelf.load()
         shelf.pruneExpired()
