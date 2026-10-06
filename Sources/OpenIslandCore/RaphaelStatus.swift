@@ -7,9 +7,9 @@ public struct RaphaelStatus: Sendable, Codable, Equatable {
     public let enabled: Bool
     /// Whether the Raphael process is currently running.
     public let running: Bool
-    /// Whether the microphone input is muted.
+    /// Whether the microphone input is active (`false` = muted).
     public let mic: Bool
-    /// Whether the voice output is muted.
+    /// Whether the voice output is active (`false` = muted).
     public let voice: Bool
 
     public init(enabled: Bool, running: Bool, mic: Bool, voice: Bool) {
