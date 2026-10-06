@@ -24,6 +24,17 @@ install_app="${MITAMA_ISLAND_INSTALL:-true}"
 app_name="Mitama Island"
 install_path="/Applications/$app_name.app"
 
+# Several sessions install from their own branches. A branch cut before the
+# latest main silently rolls back fixes already in the daily app (2026-10-06:
+# a feature branch reinstall dropped #91). Refuse unless main is merged in.
+if [[ "$install_app" == "true" && "${MITAMA_ISLAND_ALLOW_STALE:-}" != "1" ]]; then
+    git -C "$repo_root" fetch -q origin main 2>/dev/null || true
+    if ! git -C "$repo_root" merge-base --is-ancestor origin/main HEAD 2>/dev/null; then
+        echo "HEAD does not contain origin/main — merge or rebase on main first, or MITAMA_ISLAND_ALLOW_STALE=1." >&2
+        exit 1
+    fi
+fi
+
 signing_identity="${OPEN_ISLAND_SIGN_IDENTITY:-}"
 if [[ -z "$signing_identity" ]]; then
     if security find-identity -p codesigning -v 2>/dev/null | grep -q '"Open Island Dev Local"'; then
