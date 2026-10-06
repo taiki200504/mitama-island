@@ -746,7 +746,21 @@ public final class BridgeServer: @unchecked Sendable {
                 }
             }
 
-            let summary = payload.toolName.map { "Running \($0)" } ?? "Running \(payload.resolvedAgentTool.displayName) tool"
+            let shouldDenySiblingTool = payload.toolName != "AskUserQuestion"
+                && payload.toolUseID.flatMap { toolUseID in
+                    payload.transcriptPath.map { transcriptPath in
+                        ClaudeQuestionSiblingGate.hasSiblingQuestion(
+                            transcriptPath: transcriptPath,
+                            toolUseID: toolUseID
+                        )
+                    }
+                } == true
+            let summary: String
+            if shouldDenySiblingTool, let toolName = payload.toolName {
+                summary = "Waiting for your answer before running \(toolName)"
+            } else {
+                summary = payload.toolName.map { "Running \($0)" } ?? "Running \(payload.resolvedAgentTool.displayName) tool"
+            }
             emit(
                 .activityUpdated(
                     SessionActivityUpdated(
@@ -757,7 +771,23 @@ public final class BridgeServer: @unchecked Sendable {
                     )
                 )
             )
-            send(.response(.acknowledged), to: clientID)
+            if shouldDenySiblingTool {
+                send(
+                    .response(
+                        .claudeHookDirective(
+                            .preToolUse(
+                                ClaudePreToolUseDirective(
+                                    permissionDecision: .deny,
+                                    permissionDecisionReason: "Blocked by Open Island: this call was issued in the same message as AskUserQuestion. Wait for the user's answer first, then re-issue it if still needed."
+                                )
+                            )
+                        )
+                    ),
+                    to: clientID
+                )
+            } else {
+                send(.response(.acknowledged), to: clientID)
+            }
 
         case .permissionRequest:
             ensureClaudeSessionExists(for: payload)
