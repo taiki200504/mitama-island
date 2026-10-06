@@ -764,6 +764,43 @@ final class AppModel {
     @ObservationIgnored
     private(set) var watchRelay: WatchNotificationRelay?
 
+    // MARK: - iPhone answers via mitama
+
+    private static let remoteAnswerEnabledKey = "mitama.remoteAnswer.enabled"
+
+    /// Mirrors permission / question prompts to mitama so they can be answered
+    /// from the iPhone. Default ON; OFF sends nothing at all.
+    var remoteAnswerEnabled: Bool = true {
+        didSet {
+            guard remoteAnswerEnabled != oldValue else { return }
+            UserDefaults.standard.set(remoteAnswerEnabled, forKey: Self.remoteAnswerEnabledKey)
+            remoteRelay.isEnabled = remoteAnswerEnabled && hasStarted
+        }
+    }
+
+    @ObservationIgnored
+    let remoteRelay = MitamaRemoteRelay()
+
+    /// Same resolution path as the Watch relay: an answer from elsewhere is applied exactly as a local tap.
+    private func setupRemoteRelayCallbacks() {
+        // Applied only if that exact prompt is still the one waiting: a late answer
+        // must not land on a newer prompt in the same session.
+        remoteRelay.onResolvePermission = { [weak self] sessionID, requestID, approved in
+            Task { @MainActor [weak self] in
+                guard let self,
+                      self.state.session(id: sessionID)?.permissionRequest?.id.uuidString == requestID else { return }
+                self.approvePermission(for: sessionID, approved: approved)
+            }
+        }
+        remoteRelay.onAnswerQuestion = { [weak self] sessionID, requestID, answer in
+            Task { @MainActor [weak self] in
+                guard let self,
+                      self.state.session(id: sessionID)?.questionPrompt?.id.uuidString == requestID else { return }
+                self.answerQuestion(for: sessionID, answer: QuestionPromptResponse(answer: answer))
+            }
+        }
+    }
+
     /// Current pairing code for display in the settings UI.
     var watchPairingCode: String {
         watchRelay?.endpoint.currentCode() ?? "----"
@@ -994,6 +1031,9 @@ final class AppModel {
         if watchNotificationEnabled {
             startWatchRelay()
         }
+        // Default ON, so the missing key has to be asked about first.
+        remoteAnswerEnabled = defaults.object(forKey: Self.remoteAnswerEnabledKey) as? Bool ?? true
+        setupRemoteRelayCallbacks()
 
         // Wired regardless of the setting below: the callback itself checks
         // `alertsWhenEventStarts` before doing anything, and the watcher only
@@ -1875,6 +1915,8 @@ final class AppModel {
             return
         }
         hasStarted = true
+        // Only a launched app mirrors prompts; models built in tests stay off the network.
+        remoteRelay.isEnabled = remoteAnswerEnabled && startBridge
 
         shelf.load()
         shelf.pruneExpired()
@@ -3263,26 +3305,30 @@ final class AppModel {
             recordCompletionForLevel(event)
         }
 
+        let eventSessionID: String? = {
+            switch event {
+            case let .sessionStarted(p): return p.sessionID
+            case let .activityUpdated(p): return p.sessionID
+            case let .permissionRequested(p): return p.sessionID
+            case let .questionAsked(p): return p.sessionID
+            case let .sessionCompleted(p): return p.sessionID
+            case let .jumpTargetUpdated(p): return p.sessionID
+            case let .sessionMetadataUpdated(p): return p.sessionID
+            case let .claudeSessionMetadataUpdated(p): return p.sessionID
+            case let .geminiSessionMetadataUpdated(p): return p.sessionID
+            case let .openCodeSessionMetadataUpdated(p): return p.sessionID
+            case let .cursorSessionMetadataUpdated(p): return p.sessionID
+            case let .actionableStateResolved(p): return p.sessionID
+            }
+        }()
+        let eventSession = eventSessionID.flatMap { state.session(id: $0) }
+
+        // Mirror prompts to mitama so the iPhone can answer them too.
+        remoteRelay.notifyEvent(event, session: eventSession)
+
         // Push relevant events to the Watch/iPhone via the relay
         if let relay = watchRelay {
-            let eventSessionID: String? = {
-                switch event {
-                case let .sessionStarted(p): return p.sessionID
-                case let .activityUpdated(p): return p.sessionID
-                case let .permissionRequested(p): return p.sessionID
-                case let .questionAsked(p): return p.sessionID
-                case let .sessionCompleted(p): return p.sessionID
-                case let .jumpTargetUpdated(p): return p.sessionID
-                case let .sessionMetadataUpdated(p): return p.sessionID
-                case let .claudeSessionMetadataUpdated(p): return p.sessionID
-                case let .geminiSessionMetadataUpdated(p): return p.sessionID
-                case let .openCodeSessionMetadataUpdated(p): return p.sessionID
-                case let .cursorSessionMetadataUpdated(p): return p.sessionID
-                case let .actionableStateResolved(p): return p.sessionID
-                }
-            }()
-            let session = eventSessionID.flatMap { state.session(id: $0) }
-            relay.notifyEvent(event, session: session)
+            relay.notifyEvent(event, session: eventSession)
         }
 
         if updateLastActionMessage {

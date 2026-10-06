@@ -200,6 +200,17 @@ struct MitamaSettingsPane: View {
                 )
             }
 
+            Section(lang.t("settings.mitama.section.remote")) {
+                SettingsToggleRow(
+                    title: lang.t("settings.mitama.remoteAnswer"),
+                    help: lang.t("settings.mitama.remoteAnswer.help"),
+                    isOn: Binding(
+                        get: { model.remoteAnswerEnabled },
+                        set: { model.remoteAnswerEnabled = $0 }
+                    )
+                )
+            }
+
             Section(lang.t("settings.mitama.section.signals")) {
                 SettingsToggleRow(
                     title: lang.t("settings.mitama.signal.automation"),
