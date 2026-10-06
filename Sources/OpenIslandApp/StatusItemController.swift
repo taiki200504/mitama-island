@@ -69,12 +69,13 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     // MARK: - NSMenuDelegate
 
     func menuNeedsUpdate(_ menu: NSMenu) {
-        // Refresh Raphael status before building the menu
+        // Build immediately from the last known Raphael status, then refresh it in the background.
+        rebuildMenu(menu)
         Task {
             let status = await RaphaelControl.fetchStatus()
             await MainActor.run {
+                guard status != self.model.raphaelStatus else { return }
                 self.model.raphaelStatus = status
-                // Rebuild the menu with updated status
                 self.rebuildMenu(menu)
             }
         }
@@ -192,13 +193,13 @@ final class StatusItemController: NSObject, NSMenuDelegate {
                     )
                     micItem.target = self
                     micItem.tag = actions.count
-                    micItem.state = status.mic ? .on : .off
+                    micItem.state = status.mic ? .off : .on   // checked = muted
                     actions.append { [weak self] in
                         Task {
                             if status.mic {
-                                await RaphaelControl.unmuteMicrophone()
-                            } else {
                                 await RaphaelControl.muteMicrophone()
+                            } else {
+                                await RaphaelControl.unmuteMicrophone()
                             }
                             self?.refreshRaphaelMenu()
                         }
@@ -213,13 +214,13 @@ final class StatusItemController: NSObject, NSMenuDelegate {
                     )
                     voiceItem.target = self
                     voiceItem.tag = actions.count
-                    voiceItem.state = status.voice ? .on : .off
+                    voiceItem.state = status.voice ? .off : .on   // checked = muted
                     actions.append { [weak self] in
                         Task {
                             if status.voice {
-                                await RaphaelControl.unmuteVoice()
-                            } else {
                                 await RaphaelControl.muteVoice()
+                            } else {
+                                await RaphaelControl.unmuteVoice()
                             }
                             self?.refreshRaphaelMenu()
                         }
