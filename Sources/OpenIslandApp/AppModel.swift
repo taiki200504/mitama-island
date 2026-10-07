@@ -2173,18 +2173,24 @@ final class AppModel {
     func reconcilePaseoSessionsOnce(
         liveClaudeSessionIDs: Set<String> = ProcessMonitoringCoordinator.liveClaudeSessionIDs()
     ) async {
-        let known = Set(state.sessions.map(\.id))
+        // Rows rebuilt from transcripts at launch carry no host, so they are
+        // matched too unless a terminal already claims them.
+        let terminalOwned = Set(state.sessions.filter {
+            $0.jumpTarget.map { !["Paseo", "Unknown", ""].contains($0.terminalApp) } ?? false
+        }.map(\.id))
         let ids = Set(state.sessions.filter { $0.jumpTarget?.terminalApp == "Paseo" }.map(\.id))
-            .union(liveClaudeSessionIDs.subtracting(known))
+            .union(liveClaudeSessionIDs.subtracting(terminalOwned))
         guard !ids.isEmpty else { return }
         do {
             let bindings = try await paseoQuestions.reconcileBindings(sessionIDs: ids)
             for (id, binding) in bindings {
-                if state.session(id: id) == nil {
-                    guard binding.provider == "claude" else { continue }
+                let existing = state.session(id: id)
+                if liveClaudeSessionIDs.contains(id), binding.provider == "claude",
+                   existing == nil || existing?.isVisibleInIsland == false {
                     state.apply(.sessionStarted(SessionStarted(
                         sessionID: id, title: binding.title, tool: .claudeCode, origin: .live,
-                        initialPhase: .completed, summary: "", timestamp: .now, jumpTarget: binding.jumpTarget)))
+                        initialPhase: .completed, summary: existing?.summary ?? "", timestamp: existing?.updatedAt ?? .now,
+                        jumpTarget: binding.jumpTarget, claudeMetadata: existing?.claudeMetadata)))
                 }
                 adoptPaseoTitle(binding)
                 state.apply(.jumpTargetUpdated(JumpTargetUpdated(sessionID: id, jumpTarget: binding.jumpTarget, timestamp: .now)))
