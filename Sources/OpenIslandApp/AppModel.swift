@@ -1266,9 +1266,13 @@ final class AppModel {
         guard settings.display.hideIdleSessions else { return sessions }
         let now = Date.now
         let threshold = completedStaleThreshold.seconds
+        // A Paseo conversation stays open in Paseo until it is closed or
+        // archived, so an idle one is still something the user has open — it
+        // only reaches this list while its process is alive.
         let live = sessions.filter { session in
-            session.islandPresence(at: now) != .inactive
-                && !session.isStaleCompletedForIsland(at: now, threshold: threshold)
+            session.jumpTarget?.terminalApp == "Paseo"
+                || (session.islandPresence(at: now) != .inactive
+                    && !session.isStaleCompletedForIsland(at: now, threshold: threshold))
         }
         return live.isEmpty ? sessions : live
     }

@@ -85,6 +85,21 @@ struct IdleSessionVisibilityTests {
         #expect(!listedIDs(model).isEmpty)
     }
 
+    /// Paseo keeps a conversation open until it is closed there, so an idle one
+    /// is not a leftover the way a finished terminal row is.
+    @Test("An idle Paseo conversation is kept")
+    func keepsIdlePaseoConversations() {
+        let model = makeModel()
+        var paseo = session(id: "paseo-idle", phase: .completed, minutesAgo: 120)
+        paseo.jumpTarget = JumpTarget(terminalApp: "Paseo", workspaceName: "Gugen", paneTitle: "paseo-idle")
+        load(model, [
+            session(id: "live", phase: .running, minutesAgo: 0),
+            session(id: "grey", phase: .completed, minutesAgo: 10),
+            paseo,
+        ])
+        #expect(listedIDs(model) == ["live", "paseo-idle"])
+    }
+
     @Test("Turning it off shows everything again")
     func settingIsRespected() {
         let model = makeModel()
