@@ -2167,12 +2167,25 @@ final class AppModel {
         state = SessionState(sessions: sessions)
     }
 
-    func reconcilePaseoSessionsOnce() async {
+    /// `liveClaudeSessionIDs` brings back Paseo conversations the island has no
+    /// row for: an idle one fires no hook, so after a relaunch it would stay
+    /// invisible until the user next spoke to it.
+    func reconcilePaseoSessionsOnce(
+        liveClaudeSessionIDs: Set<String> = ProcessMonitoringCoordinator.liveClaudeSessionIDs()
+    ) async {
+        let known = Set(state.sessions.map(\.id))
         let ids = Set(state.sessions.filter { $0.jumpTarget?.terminalApp == "Paseo" }.map(\.id))
+            .union(liveClaudeSessionIDs.subtracting(known))
         guard !ids.isEmpty else { return }
         do {
             let bindings = try await paseoQuestions.reconcileBindings(sessionIDs: ids)
             for (id, binding) in bindings {
+                if state.session(id: id) == nil {
+                    guard binding.provider == "claude" else { continue }
+                    state.apply(.sessionStarted(SessionStarted(
+                        sessionID: id, title: binding.title, tool: .claudeCode, origin: .live,
+                        initialPhase: .completed, summary: "", timestamp: .now, jumpTarget: binding.jumpTarget)))
+                }
                 adoptPaseoTitle(binding)
                 state.apply(.jumpTargetUpdated(JumpTargetUpdated(sessionID: id, jumpTarget: binding.jumpTarget, timestamp: .now)))
                 paseoModeLabels[id] = binding.currentModeLabel ?? "モード情報なし"
