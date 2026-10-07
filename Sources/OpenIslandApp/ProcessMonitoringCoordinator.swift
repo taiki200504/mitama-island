@@ -570,12 +570,21 @@ final class ProcessMonitoringCoordinator {
 
         // Paseo sessions: same TTY-less shape as Claude Desktop — the Paseo
         // daemon spawns the agent without a terminal, so keep hook-tagged
-        // "Paseo" sessions alive while Paseo.app is running.
+        // "Paseo" sessions alive while Paseo.app is running. Paseo keeps an
+        // idle agent's Claude process running for days, so the idle timeout
+        // alone evicted almost every Paseo conversation. While Claude Code's
+        // own process registry lists the session, it is alive regardless of
+        // how long it has been idle.
         if Self.isPaseoAppRunning() {
+            let registeredClaudeSessionIDs = Self.liveClaudeSessionIDs()
             for session in sessions
             where !session.isDemoSession
                 && session.jumpTarget?.terminalApp == "Paseo" {
                 if session.isSessionEnded { continue }
+                if registeredClaudeSessionIDs.contains(session.id) {
+                    aliveIDs.insert(session.id)
+                    continue
+                }
                 let isStale = session.phase == .completed
                     && session.updatedAt.addingTimeInterval(Self.claudeDesktopStalenessTimeout) < Date.now
                 if !isStale {
@@ -1314,6 +1323,25 @@ final class ProcessMonitoringCoordinator {
         NSWorkspace.shared.runningApplications.contains { app in
             app.bundleIdentifier == "sh.paseo.desktop"
         }
+    }
+
+    /// Session IDs of running Claude Code processes, read from the
+    /// `<config>/sessions/<pid>.json` files Claude Code keeps for each live
+    /// process. Entries whose pid is gone are ignored, so a crash that left
+    /// its file behind does not keep a session alive.
+    nonisolated static func liveClaudeSessionIDs(
+        registryDirectory: URL = ClaudeConfigDirectory.resolved().appendingPathComponent("sessions", isDirectory: true),
+        isProcessRunning: (pid_t) -> Bool = { kill($0, 0) == 0 || errno == EPERM }
+    ) -> Set<String> {
+        struct Entry: Decodable { let pid: Int32; let sessionId: String }
+        let files = (try? FileManager.default.contentsOfDirectory(at: registryDirectory, includingPropertiesForKeys: nil)) ?? []
+        return Set(files.filter { $0.pathExtension == "json" }.compactMap { url -> String? in
+            guard let data = try? Data(contentsOf: url),
+                  let entry = try? JSONDecoder().decode(Entry.self, from: data),
+                  !entry.sessionId.isEmpty,
+                  isProcessRunning(entry.pid) else { return nil }
+            return entry.sessionId
+        })
     }
 
     private func processIdentityKey(_ process: ActiveProcessSnapshot) -> String {
