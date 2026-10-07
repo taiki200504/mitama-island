@@ -783,6 +783,11 @@ final class AppModel {
 
     /// Same resolution path as the Watch relay: an answer from elsewhere is applied exactly as a local tap.
     private func setupRemoteRelayCallbacks() {
+        remoteRelay.isCurrent = { [weak self] sessionID, requestID in
+            guard let session = self?.state.session(id: sessionID) else { return false }
+            return session.permissionRequest?.id.uuidString == requestID
+                || session.questionPrompt?.id.uuidString == requestID
+        }
         // Applied only if that exact prompt is still the one waiting: a late answer
         // must not land on a newer prompt in the same session.
         remoteRelay.onResolvePermission = { [weak self] sessionID, requestID, approved in
