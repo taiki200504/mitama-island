@@ -46,6 +46,11 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
         let kind: Kind
         let options: [String]
         let createdAt: Date
+        /// Same session + same content. Paseo and the Claude hook report one question under two
+        /// request IDs, and which one the island treats as live flips as Paseo re-applies its copy.
+        let fingerprint: String
+        /// Local request IDs folded into this card. The answer goes to whichever is live at answer time.
+        var aliases: [String] = []
     }
 
     private let http: MitamaRemoteHTTP
@@ -151,9 +156,22 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
     ) async {
         guard isEnabled, let env = await resolvedEnvironment() else { return }
 
+        // One card per question: a second report of the same prompt joins the existing card instead of showing twice.
+        let fingerprint = [kind.rawValue, title, summary, options.joined(separator: "\u{1F}")].joined(separator: "\u{1E}")
+        let folded = locked { () -> Bool in
+            guard let key = pending.first(where: { $0.value.sessionID == sessionID && $0.value.fingerprint == fingerprint })?.key
+            else { return false }
+            if key != id, pending[key]?.aliases.contains(id) == false { pending[key]?.aliases.append(id) }
+            return true
+        }
+        if folded { return }
+
         // Tracked before the insert returns: a Mac-side answer can arrive while the request is in flight.
         let created = now()
-        locked { pending[id] = Pending(sessionID: sessionID, kind: kind, options: options, createdAt: created) }
+        locked {
+            pending[id] = Pending(sessionID: sessionID, kind: kind, options: options, createdAt: created,
+                                  fingerprint: fingerprint)
+        }
 
         var row: [String: Any] = [
             "id": id,
@@ -190,15 +208,20 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
     private func retireSuperseded(sessionID: String, keeping id: String) async {
         let others = locked { pending.filter { $0.key != id && $0.value.sessionID == sessionID }.map(\.key) }
         var stale: [String] = []
-        for other in others where !(await isStillCurrent(sessionID: sessionID, requestID: other)) {
+        for other in others where await liveRequestID(for: other) == nil {
             stale.append(other)
         }
         await retire(stale)
     }
 
-    private func isStillCurrent(sessionID: String, requestID: String) async -> Bool {
-        guard let isCurrent else { return true }
-        return await isCurrent(sessionID, requestID)
+    /// The card's request ID the island is waiting on right now, or nil if none of them is.
+    private func liveRequestID(for id: String) async -> String? {
+        guard let entry = locked({ pending[id] }) else { return nil }
+        guard let isCurrent else { return id }
+        for candidate in [id] + entry.aliases where await isCurrent(entry.sessionID, candidate) {
+            return candidate
+        }
+        return nil
     }
 
     private func retire(_ ids: [String]) async {
@@ -268,7 +291,7 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
                 continue
             }
 
-            guard await isStillCurrent(sessionID: entry.sessionID, requestID: id) else {
+            guard let target = await liveRequestID(for: id) else {
                 Self.logger.notice("Answer arrived for a prompt that has been replaced; not applied")
                 await retire([id])
                 continue
@@ -286,8 +309,8 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
 
             locked { _ = pending.removeValue(forKey: id) }
             switch entry.kind {
-            case .permission: onResolvePermission?(entry.sessionID, id, answer == "allow")
-            case .question: onAnswerQuestion?(entry.sessionID, id, answer)
+            case .permission: onResolvePermission?(entry.sessionID, target, answer == "allow")
+            case .question: onAnswerQuestion?(entry.sessionID, target, answer)
             }
         }
     }
