@@ -235,12 +235,46 @@ struct MitamaRemoteRelayTests {
         let relay = makeRelay(http)
         relay.isCurrent = { _, requestID in requestID == "r2" }
         await register(relay, id: "r1", kind: .question, options: ["Yes"])
-        await register(relay, id: "r2", kind: .question, options: ["Yes"])
+        await register(relay, id: "r2", kind: .question, options: ["Yes", "No"])
 
         let patch = http.calls.first { $0.method == "PATCH" }
         #expect(patch?.body["status"] as? String == "resolved_elsewhere")
         #expect(patch?.query.contains("r1") == true && patch?.query.contains("r2") == false)
         #expect(relay.pendingCountForTests() == 1)
+    }
+
+    @Test
+    func theSameQuestionReportedTwiceShowsOneCard() async {
+        let http = FakeHTTP()
+        let relay = makeRelay(http)
+        await register(relay, id: "r1", kind: .question, options: ["Yes", "No"])
+        await register(relay, id: "r2", kind: .question, options: ["Yes", "No"])
+
+        #expect(http.calls.filter { $0.table == "mos_island_requests" && $0.method == "POST" }.count == 1)
+        #expect(http.calls.filter { $0.table == "mos_notifications" }.count == 1)
+        #expect(relay.pendingCountForTests() == 1)
+    }
+
+    @Test
+    func theAnswerGoesToWhicheverCopyIsLive() async {
+        let http = FakeHTTP()
+        http.respond = { call in
+            switch (call.method, call.table) {
+            case ("GET", "mos_island_requests"): return #"[{"id":"r1","answer":"No"}]"#
+            case ("PATCH", _): return #"[{"id":"r1"}]"#
+            default: return "[]"
+            }
+        }
+        let relay = makeRelay(http)
+        relay.isCurrent = { _, requestID in requestID == "r2" }
+        let answered = Recorder()
+        relay.onAnswerQuestion = { answered.record("\($1):\($2)") }
+        await register(relay, id: "r1", kind: .question, options: ["Yes", "No"])
+        await register(relay, id: "r2", kind: .question, options: ["Yes", "No"])
+        await relay.pollOnce()
+
+        #expect(answered.values == ["r2:No"])
+        #expect(relay.pendingCountForTests() == 0)
     }
 
     // MARK: resolved on the Mac
@@ -250,7 +284,7 @@ struct MitamaRemoteRelayTests {
         let http = FakeHTTP()
         let relay = makeRelay(http)
         await register(relay, id: "r1")
-        await register(relay, id: "r2")
+        await register(relay, id: "r2", kind: .question, options: ["Yes"])
         await relay.resolveElsewhere(sessionID: "s1")
 
         let patch = http.calls.first { $0.method == "PATCH" }
