@@ -49,6 +49,10 @@ final class OverlayPanelController {
     weak var model: AppModel?
     private(set) var notchRect: NSRect = .zero
     private var preferredScreenID: String?
+    /// With no display picked by hand, the closed island moves to whichever
+    /// display the pointer is on — otherwise a newly connected monitor never
+    /// gets it, because the automatic choice always prefers the notch.
+    private var followedScreenID: String?
 
     var isVisible: Bool {
         panel?.isVisible == true
@@ -177,6 +181,7 @@ final class OverlayPanelController {
         }
 
         let windowFrame = panelFrame(for: model, on: screen)
+        let screenID = OverlayDisplayResolver.screenID(for: screen)
 
         // Always set the panel frame instantly — no AppKit animation.
         // All visual transitions (shape, size, opacity, corner radius) are
@@ -188,6 +193,14 @@ final class OverlayPanelController {
             panel.setFrame(windowFrame, display: true)
         }
         computeNotchRect(screen: screen)
+
+        if (preferredScreenID ?? self.preferredScreenID) == nil, followedScreenID == screenID {
+            return OverlayDisplayResolver.diagnostics(
+                for: screen,
+                selectionSummary: "automatic, follows pointer",
+                panelSize: panel.frame.size
+            )
+        }
 
         return OverlayDisplayResolver.diagnostics(
             preferredScreenID: preferredScreenID,
@@ -238,8 +251,14 @@ final class OverlayPanelController {
         let screens = NSScreen.screens
         guard !screens.isEmpty else { return nil }
 
-        if let preferredScreenID = preferredScreenID ?? self.preferredScreenID,
-           let screen = screens.first(where: { OverlayDisplayResolver.screenID(for: $0) == preferredScreenID }) {
+        let effectivePreferredID = preferredScreenID ?? self.preferredScreenID
+        if let effectivePreferredID,
+           let screen = screens.first(where: { OverlayDisplayResolver.screenID(for: $0) == effectivePreferredID }) {
+            return screen
+        }
+
+        if effectivePreferredID == nil, let followedScreenID,
+           let screen = screens.first(where: { OverlayDisplayResolver.screenID(for: $0) == followedScreenID }) {
             return screen
         }
 
@@ -273,6 +292,8 @@ final class OverlayPanelController {
     private func handleMouseMoved(_ screenLocation: NSPoint) {
         guard let model else { return }
 
+        followPointerScreen(screenLocation, model: model)
+
         // A pointer that is moving with no button held is not carrying
         // anything, so the closed island goes back to letting clicks through.
         // The safety net for the drop: a mouse-up during a drag session belongs
@@ -304,6 +325,28 @@ final class OverlayPanelController {
                 model.handlePointerExitedIslandSurface()
             }
         }
+    }
+
+    /// Moves the closed island to the display under the pointer.
+    ///
+    /// Only while closed: an opened or peeking island stays put so it can't
+    /// jump away from what the user is reading or clicking.
+    private func followPointerScreen(_ screenLocation: NSPoint, model: AppModel) {
+        guard model.notchStatus == .closed, preferredScreenID == nil, let panel else { return }
+
+        let screens = NSScreen.screens
+        guard let index = OverlayDisplayResolver.screenIndex(
+            containing: screenLocation,
+            in: screens.map(\.frame)
+        ) else { return }
+
+        let pointerScreenID = OverlayDisplayResolver.screenID(for: screens[index])
+        guard let current = resolveTargetScreen(),
+              OverlayDisplayResolver.screenID(for: current) != pointerScreenID else { return }
+
+        followedScreenID = pointerScreenID
+        cancelHoverOpen()
+        positionPanel(panel, preferredScreenID: nil, animated: false)
     }
 
     /// Lets the closed island take a file that is being carried towards it.
