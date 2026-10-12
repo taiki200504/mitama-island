@@ -266,8 +266,14 @@ final class PanelHotkeyCoordinator {
         if panelIsExpanded { panelDidExpand() }
     }
 
-    func keyboardLayoutDidChange() {
-        resolver = KeycodeResolver()
+    func keyboardLayoutDidChange(to newResolver: KeycodeResolver = KeycodeResolver()) {
+        // The notification also fires on every IME mode toggle and on app
+        // switches with per-document input sources — several times a second
+        // while typing Japanese. The letters only move when the layout does;
+        // tearing every Carbon key down on each of those left gaps where a
+        // press fell through.
+        guard newResolver != resolver else { return }
+        resolver = newResolver
         settingsDidChange(panelIsExpanded: panelIsExpanded)
     }
 
