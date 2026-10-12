@@ -3036,6 +3036,12 @@ final class AppModel {
         if let expectedRequestID, session.permissionRequest?.id != expectedRequestID { return }
         if let pending = paseoQuestions.requests[sessionID], pending.permission != nil {
             guard session.permissionRequest?.paseoContext?.requestID == pending.requestID else {
+                // 別経路（フック）の要求がカードを上書きしたまま、Paseo 側は変わらず
+                // onRequestsChange も来ないことがある。表示を差し替えないと、何度押しても
+                // ここで止まり続ける。送らずに最新の要求を見せ、もう一度押してもらう。
+                if let permission = pending.permission {
+                    state.apply(.permissionRequested(PermissionRequested(sessionID: sessionID, request: permission, timestamp: .now)))
+                }
                 paseoErrors[sessionID] = "要求が更新されました。表示を確認して回答してください。"
                 return
             }
