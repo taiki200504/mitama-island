@@ -6,9 +6,12 @@ public struct MitamaHumanTask: Decodable, Identifiable, Equatable, Sendable {
     public let body: String?
     public let resumeObjective: String?
     public let createdAt: Date
+    /// grok-relay / dots-relay。古い行や欠けた列は Grok 扱い。
+    public var source: String? = nil
+    public var originLabel: String { source == "dots-relay" ? "Dots" : "Grok" }
 
     enum CodingKeys: String, CodingKey {
-        case id, title, body
+        case id, title, body, source
         case resumeObjective = "resume_objective"
         case createdAt = "created_at"
     }
@@ -50,9 +53,9 @@ public struct MitamaHumanTaskClient: Sendable {
 
     public func fetchOpen() async throws -> [MitamaHumanTask] {
         let data = try await send(table: "mos_human_tasks", filters: [
-            .init(name: "source", value: "eq.grok-relay"),
+            .init(name: "source", value: "in.(grok-relay,dots-relay)"),
             .init(name: "status", value: "eq.open"),
-            .init(name: "select", value: "id,title,body,resume_objective,created_at"),
+            .init(name: "select", value: "id,title,body,resume_objective,created_at,source"),
             .init(name: "order", value: "created_at.asc"),
         ])
         return try MitamaNotificationClient(environment: environment)
@@ -65,7 +68,7 @@ public struct MitamaHumanTaskClient: Sendable {
         let answered_at: String
     }
     private struct RelayJob: Encodable {
-        struct Input: Encodable { let objective: String; let human_task_id: String }
+        struct Input: Encodable { let objective: String; let human_task_id: String; let relay_source: String? }
         let id: String
         let agent_id = "relay"
         let source = "hub"
@@ -87,7 +90,8 @@ public struct MitamaHumanTaskClient: Sendable {
               answer == .reject || !(task.resumeObjective ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw ClientError.invalidTask
         }
-        let filters: [URLQueryItem] = [.init(name: "id", value: "eq.\(task.id)"), .init(name: "source", value: "eq.grok-relay")]
+        let relaySource = task.source == "dots-relay" ? "dots-relay" : "grok-relay"
+        let filters: [URLQueryItem] = [.init(name: "id", value: "eq.\(task.id)"), .init(name: "source", value: "eq.\(relaySource)")]
         let data = try await send(table: "mos_human_tasks", method: "PATCH",
             filters: filters + [.init(name: "status", value: "eq.open"), .init(name: "select", value: "id")],
             body: JSONEncoder().encode(Answer(answer_key: answer, answered_at: ISO8601DateFormatter().string(from: now))), representation: true)
@@ -104,7 +108,7 @@ public struct MitamaHumanTaskClient: Sendable {
         let jobID = "island-decide-\(Int(now.timeIntervalSince1970 * 1000))-\(UUID().uuidString.prefix(8).lowercased())"
         do {
             _ = try await send(table: "mos_job_queue", method: "POST", body: JSONEncoder().encode(RelayJob(
-                id: jobID, input: .init(objective: task.resumeObjective! + "\n\n本人の決定: 実行する", human_task_id: task.id))))
+                id: jobID, input: .init(objective: task.resumeObjective! + "\n\n本人の決定: 実行する", human_task_id: task.id, relay_source: task.source == "dots-relay" ? relaySource : nil))))
         } catch { throw ClientError.partial("回答は保存済みですが、実行ジョブを積めませんでした。Hubで確認してください") }
         do {
             _ = try await send(table: "mos_human_tasks", method: "PATCH", filters: filters,

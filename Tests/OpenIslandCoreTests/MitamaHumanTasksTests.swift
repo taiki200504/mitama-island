@@ -17,9 +17,10 @@ struct MitamaHumanTasksTests {
     private var environment: MitamaEnvironment {
         .init(url: URL(string: "https://example.supabase.co")!, apiKey: "test-key")
     }
-    private func task() throws -> MitamaHumanTask {
+    private func task(source: String? = nil) throws -> MitamaHumanTask {
+        let sourceField = source.map { ",\"source\":\"\($0)\"" } ?? ""
         let data = Data("""
-        {"id":"\(id)","title":"依頼","body":"全文","resume_objective":"作業する","created_at":"2026-10-12T00:00:00Z"}
+        {"id":"\(id)","title":"依頼","body":"全文","resume_objective":"作業する","created_at":"2026-10-12T00:00:00Z"\(sourceField)}
         """.utf8)
         return try MitamaNotificationClient(environment: environment).decoder.decode(MitamaHumanTask.self, from: data)
     }
@@ -67,5 +68,17 @@ struct MitamaHumanTasksTests {
         let resume = try JSONSerialization.jsonObject(with: requests.last!.httpBody!) as! [String: String]
         #expect(resume["resume_job_id"] == jobID)
         #expect(requests.count == 4)
+    }
+
+    @Test func dotsTaskIsAnsweredOnItsOwnSourceAndTagged() async throws {
+        let mock = Mock(cas: "[{\"id\":\"\(id)\"}]")
+        let client = MitamaHumanTaskClient(environment: environment, transport: { await mock.send($0) })
+        let dots = try task(source: "dots-relay")
+        #expect(dots.originLabel == "Dots")
+        _ = try await client.answer(dots, with: .approve, now: Date(timeIntervalSince1970: 1000))
+        let requests = await mock.requests
+        #expect(requests.first!.url!.query!.contains("source=eq.dots-relay"))
+        let job = try JSONSerialization.jsonObject(with: requests.first { $0.url!.lastPathComponent == "mos_job_queue" }!.httpBody!) as! [String: Any]
+        #expect((job["input"] as! [String: Any])["relay_source"] as? String == "dots-relay")
     }
 }

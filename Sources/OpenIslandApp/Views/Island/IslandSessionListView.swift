@@ -104,12 +104,12 @@ extension IslandPanelView {
         let feed = model.mitamaFeed
         if !feed.humanTasks.isEmpty || feed.humanTaskMessage != nil {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Grok から依頼 \(feed.humanTasks.count)件")
+                Text("外部からの依頼 \(feed.humanTasks.count)件")
                     .font(.islandText(size: 12, weight: .semibold))
                 ForEach(feed.humanTasks) { task in
                     DisclosureGroup {
                         VStack(alignment: .leading, spacing: 10) {
-                            Text("外部入力：Grok から届いた依頼です。金銭・法務・不可逆・対外操作の本人確認は引き続き必要です。MCP の不明な承認は一括許可しません。")
+                            Text("外部入力：\(task.originLabel) から届いた依頼です。金銭・法務・不可逆・対外操作の本人確認は引き続き必要です。MCP の不明な承認は一括許可しません。")
                                 .font(.islandText(size: 11, weight: .medium))
                                 .foregroundStyle(IslandDesignPalette.Status.waitingForAnswer)
                             Text(verbatim: task.body ?? "（本文なし）")
