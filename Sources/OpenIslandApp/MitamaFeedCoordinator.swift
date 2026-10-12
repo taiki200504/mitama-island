@@ -171,7 +171,7 @@ final class MitamaFeedCoordinator {
         guard let client else { return }
         if let humanTaskClient {
             do { humanTasks = try await humanTaskClient.fetchOpen() }
-            catch { humanTaskMessage = "Grok の依頼を取得できませんでした" }
+            catch { humanTaskMessage = "外部からの依頼を取得できませんでした" }
         }
 
         do {
