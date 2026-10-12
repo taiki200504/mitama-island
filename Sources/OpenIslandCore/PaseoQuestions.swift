@@ -20,6 +20,15 @@ public struct PaseoMCPClient: Sendable {
         self.endpoint = endpoint
     }
 
+    /// One session for every call. A fresh session per call opened a new TCP
+    /// connection to the daemon every few seconds (the 3 s poll plus one status
+    /// call per agent). The per-request `timeoutInterval` still bounds each call.
+    private static let session: URLSession = {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.timeoutIntervalForResource = 10
+        return URLSession(configuration: configuration)
+    }()
+
     public func call(_ name: String, arguments: ClaudeHookJSONValue) async throws -> ClaudeHookJSONValue {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
@@ -31,12 +40,7 @@ public struct PaseoMCPClient: Sendable {
             "jsonrpc": .string("2.0"), "id": .string(id), "method": .string("tools/call"),
             "params": .object(["name": .string(name), "arguments": arguments])
         ]))
-        let configuration = URLSessionConfiguration.ephemeral
-        configuration.timeoutIntervalForRequest = request.timeoutInterval
-        configuration.timeoutIntervalForResource = request.timeoutInterval
-        let session = URLSession(configuration: configuration)
-        defer { session.invalidateAndCancel() }
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await Self.session.data(for: request)
         guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw PaseoQuestionError.invalidResponse }
         return try Self.decode(data, id: id)
     }
