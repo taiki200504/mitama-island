@@ -162,7 +162,7 @@ public struct MitamaNotificationClient: Sendable {
     /// digits, so both shapes have to be accepted. Formatters are built per
     /// decode rather than shared: `ISO8601DateFormatter` is not `Sendable`,
     /// and a handful of rows per minute does not justify the ceremony.
-    private var decoder: JSONDecoder {
+    var decoder: JSONDecoder {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .custom { decoder in
             let text = try decoder.singleValueContainer().decode(String.self)

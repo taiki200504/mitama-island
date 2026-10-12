@@ -1339,6 +1339,7 @@ final class AppModel {
 
     var liveAttentionCount: Int {
         surfacedSessions.filter { $0.phase.requiresAttention }.count
+            + (mitamaFeedEnabled ? mitamaFeed.humanTasks.count : 0)
     }
 
     var liveRunningCount: Int {
@@ -1710,8 +1711,21 @@ final class AppModel {
         // already picks urgent over waiting when both are passed together,
         // which is exactly the ordering `IslandClosedArbiter` needs to make
         // for itself instead of inheriting pre-decided.
-        let urgent = IslandPeekBand.content(for: [], mitamaAlerts: alerts, now: now)
-        let waiting = IslandPeekBand.content(for: surfacedSessions, mitamaAlerts: [], now: now)
+        let urgentAlert = IslandPeekBand.content(for: [], mitamaAlerts: alerts, now: now)
+        let urgent = urgentAlert.map {
+            IslandPeekBand.Content(agent: $0.agent, subject: $0.subject, elapsed: $0.elapsed,
+                othersWaiting: $0.othersWaiting + (mitamaFeedEnabled ? mitamaFeed.humanTasks.count : 0))
+        }
+        let sessionWaiting = IslandPeekBand.content(for: surfacedSessions, mitamaAlerts: [], now: now)
+        let tasks = mitamaFeedEnabled ? mitamaFeed.humanTasks : []
+        let waiting: IslandPeekBand.Content?
+        if let oldest = tasks.first {
+            waiting = IslandPeekBand.Content(agent: "GROK", subject: .mitamaAlert,
+                elapsed: IslandPeekBand.elapsed(since: oldest.createdAt, now: now),
+                othersWaiting: tasks.count - 1 + surfacedSessions.filter { $0.phase.requiresAttention }.count)
+        } else {
+            waiting = sessionWaiting
+        }
 
         let inputs = IslandClosedInputs(
             mitamaUrgent: urgent,
