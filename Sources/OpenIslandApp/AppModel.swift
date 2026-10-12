@@ -783,6 +783,10 @@ final class AppModel {
 
     /// Same resolution path as the Watch relay: an answer from elsewhere is applied exactly as a local tap.
     private func setupRemoteRelayCallbacks() {
+        remoteRelay.isWaiting = { [weak self] id in
+            guard let session = self?.state.session(id: id) else { return false }
+            return session.phase == .waitingForAnswer && session.isTrackedLiveSession
+        }
         remoteRelay.isCurrent = { [weak self] sessionID, requestID in
             guard let session = self?.state.session(id: sessionID) else { return false }
             return session.permissionRequest?.id.uuidString == requestID
