@@ -162,12 +162,36 @@ struct HandGestureTests {
         let stillInsideCooldown = detector.push(isPosed: true, timestamp: 2.5)
         #expect(stillInsideCooldown == false)
 
-        // Leaving the cooldown is not itself an answer: the hold has to be
-        // earned again, or a hand left up would fire on a timer.
+        _ = detector.push(isPosed: false, timestamp: 2.6)
+        // A released pose must earn the hold again after the cooldown.
         let cooldownJustEnded = detector.push(isPosed: true, timestamp: 3.3)
         #expect(cooldownJustEnded == false)
         let heldAgain = detector.push(isPosed: true, timestamp: 4.0)
         #expect(heldAgain)
+    }
+
+    @Test("A pose held for ten seconds fires only once")
+    func tenSecondHoldFiresOnlyOnce() {
+        var detector = PoseHoldDetector()
+        var fireCount = 0
+        for frame in 0...300 {
+            if detector.push(isPosed: true, timestamp: Double(frame) / 30) {
+                fireCount += 1
+            }
+        }
+        #expect(fireCount == 1)
+    }
+
+    @Test("Releasing and holding again preserves the cooldown")
+    func releasedPoseFiresAgainAfterCooldown() {
+        var detector = PoseHoldDetector()
+        _ = detector.push(isPosed: true, timestamp: 0)
+        #expect(detector.push(isPosed: true, timestamp: 0.7))
+        #expect(!detector.push(isPosed: false, timestamp: 0.8))
+        #expect(!detector.push(isPosed: true, timestamp: 0.9))
+        #expect(!detector.push(isPosed: true, timestamp: 1.6))
+        #expect(!detector.push(isPosed: true, timestamp: 2.8))
+        #expect(detector.push(isPosed: true, timestamp: 3.5))
     }
 
     private func landmarks(

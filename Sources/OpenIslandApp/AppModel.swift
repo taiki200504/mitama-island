@@ -3662,7 +3662,7 @@ final class AppModel {
         // can start on its own, and the reason the camera may be held open at
         // all when no card is waiting.
         cameraActivation.onPalmHeld = { [weak self] in
-            guard let self else { return }
+            guard let self, !voiceAnswer.isRunning else { return }
             guard !gestureRehearsal.isRunning else {
                 gestureRehearsal.record(.palm)
                 return

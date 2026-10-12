@@ -46,6 +46,7 @@ final class CameraActivationSession {
     private let cameraAuthorization: () -> AVAuthorizationStatus
     private let requestCameraAccess: (@escaping @Sendable (Bool) -> Void) -> Void
     private let captureStart: (() -> Void)?
+    private let cameraInUse: (() -> Bool)?
     private var permissionGeneration: UInt64 = 0
     private var permissionIntentActive = false
     private var permissionPending = false
@@ -56,6 +57,8 @@ final class CameraActivationSession {
     private var timeout: Task<Void, Never>?
     /// True while the camera is held open by a waiting card rather than by a keypress.
     private var keepsCameraOpen = false
+    /// A keypress allows navigation gestures even when a waiting card keeps the camera open.
+    private var openedByKey = false
     /// 練習中。スワイプで閉じないのと、窓の長さを呼ぶ側が決めるため。
     private var isRehearsing = false
     /// So the explanation is given once per run of refusals rather than on
@@ -74,19 +77,21 @@ final class CameraActivationSession {
 
     /// True while a call or a recording holds the built-in camera.
     var cameraIsInUseByAnotherApp: Bool {
-        builtInCamera()?.isInUseByAnotherApplication ?? false
+        cameraInUse?() ?? (builtInCamera()?.isInUseByAnotherApplication ?? false)
     }
 
     init(
         settings: CameraGestureSettings,
         cameraAuthorization: @escaping () -> AVAuthorizationStatus = { AVCaptureDevice.authorizationStatus(for: .video) },
         requestCameraAccess: @escaping (@escaping @Sendable (Bool) -> Void) -> Void = { AVCaptureDevice.requestAccess(for: .video, completionHandler: $0) },
-        captureStart: (() -> Void)? = nil
+        captureStart: (() -> Void)? = nil,
+        cameraInUse: (() -> Bool)? = nil
     ) {
         self.settings = settings
         self.cameraAuthorization = cameraAuthorization
         self.requestCameraAccess = requestCameraAccess
         self.captureStart = captureStart
+        self.cameraInUse = cameraInUse
     }
 
     var isRunning: Bool { permissionPending || (phase != .idle && phase != .denied && phase != .unavailable) }
@@ -108,6 +113,7 @@ final class CameraActivationSession {
 
         guard settings.isEnabled else { return false }
 
+        openedByKey = true
         permissionGeneration &+= 1
         let generation = permissionGeneration
         permissionIntentActive = true
@@ -159,7 +165,7 @@ final class CameraActivationSession {
     /// exactly one thing — something is waiting on you.
     func beginSustained() {
         guard settings.isEnabled, settings.answersByPalm else { return }
-        guard AVCaptureDevice.authorizationStatus(for: .video) == .authorized else {
+        guard cameraAuthorization() == .authorized else {
             // Never ask for the camera on this path. A permission dialog that
             // appears because a card arrived, rather than because a key was
             // pressed, has no explanation attached to it.
@@ -219,6 +225,7 @@ final class CameraActivationSession {
         permissionIntentActive = false
         permissionPending = false
         keepsCameraOpen = false
+        openedByKey = false
         isRehearsing = false
         timeout?.cancel()
         timeout = nil
@@ -243,10 +250,11 @@ final class CameraActivationSession {
     @discardableResult
     func beginRehearsal(seconds: TimeInterval) -> Bool {
         guard settings.isEnabled else { return false }
-        guard AVCaptureDevice.authorizationStatus(for: .video) == .authorized else {
+        guard cameraAuthorization() == .authorized else {
             return begin()
         }
         if isRunning { stop() }
+        openedByKey = true
         isRehearsing = true
         Self.logger.notice("Rehearsal camera opening for \(seconds, privacy: .public)s")
         start(window: seconds)
@@ -398,7 +406,14 @@ final class CameraActivationSession {
         return session
     }
 
-    private func handle(_ outcome: CameraFrameOutcome) {
+    func handle(_ outcome: CameraFrameOutcome) {
+        if keepsCameraOpen && !openedByKey {
+            switch outcome {
+            case .pointing, .pinched, .swiped: return
+            case .idle, .palmHeld: break
+            }
+        }
+
         // 何を認識したかを残す。これが無いと「効かない」と言われたときに、
         // ポーズが違うのかカメラが見ていないのかを後から確かめられない。
         if case .idle = outcome {} else {
