@@ -185,13 +185,10 @@ struct HandGestureTests {
     @Test("Releasing and holding again preserves the cooldown")
     func releasedPoseFiresAgainAfterCooldown() {
         var detector = PoseHoldDetector()
-        _ = detector.push(isPosed: true, timestamp: 0)
-        #expect(detector.push(isPosed: true, timestamp: 0.7))
-        #expect(!detector.push(isPosed: false, timestamp: 0.8))
-        #expect(!detector.push(isPosed: true, timestamp: 0.9))
-        #expect(!detector.push(isPosed: true, timestamp: 1.6))
-        #expect(!detector.push(isPosed: true, timestamp: 2.8))
-        #expect(detector.push(isPosed: true, timestamp: 3.5))
+        let fired = [
+            (true, 0.0), (true, 0.7), (false, 0.8), (true, 0.9), (true, 1.6), (true, 2.8), (true, 3.5),
+        ].map { detector.push(isPosed: $0.0, timestamp: $0.1) }
+        #expect(fired == [false, true, false, false, false, false, true])
     }
 
     private func landmarks(
