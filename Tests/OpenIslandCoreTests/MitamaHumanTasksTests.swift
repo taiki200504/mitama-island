@@ -81,4 +81,15 @@ struct MitamaHumanTasksTests {
         let job = try JSONSerialization.jsonObject(with: requests.first { $0.url!.lastPathComponent == "mos_job_queue" }!.httpBody!) as! [String: Any]
         #expect((job["input"] as! [String: Any])["relay_source"] as? String == "dots-relay")
     }
+
+    @Test func dotsRoutedApprovalDoesNotEnqueueRelay() async throws {
+        let mock = Mock(cas: "[{\"id\":\"\(id)\"}]")
+        let client = MitamaHumanTaskClient(environment: environment, transport: { await mock.send($0) })
+        var routed = try task()
+        routed.resumeAgent = "dots-dispatch"
+        let result = try await client.answer(routed, with: .approve, now: Date(timeIntervalSince1970: 1000))
+        guard case .answered(nil, _) = result else { Issue.record("ジョブを積まずに回答だけのはず"); return }
+        let requests = await mock.requests
+        #expect(!requests.contains { $0.url!.lastPathComponent == "mos_job_queue" })
+    }
 }

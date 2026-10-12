@@ -8,11 +8,14 @@ public struct MitamaHumanTask: Decodable, Identifiable, Equatable, Sendable {
     public let createdAt: Date
     /// grok-relay / dots-relay。古い行や欠けた列は Grok 扱い。
     public var source: String? = nil
+    /// relay(Mac の Paseo) / dots-dispatch(アリス。振り分け役が拾うので島はジョブを積まない)
+    public var resumeAgent: String? = nil
     public var originLabel: String { source == "dots-relay" ? "Dots" : "Grok" }
 
     enum CodingKeys: String, CodingKey {
         case id, title, body, source
         case resumeObjective = "resume_objective"
+        case resumeAgent = "resume_agent"
         case createdAt = "created_at"
     }
 }
@@ -55,7 +58,7 @@ public struct MitamaHumanTaskClient: Sendable {
         let data = try await send(table: "mos_human_tasks", filters: [
             .init(name: "source", value: "in.(grok-relay,dots-relay)"),
             .init(name: "status", value: "eq.open"),
-            .init(name: "select", value: "id,title,body,resume_objective,created_at,source"),
+            .init(name: "select", value: "id,title,body,resume_objective,created_at,source,resume_agent"),
             .init(name: "order", value: "created_at.asc"),
         ])
         return try MitamaNotificationClient(environment: environment)
@@ -104,7 +107,7 @@ public struct MitamaHumanTaskClient: Sendable {
             _ = try await send(table: "mos_ceo_decisions", method: "POST",
                 body: JSONEncoder().encode(Decision(topic: task.title, decision: answer.label)))
         } catch { warning = "回答は保存済みですが、決定の記録に失敗しました" }
-        guard answer == .approve else { return .answered(jobID: nil, warning: warning) }
+        guard answer == .approve, task.resumeAgent != "dots-dispatch" else { return .answered(jobID: nil, warning: warning) }
         let jobID = "island-decide-\(Int(now.timeIntervalSince1970 * 1000))-\(UUID().uuidString.prefix(8).lowercased())"
         do {
             _ = try await send(table: "mos_job_queue", method: "POST", body: JSONEncoder().encode(RelayJob(
