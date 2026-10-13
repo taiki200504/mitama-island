@@ -109,8 +109,8 @@ final class EarshotDeviceReporter {
     }
 
     private func report() async {
-        guard let deviceID, let environment = MitamaKeychain.environment() else {
-            Self.logger.debug("device ID or credentials unavailable")
+        guard let deviceID, let environment = MitamaEnvironment.load() else {
+            Self.logger.notice("device ID or credentials unavailable")
             return
         }
         do {
