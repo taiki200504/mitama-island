@@ -105,6 +105,13 @@ final class StatusItemController: NSObject, NSMenuDelegate {
                         model.beginTouchlessActivation()
                     }
                 }
+            case .toggleAmbientListen(let isEnabled):
+                addItem(model.lang.t("settings.earshot.section"), to: menu) { [weak model] in
+                    guard let model else { return }
+                    model.settings.ambientListen.isEnabled.toggle()
+                    model.earshot.settingsChanged()
+                }
+                menu.items.last?.state = isEnabled ? .on : .off
             case .startTimer(let presets):
                 let item = NSMenuItem(
                     title: model.lang.t("statusItem.timer.start"),
