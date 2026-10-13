@@ -992,3 +992,6 @@
 "decision.paseo.forwardedOpen" = "この質問の会話をPaseoで開く";
 
 "nowPlaying.unavailable" = "この環境では再生中の情報を取得できません。";
+
+"settings.display.maxClosedIslandWidth" = "閉じた島の最大幅";
+"settings.display.maxClosedIslandWidth.help" = "ノッチのある画面では、実際のノッチ幅＋左右33ptが下限です。";

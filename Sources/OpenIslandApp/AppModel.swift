@@ -866,6 +866,7 @@ final class AppModel {
 
     var ignoresPointerExitDuringHarness = false
     var disablesOverlayEventMonitoringDuringHarness = false
+    var allowsInteractiveOverlayDuringHarness = false
 
     /// When the switcher's selection sound last played. A finger reading or a
     /// held arrow key can move the selection far faster than 80ms per row —

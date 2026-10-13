@@ -992,3 +992,6 @@
 "decision.paseo.forwardedOpen" = "在Paseo中打开此问题的对话";
 
 "nowPlaying.unavailable" = "当前环境无法获取正在播放的信息。";
+
+"settings.display.maxClosedIslandWidth" = "收起岛的最大宽度";
+"settings.display.maxClosedIslandWidth.help" = "刘海屏的下限为实际刘海宽度加左右各33pt。";

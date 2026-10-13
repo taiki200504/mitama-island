@@ -288,7 +288,8 @@ struct V6ClosedPill: View {
         sneakPeek: IslandSneakPeek?,
         rightSlot: IslandRightSlotContent?,
         physicalNotchWidth: CGFloat,
-        pad: CGFloat
+        pad: CGFloat,
+        configuredMaxWidth: CGFloat? = nil
     ) -> (accessory: IslandClosedAccessory?, outerWidth: CGFloat, compactBody: Bool) {
         let showsSneakPeek = sneakPeek.map { !$0.text.isEmpty } ?? false
         let hasBody = content?.body != nil
@@ -317,7 +318,7 @@ struct V6ClosedPill: View {
         let outerWithoutAccessory = outerWidth(rightContent: rightSlotWidth)
         let outerWithAccessory = outerWidth(rightContent: rightContentWithAccessory)
         let notchBudget = physicalNotchWidth + Self.accessoryDropBleed * 2
-        let maxWidth = max(360, notchBudget)
+        let maxWidth = max(notchBudget, configuredMaxWidth ?? 360)
         let halfWidth = (maxWidth - physicalNotchWidth) / 2
         let budget = max(notchBudget, outerWithoutAccessory)
         let accessoryFits = rawAccessory != nil && outerWithAccessory <= budget
@@ -364,13 +365,13 @@ struct V6ClosedPill: View {
         return pad * 2 + glyphW + labelBlock + peekBlock + accessoryBlock + rightBlock
     }
 
-    /// The closed external pill is at most 360pt; smaller screen/settings caps win.
+    /// The closed-width setting and the available screen space cap the pill.
     /// Shared by rendering and the controller's hit-area/intrinsic width calculation.
     nonisolated static func externalMaxWidth(
-        configuredMaxPanelWidth: CGFloat,
+        configuredMaxClosedIslandWidth: CGFloat,
         visibleWidth: CGFloat
     ) -> CGFloat {
-        min(360, configuredMaxPanelWidth, visibleWidth * 0.6)
+        min(configuredMaxClosedIslandWidth, visibleWidth * 0.6)
     }
 
     var body: some View {
@@ -401,7 +402,7 @@ struct V6ClosedPill: View {
         let showsLabel = label != nil && !showsPeekArea
         // No physical notch to overflow here — the pill is fluid and just
         // grows to fit, so the accessory is never dropped on this layout.
-        let accessory = showsSneakPeek ? nil : content?.accessory
+        let rawAccessory = showsSneakPeek ? nil : content?.accessory
 
         let intrinsic = Self.externalIntrinsicWidth(
             label: label,
@@ -412,6 +413,8 @@ struct V6ClosedPill: View {
         )
         let uncappedWidth = max(minWidth, intrinsic)
         let width = maxWidth.map { min(uncappedWidth, $0) } ?? uncappedWidth
+        let compact = intrinsic > width && (showsPeekArea || !showsLabel)
+        let accessory = compact ? nil : rawAccessory
 
         // Everything else in the pill is a fixed-size icon or a short,
         // fixed-vocabulary string (the glyph, the waiting-agent gauge, the
@@ -437,11 +440,15 @@ struct V6ClosedPill: View {
                     .layoutPriority(1)
 
                 if showsSneakPeek, let sneakPeek {
-                    SAOSneakPeekView(peek: sneakPeek)
-                        .padding(.leading, Self.innerGap)
-                        .transition(.opacity.combined(with: .move(edge: .leading)))
+                    if compact {
+                        Image(systemName: sneakPeek.icon).font(.system(size: 8))
+                            .padding(.leading, Self.innerGap)
+                    } else {
+                        SAOSneakPeekView(peek: sneakPeek)
+                            .padding(.leading, Self.innerGap)
+                    }
                 } else if hasBody, let content {
-                    SAOPeekGaugeView(content: content, showsEventTitle: true)
+                    SAOPeekGaugeView(content: content, showsEventTitle: true, compact: compact)
                         .padding(.leading, Self.innerGap)
                         .transition(.opacity.combined(with: .move(edge: .leading)))
                 }
@@ -459,7 +466,11 @@ struct V6ClosedPill: View {
                         .padding(.trailing, Self.innerGap)
                 }
 
-                if let rightSlot {
+                if compact, let content, case .waiting(let peek)? = content.body {
+                    compactCount(peek.othersWaiting + 1)
+                } else if compact, case .count(let count)? = rightSlot {
+                    compactCount(count)
+                } else if let rightSlot {
                     V6RightSlotView(content: rightSlot)
                         .fixedSize()
                         .layoutPriority(1)
@@ -482,6 +493,13 @@ struct V6ClosedPill: View {
         )
     }
 
+    private func compactCount(_ count: Int) -> some View {
+        Text(count > 99 ? "99+" : "×\(count)")
+            .font(.islandMono(size: 8, weight: .semibold))
+            .foregroundStyle(V6Palette.paper)
+            .fixedSize()
+    }
+
     // MARK: MacBook (outer width locked)
 
     private var macbookBody: some View {
@@ -498,7 +516,8 @@ struct V6ClosedPill: View {
             sneakPeek: sneakPeek,
             rightSlot: rightSlot,
             physicalNotchWidth: physicalNotchWidth,
-            pad: pad
+            pad: pad,
+            configuredMaxWidth: maxWidth
         )
         let accessory = layoutResult.accessory
         let outer = layoutResult.outerWidth
@@ -508,6 +527,28 @@ struct V6ClosedPill: View {
                 .fill(V6Palette.ink)
 
             HStack(spacing: 0) {
+                if layoutResult.compactBody || (outer - physicalNotchWidth) / 2 < 44 {
+                    HStack(spacing: 3) {
+                        UnifiedBars(mode: mode, size: 12).frame(width: 12, height: 12)
+                        if let content {
+                            SAOPeekGaugeView(content: content, compact: true)
+                        } else if let sneakPeek, showsSneakPeek {
+                            Image(systemName: sneakPeek.icon).font(.system(size: 6))
+                        }
+                    }
+                    .frame(width: (outer - physicalNotchWidth) / 2)
+                    Spacer(minLength: physicalNotchWidth).frame(width: physicalNotchWidth)
+                    Group {
+                        if let content, case .waiting(let peek)? = content.body {
+                            compactCount(peek.othersWaiting + 1)
+                        } else if case .count(let count)? = rightSlot {
+                            compactCount(count)
+                        } else if let rightSlot {
+                            V6RightSlotView(content: rightSlot).scaleEffect(0.65)
+                        }
+                    }
+                    .frame(width: (outer - physicalNotchWidth) / 2)
+                } else {
                 UnifiedBars(mode: mode, size: 24)
                     .frame(width: 24, height: 24)
 
@@ -537,8 +578,9 @@ struct V6ClosedPill: View {
                 if let rightSlot {
                     V6RightSlotView(content: rightSlot)
                 }
+                }
             }
-            .padding(.horizontal, pad)
+            .padding(.horizontal, layoutResult.compactBody || (outer - physicalNotchWidth) / 2 < 44 ? 0 : pad)
         }
         .frame(width: outer, height: height)
         .animation(

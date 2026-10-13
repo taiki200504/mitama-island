@@ -10,8 +10,10 @@ struct HarnessLaunchConfiguration {
     let artifactDirectoryURL: URL?
     /// Raw value of the settings tab to display before capturing.
     let settingsTab: String?
+    let interactiveOverlay: Bool
 
     init(environment: [String: String] = ProcessInfo.processInfo.environment) {
+        interactiveOverlay = Self.boolValue(environment["OPEN_ISLAND_HARNESS_INTERACTIVE_OVERLAY"], default: false)
         scenario = Self.scenarioValue(from: environment["OPEN_ISLAND_HARNESS_SCENARIO"])
         presentOverlay = Self.boolValue(
             environment["OPEN_ISLAND_HARNESS_PRESENT_OVERLAY"],

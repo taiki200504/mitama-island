@@ -992,3 +992,6 @@
 "decision.paseo.forwardedOpen" = "Open this question’s conversation in Paseo";
 
 "nowPlaying.unavailable" = "Now-playing information is unavailable in this environment.";
+
+"settings.display.maxClosedIslandWidth" = "Maximum closed island width";
+"settings.display.maxClosedIslandWidth.help" = "On a notched screen, the physical notch plus 33pt on each side is the minimum.";

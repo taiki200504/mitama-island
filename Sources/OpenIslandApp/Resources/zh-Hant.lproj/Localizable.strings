@@ -986,3 +986,6 @@
 "decision.paseo.forwardedOpen" = "在Paseo中開啟此問題的對話";
 
 "nowPlaying.unavailable" = "目前環境無法取得正在播放的資訊。";
+
+"settings.display.maxClosedIslandWidth" = "收起島的最大寬度";
+"settings.display.maxClosedIslandWidth.help" = "瀏海螢幕的下限為實際瀏海寬度加左右各33pt。";

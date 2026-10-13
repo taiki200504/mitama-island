@@ -44,6 +44,11 @@ final class OverlayPanelController {
 
     private var panel: NotchPanel?
     private var eventMonitors = NotchEventMonitors()
+    private var mouseSurfaceRect: NSRect = .zero
+    private var mouseSurfaceIsNotched = false
+    private var openingMouseRelease: DispatchWorkItem?
+    private var isOpeningTransition = false
+    private var closedFrameUpdate: DispatchWorkItem?
     private var hoverTimer: DispatchWorkItem?
     private var hoverCancelGrace: DispatchWorkItem?
     weak var model: AppModel?
@@ -85,7 +90,7 @@ final class OverlayPanelController {
         self.panel = panel
         let diagnostics = positionPanel(panel, preferredScreenID: preferredScreenID, animated: true)
         presentPanel(panel, activates: Self.shouldActivatePanel(for: model.notchOpenReason))
-        panel.ignoresMouseEvents = false
+        updateMousePassthrough(at: NSEvent.mouseLocation)
         panel.acceptsMouseMovedEvents = true
         startEventMonitoring()
         return diagnostics
@@ -104,8 +109,38 @@ final class OverlayPanelController {
         // Whatever the panel is doing now decides its own hit testing.
         isTargetableWhileClosed = false
 
-        panel.ignoresMouseEvents = !interactive
+        closedFrameUpdate?.cancel()
+        closedFrameUpdate = nil
+        openingMouseRelease?.cancel()
+        openingMouseRelease = nil
+        isOpeningTransition = interactive && !IslandMotion.reducesMotion
+        panel.ignoresMouseEvents = true
         panel.acceptsMouseMovedEvents = interactive
+        refreshMouseSurfaceGeometry()
+        if interactive {
+            // The expanded canvas exists before SwiftUI finishes drawing it.
+            // Keep WindowServer transparent through IslandMotion.open's 0.35s
+            // transition; the initial closed-pill click already opened it.
+            if isOpeningTransition {
+                let release = DispatchWorkItem { [weak self] in
+                    guard let self else { return }
+                    self.isOpeningTransition = false
+                    self.refreshMouseSurfaceGeometry()
+                }
+                openingMouseRelease = release
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: release)
+            }
+            updateMousePassthrough(at: NSEvent.mouseLocation)
+        } else {
+            // Closing releases the entire old frame immediately. Keep its
+            // rendering canvas only until the existing close animation ends.
+            let update = DispatchWorkItem { [weak self] in
+                guard let self, self.model?.notchStatus != .opened, let panel = self.panel else { return }
+                self.positionPanel(panel, preferredScreenID: self.preferredScreenID, animated: false)
+            }
+            closedFrameUpdate = update
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.22, execute: update)
+        }
 
         if interactive {
             presentPanel(panel, activates: Self.shouldActivatePanel(for: model?.notchOpenReason))
@@ -193,6 +228,8 @@ final class OverlayPanelController {
             panel.setFrame(windowFrame, display: true)
         }
         computeNotchRect(screen: screen)
+        refreshMouseSurfaceGeometry()
+        updateMousePassthrough(at: NSEvent.mouseLocation)
 
         if (preferredScreenID ?? self.preferredScreenID) == nil, followedScreenID == screenID {
             return OverlayDisplayResolver.diagnostics(
@@ -272,27 +309,30 @@ final class OverlayPanelController {
     // MARK: - Mouse event monitoring
 
     private func startEventMonitoring() {
-        if model?.disablesOverlayEventMonitoringDuringHarness == true {
+        if model?.disablesOverlayEventMonitoringDuringHarness == true && model?.allowsInteractiveOverlayDuringHarness != true {
             return
         }
 
         guard !eventMonitors.isActive else { return }
 
-        eventMonitors.start { [weak self] location in
+        eventMonitors.start(mousePassthroughHandler: { [weak self] location in
+            self?.updateMousePassthrough(at: location)
+        }, mouseMoveHandler: { [weak self] location in
             self?.handleMouseMoved(location)
-        } mouseDownHandler: { [weak self] location in
-            self?.handleMouseDown(location)
-        } mouseDragHandler: { [weak self] location in
+        }, mouseDownHandler: { [weak self] location, wasIntercepted in
+            self?.handleMouseDown(location, wasIntercepted: wasIntercepted)
+        }, mouseDragHandler: { [weak self] location in
             self?.handleMouseDragged(location)
-        } mouseDragEndHandler: { [weak self] in
+        }, mouseDragEndHandler: { [weak self] in
             self?.endClosedDropTargeting()
-        }
+        })
     }
 
     private func handleMouseMoved(_ screenLocation: NSPoint) {
         guard let model else { return }
 
         followPointerScreen(screenLocation, model: model)
+        updateMousePassthrough(at: screenLocation)
 
         // A pointer that is moving with no button held is not carrying
         // anything, so the closed island goes back to letting clicks through.
@@ -365,6 +405,7 @@ final class OverlayPanelController {
         guard Self.draggedItemsAreFiles() else { return }
 
         beginClosedDropTargeting()
+        updateMousePassthrough(at: screenLocation)
     }
 
     /// Whether the closed panel has been opened up to the mouse for a drag.
@@ -372,13 +413,14 @@ final class OverlayPanelController {
 
     private func beginClosedDropTargeting() {
         guard !isTargetableWhileClosed, let panel else { return }
+        // A drag beginning during close must not temporarily target the old
+        // expanded window. Fit it before letting AppKit discover the drop.
+        positionPanel(panel, preferredScreenID: preferredScreenID, animated: false)
 
-        // Done as soon as the drag starts, wherever it started: AppKit works
-        // out which windows can take a drop as the session moves, and a window
-        // that only volunteers once the pointer has arrived may be asked too
-        // late.
+        // Mark the drag early, then enable the panel only over its visible
+        // surface. The closed window itself is fitted to the pill as well.
         isTargetableWhileClosed = true
-        panel.ignoresMouseEvents = false
+        updateMousePassthrough(at: NSEvent.mouseLocation)
     }
 
     func endClosedDropTargeting() {
@@ -391,6 +433,43 @@ final class OverlayPanelController {
         panel.ignoresMouseEvents = true
     }
 
+    /// NSView.hitTest(nil) does not forward a click to another NSWindow.
+    /// WindowServer must see a mouse-transparent panel over the clear canvas.
+    func refreshMouseSurfaceGeometry() {
+        guard let panel, let model else { return }
+        mouseSurfaceRect = interactiveRect(for: model, in: panel.frame) ?? .zero
+        mouseSurfaceIsNotched = (resolveTargetScreen()?.safeAreaInsets.top ?? 0) > 0 && !model.debugForcesExternalLayout
+        updateMousePassthrough(at: NSEvent.mouseLocation)
+    }
+
+    func updateMousePassthrough(at point: NSPoint) {
+        guard let panel, let model else { return }
+        let inside = Self.pointIsInVisibleSurface(point, rect: mouseSurfaceRect, isNotched: mouseSurfaceIsNotched, opened: model.notchStatus == .opened)
+        let ignores = Self.shouldIgnoreMouseEvents(
+            status: model.notchStatus, insideVisibleSurface: inside,
+            carryingFiles: isTargetableWhileClosed, openingTransition: isOpeningTransition
+        )
+        if panel.ignoresMouseEvents != ignores { panel.ignoresMouseEvents = ignores }
+    }
+
+    nonisolated static func shouldIgnoreMouseEvents(
+        status: NotchStatus, insideVisibleSurface: Bool, carryingFiles: Bool,
+        openingTransition: Bool = false
+    ) -> Bool {
+        openingTransition || !insideVisibleSurface || (status != .opened && !carryingFiles)
+    }
+
+    nonisolated static func pointIsInVisibleSurface(_ point: NSPoint, rect: NSRect, isNotched: Bool, opened: Bool) -> Bool {
+        guard rectContainsIncludingEdges(rect, point: point), rect.width > 0, rect.height > 0 else { return false }
+        let radius: CGFloat = opened ? 24 : rect.height / 2
+        let r = min(radius, rect.width / 2, rect.height / 2)
+        // Notch surfaces have a flat top; floating capsules round both ends.
+        let roundsTop = !isNotched && !opened
+        let centerX = min(max(point.x, rect.minX + r), rect.maxX - r)
+        let centerY = min(max(point.y, rect.minY + r), roundsTop ? rect.maxY - r : rect.maxY)
+        return hypot(point.x - centerX, point.y - centerY) <= r
+    }
+
     /// What the current drag is carrying, if anything. The drag pasteboard is
     /// the only place a cross-application drag announces itself.
     static func draggedItemsAreFiles() -> Bool {
@@ -400,7 +479,7 @@ final class OverlayPanelController {
         )
     }
 
-    private func handleMouseDown(_ screenLocation: NSPoint) {
+    private func handleMouseDown(_ screenLocation: NSPoint, wasIntercepted: Bool) {
         guard let model else { return }
 
         let inClosedSurfaceArea = isPointInClosedSurfaceArea(screenLocation)
@@ -415,7 +494,7 @@ final class OverlayPanelController {
                model.settings.behaviour.dismissOnOutsideClick,
                !model.islandSurfaceAwaitsUserAction {
                 model.notchClose()
-                repostMouseDown(at: screenLocation)
+                if wasIntercepted { repostMouseDown(at: screenLocation) }
             }
         }
     }
@@ -553,9 +632,8 @@ final class OverlayPanelController {
     /// the panel's estimate-sized bounds — so a fix to one path never
     /// reached the other.
     ///
-    /// `bounds` is only used for the opened case; the closed pill's rect
-    /// comes from `notchRect` instead, since the window itself is always
-    /// kept at opened size regardless of the visual state.
+    /// `bounds` is only used for the opened case; closed geometry is in
+    /// screen coordinates and also sizes the actual closed NSPanel.
     func interactiveRect(for model: AppModel, in bounds: NSRect) -> NSRect? {
         guard model.notchStatus == .opened else {
             // Not opened (closed or popping): the ratchet has nothing left
@@ -600,7 +678,7 @@ final class OverlayPanelController {
         }
 
         if let rect = interactiveRect(for: model, in: panel?.frame ?? .zero) {
-            return Self.rectContainsIncludingEdges(rect, point: screenPoint)
+            return Self.pointIsInVisibleSurface(screenPoint, rect: rect, isNotched: mouseSurfaceIsNotched, opened: false)
         }
 
         let expandedNotch = notchRect.insetBy(dx: -20, dy: -10)
@@ -620,7 +698,7 @@ final class OverlayPanelController {
             return false
         }
 
-        return Self.rectContainsIncludingEdges(rect, point: screenPoint)
+        return Self.pointIsInVisibleSurface(screenPoint, rect: rect, isNotched: mouseSurfaceIsNotched, opened: true)
     }
 
     func openedPanelWidth(for screen: NSScreen?) -> CGFloat {
@@ -703,8 +781,8 @@ final class OverlayPanelController {
     ///   could not be opened from them.
     /// - On a non-notched display the floating capsule is content-driven, so
     ///   the hit area follows `intrinsicContentWidth` (the same width math
-    ///   `V6ClosedPill.externalIntrinsicWidth` renders with) plus a little
-    ///   slop per side, floored at the capsule's own minimum width and
+    ///   `V6ClosedPill.externalIntrinsicWidth` renders with), without invisible
+    ///   padding, floored at the capsule's minimum width and
     ///   capped at `maxWidth` — the same ceiling `V6ClosedPill.externalBody`
     ///   renders with (see `V6ClosedPill.externalMaxWidth`), so a
     ///   pathologically long session title can't make the hit area outgrow
@@ -714,19 +792,19 @@ final class OverlayPanelController {
         isNotchedDisplay: Bool,
         intrinsicContentWidth: CGFloat = 0,
         notchedContentWidth: CGFloat = 0,
-        maxWidth: CGFloat = .infinity,
+        maxWidth: CGFloat = 360,
         notchStatus: NotchStatus
     ) -> CGFloat {
-        let popBonus: CGFloat = notchStatus == .popping ? 18 : 0
+        let popScale: CGFloat = notchStatus == .popping ? 1.04 : 1
         if isNotchedDisplay {
-            return min(max(notchWidth + (closedPillSideBleed * 2), notchedContentWidth),
-                       V6ClosedPill.notchedMaxWidth(physicalNotchWidth: notchWidth)) + popBonus
+            let floor = notchWidth + closedPillSideBleed * 2
+            return min(max(floor, notchedContentWidth), max(floor, maxWidth)) * popScale
         }
         let hitWidth = max(
             IslandChromeMetrics.floatingPillMinWidth,
-            intrinsicContentWidth + (IslandChromeMetrics.floatingPillHitPadding * 2)
+            intrinsicContentWidth
         )
-        return min(hitWidth, maxWidth) + popBonus
+        return min(hitWidth, maxWidth) * popScale
     }
 
     private func closedSurfaceRect(for model: AppModel) -> NSRect? {
@@ -736,7 +814,7 @@ final class OverlayPanelController {
 
         let closedWidth = closedPanelWidth(for: model, on: screen)
 
-        guard screen.safeAreaInsets.top > 0 else {
+        guard screen.safeAreaInsets.top > 0 && !model.debugForcesExternalLayout else {
             // No physical notch to anchor to — the floating capsule sits on
             // its own, below the menu bar, rather than centered on the
             // pseudo-notch band `notchRect` still represents for width
@@ -745,17 +823,24 @@ final class OverlayPanelController {
                 screenFrame: screen.frame,
                 visibleFrame: screen.visibleFrame,
                 width: closedWidth,
-                height: IslandChromeMetrics.floatingPillHeight
+                height: IslandChromeMetrics.floatingPillHeight * (model.notchStatus == .popping ? 1.04 : 1)
             )
         }
 
         return Self.closedSurfaceRect(
-            notchRect: notchRect,
+            notchRect: NSRect(x: notchRect.minX, y: screen.frame.maxY - screen.islandClosedHeight, width: notchRect.width, height: screen.islandClosedHeight),
             closedWidth: closedWidth
         )
     }
 
     private func panelFrame(for model: AppModel?, on screen: NSScreen) -> NSRect {
+        if let model, model.notchStatus != .opened {
+            let width = closedPanelWidth(for: model, on: screen)
+            if screen.safeAreaInsets.top == 0 || model.debugForcesExternalLayout {
+                return Self.floatingClosedSurfaceRect(screenFrame: screen.frame, visibleFrame: screen.visibleFrame, width: width, height: IslandChromeMetrics.floatingPillHeight * (model.notchStatus == .popping ? 1.04 : 1))
+            }
+            return NSRect(x: screen.frame.midX - width / 2, y: screen.frame.maxY - screen.islandClosedHeight, width: width, height: screen.islandClosedHeight)
+        }
         let size = panelSize(for: model, on: screen)
         // Same top-anchoring rule the diagnostics-only `pureFrame` uses —
         // on a non-notched display the window's own top edge now sits at
@@ -778,9 +863,7 @@ final class OverlayPanelController {
         )
     }
 
-    /// Always returns the maximum (opened) panel size so the window never
-    /// needs to resize.  All visual transitions are driven purely by SwiftUI
-    /// inside this fixed-size window.
+    /// Opened canvas including the shadow. Closed frames use the pill rect.
     private func panelSize(for model: AppModel?, on screen: NSScreen) -> CGSize {
         let insets = panelShadowInsets
 
@@ -803,7 +886,7 @@ final class OverlayPanelController {
         )
     }
 
-    /// Constant insets — always opened size since the window never shrinks.
+    /// Shadow belongs to the opened canvas only.
     private var panelShadowInsets: (horizontal: CGFloat, bottom: CGFloat) {
         (
             horizontal: IslandChromeMetrics.openedShadowHorizontalInset,
@@ -812,16 +895,16 @@ final class OverlayPanelController {
     }
 
     private func closedPanelWidth(for model: AppModel, on screen: NSScreen) -> CGFloat {
-        let notchWidth = screen.notchSize.width
-        let isNotched = screen.safeAreaInsets.top > 0
+        let notchWidth = max(screen.notchSize.width, screen.measuredNotchSize.width)
+        let isNotched = screen.safeAreaInsets.top > 0 && !model.debugForcesExternalLayout
         let intrinsicContentWidth = isNotched ? 0 : closedFloatingIntrinsicWidth(for: model)
         let notchedContentWidth = isNotched
             ? closedNotchedOuterWidth(for: model, notchWidth: notchWidth, pillHeight: screen.islandClosedHeight)
             : 0
         let maxWidth = isNotched
-            ? .infinity
+            ? CGFloat(model.settings.display.maxClosedIslandWidth)
             : V6ClosedPill.externalMaxWidth(
-                configuredMaxPanelWidth: CGFloat(model.settings.display.maxPanelWidth),
+                configuredMaxClosedIslandWidth: CGFloat(model.settings.display.maxClosedIslandWidth),
                 visibleWidth: screen.visibleFrame.width
             )
         return Self.closedPanelWidth(
@@ -843,7 +926,8 @@ final class OverlayPanelController {
             sneakPeek: model.overlay.sneakPeek,
             rightSlot: model.islandClosedRightSlotContent(),
             physicalNotchWidth: notchWidth,
-            pad: pillHeight / 2
+            pad: pillHeight / 2,
+            configuredMaxWidth: CGFloat(model.settings.display.maxClosedIslandWidth)
         ).outerWidth
     }
 
@@ -1222,8 +1306,9 @@ final class NotchEventMonitors {
     var isActive: Bool { globalMoveMonitor != nil }
 
     func start(
+        mousePassthroughHandler: @MainActor @escaping @Sendable (NSPoint) -> Void,
         mouseMoveHandler: @MainActor @escaping @Sendable (NSPoint) -> Void,
-        mouseDownHandler: @MainActor @escaping @Sendable (NSPoint) -> Void,
+        mouseDownHandler: @MainActor @escaping @Sendable (NSPoint, Bool) -> Void,
         mouseDragHandler: @MainActor @escaping @Sendable (NSPoint) -> Void,
         mouseDragEndHandler: @MainActor @escaping @Sendable () -> Void
     ) {
@@ -1231,20 +1316,25 @@ final class NotchEventMonitors {
 
         nonisolated(unsafe) var sharedLastMove: TimeInterval = 0
 
+        // Apple Event Handling Guide / Monitoring Events: both local and
+        // global NSEvent monitor handlers are always called on the main thread.
+        // https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/EventOverview/MonitoringEvents/MonitoringEvents.html
         globalMoveMonitor = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved) { event in
+            let location = NSEvent.mouseLocation
+            MainActor.assumeIsolated { mousePassthroughHandler(location) }
             let now = ProcessInfo.processInfo.systemUptime
             guard now - sharedLastMove >= throttleInterval else { return }
             sharedLastMove = now
-            let location = NSEvent.mouseLocation
-            Task { @MainActor in mouseMoveHandler(location) }
+            MainActor.assumeIsolated { mouseMoveHandler(location) }
         }
 
         localMoveMonitor = NSEvent.addLocalMonitorForEvents(matching: .mouseMoved) { event in
+            let location = NSEvent.mouseLocation
+            MainActor.assumeIsolated { mousePassthroughHandler(location) }
             let now = ProcessInfo.processInfo.systemUptime
             guard now - sharedLastMove >= throttleInterval else { return event }
             sharedLastMove = now
-            let location = NSEvent.mouseLocation
-            Task { @MainActor in mouseMoveHandler(location) }
+            MainActor.assumeIsolated { mouseMoveHandler(location) }
             return event
         }
 
@@ -1254,19 +1344,21 @@ final class NotchEventMonitors {
         nonisolated(unsafe) var sharedLastDrag: TimeInterval = 0
 
         globalDragMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDragged) { event in
+            let location = NSEvent.mouseLocation
+            MainActor.assumeIsolated { mousePassthroughHandler(location) }
             let now = ProcessInfo.processInfo.systemUptime
             guard now - sharedLastDrag >= throttleInterval else { return }
             sharedLastDrag = now
-            let location = NSEvent.mouseLocation
-            Task { @MainActor in mouseDragHandler(location) }
+            MainActor.assumeIsolated { mouseDragHandler(location) }
         }
 
         localDragMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDragged) { event in
+            let location = NSEvent.mouseLocation
+            MainActor.assumeIsolated { mousePassthroughHandler(location) }
             let now = ProcessInfo.processInfo.systemUptime
             guard now - sharedLastDrag >= throttleInterval else { return event }
             sharedLastDrag = now
-            let location = NSEvent.mouseLocation
-            Task { @MainActor in mouseDragHandler(location) }
+            MainActor.assumeIsolated { mouseDragHandler(location) }
             return event
         }
 
@@ -1281,12 +1373,13 @@ final class NotchEventMonitors {
 
         globalClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown) { event in
             let location = NSEvent.mouseLocation
-            Task { @MainActor in mouseDownHandler(location) }
+            Task { @MainActor in mouseDownHandler(location, false) }
         }
 
         localClickMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { event in
             let location = NSEvent.mouseLocation
-            Task { @MainActor in mouseDownHandler(location) }
+            let wasIntercepted = event.window is NotchPanel
+            Task { @MainActor in mouseDownHandler(location, wasIntercepted) }
             return event
         }
     }

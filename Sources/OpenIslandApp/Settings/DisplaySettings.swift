@@ -9,6 +9,11 @@ final class DisplaySettings: PreferenceGroup {
 
     init(store: PreferenceStore = .standard) {
         self.store = store
+        if store.hasValue(forKey: Keys.maxClosedIslandWidth) {
+            let raw: Double = store.value(Keys.maxClosedIslandWidth, default: Defaults.maxClosedIslandWidth)
+            let safe = Self.safeClosedWidth(raw)
+            if safe != raw { store.setValue(safe, forKey: Keys.maxClosedIslandWidth) }
+        }
     }
 
     // MARK: System
@@ -28,6 +33,16 @@ final class DisplaySettings: PreferenceGroup {
     var maxPanelWidth: Double {
         get { read(\.maxPanelWidth, Keys.maxPanelWidth, Defaults.maxPanelWidth) }
         set { write(\.maxPanelWidth, Keys.maxPanelWidth, newValue) }
+    }
+
+    var maxClosedIslandWidth: Double {
+        get { Self.safeClosedWidth(read(\.maxClosedIslandWidth, Keys.maxClosedIslandWidth, Defaults.maxClosedIslandWidth)) }
+        set { write(\.maxClosedIslandWidth, Keys.maxClosedIslandWidth, Self.safeClosedWidth(newValue)) }
+    }
+
+    static func safeClosedWidth(_ value: Double) -> Double {
+        guard value.isFinite else { return Defaults.maxClosedIslandWidth }
+        return min(Defaults.maxClosedIslandWidthRange.upperBound, max(Defaults.maxClosedIslandWidthRange.lowerBound, value))
     }
 
     /// The tallest a completion card may grow to. It still shrinks to fit a
@@ -220,6 +235,9 @@ extension DisplaySettings {
         static let maxPanelHeightRange: ClosedRange<Double> = 280...900
 
         /// Matches the measured opened-surface width on a notched display.
+        static let maxClosedIslandWidth: Double = 280
+        static let maxClosedIslandWidthRange: ClosedRange<Double> = 96...600
+
         static let maxPanelWidth: Double = 552
         static let maxPanelWidthRange: ClosedRange<Double> = 480...900
 
@@ -235,6 +253,7 @@ extension DisplaySettings {
         static let contentFontSize = "display.contentFontSize"
         static let maxPanelHeight = "display.maxPanelHeight"
         static let maxPanelWidth = "display.maxPanelWidth"
+        static let maxClosedIslandWidth = "display.maxClosedIslandWidth"
         // Renamed from `display.completionCardHeight`: that key stored a fixed
         // height the app never read, so reusing it would resurrect a 90pt value
         // that clips the card.

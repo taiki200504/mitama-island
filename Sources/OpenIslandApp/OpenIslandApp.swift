@@ -26,7 +26,8 @@ final class OpenIslandAppDelegate: NSObject, NSApplicationDelegate {
             model.harnessRuntimeMonitor = harnessRuntimeMonitor
             harnessRuntimeMonitor.recordLog(model.lastActionMessage)
 
-            model.ignoresPointerExitDuringHarness = harnessLaunchConfiguration.scenario != nil
+            model.ignoresPointerExitDuringHarness = harnessLaunchConfiguration.scenario != nil && !harnessLaunchConfiguration.interactiveOverlay
+            model.allowsInteractiveOverlayDuringHarness = harnessLaunchConfiguration.scenario != nil && harnessLaunchConfiguration.interactiveOverlay && !harnessLaunchConfiguration.shouldStartBridge
             model.disablesOverlayEventMonitoringDuringHarness = harnessLaunchConfiguration.scenario != nil
             if harnessLaunchConfiguration.scenario != nil {
                 NotificationSoundService.harnessSink = { [harnessRuntimeMonitor] message in
