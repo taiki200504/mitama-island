@@ -362,18 +362,13 @@ struct V6ClosedPill: View {
         return pad * 2 + glyphW + labelBlock + peekBlock + accessoryBlock + rightBlock
     }
 
-    /// Caps the floating capsule's width so a pathologically long session
-    /// title or waiting-agent name can't grow it past a sane fraction of
-    /// the screen. `configuredMaxPanelWidth` is `display.maxPanelWidth`
-    /// (the *opened* panel's own cap, 480–900pt) — reused here rather than
-    /// adding a second setting, but scaled down to 60% of the visible
-    /// width besides: the closed pill is meant to read as a glance, not
-    /// grow into a second panel.
+    /// The closed external pill is at most 360pt; smaller screen/settings caps win.
+    /// Shared by rendering and the controller's hit-area/intrinsic width calculation.
     nonisolated static func externalMaxWidth(
         configuredMaxPanelWidth: CGFloat,
         visibleWidth: CGFloat
     ) -> CGFloat {
-        min(configuredMaxPanelWidth, visibleWidth * 0.6)
+        min(360, configuredMaxPanelWidth, visibleWidth * 0.6)
     }
 
     var body: some View {
@@ -437,6 +432,7 @@ struct V6ClosedPill: View {
             HStack(spacing: 0) {
                 UnifiedBars(mode: mode, size: 24)
                     .frame(width: glyphW, height: 24)
+                    .layoutPriority(1)
 
                 if showsSneakPeek, let sneakPeek {
                     SAOSneakPeekView(peek: sneakPeek)
@@ -463,6 +459,8 @@ struct V6ClosedPill: View {
 
                 if let rightSlot {
                     V6RightSlotView(content: rightSlot)
+                        .fixedSize()
+                        .layoutPriority(1)
                         .transition(.opacity.combined(with: .move(edge: .trailing)))
                 }
             }

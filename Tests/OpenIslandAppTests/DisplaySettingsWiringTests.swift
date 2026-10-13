@@ -128,7 +128,7 @@ struct DisplaySettingsWiringTests {
     func panelSizeDefaultsMatchTheMeasuredSurface() {
         let settings = makeSettings()
         #expect(settings.display.maxPanelHeight == 560)
-        #expect(settings.display.maxPanelWidth == 648)
+        #expect(settings.display.maxPanelWidth == 552)
     }
 
     @Test

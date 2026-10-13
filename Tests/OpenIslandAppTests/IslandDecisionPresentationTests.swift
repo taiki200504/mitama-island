@@ -133,8 +133,18 @@ struct IslandDecisionPresentationTests {
         #expect(IslandChromeMetrics.notificationViewportHeight(maxPanelHeight: 280) == 232)
         #expect(IslandChromeMetrics.notificationViewportHeight(maxPanelHeight: 560, availableHeight: 180) == 180)
         #expect(IslandChromeMetrics.notificationViewportHeight(maxPanelHeight: 280, availableHeight: 0) == 0)
-        #expect(IslandChromeMetrics.questionOptionsViewportHeight(maxPanelHeight: 280) == 100)
-        #expect(IslandChromeMetrics.questionOptionsViewportHeight(maxPanelHeight: 560) == 200)
+    }
+
+    @Test func compactQuestionScrollFitsFreeformAndMultipleQuestions() {
+        let available = IslandChromeMetrics.notificationViewportHeight(maxPanelHeight: 360, availableHeight: 240)
+        // 552pt panel: short freeform card, long wrapped question, multiple questions.
+        for contentHeight: CGFloat in [180, 720, 1400] {
+            let viewport = IslandChromeMetrics.scrollViewportHeight(contentHeight: contentHeight, maxHeight: available)
+            #expect(viewport == min(contentHeight, 240))
+            #expect(viewport <= available)
+        }
+        #expect(IslandChromeMetrics.scrollViewportHeight(contentHeight: 0, maxHeight: available) == available)
+        #expect(IslandChromeMetrics.scrollViewportHeight(contentHeight: 720, maxHeight: -1) == 0)
     }
 
     @Test func answerProgressPlacesAnsweredAndTotalCorrectlyInEveryLanguage() {

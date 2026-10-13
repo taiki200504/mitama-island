@@ -1023,7 +1023,7 @@ final class OverlayPanelController {
         // The list scrolls past this, so the panel must be sized for the cap
         // rather than for the whole list — otherwise a long question pushes the
         // submit button outside the panel it is supposed to sit in.
-        let estimated = chromeHeight + min(listHeight, IslandChromeMetrics.questionOptionsViewportHeight(maxPanelHeight: maxPanelHeight))
+        let estimated = chromeHeight + listHeight
         return min(Self.questionCardMaxHeight, max(Self.questionCardBaseHeight, estimated))
     }
 

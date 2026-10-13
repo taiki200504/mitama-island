@@ -655,7 +655,7 @@ public enum ClaudeHookOutputEncoder {
 
         let data: Data?
         switch response {
-        case .acknowledged:
+        case .acknowledged, .rejected:
             data = nil
         case .codexHookDirective:
             data = nil

@@ -12,6 +12,7 @@ public final class BridgeServer: @unchecked Sendable {
     }
 
     private struct PendingApproval {
+        let requestID: UUID?
         let clientID: UUID
         let hookEventName: CodexHookEventName
     }
@@ -34,6 +35,7 @@ public final class BridgeServer: @unchecked Sendable {
             case question(ClaudeHookPayload, QuestionPrompt)
         }
 
+        let requestID: UUID?
         let clientID: UUID
         let kind: Kind
     }
@@ -44,6 +46,7 @@ public final class BridgeServer: @unchecked Sendable {
             case question(OpenCodeHookPayload)
         }
 
+        let requestID: UUID?
         let clientID: UUID
         let kind: Kind
     }
@@ -193,12 +196,10 @@ public final class BridgeServer: @unchecked Sendable {
             guard payload.sessionID == pending.sessionID, payload.toolName == pending.name,
                   claudeToolUseID(for: payload) == expectedID, payload.toolInput == pending.input else { return false }
             if let answer, case .question = interaction.kind {
-                resolvePendingClaudeQuestion(sessionID: pending.sessionID, response: answer)
-                return true
+                return resolvePendingClaudeQuestion(sessionID: pending.sessionID, response: answer)
             }
             if let resolution, case .permission = interaction.kind {
-                resolvePendingClaudeInteraction(sessionID: pending.sessionID, resolution: resolution)
-                return true
+                return resolvePendingClaudeInteraction(sessionID: pending.sessionID, resolution: resolution)
             }
             return false
         }
@@ -216,6 +217,11 @@ public final class BridgeServer: @unchecked Sendable {
             return payload.sessionID == pending.sessionID && payload.toolName == pending.name
                 && claudeToolUseID(for: payload) == expectedID && payload.toolInput == pending.input
         }
+    }
+
+    private func pendingRequestID(sessionID: String) -> UUID? {
+        pendingClaudeInteractions[sessionID]?.requestID ?? pendingOpenCodeInteractions[sessionID]?.requestID
+            ?? pendingApprovals[sessionID]?.requestID
     }
 
     public func hasLivePendingHook(sessionID: String) -> Bool {
@@ -374,16 +380,28 @@ public final class BridgeServer: @unchecked Sendable {
             )
             send(.response(.acknowledged), to: clientID)
 
-        case let .resolvePermission(sessionID, resolution):
-            if pendingClaudeInteractions[sessionID] != nil {
-                resolvePendingClaudeInteraction(sessionID: sessionID, resolution: resolution)
-                send(.response(.acknowledged), to: clientID)
+        case let .resolvePermission(sessionID, resolution, expectedRequestID):
+            if let expectedRequestID, pendingRequestID(sessionID: sessionID) != expectedRequestID {
+                send(.response(.rejected), to: clientID)
+                return
+            }
+            if let interaction = pendingClaudeInteractions[sessionID] {
+                guard case .permission = interaction.kind else {
+                    send(.response(.rejected), to: clientID)
+                    return
+                }
+                let delivered = resolvePendingClaudeInteraction(sessionID: sessionID, resolution: resolution)
+                send(.response(delivered ? .acknowledged : .rejected), to: clientID)
                 return
             }
 
-            if pendingOpenCodeInteractions[sessionID] != nil {
-                resolvePendingOpenCodeInteraction(sessionID: sessionID, resolution: resolution)
-                send(.response(.acknowledged), to: clientID)
+            if let interaction = pendingOpenCodeInteractions[sessionID] {
+                guard case .permission = interaction.kind else {
+                    send(.response(.rejected), to: clientID)
+                    return
+                }
+                let delivered = resolvePendingOpenCodeInteraction(sessionID: sessionID, resolution: resolution)
+                send(.response(delivered ? .acknowledged : .rejected), to: clientID)
                 return
             }
 
@@ -402,6 +420,10 @@ public final class BridgeServer: @unchecked Sendable {
                     phase = .completed
                 }
 
+                guard send(.response(.cursorHookDirective(directive)), to: interaction.clientID) else {
+                    send(.response(.rejected), to: clientID)
+                    return
+                }
                 emit(
                     phase == .completed
                         ? .sessionCompleted(
@@ -421,22 +443,12 @@ public final class BridgeServer: @unchecked Sendable {
                         )
                 )
 
-                send(.response(.cursorHookDirective(directive)), to: interaction.clientID)
                 send(.response(.acknowledged), to: clientID)
                 return
             }
 
             guard let pendingApproval = pendingApprovals[sessionID] else {
-                emit(
-                    .actionableStateResolved(
-                        ActionableStateResolved(
-                            sessionID: sessionID,
-                            summary: "Permission request is no longer active.",
-                            timestamp: .now
-                        )
-                    )
-                )
-                send(.response(.acknowledged), to: clientID)
+                send(.response(.rejected), to: clientID)
                 return
             }
 
@@ -451,6 +463,10 @@ public final class BridgeServer: @unchecked Sendable {
                 return "Permission denied in Open Island."
             }()
 
+            guard resolvePendingApproval(sessionID: sessionID, resolution: resolution) else {
+                send(.response(.rejected), to: clientID)
+                return
+            }
             localState.resolvePermission(sessionID: sessionID, resolution: resolution)
             broadcast([.event(
                 resolution.isApproved
@@ -470,36 +486,34 @@ public final class BridgeServer: @unchecked Sendable {
                         )
                     )
             )])
-            resolvePendingApproval(sessionID: sessionID, resolution: resolution)
             send(.response(.acknowledged), to: clientID)
 
-        case let .answerQuestion(sessionID, response):
-            if pendingClaudeInteractions[sessionID] != nil {
-                resolvePendingClaudeQuestion(sessionID: sessionID, response: response)
-                send(.response(.acknowledged), to: clientID)
+        case let .answerQuestion(sessionID, response, expectedRequestID):
+            if let expectedRequestID, pendingRequestID(sessionID: sessionID) != expectedRequestID {
+                send(.response(.rejected), to: clientID)
+                return
+            }
+            if let interaction = pendingClaudeInteractions[sessionID] {
+                guard case .question = interaction.kind else {
+                    send(.response(.rejected), to: clientID)
+                    return
+                }
+                let delivered = resolvePendingClaudeQuestion(sessionID: sessionID, response: response)
+                send(.response(delivered ? .acknowledged : .rejected), to: clientID)
                 return
             }
 
-            if pendingOpenCodeInteractions[sessionID] != nil {
-                resolvePendingOpenCodeQuestion(sessionID: sessionID, response: response)
-                send(.response(.acknowledged), to: clientID)
+            if let interaction = pendingOpenCodeInteractions[sessionID] {
+                guard case .question = interaction.kind else {
+                    send(.response(.rejected), to: clientID)
+                    return
+                }
+                let delivered = resolvePendingOpenCodeQuestion(sessionID: sessionID, response: response)
+                send(.response(delivered ? .acknowledged : .rejected), to: clientID)
                 return
             }
 
-            let summary = response.displaySummary.isEmpty
-                ? "Answered the question."
-                : "Answered: \(response.displaySummary)"
-            emit(
-                .activityUpdated(
-                    SessionActivityUpdated(
-                        sessionID: sessionID,
-                        summary: summary,
-                        phase: .running,
-                        timestamp: .now
-                    )
-                )
-            )
-            send(.response(.acknowledged), to: clientID)
+            send(.response(.rejected), to: clientID)
 
         case let .processCodexHook(payload):
             handleCodexHook(payload, from: clientID)
@@ -587,6 +601,7 @@ public final class BridgeServer: @unchecked Sendable {
             emit(approvalEvent)
 
             pendingApprovals[payload.sessionID] = PendingApproval(
+                requestID: localState.session(id: payload.sessionID)?.permissionRequest?.id ?? localState.session(id: payload.sessionID)?.questionPrompt?.id,
                 clientID: clientID,
                 hookEventName: .preToolUse
             )
@@ -615,6 +630,7 @@ public final class BridgeServer: @unchecked Sendable {
             )
 
             pendingApprovals[payload.sessionID] = PendingApproval(
+                requestID: localState.session(id: payload.sessionID)?.permissionRequest?.id ?? localState.session(id: payload.sessionID)?.questionPrompt?.id,
                 clientID: clientID,
                 hookEventName: .permissionRequest
             )
@@ -806,6 +822,7 @@ public final class BridgeServer: @unchecked Sendable {
                 )
 
                 pendingClaudeInteractions[payload.sessionID] = PendingClaudeInteraction(
+                    requestID: localState.session(id: payload.sessionID)?.permissionRequest?.id ?? localState.session(id: payload.sessionID)?.questionPrompt?.id,
                     clientID: clientID,
                     kind: .question(payload, prompt)
                 )
@@ -832,6 +849,7 @@ public final class BridgeServer: @unchecked Sendable {
                 )
 
                 pendingClaudeInteractions[payload.sessionID] = PendingClaudeInteraction(
+                    requestID: localState.session(id: payload.sessionID)?.permissionRequest?.id ?? localState.session(id: payload.sessionID)?.questionPrompt?.id,
                     clientID: clientID,
                     kind: .permission(payload)
                 )
@@ -1193,6 +1211,7 @@ public final class BridgeServer: @unchecked Sendable {
             )
 
             pendingOpenCodeInteractions[payload.sessionID] = PendingOpenCodeInteraction(
+                requestID: localState.session(id: payload.sessionID)?.permissionRequest?.id ?? localState.session(id: payload.sessionID)?.questionPrompt?.id,
                 clientID: clientID,
                 kind: .permission(payload)
             )
@@ -1213,6 +1232,7 @@ public final class BridgeServer: @unchecked Sendable {
             )
 
             pendingOpenCodeInteractions[payload.sessionID] = PendingOpenCodeInteraction(
+                requestID: localState.session(id: payload.sessionID)?.permissionRequest?.id ?? localState.session(id: payload.sessionID)?.questionPrompt?.id,
                 clientID: clientID,
                 kind: .question(payload)
             )
@@ -1797,9 +1817,9 @@ public final class BridgeServer: @unchecked Sendable {
     private func resolvePendingOpenCodeInteraction(
         sessionID: String,
         resolution: PermissionResolution
-    ) {
+    ) -> Bool {
         guard let pendingInteraction = pendingOpenCodeInteractions.removeValue(forKey: sessionID) else {
-            return
+            return false
         }
 
         let directive: OpenCodeHookDirective
@@ -1828,6 +1848,8 @@ public final class BridgeServer: @unchecked Sendable {
             phase = .completed
         }
 
+        guard send(.response(.openCodeHookDirective(directive)), to: pendingInteraction.clientID) else { return false }
+
         emit(
             phase == .completed
                 ? .sessionCompleted(
@@ -1847,21 +1869,26 @@ public final class BridgeServer: @unchecked Sendable {
                 )
         )
 
-        send(.response(.openCodeHookDirective(directive)), to: pendingInteraction.clientID)
+        return true
     }
 
     private func resolvePendingOpenCodeQuestion(
         sessionID: String,
         response: QuestionPromptResponse
-    ) {
+    ) -> Bool {
         guard let pendingInteraction = pendingOpenCodeInteractions.removeValue(forKey: sessionID) else {
-            return
+            return false
         }
 
         let answerText = response.rawAnswer ?? response.displaySummary
         let summary = answerText.isEmpty
             ? "Answered OpenCode's question."
             : "Answered: \(answerText)"
+
+        guard send(
+            .response(.openCodeHookDirective(.answer(text: answerText))),
+            to: pendingInteraction.clientID
+        ) else { return false }
 
         emit(
             .activityUpdated(
@@ -1874,10 +1901,7 @@ public final class BridgeServer: @unchecked Sendable {
             )
         )
 
-        send(
-            .response(.openCodeHookDirective(.answer(text: answerText))),
-            to: pendingInteraction.clientID
-        )
+        return true
     }
 
     private func clearStaleClaudeInteractionIfNeeded(for sessionID: String) {
@@ -2452,9 +2476,9 @@ public final class BridgeServer: @unchecked Sendable {
         }
     }
 
-    private func resolvePendingApproval(sessionID: String, resolution: PermissionResolution) {
+    private func resolvePendingApproval(sessionID: String, resolution: PermissionResolution) -> Bool {
         guard let pendingApproval = pendingApprovals.removeValue(forKey: sessionID) else {
-            return
+            return false
         }
 
         let response: BridgeResponse
@@ -2474,15 +2498,16 @@ public final class BridgeServer: @unchecked Sendable {
             response = .acknowledged
         }
 
-        send(.response(response), to: pendingApproval.clientID)
+        guard send(.response(response), to: pendingApproval.clientID) else { return false }
+        return true
     }
 
     private func resolvePendingClaudeInteraction(
         sessionID: String,
         resolution: PermissionResolution
-    ) {
+    ) -> Bool {
         guard let pendingInteraction = pendingClaudeInteractions.removeValue(forKey: sessionID) else {
-            return
+            return false
         }
 
         let directive: ClaudeHookDirective
@@ -2522,6 +2547,8 @@ public final class BridgeServer: @unchecked Sendable {
             phase = .completed
         }
 
+        guard send(.response(.claudeHookDirective(directive)), to: pendingInteraction.clientID) else { return false }
+
         emit(
             phase == .completed
                 ? .sessionCompleted(
@@ -2541,21 +2568,22 @@ public final class BridgeServer: @unchecked Sendable {
                 )
         )
 
-        send(.response(.claudeHookDirective(directive)), to: pendingInteraction.clientID)
+        return true
     }
 
     private func resolvePendingClaudeQuestion(
         sessionID: String,
         response: QuestionPromptResponse
-    ) {
-        guard let pendingInteraction = pendingClaudeInteractions.removeValue(forKey: sessionID) else {
-            return
+    ) -> Bool {
+        guard let pendingInteraction = pendingClaudeInteractions[sessionID] else {
+            return false
         }
 
         guard case let .question(payload, prompt) = pendingInteraction.kind else {
-            return
+            return false
         }
 
+        pendingClaudeInteractions.removeValue(forKey: sessionID)
         let updatedInput = Self.mergedClaudeQuestionInput(
             payload: payload,
             prompt: prompt,
@@ -2564,6 +2592,15 @@ public final class BridgeServer: @unchecked Sendable {
         let summary = response.displaySummary.isEmpty
             ? "Answered \(payload.resolvedAgentTool.displayName)'s questions."
             : "Answered: \(response.displaySummary)"
+
+        guard send(
+            .response(
+                .claudeHookDirective(
+                    .permissionRequest(.allow(updatedInput: updatedInput))
+                )
+            ),
+            to: pendingInteraction.clientID
+        ) else { return false }
 
         emit(
             .activityUpdated(
@@ -2576,14 +2613,7 @@ public final class BridgeServer: @unchecked Sendable {
             )
         )
 
-        send(
-            .response(
-                .claudeHookDirective(
-                    .permissionRequest(.allow(updatedInput: updatedInput))
-                )
-            ),
-            to: pendingInteraction.clientID
-        )
+        return true
     }
 
     private func claudeToolUseID(for payload: ClaudeHookPayload) -> String? {
@@ -2651,16 +2681,19 @@ public final class BridgeServer: @unchecked Sendable {
         localState.session(id: id) != nil || localState.session(id: id) != nil
     }
 
-    private func send(_ envelope: BridgeEnvelope, to clientID: UUID) {
+    @discardableResult
+    private func send(_ envelope: BridgeEnvelope, to clientID: UUID) -> Bool {
         guard let client = clients[clientID] else {
-            return
+            return false
         }
 
         do {
             let data = try BridgeCodec.encodeLine(envelope)
             try writeAll(data, to: client.fileDescriptor)
+            return true
         } catch {
             removeClient(clientID)
+            return false
         }
     }
 
