@@ -719,7 +719,8 @@ final class OverlayPanelController {
     ) -> CGFloat {
         let popBonus: CGFloat = notchStatus == .popping ? 18 : 0
         if isNotchedDisplay {
-            return max(notchWidth + (closedPillSideBleed * 2), notchedContentWidth) + popBonus
+            return min(max(notchWidth + (closedPillSideBleed * 2), notchedContentWidth),
+                       V6ClosedPill.notchedMaxWidth(physicalNotchWidth: notchWidth)) + popBonus
         }
         let hitWidth = max(
             IslandChromeMetrics.floatingPillMinWidth,

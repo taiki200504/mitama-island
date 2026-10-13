@@ -265,6 +265,10 @@ struct V6ClosedPill: View {
         return !sneakPeek.text.isEmpty
     }
 
+    nonisolated static func notchedMaxWidth(physicalNotchWidth: CGFloat) -> CGFloat {
+        max(360, physicalNotchWidth + accessoryDropBleed * 2)
+    }
+
     /// The pill's real outer width in macbook layout, and which accessory
     /// (if any) survives once that width is checked against the notch's own
     /// bleed budget. Pure and static — a test can call it directly, and
@@ -275,16 +279,9 @@ struct V6ClosedPill: View {
     /// against the budget, leaving out the leading glyph, the padding, and
     /// the gaps the real pill also spends width on).
     ///
-    /// The body's own width is never held against the budget: a waiting
-    /// agent with a long name and a real elapsed time already routinely
-    /// pushes the symmetric two-sided pill past `physicalNotchWidth + 66` on
-    /// its own — that's an existing, accepted shape of the closed pill, not
-    /// something this method is trying to prevent. What it does prevent is
-    /// the *accessory* being the reason the pill grows wider than the body
-    /// alone would already require: `budget` is whichever is larger of the
-    /// notch's own bleed allowance or what the body-only pill already needs,
-    /// so the accessory only gets dropped when *it* would be the one adding
-    /// the overflow.
+    /// Long body text is reduced to its status icon once its intrinsic width
+    /// would cross the closed pill's ceiling. The physical notch plus bleed
+    /// remains the minimum ceiling on wider notch displays.
     @MainActor
     static func macbookLayout(
         content: IslandClosedContent?,
@@ -292,7 +289,7 @@ struct V6ClosedPill: View {
         rightSlot: IslandRightSlotContent?,
         physicalNotchWidth: CGFloat,
         pad: CGFloat
-    ) -> (accessory: IslandClosedAccessory?, outerWidth: CGFloat) {
+    ) -> (accessory: IslandClosedAccessory?, outerWidth: CGFloat, compactBody: Bool) {
         let showsSneakPeek = sneakPeek.map { !$0.text.isEmpty } ?? false
         let hasBody = content?.body != nil
         let showsPeekArea = showsSneakPeek || hasBody
@@ -320,10 +317,15 @@ struct V6ClosedPill: View {
         let outerWithoutAccessory = outerWidth(rightContent: rightSlotWidth)
         let outerWithAccessory = outerWidth(rightContent: rightContentWithAccessory)
         let notchBudget = physicalNotchWidth + Self.accessoryDropBleed * 2
+        let maxWidth = max(360, notchBudget)
+        let halfWidth = (maxWidth - physicalNotchWidth) / 2
         let budget = max(notchBudget, outerWithoutAccessory)
         let accessoryFits = rawAccessory != nil && outerWithAccessory <= budget
+            && pad + rightContentWithAccessory + Self.innerGap <= halfWidth
         let resolvedAccessory = accessoryFits ? rawAccessory : nil
-        return (resolvedAccessory, accessoryFits ? outerWithAccessory : outerWithoutAccessory)
+        return (resolvedAccessory,
+                min(accessoryFits ? outerWithAccessory : outerWithoutAccessory, maxWidth),
+                outerWithoutAccessory > maxWidth)
     }
 
     /// The external (non-notched) layout's intrinsic content width, before
@@ -510,11 +512,17 @@ struct V6ClosedPill: View {
                     .frame(width: 24, height: 24)
 
                 if showsSneakPeek, let sneakPeek {
-                    SAOSneakPeekView(peek: sneakPeek)
-                        .padding(.leading, Self.innerGap)
-                        .transition(.opacity.combined(with: .move(edge: .leading)))
+                    if layoutResult.compactBody {
+                        Image(systemName: sneakPeek.icon)
+                            .font(.islandMono(size: 10))
+                            .padding(.leading, Self.innerGap)
+                    } else {
+                        SAOSneakPeekView(peek: sneakPeek)
+                            .padding(.leading, Self.innerGap)
+                            .transition(.opacity.combined(with: .move(edge: .leading)))
+                    }
                 } else if hasBody, let content {
-                    SAOPeekGaugeView(content: content)
+                    SAOPeekGaugeView(content: content, compact: layoutResult.compactBody)
                         .padding(.leading, Self.innerGap)
                         .transition(.opacity.combined(with: .move(edge: .leading)))
                 }
@@ -555,6 +563,7 @@ struct SAOPeekGaugeView: View {
     /// the HUD readout. False on the MacBook layout, where the physical
     /// notch sits in exactly the space it would need.
     var showsEventTitle: Bool = false
+    var compact = false
 
     @State private var urgentPulse = false
     @State private var urgentSettled = false
@@ -565,6 +574,11 @@ struct SAOPeekGaugeView: View {
             let urgent = SAOPeekGauge.isUrgent(islandBody)
             let others = SAOPeekGauge.othersCount(for: islandBody)
 
+            if compact {
+                Image(systemName: "diamond.fill")
+                    .font(.system(size: 6, weight: .bold))
+                    .foregroundStyle(level.tint)
+            } else {
             HStack(spacing: 5) {
                 Image(systemName: "diamond.fill")
                     .font(.system(size: 6, weight: .bold))
@@ -603,6 +617,7 @@ struct SAOPeekGaugeView: View {
             }
             .lineLimit(1)
             .fixedSize(horizontal: true, vertical: false)
+            }
         }
     }
 }
