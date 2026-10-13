@@ -130,4 +130,40 @@ struct ClosedIslandWidthTests {
         controller.setInteractive(false)
         #expect(panel.ignoresMouseEvents)
     }
+    @Test func actualFileDragDuringOpeningAdmitsOnlyVisibleSurfaceAndEndsOnMouseUp() throws {
+        _ = NSApplication.shared
+        let model = isolatedAppModel(settings: SettingsStore(store: store()))
+        model.disablesOverlayEventMonitoringDuringHarness = true
+        model.loadDebugSnapshot(IslandDebugScenario.closedFloating.snapshot(), presentOverlay: false)
+        let controller = model.overlay.overlayPanelController
+        let existing = Set(NSApp.windows.map(\.windowNumber))
+        controller.ensurePanel(model: model, preferredScreenID: nil)
+        let panel = try #require(NSApp.windows.first { !existing.contains($0.windowNumber) && $0 is NSPanel })
+        defer { panel.close() }
+        model.notchOpen(reason: .click)
+        _ = controller.show(model: model, preferredScreenID: nil)
+        controller.setInteractive(true)
+        let openedFrame = panel.frame
+        let inside = NSPoint(x: panel.frame.midX, y: panel.frame.midY)
+        let outside = NSPoint(x: panel.frame.maxX + 10, y: panel.frame.midY)
+        let board = NSPasteboard(name: .drag)
+        board.clearContents()
+        defer { board.clearContents() }
+        controller.handleMouseDragged(inside)
+        #expect(panel.ignoresMouseEvents)
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("opening-drag-\(UUID().uuidString).txt")
+        try Data("owned integration fixture".utf8).write(to: file)
+        defer { try? FileManager.default.removeItem(at: file) }
+        #expect(board.writeObjects([file as NSURL]))
+        controller.handleMouseDragged(inside)
+        #expect(!panel.ignoresMouseEvents)
+        #expect(panel.frame == openedFrame)
+        controller.handleMouseDragged(outside)
+        #expect(panel.ignoresMouseEvents)
+        controller.handleMouseDragged(inside)
+        #expect(!panel.ignoresMouseEvents)
+        controller.endClosedDropTargeting()
+        #expect(panel.ignoresMouseEvents)
+    }
+
 }

@@ -400,8 +400,8 @@ final class OverlayPanelController {
     /// The island does not open for this. Opening puts a wait and a movement
     /// between picking a file up and putting it down, and the pill itself is a
     /// perfectly good place to drop something.
-    private func handleMouseDragged(_ screenLocation: NSPoint) {
-        guard let model, model.notchStatus == .closed else { return }
+    func handleMouseDragged(_ screenLocation: NSPoint) {
+        guard let model, model.notchStatus == .closed || isOpeningTransition else { return }
         guard Self.draggedItemsAreFiles() else { return }
 
         beginClosedDropTargeting()
