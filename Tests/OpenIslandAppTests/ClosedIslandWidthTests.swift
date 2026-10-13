@@ -96,6 +96,8 @@ struct ClosedIslandWidthTests {
         #expect(!OverlayPanelController.shouldIgnoreMouseEvents(status: .closed, insideVisibleSurface: true, carryingFiles: true))
         #expect(!OverlayPanelController.shouldIgnoreMouseEvents(status: .opened, insideVisibleSurface: true, carryingFiles: false))
         #expect(OverlayPanelController.shouldIgnoreMouseEvents(status: .opened, insideVisibleSurface: true, carryingFiles: false, openingTransition: true))
+        #expect(!OverlayPanelController.shouldIgnoreMouseEvents(status: .opened, insideVisibleSurface: true, carryingFiles: true, openingTransition: true))
+        #expect(OverlayPanelController.shouldIgnoreMouseEvents(status: .opened, insideVisibleSurface: false, carryingFiles: true, openingTransition: true))
         let pill = NSRect(x: 0, y: 0, width: 96, height: 28)
         #expect(!OverlayPanelController.pointIsInVisibleSurface(NSPoint(x: 0, y: 0), rect: pill, isNotched: false, opened: false))
         #expect(OverlayPanelController.pointIsInVisibleSurface(NSPoint(x: 48, y: 14), rect: pill, isNotched: false, opened: false))

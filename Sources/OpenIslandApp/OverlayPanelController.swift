@@ -107,7 +107,7 @@ final class OverlayPanelController {
         }
 
         // Whatever the panel is doing now decides its own hit testing.
-        isTargetableWhileClosed = false
+        if !interactive { isTargetableWhileClosed = false }
 
         closedFrameUpdate?.cancel()
         closedFrameUpdate = nil
@@ -426,6 +426,7 @@ final class OverlayPanelController {
     func endClosedDropTargeting() {
         guard isTargetableWhileClosed else { return }
         isTargetableWhileClosed = false
+        updateMousePassthrough(at: NSEvent.mouseLocation)
 
         // The panel is interactive by its own right once open; only put the
         // click-through back if it is still closed.
@@ -456,7 +457,7 @@ final class OverlayPanelController {
         status: NotchStatus, insideVisibleSurface: Bool, carryingFiles: Bool,
         openingTransition: Bool = false
     ) -> Bool {
-        openingTransition || !insideVisibleSurface || (status != .opened && !carryingFiles)
+        (openingTransition && !carryingFiles) || !insideVisibleSurface || (status != .opened && !carryingFiles)
     }
 
     nonisolated static func pointIsInVisibleSurface(_ point: NSPoint, rect: NSRect, isNotched: Bool, opened: Bool) -> Bool {
