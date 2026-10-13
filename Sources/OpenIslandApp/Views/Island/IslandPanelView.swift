@@ -385,6 +385,7 @@ struct IslandPanelView: View {
             VStack(spacing: 0) {
                 openedHeaderContent
                     .frame(height: closedNotchHeight)
+                    .layoutPriority(1)
 
                 openedContent
                     .frame(width: openedWidth)

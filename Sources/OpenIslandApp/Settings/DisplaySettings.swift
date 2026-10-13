@@ -220,7 +220,7 @@ extension DisplaySettings {
         static let maxPanelHeightRange: ClosedRange<Double> = 280...900
 
         /// Matches the measured opened-surface width on a notched display.
-        static let maxPanelWidth: Double = 648
+        static let maxPanelWidth: Double = 552
         static let maxPanelWidthRange: ClosedRange<Double> = 480...900
 
         /// Floor matches the card's own chrome; anything less would clip the
