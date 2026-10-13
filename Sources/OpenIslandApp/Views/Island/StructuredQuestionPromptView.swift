@@ -49,16 +49,9 @@ struct StructuredQuestionPromptView: View {
                         .foregroundStyle(V6Palette.paper.opacity(0.78))
                     }
 
-                    // Only the questions scroll. The submit button below stays
-                    // put: with a long list it used to be pushed off the
-                    // bottom of the card with no way to reach it, which left
-                    // the question unanswerable from the island at all.
-                    AutoHeightScrollView(maxHeight: IslandChromeMetrics.questionOptionsViewportHeight(
-                        maxPanelHeight: SettingsStore.shared.display.maxPanelHeight)) {
-                        VStack(alignment: .leading, spacing: 8) {
-                            ForEach(structuredQuestions, id: \.responseKey) { question in
-                                questionRow(question)
-                            }
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(structuredQuestions, id: \.responseKey) { question in
+                            questionRow(question)
                         }
                     }
 
@@ -114,12 +107,27 @@ struct StructuredQuestionPromptView: View {
                 .foregroundStyle(V6Palette.paper.opacity(0.88))
                 .fixedSize(horizontal: false, vertical: true)
 
-            Text(question.multiSelect ? lang.t("decision.option.multiple") : lang.t("decision.option.single"))
-                .font(.islandDecision(size: 12))
-                .foregroundStyle(V6Palette.paper.opacity(0.78))
-            VStack(alignment: .leading, spacing: 6) {
-                ForEach(Array(question.options.enumerated()), id: \.element.id) { index, option in
-                    optionRow(option, optionIndex: index, question: question)
+            if !question.options.isEmpty {
+                Text(question.multiSelect ? lang.t("decision.option.multiple") : lang.t("decision.option.single"))
+                    .font(.islandDecision(size: 12))
+                    .foregroundStyle(V6Palette.paper.opacity(0.78))
+            }
+            if question.options.isEmpty {
+                ReplyTextField(
+                    placeholder: lang.t("question.otherPlaceholder"),
+                    text: Binding(
+                        get: { freeformTexts[question.responseKey] ?? "" },
+                        set: { freeformTexts[question.responseKey] = $0 }
+                    ),
+                    onSubmit: submitAnswer
+                )
+                .frame(height: 30)
+                .padding(.horizontal, 10)
+            } else {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(Array(question.options.enumerated()), id: \.element.id) { index, option in
+                        optionRow(option, optionIndex: index, question: question)
+                    }
                 }
             }
         }
@@ -320,8 +328,8 @@ struct StructuredQuestionPromptView: View {
     }
 
     private var showsGlobalReplyField: Bool {
-        allowsUnstructuredReply && (structuredQuestions.isEmpty || !structuredQuestions.contains { question in
-            question.options.contains { $0.allowsFreeform }
+        allowsUnstructuredReply && (structuredQuestions.isEmpty || structuredQuestions.allSatisfy { question in
+            !question.options.isEmpty && !question.options.contains { $0.allowsFreeform }
         })
     }
 
@@ -383,6 +391,7 @@ struct StructuredQuestionPromptView: View {
 
     private func isAnswered(_ question: QuestionPromptItem) -> Bool {
         let selected = selectedLabels(for: question)
+        if question.options.isEmpty { return !trimmedQuestionReply(for: question).isEmpty }
         guard !selected.isEmpty else { return false }
         for option in question.options where option.allowsFreeform && selected.contains(option.label) {
             if trimmedFreeform(for: question, option: option).isEmpty {
@@ -395,6 +404,7 @@ struct StructuredQuestionPromptView: View {
     private var hasCompleteSelection: Bool {
         structuredQuestions.allSatisfy { question in
             let selected = selectedLabels(for: question)
+            if question.options.isEmpty { return !trimmedQuestionReply(for: question).isEmpty }
             guard !selected.isEmpty else {
                 return false
             }
@@ -414,6 +424,10 @@ struct StructuredQuestionPromptView: View {
 
     private func resolvedAnswers(for question: QuestionPromptItem) -> [String] {
         let selected = selectedLabels(for: question)
+        if question.options.isEmpty {
+            let text = trimmedQuestionReply(for: question)
+            return text.isEmpty ? [] : [text]
+        }
         guard !selected.isEmpty else { return [] }
 
         let optionOrder = question.options
@@ -455,6 +469,10 @@ struct StructuredQuestionPromptView: View {
             return V6Palette.paper.opacity(0.13)
         }
         return V6Palette.paper.opacity(0.045)
+    }
+
+    private func trimmedQuestionReply(for question: QuestionPromptItem) -> String {
+        (freeformTexts[question.responseKey] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private func trimmedFreeform(for question: QuestionPromptItem, option: QuestionOption) -> String {
