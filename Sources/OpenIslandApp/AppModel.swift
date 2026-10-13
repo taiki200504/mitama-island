@@ -1648,7 +1648,8 @@ final class AppModel {
             clipboardIsEnabled: settings.clipboard.enabled,
             nowPlayingTrack: nowPlaying.state.flatMap { state in
                 state.title.map { StatusMenuInputs.NowPlayingTrack(title: $0, isPlaying: state.isPlaying) }
-            }
+            },
+            ambientListenIsEnabled: settings.ambientListen.isEnabled
         )
     }
 
