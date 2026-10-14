@@ -62,6 +62,25 @@ struct IslandVisibilityTests {
     }
 
     @Test
+    func manualOnlyKeepsActionableRequestsAndSuppressesOrdinaryUpdates() {
+        let (model, settings) = makeModel()
+        settings.behaviour.manualOnly = true
+        settings.sound.isMuted = true
+        model.disablesOverlayEventMonitoringDuringHarness = true
+        defer { model.notchClose() }
+        for phase in [SessionPhase.waitingForApproval, .waitingForAnswer, .running, .completed] {
+            var session = liveSession()
+            session.phase = phase
+            model.state = SessionState(sessions: [session])
+            model.notchOpen(reason: .notification, surface: .sessionList(actionableSessionID: session.id))
+            let actionable = phase == .waitingForApproval || phase == .waitingForAnswer
+            #expect((model.notchStatus == .opened) == actionable)
+            model.notchClose()
+            #expect(!model.islandMayBeVisible)
+        }
+    }
+
+    @Test
     func hiddenPillDoesNotCaptureTopBarClicks() {
         let (model, settings) = makeModel()
         settings.behaviour.manualOnly = true
