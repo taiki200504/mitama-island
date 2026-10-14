@@ -20,6 +20,10 @@ final class PanelHotkeyCoordinator {
     private let layoutObserver = DistributedObserverBox()
 
     /// Called when a panel action fires. The receiver decides what it applies to.
+    var manualOnly = false {
+        didSet { if manualOnly != oldValue { startPersistentBindings() } }
+    }
+    var onToggleIsland: (() -> Void)?
     var onAction: ((PanelShortcutAction) -> Void)?
     /// The switcher key, with `true` when Shift was held to go backwards.
     var onSwitcherKey: ((Bool) -> Void)?
@@ -70,6 +74,7 @@ final class PanelHotkeyCoordinator {
         Self.logger.notice("Fired \(id, privacy: .public)")
 
         switch id {
+        case Self.islandToggleBindingID: onToggleIsland?()
         case Self.switcherBindingID:        onSwitcherKey?(false)
         case Self.switcherReverseBindingID: onSwitcherKey?(true)
         case Self.switcherNextBindingID:    onSwitcherNavigate?(false)
@@ -89,6 +94,7 @@ final class PanelHotkeyCoordinator {
 
     // MARK: Switcher
 
+    static let islandToggleBindingID = "island.toggle"
     static let switcherBindingID = "switcher.open"
     static let switcherReverseBindingID = "switcher.openReverse"
     static let switcherNextBindingID = "switcher.next"
@@ -131,8 +137,16 @@ final class PanelHotkeyCoordinator {
 
     /// The one always-live shortcut. Registered at startup and never released.
     func startPersistentBindings() {
+        let islandBinding = resolver.keyCode(for: "I").map {
+            HotkeyBinding(id: Self.islandToggleBindingID, keyCode: $0,
+                          modifiers: [.control, .option], scope: .persistent)
+        }
         guard settings.keyboardShortcutsEnabled else {
-            registrar.removeBindings(for: .persistent)
+            if manualOnly, let islandBinding {
+                registrar.setBindings([islandBinding], for: .persistent)
+            } else {
+                registrar.removeBindings(for: .persistent)
+            }
             return
         }
         var bindings = [
@@ -143,6 +157,7 @@ final class PanelHotkeyCoordinator {
                 scope: .persistent
             )
         ]
+        if let islandBinding { bindings.append(islandBinding) }
         if touchlessActivationEnabled {
             bindings.append(
                 HotkeyBinding(
@@ -217,7 +232,11 @@ final class PanelHotkeyCoordinator {
             startPersistentBindings()
             if panelIsExpanded { panelDidExpand() }
         } else {
-            registrar.removeBindings(for: .persistent)
+            if manualOnly {
+                startPersistentBindings()
+            } else {
+                registrar.removeBindings(for: .persistent)
+            }
             registrar.removeBindings(for: .panelExpanded)
             registrar.removeBindings(for: .switcherActive)
         }

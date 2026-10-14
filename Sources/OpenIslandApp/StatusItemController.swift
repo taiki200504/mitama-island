@@ -29,7 +29,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         guard statusItem == nil else { return }
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         item.button?.imagePosition = .imageOnly
-        let menu = NSMenu()
+        let menu = IslandStatusMenu()
         menu.delegate = self
         item.menu = menu
         statusItem = item
@@ -75,6 +75,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         addItem(model.lang.t("statusItem.manualOnly"), to: menu) { [weak model] in
             guard let model else { return }
             model.settings.behaviour.manualOnly.toggle()
+            model.panelHotkeys?.manualOnly = model.settings.behaviour.manualOnly
             model.notchClose()
             model.refreshOverlayPlacement()
         }
@@ -93,8 +94,10 @@ final class StatusItemController: NSObject, NSMenuDelegate {
                         : model.lang.t("statusItem.openIsland"),
                     to: menu
                 ) { [weak model] in
-                    model?.notchOpen(reason: .click)
+                    model?.toggleOverlay()
                 }
+                menu.items.last?.keyEquivalent = "i"
+                menu.items.last?.keyEquivalentModifierMask = [.control, .option]
             case .toggleMute(let isMuted):
                 addItem(
                     model.lang.t(isMuted ? "statusItem.unmute" : "settings.sound.mute"),
@@ -260,5 +263,17 @@ enum StatusIconRenderer {
         path.line(to: NSPoint(x: rect.minX, y: rect.midY + chamfer))
         path.close()
         return path
+    }
+}
+
+/// Display the global Carbon binding without also dispatching an AppKit action.
+@MainActor
+final class IslandStatusMenu: NSMenu {
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if event.charactersIgnoringModifiers?.lowercased() == "i",
+           event.modifierFlags.intersection(.deviceIndependentFlagsMask) == [.control, .option] {
+            return false
+        }
+        return super.performKeyEquivalent(with: event)
     }
 }

@@ -837,7 +837,7 @@
 "clipboard.kind.image" = "圖片";
 
 /* Status Item (Menu Bar) */
-"statusItem.openIsland" = "開啟島";
+"statusItem.openIsland" = "開啟 / 關閉島";
 "statusItem.openIsland.waiting" = "開啟島（%d 項等待）";
 "statusItem.unmute" = "取消靜音";
 "statusItem.cameraOn" = "喚醒攝影機";

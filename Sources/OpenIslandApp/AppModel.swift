@@ -3648,6 +3648,8 @@ final class AppModel {
             registrar: CarbonHotkeyController(),
             settings: settings.shortcuts
         )
+        coordinator.manualOnly = settings.behaviour.manualOnly
+        coordinator.onToggleIsland = { [weak self] in self?.toggleOverlay() }
         coordinator.onAction = { [weak self] action in
             self?.performShortcut(action)
         }

@@ -838,7 +838,7 @@
 "clipboard.kind.image" = "Image";
 
 /* Status Item (Menu Bar) */
-"statusItem.openIsland" = "Open the Island";
+"statusItem.openIsland" = "Open / close island";
 "statusItem.openIsland.waiting" = "Open the Island (%d waiting)";
 "statusItem.unmute" = "Unmute";
 "statusItem.cameraOn" = "Wake the Camera";
