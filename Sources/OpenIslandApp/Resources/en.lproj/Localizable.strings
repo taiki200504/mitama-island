@@ -839,7 +839,7 @@
 
 /* Status Item (Menu Bar) */
 "statusItem.openIsland" = "Open / close island";
-"statusItem.openIsland.waiting" = "Open the Island (%d waiting)";
+"statusItem.openIsland.waiting" = "Open / close island (%d waiting)";
 "statusItem.unmute" = "Unmute";
 "statusItem.cameraOn" = "Wake the Camera";
 "statusItem.cameraOff" = "Close the Camera";

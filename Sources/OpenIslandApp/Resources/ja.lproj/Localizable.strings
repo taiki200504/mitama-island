@@ -839,7 +839,7 @@
 
 /* Status Item (Menu Bar) */
 "statusItem.openIsland" = "島を開く / 閉じる";
-"statusItem.openIsland.waiting" = "島を開く（%d件待ち）";
+"statusItem.openIsland.waiting" = "島を開く / 閉じる（%d件待ち）";
 "statusItem.unmute" = "ミュート解除";
 "statusItem.cameraOn" = "カメラを起こす";
 "statusItem.cameraOff" = "カメラを閉じる";

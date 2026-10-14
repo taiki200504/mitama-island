@@ -839,7 +839,7 @@
 
 /* Status Item (Menu Bar) */
 "statusItem.openIsland" = "打开 / 关闭岛";
-"statusItem.openIsland.waiting" = "打开岛（%d 项等待）";
+"statusItem.openIsland.waiting" = "打开 / 关闭岛（%d 项等待）";
 "statusItem.unmute" = "取消静音";
 "statusItem.cameraOn" = "唤醒摄像头";
 "statusItem.cameraOff" = "关闭摄像头";
