@@ -987,3 +987,5 @@
 "decision.paseo.forwardedOpen" = "在Paseo中打开此问题的对话";
 
 "nowPlaying.unavailable" = "当前环境无法获取正在播放的信息。";
+
+"statusItem.manualOnly" = "仅在需要时显示";

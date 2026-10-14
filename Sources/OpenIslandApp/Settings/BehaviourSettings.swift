@@ -98,6 +98,12 @@ final class BehaviourSettings: PreferenceGroup {
 
     // MARK: Visibility
 
+    /// Hide the closed pill; explicit opens and actionable requests remain available.
+    var manualOnly: Bool {
+        get { read(\.manualOnly, Keys.manualOnly, false) }
+        set { write(\.manualOnly, Keys.manualOnly, newValue) }
+    }
+
     var hideInFullscreen: Bool {
         get { read(\.hideInFullscreen, Keys.hideInFullscreen, false) }
         set { write(\.hideInFullscreen, Keys.hideInFullscreen, newValue) }
@@ -242,6 +248,7 @@ extension BehaviourSettings {
         static let expandOnHover = "behaviour.expandOnHover"
         static let hoverDuration = "behaviour.hoverDuration"
         static let autoExpandOnAgentTeamComplete = "behaviour.autoExpandOnAgentTeamComplete"
+        static let manualOnly = "behaviour.manualOnly"
         static let hideInFullscreen = "behaviour.hideInFullscreen"
         /// The key this behaviour has always been stored under.
         static let smartSuppression = "app.suppressFrontmostNotifications"

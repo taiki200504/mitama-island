@@ -197,6 +197,16 @@ final class OverlayUICoordinator {
     }
 
     func notchOpen(reason: NotchOpenReason, surface: IslandSurface = .sessionList()) {
+        if settings.behaviour.manualOnly {
+            switch reason {
+            case .hover, .boot, .handGesture: return
+            case .notification:
+                guard let id = surface.sessionID,
+                      let session = appModel?.state.session(id: id),
+                      session.phase == .waitingForApproval || session.phase == .waitingForAnswer else { return }
+            case .click, .switcher: break
+            }
+        }
         // The gesture already gets its own distinct cue at the call site in
         // `AppModel.notchOpen`; playing this one too would double up on a
         // single pull of the hand. A notification already played its own
@@ -304,7 +314,7 @@ final class OverlayUICoordinator {
     }
 
     func notchPop() {
-        guard notchStatus == .closed else { return }
+        guard !settings.behaviour.manualOnly, notchStatus == .closed else { return }
         islandSurface = .sessionList()
         presentSneakPeek(
             IslandSneakPeek(
@@ -484,6 +494,9 @@ final class OverlayUICoordinator {
     /// Separate from "is it open": these are conditions under which even the
     /// collapsed pill should get out of the way.
     var islandMayBeVisible: Bool {
+        if settings.behaviour.manualOnly {
+            return notchStatus == .opened
+        }
         if settings.behaviour.hideInFullscreen, Self.isFrontmostWindowFullscreen() {
             return false
         }

@@ -987,3 +987,5 @@
 "decision.paseo.forwardedOpen" = "Open this question’s conversation in Paseo";
 
 "nowPlaying.unavailable" = "Now-playing information is unavailable in this environment.";
+
+"statusItem.manualOnly" = "Show only when needed";

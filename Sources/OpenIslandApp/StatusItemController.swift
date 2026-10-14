@@ -72,6 +72,15 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.removeAllItems()
         actions.removeAll()
 
+        addItem(model.lang.t("statusItem.manualOnly"), to: menu) { [weak model] in
+            guard let model else { return }
+            model.settings.behaviour.manualOnly.toggle()
+            model.notchClose()
+            model.refreshOverlayPlacement()
+        }
+        menu.items.last?.state = model.settings.behaviour.manualOnly ? .on : .off
+        menu.addItem(.separator())
+
         let shelfItems = model.shelf.items
         var shelfIndex = 0
 

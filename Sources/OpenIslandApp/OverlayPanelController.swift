@@ -72,7 +72,7 @@ final class OverlayPanelController {
         let panel = self.panel ?? makePanel(model: model)
         self.panel = panel
         positionPanel(panel, preferredScreenID: preferredScreenID, animated: false)
-        panel.orderFrontRegardless()
+        presentPanel(panel, activates: false)
         panel.ignoresMouseEvents = true
         panel.acceptsMouseMovedEvents = false
         startEventMonitoring()
@@ -107,9 +107,7 @@ final class OverlayPanelController {
         panel.ignoresMouseEvents = !interactive
         panel.acceptsMouseMovedEvents = interactive
 
-        if interactive {
-            presentPanel(panel, activates: Self.shouldActivatePanel(for: model?.notchOpenReason))
-        }
+        presentPanel(panel, activates: interactive && Self.shouldActivatePanel(for: model?.notchOpenReason))
     }
 
     func reposition(preferredScreenID: String?) -> OverlayPlacementDiagnostics? {
@@ -118,7 +116,9 @@ final class OverlayPanelController {
             return placementDiagnostics(preferredScreenID: preferredScreenID)
         }
 
-        return positionPanel(panel, preferredScreenID: preferredScreenID, animated: true)
+        let diagnostics = positionPanel(panel, preferredScreenID: preferredScreenID, animated: true)
+        presentPanel(panel, activates: false)
+        return diagnostics
     }
 
     func placementDiagnostics(preferredScreenID: String?) -> OverlayPlacementDiagnostics? {
