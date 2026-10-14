@@ -371,7 +371,7 @@ final class OverlayPanelController {
     private var isTargetableWhileClosed = false
 
     private func beginClosedDropTargeting() {
-        guard !isTargetableWhileClosed, let panel else { return }
+        guard model?.islandMayBeVisible == true, !isTargetableWhileClosed, let panel else { return }
 
         // Done as soon as the drag starts, wherever it started: AppKit works
         // out which windows can take a drop as the session moves, and a window
@@ -590,7 +590,7 @@ final class OverlayPanelController {
     /// == .closed`), so `interactiveRect` reporting the opened rect while
     /// opened is harmless here; nothing reads it in that case.
     func isPointInClosedSurfaceArea(_ screenPoint: NSPoint) -> Bool {
-        guard let model else { return false }
+        guard let model, model.islandMayBeVisible else { return false }
 
         guard model.notchStatus != .opened else {
             // Called on every mouse move regardless of state, but nothing

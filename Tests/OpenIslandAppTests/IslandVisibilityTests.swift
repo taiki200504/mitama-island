@@ -62,6 +62,15 @@ struct IslandVisibilityTests {
     }
 
     @Test
+    func hiddenPillDoesNotCaptureTopBarClicks() {
+        let (model, settings) = makeModel()
+        settings.behaviour.manualOnly = true
+        let controller = OverlayPanelController()
+        controller.model = model
+        #expect(!controller.isPointInClosedSurfaceArea(.zero))
+    }
+
+    @Test
     func manualOnlyExplicitToggleOpensAndCloses() {
         let (_, settings) = makeModel()
         settings.behaviour.manualOnly = true
