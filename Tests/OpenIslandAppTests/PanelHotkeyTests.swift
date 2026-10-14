@@ -22,6 +22,12 @@ final class RecordingHotkeyRegistrar: HotkeyRegistering {
     }
 }
 
+@MainActor
+private final class MenuToggleCounter: NSObject {
+    var count = 0
+    @objc func toggle(_ sender: Any?) { count += 1 }
+}
+
 @Suite("Keycode resolution")
 struct KeycodeResolverTests {
     private let resolver = KeycodeResolver(table: KeycodeResolver.usFallbackTable)
@@ -107,14 +113,18 @@ struct PanelHotkeyCoordinatorTests {
     @Test("Status menu shows the key but does not dispatch a second toggle")
     func menuDoesNotDoubleFire() {
         let menu = IslandStatusMenu()
-        let item = NSMenuItem(title: "Open / close island", action: nil, keyEquivalent: "i")
+        let counter = MenuToggleCounter()
+        let item = NSMenuItem(title: "Open / close island",
+            action: #selector(MenuToggleCounter.toggle(_:)), keyEquivalent: "i")
+        item.target = counter
         item.keyEquivalentModifierMask = [.control, .option]
         menu.addItem(item)
         let event = NSEvent.keyEvent(with: .keyDown, location: .zero,
-            modifierFlags: [.control, .option], timestamp: 0, windowNumber: 0,
+            modifierFlags: [.control, .option, .capsLock], timestamp: 0, windowNumber: 0,
             context: nil, characters: "i", charactersIgnoringModifiers: "i",
             isARepeat: false, keyCode: 34)!
         #expect(menu.performKeyEquivalent(with: event) == false)
+        #expect(counter.count == 0)
         #expect(item.keyEquivalent == "i")
         #expect(item.keyEquivalentModifierMask == [.control, .option])
     }

@@ -271,7 +271,7 @@ enum StatusIconRenderer {
 final class IslandStatusMenu: NSMenu {
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         if event.charactersIgnoringModifiers?.lowercased() == "i",
-           event.modifierFlags.intersection(.deviceIndependentFlagsMask) == [.control, .option] {
+           event.modifierFlags.intersection([.control, .option, .shift, .command]) == [.control, .option] {
             return false
         }
         return super.performKeyEquivalent(with: event)
