@@ -1018,3 +1018,8 @@
 
 "island.header.record" = "Record";
 "island.header.recording" = "Recording";
+
+"keepAwake.mode.alwaysOn" = "Always on (until Mac mini)";
+"keepAwake.alwaysOn.short" = "Always on";
+"keepAwake.alwaysOn.paused" = "Always-on holding paused due to heat or battery level.";
+"keepAwake.alwaysOn.resumed" = "Always-on holding resumed after conditions recovered.";

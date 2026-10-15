@@ -28,6 +28,19 @@ extension AppModel {
     }
 
     func setManualKeepAwake(_ mode: ManualKeepAwakePolicy.Mode) {
+        if mode == .alwaysOn {
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                await lidSleep.preparePermission()
+                activateManualKeepAwake(mode)
+            }
+        } else {
+            activateManualKeepAwake(mode)
+        }
+    }
+
+    private func activateManualKeepAwake(_ mode: ManualKeepAwakePolicy.Mode) {
+        alwaysOnSuspended = false
         settings.behaviour.manualKeepAwakeStartedAt = Date().timeIntervalSince1970
         settings.behaviour.manualKeepAwakeMode = mode
         refreshKeepAwake()
@@ -44,7 +57,7 @@ extension AppModel {
             let minutes = remaining.isFinite ? min(480, ceil(remaining / 60)) : 0
             return lang.t("keepAwake.remaining", Int(minutes))
         }
-        return lang.t(mode.labelKey)
+        return lang.t(mode == .alwaysOn ? "keepAwake.alwaysOn.short" : mode.labelKey)
     }
 
     func refreshKeepAwake() {
@@ -55,7 +68,7 @@ extension AppModel {
             mode: behaviour.manualKeepAwakeMode, now: Date(),
             startedAt: Date(timeIntervalSince1970: behaviour.manualKeepAwakeStartedAt),
             conditions: power.conditions, runningCount: liveRunningCount,
-            displayToo: behaviour.keepAwakeDisplay
+            displayToo: behaviour.keepAwakeDisplay, wasSuspended: alwaysOnSuspended
         )
         var manualHold = false
         var displayToo = false
@@ -63,8 +76,17 @@ extension AppModel {
         case .hold(let display):
             manualHold = true
             displayToo = display
+            if behaviour.manualKeepAwakeMode == .alwaysOn && alwaysOnSuspended {
+                present(notice: lang.t("keepAwake.alwaysOn.resumed"))
+            }
+            alwaysOnSuspended = false
         case .release(let reason):
-            if behaviour.manualKeepAwakeMode != .off {
+            if behaviour.manualKeepAwakeMode == .alwaysOn {
+                if !alwaysOnSuspended {
+                    present(notice: lang.t("keepAwake.alwaysOn.paused"))
+                }
+                alwaysOnSuspended = true
+            } else if behaviour.manualKeepAwakeMode != .off {
                 behaviour.manualKeepAwakeMode = .off
                 if reason.isSafetyRelease { present(notice: lang.t("keepAwake.release.\(reason.rawValue)")) }
             }
@@ -73,8 +95,10 @@ extension AppModel {
             enabled: behaviour.keepsAwakeWhileRunning,
             runningCount: liveRunningCount, conditions: power.conditions
         )
-        keepAwake.apply(manualHold ? .hold : automatic, displayToo: displayToo)
-        lidSleep.setEnabled(manualHold && behaviour.keepAwakeClosedLid && power.isOnAC)
+        let suspended = behaviour.manualKeepAwakeMode == .alwaysOn && alwaysOnSuspended
+        keepAwake.apply(suspended ? .release(.disabled) : (manualHold ? .hold : automatic), displayToo: displayToo)
+        lidSleep.setEnabled(manualHold && (behaviour.manualKeepAwakeMode == .alwaysOn
+                            || (behaviour.keepAwakeClosedLid && power.isOnAC)))
     }
 
     private func trackKeepAwake() {
