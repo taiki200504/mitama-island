@@ -123,11 +123,15 @@ struct ApprovalSuggestedUpdatesTests {
 /// Answering several queued requests at once.
 @MainActor
 struct BatchApprovalTests {
-    private func makeModel() -> AppModel {
+    private func makeModel(delivery: HookAnswerDeliveryFixture? = nil) -> AppModel {
         let name = "batch-\(UUID().uuidString)"
         let suite = UserDefaults(suiteName: name)!
         suite.removePersistentDomain(forName: name)
-        return isolatedAppModel(settings: SettingsStore(store: PreferenceStore(suite: suite)))
+        return isolatedAppModel(settings: SettingsStore(store: PreferenceStore(suite: suite)),
+            hookAnswerSender: { command in
+                guard let delivery else { return .rejected }
+                return await delivery.send(command)
+            })
     }
 
     private func waiting(_ id: String) -> AgentSession {
@@ -177,24 +181,72 @@ struct BatchApprovalTests {
 
     /// Every queued request has to be answered, not just the one on screen.
     @Test
-    func resolvingAllClearsEveryPendingRequest() {
-        let model = makeModel()
+    func resolvingAllClearsEveryPendingRequest() async throws {
+        let delivery = HookAnswerDeliveryFixture()
+        defer { delivery.reply(.rejected) }
+        let model = makeModel(delivery: delivery)
         model.state = SessionState(sessions: [waiting("a"), waiting("b"), running("c")])
 
         model.resolveAllPendingApprovals(.allowOnce)
+        try await delivery.waitForCommands(2)
+        #expect(model.pendingApprovalSessions.count == 2)
+        let expected = ["a", "b"].map { id in
+            BridgeCommand.resolvePermission(sessionID: id, resolution: .allowOnce(),
+                expectedRequestID: model.state.session(id: id)?.permissionRequest?.id)
+        }
+        #expect(expected.allSatisfy { delivery.commands.contains($0) })
+        delivery.reply()
+        try await delivery.waitForCompletion(model)
 
         #expect(model.pendingApprovalSessions.isEmpty)
+        for id in ["a", "b"] {
+            #expect(model.state.session(id: id)?.permissionRequest == nil)
+            #expect(model.state.session(id: id)?.phase == .running)
+        }
         #expect(model.state.session(id: "c")?.phase == .running)
     }
 
     @Test
-    func denyingAllAlsoClearsThem() {
-        let model = makeModel()
+    func denyingAllAlsoClearsThem() async throws {
+        let delivery = HookAnswerDeliveryFixture()
+        defer { delivery.reply(.rejected) }
+        let model = makeModel(delivery: delivery)
         model.state = SessionState(sessions: [waiting("a"), waiting("b")])
 
         model.resolveAllPendingApprovals(.deny)
+        try await delivery.waitForCommands(2)
+        #expect(model.pendingApprovalSessions.count == 2)
+        let expected = ["a", "b"].map { id in
+            BridgeCommand.resolvePermission(sessionID: id, resolution: .deny(message: "Permission denied in Open Island.", interrupt: false),
+                expectedRequestID: model.state.session(id: id)?.permissionRequest?.id)
+        }
+        #expect(expected.allSatisfy { delivery.commands.contains($0) })
+        delivery.reply()
+        try await delivery.waitForCompletion(model)
 
         #expect(model.pendingApprovalSessions.isEmpty)
+        for id in ["a", "b"] {
+            #expect(model.state.session(id: id)?.permissionRequest == nil)
+            #expect(model.state.session(id: id)?.phase == .completed)
+        }
+    }
+
+    @Test
+    func rejectedBatchDeliveryKeepsEveryPendingRequest() async throws {
+        let delivery = HookAnswerDeliveryFixture()
+        defer { delivery.reply(.rejected) }
+        let model = makeModel(delivery: delivery)
+        model.state = SessionState(sessions: [waiting("a"), waiting("b")])
+        let requests = model.pendingApprovalSessions.map { $0.permissionRequest?.id }
+
+        model.resolveAllPendingApprovals(.allowOnce)
+        try await delivery.waitForCommands(2)
+        delivery.reply(.rejected)
+        try await delivery.waitForCompletion(model)
+
+        #expect(model.pendingApprovalSessions.map { $0.permissionRequest?.id } == requests)
+        #expect(model.paseoErrors["a"] != nil)
+        #expect(model.paseoErrors["b"] != nil)
     }
 
     /// "Allow All" on three sessions used to play the approve chime three

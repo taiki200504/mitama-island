@@ -849,6 +849,11 @@
 "statusItem.clipboard.open" = "Clipboard…";
 "statusItem.nowPlaying.playing" = "Now Playing: %@";
 "statusItem.nowPlaying.paused" = "Paused: %@";
+"statusItem.raphael" = "Raphael";
+"statusItem.raphael.enable" = "Show";
+"statusItem.raphael.micMute" = "Mute Microphone";
+"statusItem.raphael.voiceMute" = "Mute Voice";
+"statusItem.raphael.notInstalled" = "Raphael (Not Installed)";
 "statusItem.shelf.header" = "Set Aside (%d)";
 "statusItem.settings" = "Settings…";
 "session.stalled" = "No activity for a while";
@@ -989,3 +994,21 @@
 "nowPlaying.unavailable" = "Now-playing information is unavailable in this environment.";
 
 "mitamaOS.open" = "Open mitama OS";
+// Manual keep awake
+"keepAwake.title" = "Stay awake";
+"keepAwake.mode.off" = "Off";
+"keepAwake.mode.oneHour" = "1 hour";
+"keepAwake.mode.threeHours" = "3 hours";
+"keepAwake.mode.eightHours" = "8 hours";
+"keepAwake.mode.indefinite" = "Indefinitely";
+"keepAwake.mode.untilFinished" = "Until agents finish working";
+"keepAwake.remaining" = "%d minutes left";
+"keepAwake.stop" = "Stop";
+"keepAwake.display" = "Keep the display awake too";
+"keepAwake.closedLid" = "Stay awake with the lid closed";
+"keepAwake.closedLid.help" = "Manual mode on AC power only. Your password is requested only for initial setup. After that, unplugging power automatically restores sleep.";
+"keepAwake.closedLid.revoke" = "Remove this permission";
+"keepAwake.release.tooHot" = "Stay awake stopped because the Mac is too hot.";
+"keepAwake.release.batteryLow" = "Stay awake stopped because the battery is below 20%.";
+"keepAwake.release.lidClosedOnBattery" = "Stay awake stopped because the lid is closed on battery power.";
+"keepAwake.restoreFailed" = "Could not change the sleep setting. Allow administrator authentication and try stopping again.";

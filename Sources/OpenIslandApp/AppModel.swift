@@ -646,6 +646,8 @@ final class AppModel {
     /// own gauge instead of macOS's built-in on-screen display, when
     /// `settings.hud.replacesSystem` is on.
     let systemHUD = SystemHUDCoordinator()
+    /// The current state of the Raphael desktop companion, or nil if unavailable.
+    var raphaelStatus: RaphaelStatus?
 
     /// Holds no microphone until the key is pressed with a card waiting.
     @ObservationIgnored let voiceAnswer: VoiceCommandSession
@@ -703,6 +705,8 @@ final class AppModel {
     /// Reads the battery, the heat and the lid. Holds the camera to account.
     @ObservationIgnored let power = PowerMonitor()
     @ObservationIgnored let keepAwake = KeepAwakeController()
+    @ObservationIgnored let lidSleep = LidSleepController()
+    @ObservationIgnored var isStoppingKeepAwake = false
     @ObservationIgnored let keepAwakeTimer = RepeatingTimerBox()
     /// The last thing power said no to, so the sentence is said once rather
     /// than on every card that arrives.
@@ -891,6 +895,7 @@ final class AppModel {
 
     @ObservationIgnored
     private let bridgeServer = BridgeServer()
+    private let hookAnswerSender: (@Sendable (BridgeCommand) async throws -> BridgeResponse?)?
 
     @ObservationIgnored
     private var bridgeClient = LocalBridgeClient()
@@ -970,8 +975,10 @@ final class AppModel {
         settings: SettingsStore = .shared,
         quietScenes: QuietSceneMonitor = QuietSceneMonitor(),
         paseoQuestions: PaseoQuestionCoordinator = PaseoQuestionCoordinator(),
-        discovery: SessionDiscoveryCoordinator = SessionDiscoveryCoordinator()
+        discovery: SessionDiscoveryCoordinator = SessionDiscoveryCoordinator(),
+        hookAnswerSender: (@Sendable (BridgeCommand) async throws -> BridgeResponse?)? = nil
     ) {
+        self.hookAnswerSender = hookAnswerSender
         self.discovery = discovery
         self.quietScenes = quietScenes
         self.paseoQuestions = paseoQuestions
@@ -1651,7 +1658,8 @@ final class AppModel {
             nowPlayingTrack: nowPlaying.state.flatMap { state in
                 state.title.map { StatusMenuInputs.NowPlayingTrack(title: $0, isPlaying: state.isPlaying) }
             },
-            ambientListenIsEnabled: settings.ambientListen.isEnabled
+            ambientListenIsEnabled: settings.ambientListen.isEnabled,
+            raphaelStatus: raphaelStatus
         )
     }
 
@@ -2874,27 +2882,14 @@ final class AppModel {
     }
 
     func approveFocusedPermission(_ approved: Bool) {
-        guard let session = focusedSession else {
-            return
-        }
-
-        send(
-            .resolvePermission(sessionID: session.id, resolution: permissionResolution(for: approved)),
-            userMessage: approved
-                ? "Approving permission for \(session.title)."
-                : "Denying permission for \(session.title)."
-        )
+        guard let session = focusedSession else { return }
+        approvePermission(for: session.id, approved: approved)
     }
 
     func answerFocusedQuestion(_ answer: String) {
-        guard let session = focusedSession else {
-            return
-        }
-
-        send(
-            .answerQuestion(sessionID: session.id, response: QuestionPromptResponse(answer: answer)),
-            userMessage: "Sending answer \"\(answer)\" for \(session.title)."
-        )
+        guard let session = focusedSession else { return }
+        answerQuestion(for: session.id, answer: QuestionPromptResponse(answer: answer),
+                       promptID: session.questionPrompt?.id)
     }
 
     /// Moves the mark to whichever row the hand is pointing at.
@@ -3054,7 +3049,10 @@ final class AppModel {
             return
         }
 
-        if let expectedRequestID, session.permissionRequest?.id != expectedRequestID { return }
+        if let expectedRequestID, session.permissionRequest?.id != expectedRequestID {
+            paseoErrors[sessionID] = "要求が更新されました。表示を確認して回答してください。"
+            return
+        }
         if let pending = paseoQuestions.requests[sessionID], pending.permission != nil {
             guard session.permissionRequest?.paseoContext?.requestID == pending.requestID else {
                 // 別経路（フック）の要求がカードを上書きしたまま、Paseo 側は変わらず
@@ -3108,15 +3106,9 @@ final class AppModel {
         case .deny:
             resolution = .deny(message: "Permission denied in Open Island.", interrupt: false)
             message = "Denying permission for \(session.title)."
-            if playsSound {
-                NotificationSoundService.play(.reject, settings: settings.sound)
-            }
         case .allowOnce:
             resolution = .allowOnce()
             message = "Approving permission for \(session.title)."
-            if playsSound {
-                NotificationSoundService.play(.approve, settings: settings.sound)
-            }
         case .paseoAction:
             return
         case let .allowWithUpdates(updates):
@@ -3124,21 +3116,15 @@ final class AppModel {
                !updates.allSatisfy({ session.permissionRequest?.suggestedUpdates.contains($0) == true }) { return }
             resolution = .allowOnce(updatedPermissions: updates)
             message = "Always allowing for \(session.title)."
-            if playsSound {
-                NotificationSoundService.play(.approve, settings: settings.sound)
-            }
         }
 
-        dismissNotificationSurfaceIfPresent(for: sessionID)
-        state.resolvePermission(sessionID: session.id, resolution: resolution)
-        synchronizeSelection()
-        refreshOverlayPlacementIfVisible()
-        refreshSustainedCamera()
-
-        send(
-            .resolvePermission(sessionID: session.id, resolution: resolution),
-            userMessage: message
-        )
+        sendHookAnswer(.resolvePermission(sessionID: session.id, resolution: resolution, expectedRequestID: session.permissionRequest?.id), sessionID: sessionID,
+                       expectedID: session.permissionRequest?.id, isQuestion: false) { [weak self] in
+            guard let self else { return }
+            self.state.resolvePermission(sessionID: sessionID, resolution: resolution)
+            self.lastActionMessage = message
+            if playsSound { NotificationSoundService.play(resolution.isApproved ? .approve : .reject, settings: self.settings.sound) }
+        }
     }
 
     func dismissSession(_ sessionID: String) {
@@ -3153,11 +3139,17 @@ final class AppModel {
             return
         }
 
-        if let promptID, session.questionPrompt?.id != promptID { return }
+        if let promptID, session.questionPrompt?.id != promptID {
+            paseoErrors[sessionID] = "質問が更新されました。表示を確認して回答してください。"
+            return
+        }
         let targetSessionID = forwardedQuestionTargets[sessionID] ?? sessionID
         if let request = paseoQuestions.requests[targetSessionID], let pending = request.question {
-            guard session.questionPrompt?.id == pending.prompt.id,
-                  paseoSendingSessionIDs.insert(sessionID).inserted else { return }
+            guard session.questionPrompt?.id == pending.prompt.id else {
+                paseoErrors[sessionID] = "質問が更新されました。表示を確認して回答してください。"
+                return
+            }
+            guard paseoSendingSessionIDs.insert(sessionID).inserted else { return }
             paseoErrors.removeValue(forKey: sessionID)
             Task { [weak self] in
                 guard let self else { return }
@@ -3195,17 +3187,49 @@ final class AppModel {
             return
         }
 
-        NotificationSoundService.play(.confirm, settings: settings.sound)
-        dismissNotificationSurfaceIfPresent(for: sessionID)
-        state.answerQuestion(sessionID: session.id, response: answer)
-        synchronizeSelection()
-        refreshOverlayPlacementIfVisible()
-        refreshSustainedCamera()
+        sendHookAnswer(.answerQuestion(sessionID: session.id, response: answer, expectedRequestID: session.questionPrompt?.id), sessionID: sessionID,
+                       expectedID: session.questionPrompt?.id, isQuestion: true) { [weak self] in
+            guard let self else { return }
+            self.state.answerQuestion(sessionID: sessionID, response: answer)
+            NotificationSoundService.play(.confirm, settings: self.settings.sound)
+            self.lastActionMessage = "Sending answer for \(session.title)."
+        }
+    }
 
-        send(
-            .answerQuestion(sessionID: session.id, response: answer),
-            userMessage: "Sending answer for \(session.title)."
-        )
+    private func sendHookAnswer(_ command: BridgeCommand, sessionID: String, expectedID: UUID?,
+                                isQuestion: Bool, onSuccess: @escaping () -> Void) {
+        guard paseoSendingSessionIDs.insert(sessionID).inserted else { return }
+        paseoErrors.removeValue(forKey: sessionID)
+        Task { [weak self] in
+            guard let self else { return }
+            defer { self.paseoSendingSessionIDs.remove(sessionID) }
+            do {
+                let response: BridgeResponse?
+                if let hookAnswerSender {
+                    response = try await hookAnswerSender(command)
+                } else {
+                    response = try await Task.detached(priority: .userInitiated) {
+                        try BridgeCommandClient(socketURL: BridgeSocketLocation.currentURL()).send(command)
+                    }.value
+                }
+                guard response == .acknowledged else { throw BridgeTransportError.notConnected }
+                let current = self.state.session(id: sessionID)
+                let currentID = isQuestion ? current?.questionPrompt?.id : current?.permissionRequest?.id
+                // Bridge events can already have resolved the card before the ack arrives.
+                guard currentID == nil || currentID == expectedID else {
+                    self.paseoErrors[sessionID] = "要求が更新されました。表示を確認して回答してください。"
+                    return
+                }
+                onSuccess()
+                self.dismissNotificationSurfaceIfPresent(for: sessionID)
+                self.synchronizeSelection()
+                self.refreshOverlayPlacementIfVisible()
+                self.refreshSustainedCamera()
+            } catch {
+                self.paseoErrors[sessionID] = "回答先が切断されたか要求が更新されました。会話を開いて確認してください。"
+                self.lastActionMessage = self.paseoErrors[sessionID] ?? ""
+            }
+        }
     }
 
     func replyToSession(_ session: AgentSession, text: String) {
@@ -3227,30 +3251,6 @@ final class AppModel {
         }
     }
 
-
-    private func send(_ command: BridgeCommand, userMessage: String) {
-        lastActionMessage = userMessage
-
-        Task { [weak self] in
-            guard let self else {
-                return
-            }
-
-            do {
-                try await self.bridgeClient.send(command)
-            } catch {
-                self.lastActionMessage = "Failed to send bridge command: \(error.localizedDescription)"
-            }
-        }
-    }
-
-    private func permissionResolution(for approved: Bool) -> PermissionResolution {
-        if approved {
-            return .allowOnce()
-        }
-
-        return .deny(message: "Permission denied in Open Island.", interrupt: false)
-    }
 
     func applyTrackedEvent(
         _ event: AgentEvent,

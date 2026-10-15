@@ -27,6 +27,8 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
     private static let logger = Logger(subsystem: "app.openisland", category: "MitamaRemoteRelay")
 
     public static let pollInterval: TimeInterval = 3
+    /// Seconds without keyboard or mouse input before the person counts as away from the Mac.
+    static let awayAfter: TimeInterval = 300
     /// Matches the table's `expires_at` default.
     public static let requestLifetime: TimeInterval = 30 * 60
     static let summaryHead = 350
@@ -189,7 +191,9 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
             return
         }
 
-        if kind == .permission {
+        // At the Mac the island already shows the prompt; pushing it to the phone too fired
+        // ~40 urgent notifications a day. Only push when the person has stepped away.
+        if kind == .permission, idleSeconds() >= Self.awayAfter {
             _ = await send(env, table: "mos_notifications", method: "POST", body: [
                 "level": "urgent",
                 "title": "\(agentTool): 確認待ち",
@@ -274,7 +278,7 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
                 locked { _ = waiting.removeValue(forKey: id) }
                 continue
             }
-            guard now().timeIntervalSince(entry.since) >= 600, idleSeconds() >= 300,
+            guard now().timeIntervalSince(entry.since) >= 600, idleSeconds() >= Self.awayAfter,
                   let env = await resolvedEnvironment() else { continue }
             let claimed = locked { () -> Bool in
                 guard waiting[id]?.since == entry.since, !escalated.contains(id) else { return false }

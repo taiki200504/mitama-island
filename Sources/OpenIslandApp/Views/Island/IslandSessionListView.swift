@@ -51,7 +51,8 @@ extension IslandPanelView {
                 // scroll rather than something unreachable.
                 GeometryReader { geometry in
                 AutoHeightScrollView(maxHeight: IslandChromeMetrics.notificationViewportHeight(
-                    maxPanelHeight: model.settings.display.maxPanelHeight, availableHeight: geometry.size.height)) {
+                    maxPanelHeight: model.settings.display.maxPanelHeight, availableHeight: max(0, geometry.size.height - 4)),
+                    alignTopOnFirstMeasure: true) {
                     sessionListContent(referenceDate: referenceDate)
                 }
                     .padding(.vertical, 2)
@@ -79,6 +80,8 @@ extension IslandPanelView {
             } else {
                 VStack(spacing: 0) {
                     sessionPanelHeader(referenceDate: referenceDate)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .layoutPriority(1)
 
                     ScrollView(.vertical) {
                         VStack(spacing: 0) {
@@ -93,6 +96,8 @@ extension IslandPanelView {
                     .scrollBounceBehavior(.basedOnSize)
 
                     sessionPanelFooter
+                        .fixedSize(horizontal: false, vertical: true)
+                        .layoutPriority(1)
                 }
                 .padding(.vertical, 2)
             }
