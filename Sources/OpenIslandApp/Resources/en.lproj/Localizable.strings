@@ -987,3 +987,21 @@
 "decision.paseo.forwardedOpen" = "Open this question’s conversation in Paseo";
 
 "nowPlaying.unavailable" = "Now-playing information is unavailable in this environment.";
+
+// Manual keep awake
+"keepAwake.title" = "Stay awake";
+"keepAwake.mode.off" = "Off";
+"keepAwake.mode.oneHour" = "1 hour";
+"keepAwake.mode.threeHours" = "3 hours";
+"keepAwake.mode.eightHours" = "8 hours";
+"keepAwake.mode.indefinite" = "Indefinitely";
+"keepAwake.mode.untilFinished" = "Until agents finish working";
+"keepAwake.remaining" = "%d minutes left";
+"keepAwake.stop" = "Stop";
+"keepAwake.display" = "Keep the display awake too";
+"keepAwake.closedLid" = "Stay awake with the lid closed";
+"keepAwake.closedLid.help" = "Manual mode on AC power only. Changing and restoring this setting requires administrator authentication.";
+"keepAwake.release.tooHot" = "Stay awake stopped because the Mac is too hot.";
+"keepAwake.release.batteryLow" = "Stay awake stopped because the battery is below 20%.";
+"keepAwake.release.lidClosedOnBattery" = "Stay awake stopped because the lid is closed on battery power.";
+"keepAwake.restoreFailed" = "Could not change the sleep setting. Allow administrator authentication and try stopping again.";

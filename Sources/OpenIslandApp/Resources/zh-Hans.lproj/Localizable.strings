@@ -987,3 +987,21 @@
 "decision.paseo.forwardedOpen" = "在Paseo中打开此问题的对话";
 
 "nowPlaying.unavailable" = "当前环境无法获取正在播放的信息。";
+
+// Manual keep awake
+"keepAwake.title" = "保持唤醒";
+"keepAwake.mode.off" = "关闭";
+"keepAwake.mode.oneHour" = "1小时";
+"keepAwake.mode.threeHours" = "3小时";
+"keepAwake.mode.eightHours" = "8小时";
+"keepAwake.mode.indefinite" = "无限期";
+"keepAwake.mode.untilFinished" = "直到代理完成工作";
+"keepAwake.remaining" = "剩余%d分钟";
+"keepAwake.stop" = "停止";
+"keepAwake.display" = "屏幕也保持亮起";
+"keepAwake.closedLid" = "合盖后继续运行";
+"keepAwake.closedLid.help" = "仅限手动模式且接通电源。更改和恢复设置需要管理员认证。";
+"keepAwake.release.tooHot" = "Mac温度过高，已停止保持唤醒。";
+"keepAwake.release.batteryLow" = "电量低于20%，已停止保持唤醒。";
+"keepAwake.release.lidClosedOnBattery" = "合盖且使用电池，已停止保持唤醒。";
+"keepAwake.restoreFailed" = "无法更改睡眠设置。请允许管理员认证后再次停止。";

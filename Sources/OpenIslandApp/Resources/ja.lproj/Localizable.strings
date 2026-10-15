@@ -987,3 +987,21 @@
 "decision.paseo.forwardedOpen" = "この質問の会話をPaseoで開く";
 
 "nowPlaying.unavailable" = "この環境では再生中の情報を取得できません。";
+
+// Manual keep awake
+"keepAwake.title" = "起こしておく";
+"keepAwake.mode.off" = "オフ";
+"keepAwake.mode.oneHour" = "1時間";
+"keepAwake.mode.threeHours" = "3時間";
+"keepAwake.mode.eightHours" = "8時間";
+"keepAwake.mode.indefinite" = "無期限";
+"keepAwake.mode.untilFinished" = "エージェントの作業が終わるまで";
+"keepAwake.remaining" = "残り%d分";
+"keepAwake.stop" = "止める";
+"keepAwake.display" = "画面も消さない";
+"keepAwake.closedLid" = "ふたを閉じても止めない";
+"keepAwake.closedLid.help" = "手動モード・AC接続中のみ。変更と解除に管理者の認証が必要です。";
+"keepAwake.release.tooHot" = "本体が熱くなったため、「起こしておく」を止めました。";
+"keepAwake.release.batteryLow" = "バッテリーが20%未満になったため、「起こしておく」を止めました。";
+"keepAwake.release.lidClosedOnBattery" = "ふたを閉じたままバッテリー駆動になったため、「起こしておく」を止めました。";
+"keepAwake.restoreFailed" = "スリープ設定を変更できませんでした。管理者の認証を許可して、もう一度停止してください。";

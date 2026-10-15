@@ -119,6 +119,24 @@ final class OpenIslandAppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        Task { @MainActor in
+            model.isStoppingKeepAwake = true
+            model.keepAwakeTimer.invalidate()
+            model.keepAwake.apply(.release(.disabled))
+            let restored = await model.lidSleep.shutdown()
+            sender.reply(toApplicationShouldTerminate: restored)
+            if !restored {
+                model.settings.behaviour.manualKeepAwakeMode = .off
+                model.isStoppingKeepAwake = false
+                model.refreshKeepAwake()
+                model.resumeKeepAwakePolling()
+                model.present(notice: model.lang.t("keepAwake.restoreFailed"))
+            }
+        }
+        return .terminateLater
+    }
+
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
     }

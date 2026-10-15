@@ -27,6 +27,8 @@ never learned about Zellij, Cursor or the IDE column at all. One table, one plac
 
 ## Features
 
+- **Keep awake** — optional automatic agent-work hold, plus manual 1/3/8-hour, indefinite, or until-agents-finish modes. Manual mode supports optional display and AC-only closed-lid holds, with thermal and battery safety stops. See [manual keep awake](keep-awake-manual.md).
+
 - **Notch overlay** — sits in the notch area on notch Macs, falls back to a compact top-center bar on external displays or non-notch Macs
 - **Settings** — hook install/uninstall, usage dashboard, General, Display, Sound, Shortcuts, Lab, About
 - **Notification mode** — auto-height panel for permission requests and session events

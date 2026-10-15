@@ -28,6 +28,15 @@ struct GeneralSettingsPane: View {
     private var systemSection: some View {
         Section(lang.t("settings.section.system")) {
             SettingsToggleRow(
+                title: lang.t("keepAwake.display"),
+                isOn: Binding(get: { behaviour.keepAwakeDisplay }, set: { behaviour.keepAwakeDisplay = $0 })
+            )
+            SettingsToggleRow(
+                title: lang.t("keepAwake.closedLid"),
+                help: lang.t("keepAwake.closedLid.help"),
+                isOn: Binding(get: { behaviour.keepAwakeClosedLid }, set: { behaviour.keepAwakeClosedLid = $0 })
+            )
+            SettingsToggleRow(
                 title: lang.t("settings.general.launchAtLogin"),
                 isOn: Binding(
                     get: { model.launchAtLoginEnabled },
