@@ -1015,3 +1015,6 @@
 
 "settings.audio.builtInMic" = "Use the Mac’s built-in microphone";
 "settings.audio.builtInMic.help" = "Use the built-in microphone to prevent Bluetooth headphones from reducing music quality when their microphone is active.";
+
+"island.header.record" = "Record";
+"island.header.recording" = "Recording";

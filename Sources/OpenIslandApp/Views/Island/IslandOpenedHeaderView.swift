@@ -100,6 +100,27 @@ extension IslandPanelView {
                 }
             }
 
+            Button {
+                model.settings.ambientListen.isEnabled.toggle()
+                model.earshot.settingsChanged()
+            } label: {
+                HStack(spacing: 4) {
+                    if model.settings.ambientListen.isEnabled {
+                        Circle().fill(.red).frame(width: 5, height: 5)
+                    }
+                    Text(model.lang.t(model.settings.ambientListen.isEnabled
+                        ? "island.header.recording" : "island.header.record"))
+                        .lineLimit(1)
+                }
+                .font(.islandText(size: 10, weight: .semibold))
+                .foregroundStyle(V6Palette.paper.opacity(0.82))
+                .frame(width: Self.headerControlButtonSize + 64, height: Self.headerControlButtonSize)
+                .background(V6Palette.paper.opacity(0.08), in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(model.lang.t("settings.earshot.section") + " · " + model.lang.t(
+                model.settings.ambientListen.isEnabled ? "island.header.recording" : "island.header.record"))
+
             raphaelHeaderMenu
 
             headerIconButton(

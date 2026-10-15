@@ -14,6 +14,7 @@ final class MitamaOSWindowController: NSObject, NSWindowDelegate, WKNavigationDe
             let configuration = WKWebViewConfiguration()
             configuration.websiteDataStore = .default()
             let webView = WKWebView(frame: .zero, configuration: configuration)
+            webView.customUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15"
             webView.navigationDelegate = self
             webView.uiDelegate = self
             let window = NSWindow(
@@ -35,6 +36,7 @@ final class MitamaOSWindowController: NSObject, NSWindowDelegate, WKNavigationDe
         if webView?.url != destination {
             webView?.load(URLRequest(url: destination))
         }
+        NSApp.setActivationPolicy(.regular)
         window?.deminiaturize(nil)
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
@@ -42,6 +44,7 @@ final class MitamaOSWindowController: NSObject, NSWindowDelegate, WKNavigationDe
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         sender.orderOut(nil)
+        NSApp.setActivationPolicy(.accessory)
         return false
     }
 
@@ -51,9 +54,9 @@ final class MitamaOSWindowController: NSObject, NSWindowDelegate, WKNavigationDe
             decisionHandler(.cancel)
             return
         }
-        guard MitamaOSURL.isInternal(url, base: baseURL) else {
+        guard MitamaOSURL.isAllowedInWindow(url, base: baseURL) else {
             // Never dispatch executable URLs (javascript:, data:, file:) to the OS.
-            if ["https", "http", "mailto", "tel"].contains(url.scheme?.lowercased() ?? "") {
+            if url.user == nil, url.password == nil, ["https", "http", "mailto", "tel"].contains(url.scheme?.lowercased() ?? "") {
                 NSWorkspace.shared.open(url)
             }
             decisionHandler(.cancel)

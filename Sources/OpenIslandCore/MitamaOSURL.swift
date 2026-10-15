@@ -29,4 +29,16 @@ public enum MitamaOSURL {
             && url.host?.lowercased() == base.host?.lowercased()
             && url.port == base.port && url.user == nil && url.password == nil
     }
+
+    /// HTTPS destinations allowed inside the Hub, including its sign-in flow.
+    public static func isAllowedInWindow(_ url: URL, base: URL) -> Bool {
+        guard url.scheme?.lowercased() == "https",
+              url.user == nil, url.password == nil,
+              let host = url.host?.lowercased() else { return false }
+        if isInternal(url, base: base) { return true }
+        guard url.port == nil || url.port == 443 else { return false }
+        if host == "accounts.google.com" || host == "accounts.youtube.com" { return true }
+        return host.hasSuffix(".supabase.co") && url.path.hasPrefix("/auth/v1/")
+    }
+
 }

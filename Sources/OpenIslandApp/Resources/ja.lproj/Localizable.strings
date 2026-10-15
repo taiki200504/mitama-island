@@ -1015,3 +1015,6 @@
 
 "settings.audio.builtInMic" = "Mac内蔵マイクを使う";
 "settings.audio.builtInMic.help" = "Bluetoothイヤホンのマイクを使うと音楽の音質が落ちるため、内蔵マイクに固定します";
+
+"island.header.record" = "録音";
+"island.header.recording" = "録音中";
