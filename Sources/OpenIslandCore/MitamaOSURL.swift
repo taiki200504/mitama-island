@@ -2,6 +2,8 @@ import Foundation
 
 /// URL policy shared by the embedded Hub and its navigation delegate.
 public enum MitamaOSURL {
+    /// The one Supabase project behind the Hub sign-in (asjzwydktsqxoyufomzu).
+    public static let authSupabaseHost = "asjzwydktsqxoyufomzu.supabase.co"
     public static let defaultURL = URL(string: "https://mitama-os-hub.vercel.app")!
 
     public static func baseURL(_ setting: String?) -> URL {
@@ -38,7 +40,9 @@ public enum MitamaOSURL {
         if isInternal(url, base: base) { return true }
         guard url.port == nil || url.port == 443 else { return false }
         if host == "accounts.google.com" || host == "accounts.youtube.com" { return true }
-        return host.hasSuffix(".supabase.co") && url.path.hasPrefix("/auth/v1/")
+        // Only mitama's own Supabase project may run its sign-in flow in this window; any other
+        // *.supabase.co host (someone else's project) would be an open-redirect target.
+        return host == authSupabaseHost && url.path.hasPrefix("/auth/v1/")
     }
 
 }

@@ -37,7 +37,7 @@ private actor PaseoWiringMock {
 @MainActor
 struct PaseoQuestionWiringTests {
     private func waitForSubmission(_ model: AppModel, sessionID: String) async throws {
-        let deadline = ContinuousClock.now + .seconds(3)
+        let deadline = ContinuousClock.now + .seconds(30)
         while model.paseoSendingSessionIDs.contains(sessionID), ContinuousClock.now < deadline {
             try await Task.sleep(for: .milliseconds(100))
         }

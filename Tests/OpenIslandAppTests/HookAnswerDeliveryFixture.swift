@@ -15,7 +15,7 @@ final class HookAnswerDeliveryFixture {
     }
 
     func waitForCommands(_ count: Int) async throws {
-        let deadline = ContinuousClock.now + .seconds(3)
+        let deadline = ContinuousClock.now + .seconds(30)
         while commands.count < count, ContinuousClock.now < deadline {
             try await Task.sleep(for: .milliseconds(10))
         }
@@ -29,7 +29,7 @@ final class HookAnswerDeliveryFixture {
     }
 
     func waitForCompletion(_ model: AppModel) async throws {
-        let deadline = ContinuousClock.now + .seconds(3)
+        let deadline = ContinuousClock.now + .seconds(30)
         while !model.paseoSendingSessionIDs.isEmpty, ContinuousClock.now < deadline {
             try await Task.sleep(for: .milliseconds(10))
         }

@@ -46,7 +46,7 @@ struct MitamaOSURLTests {
 
     @Test(arguments: [
         "https://mitama-os-hub.vercel.app/decide", "https://accounts.google.com/o/oauth2/v2/auth",
-        "https://accounts.youtube.com/accounts/SetSID", "https://xxx.supabase.co/auth/v1/authorize",
+        "https://accounts.youtube.com/accounts/SetSID", "https://asjzwydktsqxoyufomzu.supabase.co/auth/v1/authorize",
     ])
     func allowsWindowAuthentication(_ value: String) {
         #expect(MitamaOSURL.isAllowedInWindow(URL(string: value)!, base: MitamaOSURL.defaultURL))
@@ -56,7 +56,7 @@ struct MitamaOSURLTests {
         "https://evil.com", "https://google.com/search?q=test", "https://www.google.com/oauth2/auth",
         "https://accounts.google.com.evil.com", "http://accounts.google.com", "javascript:alert(1)",
         "https://user:password@accounts.google.com", "https://user@xxx.supabase.co/auth/v1/authorize",
-        "https://xxx.supabase.co/rest/v1/items", "https://xxx.supabase.co/auth/v10/authorize",
+        "https://xxx.supabase.co/rest/v1/items", "https://xxx.supabase.co/auth/v1/authorize", "https://asjzwydktsqxoyufomzu.supabase.co/rest/v1/items", "https://xxx.supabase.co/auth/v10/authorize",
         "https://supabase.co/auth/v1/authorize", "https://xxx.supabase.co.evil.com/auth/v1/authorize",
         "https://accounts.google.com:444/oauth2/auth",
     ])
