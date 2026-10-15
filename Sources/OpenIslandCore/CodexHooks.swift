@@ -340,7 +340,7 @@ public enum CodexHookOutputEncoder {
         encoder.outputFormatting = [.sortedKeys]
 
         switch response {
-        case .acknowledged:
+        case .acknowledged, .rejected:
             return nil
         case let .codexHookDirective(directive):
             let data: Data

@@ -84,7 +84,7 @@ struct OverlayPanelControllerTests {
             notchedContentWidth: 508,
             notchStatus: .closed
         )
-        #expect(wide == 508)
+        #expect(wide == 360)
 
         // Narrow content never shrinks the hit area below the notch bleed.
         let narrow = OverlayPanelController.closedPanelWidth(
@@ -94,6 +94,17 @@ struct OverlayPanelControllerTests {
             notchStatus: .closed
         )
         #expect(narrow == 185 + (OverlayPanelController.closedPillSideBleed * 2))
+    }
+
+    @Test
+    func notchedDisplayClosedWidthKeepsPhysicalBleedFloorAboveCap() {
+        let width = OverlayPanelController.closedPanelWidth(
+            notchWidth: 400,
+            isNotchedDisplay: true,
+            notchedContentWidth: 900,
+            notchStatus: .closed
+        )
+        #expect(width == 466)
     }
 
     @Test

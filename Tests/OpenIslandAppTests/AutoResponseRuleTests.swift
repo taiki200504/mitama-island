@@ -7,11 +7,15 @@ import OpenIslandCore
 /// cannot take back, so each of these pins down a way it must not misfire.
 @MainActor
 struct AutoResponseRuleTests {
-    private func makeModel() -> AppModel {
+    private func makeModel(delivery: HookAnswerDeliveryFixture? = nil) -> AppModel {
         let name = "auto-response-\(UUID().uuidString)"
         let suite = UserDefaults(suiteName: name)!
         suite.removePersistentDomain(forName: name)
-        return isolatedAppModel(settings: SettingsStore(store: PreferenceStore(suite: suite)))
+        return isolatedAppModel(settings: SettingsStore(store: PreferenceStore(suite: suite)),
+            hookAnswerSender: { command in
+                guard let delivery else { return .rejected }
+                return await delivery.send(command)
+            })
     }
 
     private func session(
@@ -67,15 +71,62 @@ struct AutoResponseRuleTests {
     }
 
     @Test
-    func aMatchingRuleAnswersWithoutShowingACard() {
-        let model = makeModel()
+    func aMatchingRuleAnswersWithoutShowingACard() async throws {
+        let delivery = HookAnswerDeliveryFixture()
+        defer { delivery.reply(.rejected) }
+        let model = makeModel(delivery: delivery)
         model.state = SessionState(sessions: [session()])
         model.settings.autoResponse.addRule(rule(.allowOnce))
 
         requestPermission(model)
+        try await delivery.waitForCommands(1)
+        let requestID = try #require(model.state.session(id: "s1")?.permissionRequest?.id)
+        #expect(delivery.commands == [.resolvePermission(sessionID: "s1", resolution: .allowOnce(), expectedRequestID: requestID)])
+        #expect(model.state.session(id: "s1")?.phase == .waitingForApproval)
+        delivery.reply()
+        try await delivery.waitForCompletion(model)
 
         #expect(model.state.session(id: "s1")?.phase != .waitingForApproval)
+        #expect(model.state.session(id: "s1")?.permissionRequest == nil)
         #expect(model.pendingApprovalSessions.isEmpty)
+    }
+
+    @Test
+    func rejectedAutoResponseKeepsTheRequest() async throws {
+        let delivery = HookAnswerDeliveryFixture()
+        defer { delivery.reply(.rejected) }
+        let model = makeModel(delivery: delivery)
+        model.state = SessionState(sessions: [session()])
+        model.settings.autoResponse.addRule(rule(.allowOnce))
+        requestPermission(model)
+        try await delivery.waitForCommands(1)
+        let requestID = try #require(model.state.session(id: "s1")?.permissionRequest?.id)
+        delivery.reply(.rejected)
+        try await delivery.waitForCompletion(model)
+
+        #expect(model.state.session(id: "s1")?.permissionRequest?.id == requestID)
+        #expect(model.state.session(id: "s1")?.phase == .waitingForApproval)
+        #expect(model.paseoErrors["s1"] != nil)
+    }
+
+    @Test
+    func anOldAckDoesNotClearANewerRequest() async throws {
+        let delivery = HookAnswerDeliveryFixture()
+        defer { delivery.reply(.rejected) }
+        let model = makeModel(delivery: delivery)
+        model.state = SessionState(sessions: [session()])
+        model.settings.autoResponse.addRule(rule(.allowOnce))
+        requestPermission(model)
+        try await delivery.waitForCommands(1)
+        model.settings.autoResponse.isEnabled = false
+        requestPermission(model)
+        let newerID = try #require(model.state.session(id: "s1")?.permissionRequest?.id)
+        delivery.reply()
+        try await delivery.waitForCompletion(model)
+
+        #expect(model.state.session(id: "s1")?.permissionRequest?.id == newerID)
+        #expect(model.state.session(id: "s1")?.phase == .waitingForApproval)
+        #expect(model.paseoErrors["s1"] != nil)
     }
 
     /// Without a rule the request has to reach the user untouched.
