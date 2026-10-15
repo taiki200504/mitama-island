@@ -125,6 +125,17 @@ extension IslandPanelView {
                             Text(verbatim: task.body ?? "（本文なし）")
                                 .textSelection(.enabled)
                                 .fixedSize(horizontal: false, vertical: true)
+                            // 「実行する」で積まれるのは本文ではなくこちら。押す前に同じ文面を見せる。
+                            if task.resumeAgent != "dots-dispatch",
+                               let objective = task.resumeObjective,
+                               !objective.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                Text("実行内容")
+                                    .font(.islandText(size: 11, weight: .semibold))
+                                Text(verbatim: objective)
+                                    .font(.islandText(size: 11, weight: .regular))
+                                    .textSelection(.enabled)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
                             HStack {
                                 Button("実行する") { feed.answer(task, with: .approve) }
                                 Button("却下") { feed.answer(task, with: .reject) }
