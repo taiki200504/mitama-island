@@ -84,6 +84,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private func rebuildMenu(_ menu: NSMenu) {
         menu.removeAllItems()
         actions.removeAll()
+        addItem(model.lang.t("mitamaOS.open"), to: menu) { [weak model] in
+            model?.openMitamaHub()
+        }
 
         model.refreshKeepAwake()
         let awake = NSMenuItem(title: model.lang.t("keepAwake.title") + " · " + model.manualKeepAwakeLabel,

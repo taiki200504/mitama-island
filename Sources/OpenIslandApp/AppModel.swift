@@ -717,8 +717,10 @@ final class AppModel {
     /// The login sequence. Nothing exists until the key is pressed.
     @ObservationIgnored let linkstart = LinkstartOverlayController()
 
-    func openMitamaHub() {
-        NSWorkspace.shared.open(MitamaFeedCoordinator.hubURL)
+    @ObservationIgnored private let mitamaOSWindow = MitamaOSWindowController()
+
+    func openMitamaHub(path: String = "/") {
+        mitamaOSWindow.show(path: path)
     }
 
     /// Agent sessions and hours mitama has counted since Monday.
@@ -3648,6 +3650,9 @@ final class AppModel {
             registrar: CarbonHotkeyController(),
             settings: settings.shortcuts
         )
+        coordinator.onOpenMitamaOS = { [weak self] in
+            self?.openMitamaHub()
+        }
         coordinator.onAction = { [weak self] action in
             self?.performShortcut(action)
         }

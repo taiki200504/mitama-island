@@ -29,6 +29,7 @@ final class PanelHotkeyCoordinator {
     var onTouchlessActivation: (() -> Void)?
     var onVoiceAnswer: (() -> Void)?
     var onLinkstart: (() -> Void)?
+    var onOpenMitamaOS: (() -> Void)?
     var onOpenClipboard: (() -> Void)?
     /// Save where you are and get out. Always live: an interruption is not a
     /// feature you remember to switch on beforehand.
@@ -80,6 +81,7 @@ final class PanelHotkeyCoordinator {
         case Self.voiceAnswerBindingID: onVoiceAnswer?()
         case Self.linkstartBindingID: onLinkstart?()
         case Self.clipboardOpenBindingID: onOpenClipboard?()
+        case Self.mitamaOSBindingID: onOpenMitamaOS?()
         case Self.focusCardBindingID: onSaveFocusCard?()
         default:
             guard let action = PanelShortcutAction(rawValue: id) else { return }
@@ -99,6 +101,7 @@ final class PanelHotkeyCoordinator {
     static let voiceAnswerBindingID = "voiceAnswer.begin"
     static let linkstartBindingID = "linkstart.play"
     static let clipboardOpenBindingID = "clipboard.open"
+    static let mitamaOSBindingID = "mitamaOS.open"
     static let focusCardBindingID = "focusCard.save"
 
     /// Backtick, next to the shift key on every layout this app runs on. Not
@@ -143,6 +146,10 @@ final class PanelHotkeyCoordinator {
                 scope: .persistent
             )
         ]
+        bindings.append(HotkeyBinding(
+            id: Self.mitamaOSBindingID, keyCode: 46,
+            modifiers: [.control, .option], scope: .persistent
+        ))
         if touchlessActivationEnabled {
             bindings.append(
                 HotkeyBinding(

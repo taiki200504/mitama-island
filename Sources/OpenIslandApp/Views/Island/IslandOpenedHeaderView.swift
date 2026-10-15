@@ -44,6 +44,13 @@ extension IslandPanelView {
 
     private var openedHeaderButtons: some View {
         HStack(spacing: Self.headerControlSpacing) {
+            headerIconButton(
+                systemName: "macwindow", tint: V6Palette.paper.opacity(0.62),
+                accessibilityLabel: model.lang.t("mitamaOS.open")
+            ) {
+                model.openMitamaHub()
+            }
+
             if cameraIsWatching {
                 cameraWatchingMark
             }

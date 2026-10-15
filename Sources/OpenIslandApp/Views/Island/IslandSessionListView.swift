@@ -109,8 +109,13 @@ extension IslandPanelView {
         let feed = model.mitamaFeed
         if !feed.humanTasks.isEmpty || feed.humanTaskMessage != nil {
             VStack(alignment: .leading, spacing: 10) {
-                Text("外部からの依頼 \(feed.humanTasks.count)件")
-                    .font(.islandText(size: 12, weight: .semibold))
+                Button {
+                    model.openMitamaHub(path: "/decide")
+                } label: {
+                    Text("外部からの依頼 \(feed.humanTasks.count)件")
+                        .font(.islandText(size: 12, weight: .semibold))
+                }
+                .buttonStyle(.plain)
                 ForEach(feed.humanTasks) { task in
                     DisclosureGroup {
                         VStack(alignment: .leading, spacing: 10) {
@@ -232,7 +237,7 @@ extension IslandPanelView {
             VStack(spacing: 0) {
                 ForEach(notifications) { notification in
                     Button {
-                        model.openMitamaHub()
+                        model.openMitamaHub(path: "/decide")
                         model.mitamaFeed.markRead(notification)
                     } label: {
                         HStack(alignment: .top, spacing: 10) {

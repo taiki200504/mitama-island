@@ -993,6 +993,7 @@
 
 "nowPlaying.unavailable" = "当前环境无法获取正在播放的信息。";
 
+"mitamaOS.open" = "打开 mitama OS";
 // Manual keep awake
 "keepAwake.title" = "保持唤醒";
 "keepAwake.mode.off" = "关闭";

@@ -993,6 +993,7 @@
 
 "nowPlaying.unavailable" = "この環境では再生中の情報を取得できません。";
 
+"mitamaOS.open" = "mitama OS を開く";
 // Manual keep awake
 "keepAwake.title" = "起こしておく";
 "keepAwake.mode.off" = "オフ";
