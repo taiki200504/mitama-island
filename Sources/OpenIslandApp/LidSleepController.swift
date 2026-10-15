@@ -1,4 +1,5 @@
 import Foundation
+import OpenIslandCore
 
 /// Serializes privileged changes. The durable marker survives crashes and denied restoration.
 @MainActor
@@ -66,13 +67,61 @@ final class LidSleepController {
         }
     }
 
+    private nonisolated static let sudoersPath = "/etc/sudoers.d/mitama-island-pmset"
+
+    func preparePermission() async {
+        guard !FileManager.default.fileExists(atPath: Self.sudoersPath),
+              let contents = KeepAwakeSudoers.contents(username: NSUserName()) else { return }
+        _ = await Task.detached {
+            // Create and validate the staging file as root, never in a user-writable directory.
+            let command = "set -eu; /bin/mkdir -p /etc/sudoers.d; "
+                + "stage=$(/usr/bin/mktemp /etc/sudoers.d/mitama-island-pmset.XXXXXXXX); "
+                + "trap '/bin/rm -f \"$stage\" \"$stage.ready\"' EXIT; "
+                + "printf '%s' " + Self.shellQuote(contents) + " > \"$stage\"; "
+                + "/usr/sbin/visudo -cf \"$stage\"; "
+                + "/usr/bin/install -o root -g wheel -m 0440 \"$stage\" \"$stage.ready\"; "
+                + "/bin/mv -f \"$stage.ready\" " + Self.sudoersPath
+            return Self.administratorCommand(command)
+        }.value
+    }
+
+    func removePermission() async -> Bool {
+        // Restore before revoking the unattended restoration path.
+        guard await shutdown() else { return false }
+        return await Task.detached {
+            Self.administratorCommand("/bin/rm -f " + Self.sudoersPath)
+        }.value
+    }
+
+    private nonisolated static func shellQuote(_ value: String) -> String {
+        "'" + value.replacingOccurrences(of: "'", with: "'\"'\"'") + "'"
+    }
+
+    private nonisolated static func administratorCommand(_ command: String) -> Bool {
+        let escaped = command.replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+            .replacingOccurrences(of: "\n", with: "\\n")
+        var error: NSDictionary?
+        guard let script = NSAppleScript(source: "do shell script \"\(escaped)\" with administrator privileges") else { return false }
+        script.executeAndReturnError(&error)
+        return error == nil
+    }
+
     private nonisolated static func change(disabled: Bool) async -> Bool {
         await Task.detached {
-            let source = "do shell script \"/usr/bin/pmset -a disablesleep \(disabled ? 1 : 0)\" with administrator privileges"
-            var error: NSDictionary?
-            guard let script = NSAppleScript(source: source) else { return false }
-            script.executeAndReturnError(&error)
-            return error == nil
+            let value = disabled ? "1" : "0"
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/sudo")
+            process.arguments = ["-n", "/usr/bin/pmset", "-a", "disablesleep", value]
+            process.standardInput = FileHandle.nullDevice
+            process.standardOutput = FileHandle.nullDevice
+            process.standardError = FileHandle.nullDevice
+            do {
+                try process.run()
+                process.waitUntilExit()
+                if process.terminationStatus == 0 { return true }
+            } catch { /* Fall back to interactive authorization. */ }
+            return administratorCommand("/usr/bin/pmset -a disablesleep " + value)
         }.value
     }
 

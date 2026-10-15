@@ -6,6 +6,7 @@ import SwiftUI
 /// opens, when it stays out of the way, and when it folds back all live here,
 /// alongside the handful of true system settings. This pane follows that.
 struct GeneralSettingsPane: View {
+    @State private var changingLidPermission = false
     var model: AppModel
 
     private var lang: LanguageManager { model.lang }
@@ -34,8 +35,27 @@ struct GeneralSettingsPane: View {
             SettingsToggleRow(
                 title: lang.t("keepAwake.closedLid"),
                 help: lang.t("keepAwake.closedLid.help"),
-                isOn: Binding(get: { behaviour.keepAwakeClosedLid }, set: { behaviour.keepAwakeClosedLid = $0 })
+                isOn: Binding(get: { behaviour.keepAwakeClosedLid }, set: { enabled in
+                    changingLidPermission = true
+                    Task { @MainActor in
+                        if enabled { await model.lidSleep.preparePermission() }
+                        behaviour.keepAwakeClosedLid = enabled
+                        changingLidPermission = false
+                    }
+                })
             )
+            .disabled(changingLidPermission)
+            Button(lang.t("keepAwake.closedLid.revoke")) {
+                changingLidPermission = true
+                Task { @MainActor in
+                    behaviour.keepAwakeClosedLid = false
+                    if !(await model.lidSleep.removePermission()) {
+                        model.present(notice: lang.t("keepAwake.restoreFailed"))
+                    }
+                    changingLidPermission = false
+                }
+            }
+            .disabled(changingLidPermission)
             SettingsToggleRow(
                 title: lang.t("settings.general.launchAtLogin"),
                 isOn: Binding(

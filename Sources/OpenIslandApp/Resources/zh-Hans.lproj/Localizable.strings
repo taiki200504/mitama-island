@@ -1000,7 +1000,8 @@
 "keepAwake.stop" = "停止";
 "keepAwake.display" = "屏幕也保持亮起";
 "keepAwake.closedLid" = "合盖后继续运行";
-"keepAwake.closedLid.help" = "仅限手动模式且接通电源。更改和恢复设置需要管理员认证。";
+"keepAwake.closedLid.help" = "仅限手动模式且接通电源。仅首次设置时询问密码。之后拔掉电源会自动恢复睡眠。";
+"keepAwake.closedLid.revoke" = "移除此权限";
 "keepAwake.release.tooHot" = "Mac温度过高，已停止保持唤醒。";
 "keepAwake.release.batteryLow" = "电量低于20%，已停止保持唤醒。";
 "keepAwake.release.lidClosedOnBattery" = "合盖且使用电池，已停止保持唤醒。";

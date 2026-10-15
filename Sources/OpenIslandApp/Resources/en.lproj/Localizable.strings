@@ -1000,7 +1000,8 @@
 "keepAwake.stop" = "Stop";
 "keepAwake.display" = "Keep the display awake too";
 "keepAwake.closedLid" = "Stay awake with the lid closed";
-"keepAwake.closedLid.help" = "Manual mode on AC power only. Changing and restoring this setting requires administrator authentication.";
+"keepAwake.closedLid.help" = "Manual mode on AC power only. Your password is requested only for initial setup. After that, unplugging power automatically restores sleep.";
+"keepAwake.closedLid.revoke" = "Remove this permission";
 "keepAwake.release.tooHot" = "Stay awake stopped because the Mac is too hot.";
 "keepAwake.release.batteryLow" = "Stay awake stopped because the battery is below 20%.";
 "keepAwake.release.lidClosedOnBattery" = "Stay awake stopped because the lid is closed on battery power.";

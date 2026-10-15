@@ -1000,7 +1000,8 @@
 "keepAwake.stop" = "止める";
 "keepAwake.display" = "画面も消さない";
 "keepAwake.closedLid" = "ふたを閉じても止めない";
-"keepAwake.closedLid.help" = "手動モード・AC接続中のみ。変更と解除に管理者の認証が必要です。";
+"keepAwake.closedLid.help" = "手動モード・AC接続中のみ。初回だけパスワードを聞きます。以後は電源が抜けたら自動で元に戻します。";
+"keepAwake.closedLid.revoke" = "この許可を外す";
 "keepAwake.release.tooHot" = "本体が熱くなったため、「起こしておく」を止めました。";
 "keepAwake.release.batteryLow" = "バッテリーが20%未満になったため、「起こしておく」を止めました。";
 "keepAwake.release.lidClosedOnBattery" = "ふたを閉じたままバッテリー駆動になったため、「起こしておく」を止めました。";
