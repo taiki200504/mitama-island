@@ -10,6 +10,7 @@ import OpenIslandCore
         await ForegroundTerminalSessionProbe().matches(session: session)
     },
     settings: SettingsStore? = nil,
+    hookAnswerSender: (@Sendable (BridgeCommand) async throws -> BridgeResponse?)? = nil,
     // The real Focus database, lock screen and screen-sharing apps on the
     // developer's Mac must not decide whether a test's notification shows.
     quietScenes: QuietSceneMonitor = QuietSceneMonitor(
@@ -29,5 +30,5 @@ import OpenIslandCore
         cursorSessionRegistry: CursorSessionRegistry(fileURL: registryDirectory.appendingPathComponent("cursor.json")))
     return AppModel(terminalJumpAction: terminalJumpAction,
         isNotificationSessionAlreadyFrontmost: isNotificationSessionAlreadyFrontmost,
-        settings: isolatedSettings, quietScenes: quietScenes, paseoQuestions: paseoQuestions, discovery: isolatedDiscovery)
+        settings: isolatedSettings, quietScenes: quietScenes, paseoQuestions: paseoQuestions, discovery: isolatedDiscovery, hookAnswerSender: hookAnswerSender)
 }

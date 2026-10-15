@@ -889,6 +889,7 @@ final class AppModel {
 
     @ObservationIgnored
     private let bridgeServer = BridgeServer()
+    private let hookAnswerSender: (@Sendable (BridgeCommand) async throws -> BridgeResponse?)?
 
     @ObservationIgnored
     private var bridgeClient = LocalBridgeClient()
@@ -968,8 +969,10 @@ final class AppModel {
         settings: SettingsStore = .shared,
         quietScenes: QuietSceneMonitor = QuietSceneMonitor(),
         paseoQuestions: PaseoQuestionCoordinator = PaseoQuestionCoordinator(),
-        discovery: SessionDiscoveryCoordinator = SessionDiscoveryCoordinator()
+        discovery: SessionDiscoveryCoordinator = SessionDiscoveryCoordinator(),
+        hookAnswerSender: (@Sendable (BridgeCommand) async throws -> BridgeResponse?)? = nil
     ) {
+        self.hookAnswerSender = hookAnswerSender
         self.discovery = discovery
         self.quietScenes = quietScenes
         self.paseoQuestions = paseoQuestions
@@ -3193,9 +3196,14 @@ final class AppModel {
             guard let self else { return }
             defer { self.paseoSendingSessionIDs.remove(sessionID) }
             do {
-                let response = try await Task.detached(priority: .userInitiated) {
-                    try BridgeCommandClient(socketURL: BridgeSocketLocation.currentURL()).send(command)
-                }.value
+                let response: BridgeResponse?
+                if let hookAnswerSender {
+                    response = try await hookAnswerSender(command)
+                } else {
+                    response = try await Task.detached(priority: .userInitiated) {
+                        try BridgeCommandClient(socketURL: BridgeSocketLocation.currentURL()).send(command)
+                    }.value
+                }
                 guard response == .acknowledged else { throw BridgeTransportError.notConnected }
                 let current = self.state.session(id: sessionID)
                 let currentID = isQuestion ? current?.questionPrompt?.id : current?.permissionRequest?.id
