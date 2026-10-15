@@ -703,6 +703,8 @@ final class AppModel {
     /// Reads the battery, the heat and the lid. Holds the camera to account.
     @ObservationIgnored let power = PowerMonitor()
     @ObservationIgnored let keepAwake = KeepAwakeController()
+    @ObservationIgnored let lidSleep = LidSleepController()
+    @ObservationIgnored var isStoppingKeepAwake = false
     @ObservationIgnored let keepAwakeTimer = RepeatingTimerBox()
     /// The last thing power said no to, so the sentence is said once rather
     /// than on every card that arrives.

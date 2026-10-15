@@ -2,34 +2,30 @@ import Foundation
 import IOKit.pwr_mgt
 import OpenIslandCore
 
-/// Owns the one power assertion that keeps the system from idle sleep while
-/// agents work. The display is still allowed to sleep — the point is the
-/// work, not the screen. Lives as long as the app; the kernel drops the
-/// assertion with the process, so there is no teardown path to get wrong.
+/// Owns separate system and optional display assertions; both die with the process.
 @MainActor
 final class KeepAwakeController {
-    private var assertionID: IOPMAssertionID = 0
+    private var systemID: IOPMAssertionID = 0
+    private var displayID: IOPMAssertionID = 0
     private(set) var isHolding = false
 
-    func apply(_ decision: KeepAwakePolicy.Decision) {
-        switch decision {
-        case .hold:
-            guard !isHolding else { return }
-            var id: IOPMAssertionID = 0
-            let result = IOPMAssertionCreateWithName(
-                kIOPMAssertionTypePreventUserIdleSystemSleep as CFString,
-                IOPMAssertionLevel(kIOPMAssertionLevelOn),
-                "Mitama Island: an agent is still working" as CFString,
-                &id
-            )
-            guard result == kIOReturnSuccess else { return }
-            assertionID = id
-            isHolding = true
-        case .release:
-            guard isHolding else { return }
-            IOPMAssertionRelease(assertionID)
-            assertionID = 0
-            isHolding = false
+    func apply(_ decision: KeepAwakePolicy.Decision, displayToo: Bool = false) {
+        let hold = decision == .hold
+        update(&systemID, type: kIOPMAssertionTypePreventUserIdleSystemSleep, hold: hold)
+        update(&displayID, type: kIOPMAssertionTypePreventUserIdleDisplaySleep, hold: hold && displayToo)
+        isHolding = systemID != 0
+    }
+
+    private func update(_ id: inout IOPMAssertionID, type: String, hold: Bool) {
+        if hold && id == 0 {
+            var created: IOPMAssertionID = 0
+            if IOPMAssertionCreateWithName(type as CFString, IOPMAssertionLevel(kIOPMAssertionLevelOn),
+                                          "Mitama Island: stay awake" as CFString, &created) == kIOReturnSuccess {
+                id = created
+            }
+        } else if !hold && id != 0 {
+            IOPMAssertionRelease(id)
+            id = 0
         }
     }
 }

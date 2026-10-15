@@ -72,6 +72,26 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.removeAllItems()
         actions.removeAll()
 
+        model.refreshKeepAwake()
+        let awake = NSMenuItem(title: model.lang.t("keepAwake.title") + " · " + model.manualKeepAwakeLabel,
+                               action: nil, keyEquivalent: "")
+        let awakeMenu = NSMenu()
+        for mode in ManualKeepAwakePolicy.Mode.allCases {
+            addItem(model.lang.t(mode.labelKey), to: awakeMenu) { [weak model] in
+                model?.setManualKeepAwake(mode)
+            }
+            awakeMenu.items.last?.state = model.settings.behaviour.manualKeepAwakeMode == mode ? .on : .off
+        }
+        if model.settings.behaviour.manualKeepAwakeMode != .off {
+            awakeMenu.addItem(.separator())
+            addItem(model.lang.t("keepAwake.stop"), to: awakeMenu) { [weak model] in
+                model?.setManualKeepAwake(.off)
+            }
+        }
+        awake.submenu = awakeMenu
+        menu.addItem(awake)
+        menu.addItem(.separator())
+
         let shelfItems = model.shelf.items
         var shelfIndex = 0
 

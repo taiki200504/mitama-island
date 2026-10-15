@@ -70,3 +70,4 @@ This index is the repository map for humans and coding agents. Read these files 
 - [docs/settings-integration-audit-1005.md](./settings-integration-audit-1005.md) for the associated local implementation audit.
 
 - [docs/testing/paseo-fixture.md](./testing/paseo-fixture.md) for isolated native question, child, and unsupported-request fixtures.
+- [docs/keep-awake-manual.md](./keep-awake-manual.md) for the manual keep-awake mode (Amphetamine-style), closed-lid restore and its sudoers scope.

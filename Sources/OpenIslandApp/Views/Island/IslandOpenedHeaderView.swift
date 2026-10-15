@@ -49,6 +49,15 @@ extension IslandPanelView {
             }
 
             headerIconButton(
+                systemName: "cup.and.saucer.fill",
+                tint: model.settings.behaviour.manualKeepAwakeMode == .off
+                    ? V6Palette.paper.opacity(0.62) : SAOGrammar.Palette.accentOrange,
+                accessibilityLabel: model.lang.t("keepAwake.title") + " · " + model.manualKeepAwakeLabel
+            ) {
+                model.setManualKeepAwake(model.settings.behaviour.manualKeepAwakeMode == .off ? .oneHour : .off)
+            }
+
+            headerIconButton(
                 systemName: "timer",
                 tint: model.focusTimer.state.phase == .idle
                     ? V6Palette.paper.opacity(0.62)
