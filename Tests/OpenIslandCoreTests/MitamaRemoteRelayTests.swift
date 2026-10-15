@@ -29,8 +29,11 @@ private final class FakeHTTP: MitamaRemoteHTTP, @unchecked Sendable {
 struct MitamaRemoteRelayTests {
     private let env = MitamaEnvironment(url: URL(string: "https://example.supabase.co")!, apiKey: "k")
 
-    private func makeRelay(_ http: FakeHTTP, now: @escaping @Sendable () -> Date = { Date() }) -> MitamaRemoteRelay {
-        let relay = MitamaRemoteRelay(http: http, environmentLoader: { env }, now: now, autoPoll: false)
+    private func makeRelay(
+        _ http: FakeHTTP, now: @escaping @Sendable () -> Date = { Date() },
+        idle: @escaping @Sendable () -> TimeInterval = { 600 }
+    ) -> MitamaRemoteRelay {
+        let relay = MitamaRemoteRelay(http: http, environmentLoader: { env }, now: now, idleSeconds: idle, autoPoll: false)
         relay.isEnabled = true
         return relay
     }
@@ -88,6 +91,15 @@ struct MitamaRemoteRelayTests {
         #expect(calls[1].body["level"] as? String == "urgent")
         #expect(calls[1].body["source_ref"] as? String == "island:r1")
         #expect(calls[1].body["body"] as? String == "Claude Code のセッション1件がツール実行の許可を待っています")
+        #expect(relay.pendingCountForTests() == 1)
+    }
+
+    @Test
+    func permissionAtTheMacIsNotPushedToThePhone() async {
+        let http = FakeHTTP()
+        let relay = makeRelay(http, idle: { 10 })
+        await register(relay)
+        #expect(http.calls.map(\.table) == ["mos_island_requests"])
         #expect(relay.pendingCountForTests() == 1)
     }
 
