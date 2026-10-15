@@ -70,3 +70,4 @@ This index is the repository map for humans and coding agents. Read these files 
 - [docs/settings-integration-audit-1005.md](./settings-integration-audit-1005.md) for the associated local implementation audit.
 
 - [docs/testing/paseo-fixture.md](./testing/paseo-fixture.md) for isolated native question, child, and unsupported-request fixtures.
+- [docs/mitama-os-window.md](./mitama-os-window.md) for the mitama OS window (Hub inside the island, ⌃⌥M). Sign in with the email code; Google sign-in is blocked inside embedded web views.

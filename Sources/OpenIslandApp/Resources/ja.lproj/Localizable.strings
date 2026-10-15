@@ -987,3 +987,5 @@
 "decision.paseo.forwardedOpen" = "この質問の会話をPaseoで開く";
 
 "nowPlaying.unavailable" = "この環境では再生中の情報を取得できません。";
+
+"mitamaOS.open" = "mitama OS を開く";

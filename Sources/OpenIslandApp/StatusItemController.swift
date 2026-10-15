@@ -71,6 +71,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
         actions.removeAll()
+        addItem(model.lang.t("mitamaOS.open"), to: menu) { [weak model] in
+            model?.openMitamaHub()
+        }
 
         let shelfItems = model.shelf.items
         var shelfIndex = 0
