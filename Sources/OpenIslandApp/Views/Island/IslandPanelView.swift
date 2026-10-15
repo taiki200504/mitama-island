@@ -128,7 +128,7 @@ struct IslandPanelView: View {
         // slot when shown, so the lane has to reserve room for them. A fixed
         // count here compresses the usage lane's neighbour instead of
         // widening the lane.
-        var controls = cameraIsWatching ? 5 : 4   // + Raphael
+        var controls = cameraIsWatching ? 6 : 5   // + Raphael, + keep awake
         if model.settings.nowPlaying.enabled {
             controls += 1
         }

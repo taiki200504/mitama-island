@@ -1,5 +1,8 @@
 import Foundation
 import Observation
+import OpenIslandCore
+
+extension ManualKeepAwakePolicy.Mode: PreferenceRepresentable {}
 
 /// When completion notices for subagents and agent-team members surface.
 enum ChildAgentNotificationTiming: String, CaseIterable, PreferenceRepresentable, Sendable {
@@ -142,6 +145,26 @@ final class BehaviourSettings: PreferenceGroup {
     var keepsAwakeWhileRunning: Bool {
         get { read(\.keepsAwakeWhileRunning, Keys.keepsAwakeWhileRunning, false) }
         set { write(\.keepsAwakeWhileRunning, Keys.keepsAwakeWhileRunning, newValue) }
+    }
+
+    var manualKeepAwakeMode: ManualKeepAwakePolicy.Mode {
+        get { read(\.manualKeepAwakeMode, "behaviour.manualKeepAwakeMode", .off) }
+        set { write(\.manualKeepAwakeMode, "behaviour.manualKeepAwakeMode", newValue) }
+    }
+
+    var manualKeepAwakeStartedAt: Double {
+        get { read(\.manualKeepAwakeStartedAt, "behaviour.manualKeepAwakeStartedAt", 0) }
+        set { write(\.manualKeepAwakeStartedAt, "behaviour.manualKeepAwakeStartedAt", newValue) }
+    }
+
+    var keepAwakeDisplay: Bool {
+        get { read(\.keepAwakeDisplay, "behaviour.keepAwakeDisplay", false) }
+        set { write(\.keepAwakeDisplay, "behaviour.keepAwakeDisplay", newValue) }
+    }
+
+    var keepAwakeClosedLid: Bool {
+        get { read(\.keepAwakeClosedLid, "behaviour.keepAwakeClosedLid", false) }
+        set { write(\.keepAwakeClosedLid, "behaviour.keepAwakeClosedLid", newValue) }
     }
 
     var disableClickToJump: Bool {
