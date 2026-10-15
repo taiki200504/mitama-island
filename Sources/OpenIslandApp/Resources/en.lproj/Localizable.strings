@@ -1012,3 +1012,6 @@
 "keepAwake.release.batteryLow" = "Stay awake stopped because the battery is below 20%.";
 "keepAwake.release.lidClosedOnBattery" = "Stay awake stopped because the lid is closed on battery power.";
 "keepAwake.restoreFailed" = "Could not change the sleep setting. Allow administrator authentication and try stopping again.";
+
+"settings.audio.builtInMic" = "Use the Mac’s built-in microphone";
+"settings.audio.builtInMic.help" = "Use the built-in microphone to prevent Bluetooth headphones from reducing music quality when their microphone is active.";

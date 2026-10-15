@@ -1011,3 +1011,6 @@
 "keepAwake.release.batteryLow" = "電量低於20%，已停止保持喚醒。";
 "keepAwake.release.lidClosedOnBattery" = "闔蓋且使用電池，已停止保持喚醒。";
 "keepAwake.restoreFailed" = "無法更改睡眠設定。請允許管理員認證後再次停止。";
+
+"settings.audio.builtInMic" = "使用 Mac 內建麥克風";
+"settings.audio.builtInMic.help" = "使用藍牙耳機的麥克風會降低音樂音質，因此固定使用內建麥克風。";
