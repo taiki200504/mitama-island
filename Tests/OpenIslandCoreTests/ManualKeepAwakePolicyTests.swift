@@ -10,13 +10,13 @@ struct ManualKeepAwakePolicyTests {
         _ mode: ManualKeepAwakePolicy.Mode = .indefinite,
         elapsed: TimeInterval = 0, ac: Bool = true, battery: Int? = 80,
         thermal: ProcessInfo.ThermalState = .nominal, lid: Bool = false,
-        running: Int = 1, display: Bool = false
+        running: Int = 1, display: Bool = false, suspended: Bool = false
     ) -> ManualKeepAwakePolicy.Decision {
         ManualKeepAwakePolicy.decide(
             mode: mode, now: start.addingTimeInterval(elapsed), startedAt: start,
             conditions: .init(isOnAC: ac, batteryPercent: battery, isLowPowerMode: true,
                               thermalState: thermal, isLidClosed: lid),
-            runningCount: running, displayToo: display
+            runningCount: running, displayToo: display, wasSuspended: suspended
         )
     }
 
@@ -67,4 +67,37 @@ struct ManualKeepAwakePolicyTests {
         #expect(ManualKeepAwakePolicy.Reason.lidClosedOnBattery.isSafetyRelease)
         #expect(!ManualKeepAwakePolicy.Reason.expired.isSafetyRelease)
     }
+    @Test func alwaysOnClosedLid() {
+        #expect(decide(.alwaysOn, lid: true) == .hold(displayToo: false))
+        #expect(decide(.alwaysOn, ac: false, battery: 50, lid: true) == .hold(displayToo: false))
+    }
+
+    @Test func alwaysOnBatteryHysteresis() {
+        #expect(decide(.alwaysOn, ac: false, battery: 24) == .release(.batteryLow))
+        #expect(decide(.alwaysOn, ac: false, battery: 25) == .hold(displayToo: false))
+        #expect(decide(.alwaysOn, ac: false, battery: 27, suspended: true) == .release(.batteryLow))
+        #expect(decide(.alwaysOn, ac: false, battery: 30, suspended: true) == .hold(displayToo: false))
+        #expect(decide(.alwaysOn, ac: false, battery: 31, suspended: true) == .hold(displayToo: false))
+        #expect(decide(.alwaysOn, battery: 24, suspended: true) == .hold(displayToo: false))
+    }
+
+    @Test func alwaysOnThermalRecovery() {
+        for thermal in [ProcessInfo.ThermalState.serious, .critical] {
+            #expect(decide(.alwaysOn, thermal: thermal) == .release(.tooHot))
+        }
+        for thermal in [ProcessInfo.ThermalState.nominal, .fair] {
+            #expect(decide(.alwaysOn, thermal: thermal, suspended: true) == .hold(displayToo: false))
+        }
+    }
+
+    @Test func alwaysOnPersistsAndResumes() {
+        let mode = ManualKeepAwakePolicy.Mode(rawValue: "alwaysOn")!
+        #expect(decide(mode, ac: false, battery: 24) == .release(.batteryLow))
+        #expect(mode == .alwaysOn)
+        #expect(decide(mode, elapsed: 1_000_000, running: 0, display: true, suspended: true)
+                == .hold(displayToo: true))
+        #expect(mode.duration == nil)
+        #expect(ManualKeepAwakePolicy.Mode.allCases.first == .alwaysOn)
+    }
+
 }

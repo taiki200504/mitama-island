@@ -1017,3 +1017,8 @@
 
 "island.header.record" = "錄音";
 "island.header.recording" = "錄音中";
+
+"keepAwake.mode.alwaysOn" = "常時運行（代替 Mac mini）";
+"keepAwake.alwaysOn.short" = "常時運行";
+"keepAwake.alwaysOn.paused" = "因溫度或電量，已暫停常時運行保持。";
+"keepAwake.alwaysOn.resumed" = "狀態恢復安全，已恢復常時運行保持。";

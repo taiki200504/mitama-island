@@ -74,3 +74,19 @@ feat(keep-awake): 手動で起こしておくモード（Amphetamine 相当）
 Task: 1015-keepawake
 Agent: codex
 ```
+
+## 常時稼働（Mac mini の代わり）
+
+メニュー先頭の「常時稼働（Mac mini の代わり）」は期限なし。選択中は「起こしておく · 常時稼働」と表示する。画面保持は既存設定に従い、ふた保持設定・AC接続の有無に関係なくふた閉じ保持を有効にする。初回は既存の preparePermission で sudoers を用意する。保存済みのモードは起動時も再開する。
+
+熱 serious/critical またはバッテリー駆動で25%未満になると、モードを残してアイドル保持・画面保持・disablesleep を一時解除する。解除中は自動保持より安全弁を優先する。熱 nominal/fair かつ AC接続または残量30%以上になれば自動再開する。解除・再開の各遷移で島へ一度通知する。既存モードの20%未満・バッテリーふた閉じでオフへ戻す挙動は維持する。
+
+実機での管理者認証、ふた閉じ、熱・残量による解除と復帰、再起動後の保持は別途確認が必要。
+
+### 常時稼働の検証結果
+
+- `bash scripts/harness.sh lint`：成功（5件、4言語886キー一致）。
+- `bash scripts/check-docs.sh`：成功。`git diff --check`：成功。
+- `swift build`：sandbox-exec の `sandbox_apply: Operation not permitted` で失敗。指示に従い回避せず停止。
+- `swift test --filter KeepAwake`：未実行。追加4件（ふた閉じ、電池ヒステリシス、熱復帰、永続化・無期限・表示設定）も未検証。
+- コミット・追加委譲なし。親担当でビルド・テストと実機検証が必要。

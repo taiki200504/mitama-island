@@ -706,6 +706,7 @@ final class AppModel {
     @ObservationIgnored let power = PowerMonitor()
     @ObservationIgnored let keepAwake = KeepAwakeController()
     @ObservationIgnored let lidSleep = LidSleepController()
+    @ObservationIgnored var alwaysOnSuspended = false
     @ObservationIgnored var isStoppingKeepAwake = false
     @ObservationIgnored let keepAwakeTimer = RepeatingTimerBox()
     /// The last thing power said no to, so the sentence is said once rather

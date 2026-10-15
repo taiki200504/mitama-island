@@ -1018,3 +1018,8 @@
 
 "island.header.record" = "録音";
 "island.header.recording" = "録音中";
+
+"keepAwake.mode.alwaysOn" = "常時稼働（Mac mini の代わり）";
+"keepAwake.alwaysOn.short" = "常時稼働";
+"keepAwake.alwaysOn.paused" = "熱またはバッテリー残量のため、常時稼働の保持を一時解除しました。";
+"keepAwake.alwaysOn.resumed" = "安全な状態に戻ったため、常時稼働の保持を再開しました。";

@@ -2,7 +2,7 @@ import Foundation
 
 public enum ManualKeepAwakePolicy {
     public enum Mode: String, CaseIterable, Sendable {
-        case off, oneHour, threeHours, eightHours, indefinite, untilFinished
+        case alwaysOn, off, oneHour, threeHours, eightHours, indefinite, untilFinished
 
         public var duration: TimeInterval? {
             switch self {
@@ -31,11 +31,18 @@ public enum ManualKeepAwakePolicy {
     public static func decide(
         mode: Mode, now: Date, startedAt: Date,
         conditions: CameraPowerPolicy.Conditions, runningCount: Int,
-        displayToo: Bool = false
+        displayToo: Bool = false, wasSuspended: Bool = false
     ) -> Decision {
         guard mode != .off else { return .release(.disabled) }
         if conditions.thermalState == .serious || conditions.thermalState == .critical {
             return .release(.tooHot)
+        }
+        if mode == .alwaysOn {
+            let batteryFloor = wasSuspended ? 30 : 25
+            if !conditions.isOnAC, let battery = conditions.batteryPercent, battery < batteryFloor {
+                return .release(.batteryLow)
+            }
+            return .hold(displayToo: displayToo)
         }
         if !conditions.isOnAC {
             if let battery = conditions.batteryPercent, battery < 20 { return .release(.batteryLow) }
