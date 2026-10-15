@@ -646,6 +646,8 @@ final class AppModel {
     /// own gauge instead of macOS's built-in on-screen display, when
     /// `settings.hud.replacesSystem` is on.
     let systemHUD = SystemHUDCoordinator()
+    /// The current state of the Raphael desktop companion, or nil if unavailable.
+    var raphaelStatus: RaphaelStatus?
 
     /// Holds no microphone until the key is pressed with a card waiting.
     @ObservationIgnored let voiceAnswer: VoiceCommandSession
@@ -1651,7 +1653,8 @@ final class AppModel {
             nowPlayingTrack: nowPlaying.state.flatMap { state in
                 state.title.map { StatusMenuInputs.NowPlayingTrack(title: $0, isPlaying: state.isPlaying) }
             },
-            ambientListenIsEnabled: settings.ambientListen.isEnabled
+            ambientListenIsEnabled: settings.ambientListen.isEnabled,
+            raphaelStatus: raphaelStatus
         )
     }
 

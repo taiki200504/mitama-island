@@ -840,6 +840,11 @@
 "statusItem.openIsland" = "開啟島";
 "statusItem.openIsland.waiting" = "開啟島（%d 項等待）";
 "statusItem.unmute" = "取消靜音";
+"statusItem.raphael" = "拉斐爾";
+"statusItem.raphael.enable" = "顯示";
+"statusItem.raphael.micMute" = "靜音麥克風";
+"statusItem.raphael.voiceMute" = "靜音語音";
+"statusItem.raphael.notInstalled" = "拉斐爾（未安裝）";
 "statusItem.cameraOn" = "喚醒攝影機";
 "statusItem.cameraOff" = "關閉攝影機";
 "statusItem.timer.start" = "開始計時…";

@@ -93,6 +93,8 @@ extension IslandPanelView {
                 }
             }
 
+            raphaelHeaderMenu
+
             headerIconButton(
                 systemName: model.isSoundMuted ? "speaker.slash.fill" : "speaker.wave.2.fill",
                 tint: model.isSoundMuted
