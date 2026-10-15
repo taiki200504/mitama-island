@@ -117,6 +117,9 @@ final class AmbientListenSession {
     }
 
     private func beginCapture() {
+        if VoiceCommandSettings(store: settings.store).prefersBuiltInMicrophone {
+            BuiltInMicrophone.pin(engine)
+        }
         let input = engine.inputNode
         let format = input.inputFormat(forBus: 0)
         guard format.sampleRate > 0, format.channelCount > 0 else {

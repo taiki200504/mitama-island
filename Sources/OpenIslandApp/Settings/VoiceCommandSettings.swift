@@ -14,6 +14,11 @@ final class VoiceCommandSettings: PreferenceGroup {
         self.store = store
     }
 
+    var prefersBuiltInMicrophone: Bool {
+        get { read(\.prefersBuiltInMicrophone, Keys.prefersBuiltInMicrophone, true) }
+        set { write(\.prefersBuiltInMicrophone, Keys.prefersBuiltInMicrophone, newValue) }
+    }
+
     var isEnabled: Bool {
         get { read(\.isEnabled, Keys.enabled, false) }
         set { write(\.isEnabled, Keys.enabled, newValue) }
@@ -49,6 +54,7 @@ extension VoiceCommandSettings {
     }
 
     enum Keys {
+        static let prefersBuiltInMicrophone = "audio.prefersBuiltInMicrophone"
         static let enabled = "voiceCommand.enabled"
         static let windowSeconds = "voiceCommand.windowSeconds"
         static let localeIdentifier = "voiceCommand.locale"

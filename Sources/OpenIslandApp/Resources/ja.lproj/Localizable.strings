@@ -1011,3 +1011,6 @@
 "keepAwake.release.batteryLow" = "バッテリーが20%未満になったため、「起こしておく」を止めました。";
 "keepAwake.release.lidClosedOnBattery" = "ふたを閉じたままバッテリー駆動になったため、「起こしておく」を止めました。";
 "keepAwake.restoreFailed" = "スリープ設定を変更できませんでした。管理者の認証を許可して、もう一度停止してください。";
+
+"settings.audio.builtInMic" = "Mac内蔵マイクを使う";
+"settings.audio.builtInMic.help" = "Bluetoothイヤホンのマイクを使うと音楽の音質が落ちるため、内蔵マイクに固定します";

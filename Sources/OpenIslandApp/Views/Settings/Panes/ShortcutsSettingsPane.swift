@@ -245,6 +245,15 @@ struct ShortcutsSettingsPane: View {
     private var voiceAnswerSection: some View {
         Section {
             SettingsToggleRow(
+                title: lang.t("settings.audio.builtInMic"),
+                help: lang.t("settings.audio.builtInMic.help"),
+                isOn: Binding(
+                    get: { voiceCommand.prefersBuiltInMicrophone },
+                    set: { voiceCommand.prefersBuiltInMicrophone = $0 }
+                )
+            )
+
+            SettingsToggleRow(
                 title: lang.t("settings.voice.enabled"),
                 help: lang.t("settings.voice.enabled.help"),
                 isOn: Binding(
