@@ -88,6 +88,25 @@ struct PaseoPermissionWiringTests {
         #expect(model.state.session(id: "native")?.permissionRequest?.paseoContext?.requestID == "request-2")
     }
 
+    @Test func overwrittenCardIsReplacedByTheLiveRequestInsteadOfStickingOnStale() async throws {
+        let mock = PaseoApprovalMock()
+        let coordinator = PaseoQuestionCoordinator(call: { try await mock.call($0, $1) })
+        let model = model(coordinator)
+        model.connectPaseoQuestions(); coordinator.stop()
+        await coordinator.poll()
+        // フック経由の要求がカードを上書きし、Paseo 側は変わらない
+        model.state.apply(.permissionRequested(PermissionRequested(sessionID: "native",
+            request: PermissionRequest(title: "実行の許可", summary: "{}", affectedPath: "/project"), timestamp: .now)))
+        model.approvePermission(for: "native", approved: true)
+        #expect(model.paseoErrors["native"] != nil)
+        #expect(model.state.session(id: "native")?.permissionRequest?.paseoContext?.requestID == "request-1")
+        #expect(await mock.sends == 0)
+        model.approvePermission(for: "native", approved: true)
+        try await waitForSubmission(model, sessionID: "native")
+        #expect(await mock.sends == 1)
+        #expect(model.state.session(id: "native")?.permissionRequest == nil)
+    }
+
     @Test func externalResolutionClearsOnlyTheKnownSDKCardWithoutGranting() async throws {
         let mock = PaseoApprovalMock()
         let coordinator = PaseoQuestionCoordinator(call: { try await mock.call($0, $1) })

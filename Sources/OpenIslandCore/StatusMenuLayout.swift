@@ -7,6 +7,7 @@ import Foundation
 /// be tested without standing up a real `NSStatusItem`.
 public struct StatusMenuInputs: Sendable {
     public var isMuted: Bool
+    public var ambientListenIsEnabled: Bool
     public var cameraIsWatching: Bool
     public var shelfItemNames: [String]
     /// Sessions waiting on an approval or an answer right now.
@@ -42,8 +43,10 @@ public struct StatusMenuInputs: Sendable {
         timerRunningLabel: String? = nil,
         clipboardIsEnabled: Bool = false,
         nowPlayingTrack: NowPlayingTrack? = nil,
+        ambientListenIsEnabled: Bool = false,
         raphaelStatus: RaphaelStatus? = nil
     ) {
+        self.ambientListenIsEnabled = ambientListenIsEnabled
         self.isMuted = isMuted
         self.cameraIsWatching = cameraIsWatching
         self.shelfItemNames = shelfItemNames
@@ -59,6 +62,7 @@ public struct StatusMenuInputs: Sendable {
 public enum StatusMenuEntry: Equatable, Sendable {
     case openIsland(waitingCount: Int)
     case toggleMute(isMuted: Bool)
+    case toggleAmbientListen(isEnabled: Bool)
     case toggleCamera(isWatching: Bool)
     /// Idle: offers the fixed preset list as its own submenu.
     case startTimer(presets: [FocusTimerPreset])
@@ -94,6 +98,7 @@ public enum StatusMenuLayout {
             .openIsland(waitingCount: inputs.waitingCount),
             .toggleMute(isMuted: inputs.isMuted),
             .toggleCamera(isWatching: inputs.cameraIsWatching),
+            .toggleAmbientListen(isEnabled: inputs.ambientListenIsEnabled),
         ]
 
         if let label = inputs.timerRunningLabel {

@@ -1,5 +1,6 @@
 import AVFoundation
 import Foundation
+import OpenIslandCore
 import Speech
 import Testing
 @testable import OpenIslandApp
@@ -23,6 +24,46 @@ struct CapturePermissionLifetimeTests {
                                         requestCameraAccess: { replies.callbacks.append($0) },
                                         captureStart: { replies.starts += 1 }), settings, replies)
     }
+    @Test("Sustained capture only answers palms; a keypress preserves navigation until stop")
+    func sustainedCaptureFiltersNavigation() {
+        let settings = CameraGestureSettings(store: PreferenceStore(suite: UserDefaults(suiteName: "camera-gestures-\(UUID().uuidString)")!))
+        settings.isEnabled = true
+        settings.answersByPalm = true
+        let session = CameraActivationSession(settings: settings, cameraAuthorization: { .authorized },
+                                              captureStart: {}, cameraInUse: { false })
+        var palms = 0
+        var pinches = 0
+        var points = 0
+        var swipes = 0
+        session.onPalmHeld = { palms += 1 }
+        session.onPinch = { pinches += 1 }
+        session.onPointing = { _ in points += 1 }
+        session.onGesture = { _ in swipes += 1 }
+        let pointing = CameraFrameOutcome.pointing(.init(position: .init(x: 0.5, y: 0.5, confidence: 1),
+                                                        pinchRatio: 1, spreadRatio: 1))
+        func sendGestures() {
+            session.handle(.palmHeld)
+            session.handle(pointing)
+            session.handle(.pinched)
+            session.handle(.swiped(.down))
+        }
+
+        session.beginSustained()
+        sendGestures()
+        #expect(palms == 1 && pinches == 0 && points == 0 && swipes == 0)
+        #expect(session.isRunning)
+        session.stop()
+        #expect(!session.begin())
+        session.beginSustained()
+        sendGestures()
+        #expect(palms == 2 && pinches == 1 && points == 1 && swipes == 1)
+        #expect(!session.isRunning)
+        session.beginSustained()
+        sendGestures()
+        #expect(palms == 3 && pinches == 1 && points == 1 && swipes == 1)
+        session.stop()
+    }
+
     private func voice(microphoneAuthorized: Bool = false) -> (VoiceCommandSession, VoiceCommandSettings, VoiceReplies) {
         let settings = VoiceCommandSettings(store: PreferenceStore(suite: UserDefaults(suiteName: "voice-privacy-\(UUID().uuidString)")!))
         settings.isEnabled = true

@@ -162,7 +162,7 @@ public struct MitamaNotificationClient: Sendable {
     /// digits, so both shapes have to be accepted. Formatters are built per
     /// decode rather than shared: `ISO8601DateFormatter` is not `Sendable`,
     /// and a handful of rows per minute does not justify the ceremony.
-    private var decoder: JSONDecoder {
+    var decoder: JSONDecoder {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .custom { decoder in
             let text = try decoder.singleValueContainer().decode(String.self)
@@ -196,6 +196,8 @@ public struct MitamaNotificationClient: Sendable {
             URLQueryItem(name: "select", value: "id,level,title,body,created_at"),
             URLQueryItem(name: "read", value: "eq.false"),
             URLQueryItem(name: "level", value: "in.(\(levels))"),
+            // The island's own remote-answer requests ('island:<id>') must not bounce back onto it.
+            URLQueryItem(name: "or", value: "(source_ref.is.null,source_ref.not.like.island:*)"),
             URLQueryItem(name: "order", value: "created_at.desc"),
             URLQueryItem(name: "limit", value: String(limit)),
         ]

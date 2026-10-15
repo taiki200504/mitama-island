@@ -25,6 +25,11 @@ final class MitamaFeedCoordinator {
     private static let pollInterval: TimeInterval = 60
     private static let maxPollInterval: TimeInterval = 10 * 60
 
+    private(set) var humanTasks: [MitamaHumanTask] = []
+    private(set) var answeringHumanTaskIDs: Set<String> = []
+    private(set) var humanTaskMessage: String?
+    @ObservationIgnored private var humanTaskClient: MitamaHumanTaskClient?
+
     private(set) var notifications: [MitamaNotification] = []
     private(set) var isConfigured = false
     private(set) var credentialSource: MitamaEnvironment.Source?
@@ -118,6 +123,7 @@ final class MitamaFeedCoordinator {
             self.client = MitamaNotificationClient(environment: loaded.environment)
             self.workLog = MitamaWorkLogClient(environment: loaded.environment)
             self.proposalClient = MitamaProposalClient(environment: loaded.environment)
+            self.humanTaskClient = MitamaHumanTaskClient(environment: loaded.environment)
             self.ambientClient = MitamaAmbientClient(environment: loaded.environment)
             self.currentInterval = Self.pollInterval
 
@@ -132,6 +138,9 @@ final class MitamaFeedCoordinator {
         pollTask?.cancel()
         pollTask = nil
         workLog = nil
+        humanTaskClient = nil
+        humanTasks = []
+        humanTaskMessage = nil
         proposalClient = nil
         ambientClient = nil
         ambientFetchedAt = nil
@@ -160,6 +169,10 @@ final class MitamaFeedCoordinator {
 
     func refresh() async {
         guard let client else { return }
+        if let humanTaskClient {
+            do { humanTasks = try await humanTaskClient.fetchOpen() }
+            catch { humanTaskMessage = "外部からの依頼を取得できませんでした" }
+        }
 
         do {
             let rows = try await client.fetchActionable()
@@ -176,6 +189,25 @@ final class MitamaFeedCoordinator {
             // Back off instead of hammering: the usual failure here is being
             // offline, and that can last hours.
             currentInterval = min(currentInterval * 2, Self.maxPollInterval)
+        }
+    }
+
+    func answer(_ task: MitamaHumanTask, with answer: MitamaHumanAnswer) {
+        guard let humanTaskClient, answeringHumanTaskIDs.insert(task.id).inserted else { return }
+        humanTaskMessage = nil
+        Task {
+            defer { answeringHumanTaskIDs.remove(task.id) }
+            do {
+                switch try await humanTaskClient.answer(task, with: answer) {
+                case .alreadyAnswered:
+                    humanTaskMessage = "ほかで回答済み"
+                case .answered(_, let warning):
+                    humanTaskMessage = warning ?? "回答しました：\(answer.label)"
+                }
+                humanTasks.removeAll { $0.id == task.id }
+            } catch {
+                humanTaskMessage = error.localizedDescription
+            }
         }
     }
 

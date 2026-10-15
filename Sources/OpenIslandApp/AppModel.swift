@@ -766,6 +766,52 @@ final class AppModel {
     @ObservationIgnored
     private(set) var watchRelay: WatchNotificationRelay?
 
+    // MARK: - iPhone answers via mitama
+
+    private static let remoteAnswerEnabledKey = "mitama.remoteAnswer.enabled"
+
+    /// Mirrors permission / question prompts to mitama so they can be answered
+    /// from the iPhone. Default ON; OFF sends nothing at all.
+    var remoteAnswerEnabled: Bool = true {
+        didSet {
+            guard remoteAnswerEnabled != oldValue else { return }
+            UserDefaults.standard.set(remoteAnswerEnabled, forKey: Self.remoteAnswerEnabledKey)
+            remoteRelay.isEnabled = remoteAnswerEnabled && hasStarted
+        }
+    }
+
+    @ObservationIgnored
+    let remoteRelay = MitamaRemoteRelay()
+
+    /// Same resolution path as the Watch relay: an answer from elsewhere is applied exactly as a local tap.
+    private func setupRemoteRelayCallbacks() {
+        remoteRelay.isWaiting = { [weak self] id in
+            guard let session = self?.state.session(id: id) else { return false }
+            return session.phase == .waitingForAnswer && session.isTrackedLiveSession
+        }
+        remoteRelay.isCurrent = { [weak self] sessionID, requestID in
+            guard let session = self?.state.session(id: sessionID) else { return false }
+            return session.permissionRequest?.id.uuidString == requestID
+                || session.questionPrompt?.id.uuidString == requestID
+        }
+        // Applied only if that exact prompt is still the one waiting: a late answer
+        // must not land on a newer prompt in the same session.
+        remoteRelay.onResolvePermission = { [weak self] sessionID, requestID, approved in
+            Task { @MainActor [weak self] in
+                guard let self,
+                      self.state.session(id: sessionID)?.permissionRequest?.id.uuidString == requestID else { return }
+                self.approvePermission(for: sessionID, approved: approved)
+            }
+        }
+        remoteRelay.onAnswerQuestion = { [weak self] sessionID, requestID, answer in
+            Task { @MainActor [weak self] in
+                guard let self,
+                      self.state.session(id: sessionID)?.questionPrompt?.id.uuidString == requestID else { return }
+                self.answerQuestion(for: sessionID, answer: QuestionPromptResponse(answer: answer))
+            }
+        }
+    }
+
     /// Current pairing code for display in the settings UI.
     var watchPairingCode: String {
         watchRelay?.endpoint.currentCode() ?? "----"
@@ -996,6 +1042,9 @@ final class AppModel {
         if watchNotificationEnabled {
             startWatchRelay()
         }
+        // Default ON, so the missing key has to be asked about first.
+        remoteAnswerEnabled = defaults.object(forKey: Self.remoteAnswerEnabledKey) as? Bool ?? true
+        setupRemoteRelayCallbacks()
 
         // Wired regardless of the setting below: the callback itself checks
         // `alertsWhenEventStarts` before doing anything, and the watcher only
@@ -1223,9 +1272,13 @@ final class AppModel {
         guard settings.display.hideIdleSessions else { return sessions }
         let now = Date.now
         let threshold = completedStaleThreshold.seconds
+        // A Paseo conversation stays open in Paseo until it is closed or
+        // archived, so an idle one is still something the user has open — it
+        // only reaches this list while its process is alive.
         let live = sessions.filter { session in
-            session.islandPresence(at: now) != .inactive
-                && !session.isStaleCompletedForIsland(at: now, threshold: threshold)
+            session.jumpTarget?.terminalApp == "Paseo"
+                || (session.islandPresence(at: now) != .inactive
+                    && !session.isStaleCompletedForIsland(at: now, threshold: threshold))
         }
         return live.isEmpty ? sessions : live
     }
@@ -1288,6 +1341,7 @@ final class AppModel {
 
     var liveAttentionCount: Int {
         surfacedSessions.filter { $0.phase.requiresAttention }.count
+            + (mitamaFeedEnabled ? mitamaFeed.humanTasks.count : 0)
     }
 
     var liveRunningCount: Int {
@@ -1597,6 +1651,7 @@ final class AppModel {
             nowPlayingTrack: nowPlaying.state.flatMap { state in
                 state.title.map { StatusMenuInputs.NowPlayingTrack(title: $0, isPlaying: state.isPlaying) }
             },
+            ambientListenIsEnabled: settings.ambientListen.isEnabled,
             raphaelStatus: raphaelStatus
         )
     }
@@ -1660,8 +1715,21 @@ final class AppModel {
         // already picks urgent over waiting when both are passed together,
         // which is exactly the ordering `IslandClosedArbiter` needs to make
         // for itself instead of inheriting pre-decided.
-        let urgent = IslandPeekBand.content(for: [], mitamaAlerts: alerts, now: now)
-        let waiting = IslandPeekBand.content(for: surfacedSessions, mitamaAlerts: [], now: now)
+        let urgentAlert = IslandPeekBand.content(for: [], mitamaAlerts: alerts, now: now)
+        let urgent = urgentAlert.map {
+            IslandPeekBand.Content(agent: $0.agent, subject: $0.subject, elapsed: $0.elapsed,
+                othersWaiting: $0.othersWaiting + (mitamaFeedEnabled ? mitamaFeed.humanTasks.count : 0))
+        }
+        let sessionWaiting = IslandPeekBand.content(for: surfacedSessions, mitamaAlerts: [], now: now)
+        let tasks = mitamaFeedEnabled ? mitamaFeed.humanTasks : []
+        let waiting: IslandPeekBand.Content?
+        if let oldest = tasks.first {
+            waiting = IslandPeekBand.Content(agent: "GROK", subject: .mitamaAlert,
+                elapsed: IslandPeekBand.elapsed(since: oldest.createdAt, now: now),
+                othersWaiting: tasks.count - 1 + surfacedSessions.filter { $0.phase.requiresAttention }.count)
+        } else {
+            waiting = sessionWaiting
+        }
 
         let inputs = IslandClosedInputs(
             mitamaUrgent: urgent,
@@ -1878,6 +1946,8 @@ final class AppModel {
             return
         }
         hasStarted = true
+        // Only a launched app mirrors prompts; models built in tests stay off the network.
+        remoteRelay.isEnabled = remoteAnswerEnabled && startBridge
 
         shelf.load()
         shelf.pruneExpired()
@@ -2119,12 +2189,31 @@ final class AppModel {
         state = SessionState(sessions: sessions)
     }
 
-    func reconcilePaseoSessionsOnce() async {
+    /// `liveClaudeSessionIDs` brings back Paseo conversations the island has no
+    /// row for: an idle one fires no hook, so after a relaunch it would stay
+    /// invisible until the user next spoke to it.
+    func reconcilePaseoSessionsOnce(
+        liveClaudeSessionIDs: Set<String> = ProcessMonitoringCoordinator.liveClaudeSessionIDs()
+    ) async {
+        // Rows rebuilt from transcripts at launch carry no host, so they are
+        // matched too unless a terminal already claims them.
+        let terminalOwned = Set(state.sessions.filter {
+            $0.jumpTarget.map { !["Paseo", "Unknown", ""].contains($0.terminalApp) } ?? false
+        }.map(\.id))
         let ids = Set(state.sessions.filter { $0.jumpTarget?.terminalApp == "Paseo" }.map(\.id))
+            .union(liveClaudeSessionIDs.subtracting(terminalOwned))
         guard !ids.isEmpty else { return }
         do {
             let bindings = try await paseoQuestions.reconcileBindings(sessionIDs: ids)
             for (id, binding) in bindings {
+                let existing = state.session(id: id)
+                if liveClaudeSessionIDs.contains(id), binding.provider == "claude",
+                   existing == nil || existing?.isVisibleInIsland == false {
+                    state.apply(.sessionStarted(SessionStarted(
+                        sessionID: id, title: binding.title, tool: .claudeCode, origin: .live,
+                        initialPhase: .completed, summary: existing?.summary ?? "", timestamp: existing?.updatedAt ?? .now,
+                        jumpTarget: binding.jumpTarget, claudeMetadata: existing?.claudeMetadata)))
+                }
                 adoptPaseoTitle(binding)
                 state.apply(.jumpTargetUpdated(JumpTargetUpdated(sessionID: id, jumpTarget: binding.jumpTarget, timestamp: .now)))
                 paseoModeLabels[id] = binding.currentModeLabel ?? "モード情報なし"
@@ -2969,6 +3058,12 @@ final class AppModel {
         if let expectedRequestID, session.permissionRequest?.id != expectedRequestID { return }
         if let pending = paseoQuestions.requests[sessionID], pending.permission != nil {
             guard session.permissionRequest?.paseoContext?.requestID == pending.requestID else {
+                // 別経路（フック）の要求がカードを上書きしたまま、Paseo 側は変わらず
+                // onRequestsChange も来ないことがある。表示を差し替えないと、何度押しても
+                // ここで止まり続ける。送らずに最新の要求を見せ、もう一度押してもらう。
+                if let permission = pending.permission {
+                    state.apply(.permissionRequested(PermissionRequested(sessionID: sessionID, request: permission, timestamp: .now)))
+                }
                 paseoErrors[sessionID] = "要求が更新されました。表示を確認して回答してください。"
                 return
             }
@@ -3266,26 +3361,30 @@ final class AppModel {
             recordCompletionForLevel(event)
         }
 
+        let eventSessionID: String? = {
+            switch event {
+            case let .sessionStarted(p): return p.sessionID
+            case let .activityUpdated(p): return p.sessionID
+            case let .permissionRequested(p): return p.sessionID
+            case let .questionAsked(p): return p.sessionID
+            case let .sessionCompleted(p): return p.sessionID
+            case let .jumpTargetUpdated(p): return p.sessionID
+            case let .sessionMetadataUpdated(p): return p.sessionID
+            case let .claudeSessionMetadataUpdated(p): return p.sessionID
+            case let .geminiSessionMetadataUpdated(p): return p.sessionID
+            case let .openCodeSessionMetadataUpdated(p): return p.sessionID
+            case let .cursorSessionMetadataUpdated(p): return p.sessionID
+            case let .actionableStateResolved(p): return p.sessionID
+            }
+        }()
+        let eventSession = eventSessionID.flatMap { state.session(id: $0) }
+
+        // Mirror prompts to mitama so the iPhone can answer them too.
+        remoteRelay.notifyEvent(event, session: eventSession)
+
         // Push relevant events to the Watch/iPhone via the relay
         if let relay = watchRelay {
-            let eventSessionID: String? = {
-                switch event {
-                case let .sessionStarted(p): return p.sessionID
-                case let .activityUpdated(p): return p.sessionID
-                case let .permissionRequested(p): return p.sessionID
-                case let .questionAsked(p): return p.sessionID
-                case let .sessionCompleted(p): return p.sessionID
-                case let .jumpTargetUpdated(p): return p.sessionID
-                case let .sessionMetadataUpdated(p): return p.sessionID
-                case let .claudeSessionMetadataUpdated(p): return p.sessionID
-                case let .geminiSessionMetadataUpdated(p): return p.sessionID
-                case let .openCodeSessionMetadataUpdated(p): return p.sessionID
-                case let .cursorSessionMetadataUpdated(p): return p.sessionID
-                case let .actionableStateResolved(p): return p.sessionID
-                }
-            }()
-            let session = eventSessionID.flatMap { state.session(id: $0) }
-            relay.notifyEvent(event, session: session)
+            relay.notifyEvent(event, session: eventSession)
         }
 
         if updateLastActionMessage {
@@ -3591,7 +3690,7 @@ final class AppModel {
         // can start on its own, and the reason the camera may be held open at
         // all when no card is waiting.
         cameraActivation.onPalmHeld = { [weak self] in
-            guard let self else { return }
+            guard let self, !voiceAnswer.isRunning else { return }
             guard !gestureRehearsal.isRunning else {
                 gestureRehearsal.record(.palm)
                 return

@@ -87,7 +87,7 @@ struct PanelHotkeyCoordinatorTests {
         let (coordinator, registrar, _) = makeCoordinator()
         coordinator.panelDidExpand()
         coordinator.panelDidCollapse()
-        coordinator.keyboardLayoutDidChange()
+        coordinator.keyboardLayoutDidChange(to: KeycodeResolver(table: ["Y": 6]))
         #expect(registrar.bindingsByScope[.panelExpanded]?.isEmpty == true)
         #expect(registrar.bindingsByScope[.persistent]?.isEmpty == false)
     }
@@ -96,8 +96,18 @@ struct PanelHotkeyCoordinatorTests {
     func layoutChangePreservesExpandedScope() {
         let (coordinator, registrar, _) = makeCoordinator()
         coordinator.panelDidExpand()
-        coordinator.keyboardLayoutDidChange()
+        coordinator.keyboardLayoutDidChange(to: KeycodeResolver(table: ["Y": 6]))
         #expect(registrar.bindingsByScope[.panelExpanded]?.isEmpty == false)
+    }
+
+    @Test("An IME toggle on the same layout does not re-register anything")
+    func sameLayoutIsIgnored() {
+        let (coordinator, registrar, _) = makeCoordinator()
+        coordinator.startPersistentBindings()
+        coordinator.panelDidExpand()
+        let removalsBefore = registrar.removals.count
+        coordinator.keyboardLayoutDidChange(to: KeycodeResolver(table: KeycodeResolver.usFallbackTable))
+        #expect(registrar.removals.count == removalsBefore)
     }
 
     @Test("Every default action gets a binding")

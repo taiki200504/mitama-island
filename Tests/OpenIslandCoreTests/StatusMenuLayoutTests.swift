@@ -10,7 +10,8 @@ struct StatusMenuLayoutTests {
         waitingCount: Int = 0,
         timerRunningLabel: String? = nil,
         clipboardIsEnabled: Bool = false,
-        nowPlayingTrack: StatusMenuInputs.NowPlayingTrack? = nil
+        nowPlayingTrack: StatusMenuInputs.NowPlayingTrack? = nil,
+        ambientListenIsEnabled: Bool = false
     ) -> StatusMenuInputs {
         StatusMenuInputs(
             isMuted: isMuted,
@@ -19,7 +20,8 @@ struct StatusMenuLayoutTests {
             waitingCount: waitingCount,
             timerRunningLabel: timerRunningLabel,
             clipboardIsEnabled: clipboardIsEnabled,
-            nowPlayingTrack: nowPlayingTrack
+            nowPlayingTrack: nowPlayingTrack,
+            ambientListenIsEnabled: ambientListenIsEnabled
         )
     }
 
@@ -30,12 +32,19 @@ struct StatusMenuLayoutTests {
             .openIsland(waitingCount: 0),
             .toggleMute(isMuted: false),
             .toggleCamera(isWatching: false),
+            .toggleAmbientListen(isEnabled: false),
             .startTimer(presets: FocusTimerPreset.allCases),
             .raphael(status: nil),
             .separator,
             .settings,
             .quit,
         ])
+    }
+
+    @Test("Ambient listening entry follows its enabled state")
+    func ambientListenFollowsState() {
+        let entries = StatusMenuLayout.entries(for: inputs(ambientListenIsEnabled: true))
+        #expect(entries[3] == .toggleAmbientListen(isEnabled: true))
     }
 
     @Test("Mute label follows the muted state")
@@ -73,6 +82,7 @@ struct StatusMenuLayoutTests {
             .openIsland(waitingCount: 0),
             .toggleMute(isMuted: false),
             .toggleCamera(isWatching: false),
+            .toggleAmbientListen(isEnabled: false),
             .startTimer(presets: FocusTimerPreset.allCases),
             .raphael(status: nil),
             .separator,
@@ -120,6 +130,7 @@ struct StatusMenuLayoutTests {
             .openIsland(waitingCount: 1),
             .toggleMute(isMuted: true),
             .toggleCamera(isWatching: true),
+            .toggleAmbientListen(isEnabled: false),
             .startTimer(presets: FocusTimerPreset.allCases),
             .raphael(status: nil),
             .separator,
@@ -165,6 +176,7 @@ struct StatusMenuLayoutTests {
             .openIsland(waitingCount: 0),
             .toggleMute(isMuted: false),
             .toggleCamera(isWatching: false),
+            .toggleAmbientListen(isEnabled: false),
             .startTimer(presets: FocusTimerPreset.allCases),
             .openClipboard,
             .raphael(status: nil),
