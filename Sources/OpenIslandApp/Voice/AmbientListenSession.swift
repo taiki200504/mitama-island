@@ -30,6 +30,7 @@ final class AmbientListenSession {
     enum Phase: Equatable, Sendable {
         case idle
         case listening
+        case stalled
         /// Running, but holding the microphone shut because a call is up.
         case pausedForCall
         case denied
@@ -55,7 +56,13 @@ final class AmbientListenSession {
     private(set) var currentSegmentSeconds: Double = 0
 
     private let settings: AmbientListenSettings
-    private let engine = AVAudioEngine()
+    private var engine = AVAudioEngine()
+    private var configurationObserver: NSObjectProtocol?
+    private var engineGeneration = UUID()
+    private var tapInstalled = false
+    private var lastRestartAt: Date?
+    private var recoveryAttempted = false
+    private var captureStartedAt = Date()
     private let writer: SegmentWriter
     private var callWatch: Task<Void, Never>?
 
@@ -69,7 +76,7 @@ final class AmbientListenSession {
             .appendingPathComponent(".mitama/earshot/audio", isDirectory: true)
     }
 
-    var isRunning: Bool { phase == .listening || phase == .pausedForCall }
+    var isRunning: Bool { phase == .listening || phase == .pausedForCall || phase == .stalled }
 
     /// Turns listening on. Does nothing while the switch is off, so the caller
     /// can call this on launch without checking first.
@@ -97,10 +104,10 @@ final class AmbientListenSession {
     func stop() {
         callWatch?.cancel()
         callWatch = nil
-        if engine.isRunning {
-            engine.inputNode.removeTap(onBus: 0)
-            engine.stop()
-        }
+        tearDownEngine()
+        lastRestartAt = nil
+        recoveryAttempted = false
+        writer.setMuted(false)
         writer.close()
         currentSegmentSeconds = 0
         phase = .idle
@@ -116,10 +123,38 @@ final class AmbientListenSession {
         }
     }
 
+    private func tearDownEngine() {
+        if let configurationObserver {
+            NotificationCenter.default.removeObserver(configurationObserver)
+            self.configurationObserver = nil
+        }
+        engineGeneration = UUID()
+        if tapInstalled {
+            engine.inputNode.removeTap(onBus: 0)
+            tapInstalled = false
+        }
+        engine.stop()
+        writer.close()
+    }
+
+    private func restartCapture(now: Date) {
+        guard lastRestartAt.map({ now.timeIntervalSince($0) >= 5 }) ?? true else { return }
+        lastRestartAt = now
+        let wasPaused = phase == .pausedForCall
+        tearDownEngine()
+        engine = AVAudioEngine()
+        beginCapture()
+        if phase == .unavailable { phase = .stalled }
+        if wasPaused, phase == .listening { phase = .pausedForCall }
+    }
+
     private func beginCapture() {
+        captureStartedAt = .now
         if VoiceCommandSettings(store: settings.store).prefersBuiltInMicrophone {
             BuiltInMicrophone.pin(engine)
         }
+        // Keep this graph input-only: the default Bluetooth output can differ
+        // from the pinned microphone. Never instantiate the mixer/output nodes.
         let input = engine.inputNode
         let format = input.inputFormat(forBus: 0)
         guard format.sampleRate > 0, format.channelCount > 0 else {
@@ -142,13 +177,24 @@ final class AmbientListenSession {
             writer.append(buffer)
         }
 
+        tapInstalled = true
+        let generation = engineGeneration
+        configurationObserver = NotificationCenter.default.addObserver(
+            forName: .AVAudioEngineConfigurationChange, object: engine, queue: nil
+        ) { @Sendable [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self, self.isRunning, self.engineGeneration == generation else { return }
+                self.restartCapture(now: .now)
+            }
+        }
+
         do {
             engine.prepare()
             try engine.start()
             phase = .listening
             Self.logger.notice("listening rate=\(format.sampleRate, privacy: .public)")
         } catch {
-            input.removeTap(onBus: 0)
+            tearDownEngine()
             phase = .unavailable
             Self.logger.error("engine failed: \(error.localizedDescription, privacy: .public)")
             return
@@ -161,21 +207,42 @@ final class AmbientListenSession {
     /// signal that covers every app, and a five-second poll is cheap next to
     /// keeping an audio engine running.
     private func startCallWatch() {
-        callWatch?.cancel()
+        guard callWatch == nil else { return }
         callWatch = Task { @MainActor [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(5))
+                do { try await Task.sleep(for: .seconds(5)) } catch { return }
                 guard let self, self.isRunning else { return }
                 self.applyCallState(Self.isCallAppRunning())
+                self.checkInputHealth(now: .now)
                 self.currentSegmentSeconds = self.writer.currentSeconds
             }
+        }
+    }
+
+    nonisolated static func isInputStalled(now: Date, lastBufferAt: Date, threshold: TimeInterval = 10) -> Bool {
+        now.timeIntervalSince(lastBufferAt) >= threshold
+    }
+
+    private func checkInputHealth(now: Date) {
+        guard phase == .listening || phase == .stalled else { return }
+        if !Self.isInputStalled(now: now, lastBufferAt: max(writer.lastBufferAt, captureStartedAt)) {
+            if writer.lastBufferAt >= captureStartedAt {
+                recoveryAttempted = false
+                phase = .listening
+            }
+        } else if !recoveryAttempted {
+            guard lastRestartAt.map({ now.timeIntervalSince($0) >= 5 }) ?? true else { return }
+            recoveryAttempted = true
+            restartCapture(now: now)
+        } else {
+            phase = .stalled
         }
     }
 
     private func applyCallState(_ inCall: Bool) {
         guard settings.pauseDuringCalls else { return }
         switch (inCall, phase) {
-        case (true, .listening):
+        case (true, .listening), (true, .stalled):
             writer.setMuted(true)
             writer.close()
             phase = .pausedForCall
@@ -218,6 +285,13 @@ final class SegmentWriter: @unchecked Sendable {
     private var writtenFrames: AVAudioFramePosition = 0
     private var silentFrames: AVAudioFramePosition = 0
     private var muted = false
+    private var lastReceivedAt = Date.distantPast
+
+    var lastBufferAt: Date {
+        lock.lock()
+        defer { lock.unlock() }
+        return lastReceivedAt
+    }
 
     init(directory: URL) {
         self.directory = directory
@@ -244,9 +318,10 @@ final class SegmentWriter: @unchecked Sendable {
         self.muted = muted
     }
 
-    func append(_ buffer: AVAudioPCMBuffer) {
+    func append(_ buffer: AVAudioPCMBuffer, now: Date = .now) {
         lock.lock()
         defer { lock.unlock() }
+        lastReceivedAt = now
         guard !muted, let format else { return }
 
         let voiced = Self.rms(of: buffer) >= Self.voiceThreshold
