@@ -49,8 +49,8 @@ final class PowerMonitor {
             forName: ProcessInfo.thermalStateDidChangeNotification,
             object: nil,
             queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated {
+        ) { @Sendable [weak self] _ in
+            Task { @MainActor in
                 self?.thermalState = ProcessInfo.processInfo.thermalState
                 self?.onChange?()
             }
@@ -59,8 +59,8 @@ final class PowerMonitor {
             forName: .NSProcessInfoPowerStateDidChange,
             object: nil,
             queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated {
+        ) { @Sendable [weak self] _ in
+            Task { @MainActor in
                 self?.isLowPowerMode = ProcessInfo.processInfo.isLowPowerModeEnabled
                 self?.onChange?()
             }

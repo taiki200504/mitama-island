@@ -1227,22 +1227,17 @@ final class NotchEventMonitors {
         mouseDragHandler: @MainActor @escaping @Sendable (NSPoint) -> Void,
         mouseDragEndHandler: @MainActor @escaping @Sendable () -> Void
     ) {
-        let throttleInterval: TimeInterval = 0.05
+        // @Sendable keeps AppKit callbacks nonisolated; only the tasks enter MainActor.
+        let moveThrottle = EventThrottle()
 
-        nonisolated(unsafe) var sharedLastMove: TimeInterval = 0
-
-        globalMoveMonitor = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved) { event in
-            let now = ProcessInfo.processInfo.systemUptime
-            guard now - sharedLastMove >= throttleInterval else { return }
-            sharedLastMove = now
+        globalMoveMonitor = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved) { @Sendable event in
+            guard moveThrottle.shouldDeliver() else { return }
             let location = NSEvent.mouseLocation
             Task { @MainActor in mouseMoveHandler(location) }
         }
 
-        localMoveMonitor = NSEvent.addLocalMonitorForEvents(matching: .mouseMoved) { event in
-            let now = ProcessInfo.processInfo.systemUptime
-            guard now - sharedLastMove >= throttleInterval else { return event }
-            sharedLastMove = now
+        localMoveMonitor = NSEvent.addLocalMonitorForEvents(matching: .mouseMoved) { @Sendable event in
+            guard moveThrottle.shouldDeliver() else { return event }
             let location = NSEvent.mouseLocation
             Task { @MainActor in mouseMoveHandler(location) }
             return event
@@ -1251,43 +1246,54 @@ final class NotchEventMonitors {
         // A pointer with the button held down stops sending `.mouseMoved`
         // entirely, which is why a file dragged towards a closed island never
         // opened it: the shelf was unreachable without opening the panel first.
-        nonisolated(unsafe) var sharedLastDrag: TimeInterval = 0
+        let dragThrottle = EventThrottle()
 
-        globalDragMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDragged) { event in
-            let now = ProcessInfo.processInfo.systemUptime
-            guard now - sharedLastDrag >= throttleInterval else { return }
-            sharedLastDrag = now
+        globalDragMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDragged) { @Sendable event in
+            guard dragThrottle.shouldDeliver() else { return }
             let location = NSEvent.mouseLocation
             Task { @MainActor in mouseDragHandler(location) }
         }
 
-        localDragMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDragged) { event in
-            let now = ProcessInfo.processInfo.systemUptime
-            guard now - sharedLastDrag >= throttleInterval else { return event }
-            sharedLastDrag = now
+        localDragMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDragged) { @Sendable event in
+            guard dragThrottle.shouldDeliver() else { return event }
             let location = NSEvent.mouseLocation
             Task { @MainActor in mouseDragHandler(location) }
             return event
         }
 
-        globalDragEndMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseUp) { _ in
+        globalDragEndMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseUp) { @Sendable _ in
             Task { @MainActor in mouseDragEndHandler() }
         }
 
-        localDragEndMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseUp) { event in
+        localDragEndMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseUp) { @Sendable event in
             Task { @MainActor in mouseDragEndHandler() }
             return event
         }
 
-        globalClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown) { event in
+        globalClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown) { @Sendable event in
             let location = NSEvent.mouseLocation
             Task { @MainActor in mouseDownHandler(location) }
         }
 
-        localClickMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { event in
+        localClickMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { @Sendable event in
             let location = NSEvent.mouseLocation
             Task { @MainActor in mouseDownHandler(location) }
             return event
+        }
+    }
+
+    /// Global and local callbacks share a clock; the lock protects concurrent delivery.
+    private final class EventThrottle: @unchecked Sendable {
+        private let lock = NSLock()
+        private var lastTime: TimeInterval = 0
+
+        func shouldDeliver() -> Bool {
+            lock.lock()
+            defer { lock.unlock() }
+            let now = ProcessInfo.processInfo.systemUptime
+            guard now - lastTime >= 0.05 else { return false }
+            lastTime = now
+            return true
         }
     }
 

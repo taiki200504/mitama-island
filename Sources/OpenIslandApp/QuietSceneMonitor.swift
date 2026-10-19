@@ -46,7 +46,7 @@ final class QuietSceneMonitor {
         guard timerBox.timer == nil else { return }
         observeScreenSleep()
         refresh()
-        let timer = Timer.scheduledTimer(withTimeInterval: Self.pollInterval, repeats: true) { [weak self] _ in
+        let timer = Timer.scheduledTimer(withTimeInterval: Self.pollInterval, repeats: true) { @Sendable [weak self] _ in
             Task { @MainActor in self?.refresh() }
         }
         timer.tolerance = Self.pollInterval / 2
@@ -97,8 +97,8 @@ final class QuietSceneMonitor {
             (NSWorkspace.screensDidSleepNotification, true),
             (NSWorkspace.screensDidWakeNotification, false)
         ].map { name, asleep in
-            center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated {
+            center.addObserver(forName: name, object: nil, queue: .main) { @Sendable [weak self] _ in
+                Task { @MainActor in
                     self?.screensAreAsleep = asleep
                     self?.refresh()
                 }
