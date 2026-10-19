@@ -1116,8 +1116,8 @@ final class AppModel {
             forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification,
             object: nil,
             queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated {
+        ) { @Sendable [weak self] _ in
+            Task { @MainActor in
                 self?.motionRevision &+= 1
             }
         }
@@ -1974,8 +1974,8 @@ final class AppModel {
             forName: NSApplication.didResignActiveNotification,
             object: nil,
             queue: .main
-        ) { _ in
-            MainActor.assumeIsolated { TextInputFocusHandoff.forget() }
+        ) { @Sendable _ in
+            Task { @MainActor in TextInputFocusHandoff.forget() }
         }
 
         // ponytail: 顔ゲートを消した版に一度でも上がれば不要になる。2026-10 以降に削除する。

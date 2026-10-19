@@ -172,8 +172,8 @@ final class OverlayUICoordinator {
             forName: NSApplication.didChangeScreenParametersNotification,
             object: nil,
             queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated {
+        ) { @Sendable [weak self] _ in
+            Task { @MainActor in
                 self?.refreshOverlayDisplayConfiguration()
             }
         }

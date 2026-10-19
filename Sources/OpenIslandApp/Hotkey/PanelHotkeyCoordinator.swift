@@ -324,8 +324,8 @@ final class PanelHotkeyCoordinator {
             forName: NSNotification.Name(kTISNotifySelectedKeyboardInputSourceChanged as String),
             object: nil,
             queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated {
+        ) { @Sendable [weak self] _ in
+            Task { @MainActor in
                 guard let self else { return }
                 self.keyboardLayoutDidChange()
             }

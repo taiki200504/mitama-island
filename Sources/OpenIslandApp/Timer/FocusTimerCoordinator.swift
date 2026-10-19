@@ -36,8 +36,8 @@ final class FocusTimerCoordinator {
             forName: NSWorkspace.didWakeNotification,
             object: nil,
             queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated {
+        ) { @Sendable [weak self] _ in
+            Task { @MainActor in
                 self?.recomputeAfterWake()
             }
         }

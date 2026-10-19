@@ -27,13 +27,15 @@ final class ShortcutHintMonitor {
         hasAccessibilityPermission = AXIsProcessTrusted()
         guard hasAccessibilityPermission else { return }
 
-        monitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
-            MainActor.assumeIsolated { self?.update(with: event) }
+        monitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { @Sendable [weak self] event in
+            let flags = event.modifierFlags
+            Task { @MainActor in self?.update(with: flags) }
         }
         // The global monitor does not see events delivered to our own windows,
         // so the settings window needs the local one to behave the same way.
-        localMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
-            MainActor.assumeIsolated { self?.update(with: event) }
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { @Sendable [weak self] event in
+            let flags = event.modifierFlags
+            Task { @MainActor in self?.update(with: flags) }
             return event
         }
     }
@@ -46,8 +48,8 @@ final class ShortcutHintMonitor {
         isModifierHeld = false
     }
 
-    private func update(with event: NSEvent) {
-        let held = event.modifierFlags.contains(modifier.flags)
+    private func update(with flags: NSEvent.ModifierFlags) {
+        let held = flags.contains(modifier.flags)
         let wasHeld = isModifierHeld
         isModifierHeld = held
         if wasHeld, !held { onModifierReleased?() }
