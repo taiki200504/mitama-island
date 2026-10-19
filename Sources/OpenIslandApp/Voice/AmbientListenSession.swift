@@ -269,6 +269,10 @@ final class SegmentWriter: @unchecked Sendable {
         self.maximumSeconds = maximumSeconds
     }
 
+    private var peakLevel: Float = 0
+    private var levelFrames: AVAudioFramePosition = 0
+    private static let levelLogger = Logger(subsystem: "com.mitama.island", category: "earshot")
+
     func setMuted(_ muted: Bool) {
         lock.lock()
         defer { lock.unlock() }
@@ -280,8 +284,19 @@ final class SegmentWriter: @unchecked Sendable {
         defer { lock.unlock() }
         guard !muted, let format else { return }
 
-        let voiced = Self.rms(of: buffer) >= Self.voiceThreshold
+        let level = Self.rms(of: buffer)
+        let voiced = level >= Self.voiceThreshold
         let frames = AVAudioFramePosition(buffer.frameLength)
+
+        // One line a minute with the loudest buffer, so "is it hearing me"
+        // has an answer without opening a debugger.
+        peakLevel = max(peakLevel, level)
+        levelFrames += frames
+        if Double(levelFrames) >= format.sampleRate * 60 {
+            Self.levelLogger.notice("level peak=\(self.peakLevel, privacy: .public) threshold=\(Self.voiceThreshold, privacy: .public) open=\(self.file != nil, privacy: .public)")
+            peakLevel = 0
+            levelFrames = 0
+        }
 
         if file == nil {
             // Silence with nothing open is the common case all day. Do nothing
