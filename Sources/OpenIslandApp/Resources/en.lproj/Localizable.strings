@@ -1017,6 +1017,7 @@
 "settings.audio.builtInMic.help" = "Use the built-in microphone to prevent Bluetooth headphones from reducing music quality when their microphone is active.";
 
 "island.header.record" = "Record";
+"island.header.recordFailed" = "Not recording — click to turn off";
 "island.header.recording" = "Recording";
 
 "keepAwake.mode.alwaysOn" = "Always on (until Mac mini)";

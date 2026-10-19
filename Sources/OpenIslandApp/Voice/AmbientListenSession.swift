@@ -58,6 +58,7 @@ final class AmbientListenSession {
     private let engine = AVAudioEngine()
     private let writer: SegmentWriter
     private var callWatch: Task<Void, Never>?
+    private var configurationObserver: NSObjectProtocol?
 
     init(settings: AmbientListenSettings, directory: URL? = nil) {
         self.settings = settings
@@ -121,7 +122,11 @@ final class AmbientListenSession {
             BuiltInMicrophone.pin(engine)
         }
         let input = engine.inputNode
-        let format = input.inputFormat(forBus: 0)
+        // The output side, not the input side: after `pin` the input side can
+        // still report the previous default device (a 16 kHz Bluetooth
+        // headset), and a tap in that format makes `start()` fail with -10868.
+        // Measured 2026-10-19 with OpenComm2 as the default input.
+        let format = input.outputFormat(forBus: 0)
         guard format.sampleRate > 0, format.channelCount > 0 else {
             phase = .unavailable
             Self.logger.error("no usable input format")
@@ -146,6 +151,7 @@ final class AmbientListenSession {
             engine.prepare()
             try engine.start()
             phase = .listening
+            observeConfigurationChanges()
             Self.logger.notice("listening rate=\(format.sampleRate, privacy: .public)")
         } catch {
             input.removeTap(onBus: 0)
@@ -155,6 +161,26 @@ final class AmbientListenSession {
         }
 
         startCallWatch()
+    }
+
+    /// A headset connecting or disconnecting stops the engine without a word.
+    /// Start again on the new route so the microphone does not go quiet while
+    /// the switch still says it is on.
+    private func observeConfigurationChanges() {
+        guard configurationObserver == nil else { return }
+        configurationObserver = NotificationCenter.default.addObserver(
+            forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, self.phase == .listening else { return }
+                Self.logger.notice("audio route changed; restarting")
+                self.engine.inputNode.removeTap(onBus: 0)
+                self.engine.stop()
+                self.writer.close()
+                self.phase = .idle
+                self.beginCapture()
+            }
+        }
     }
 
     /// Polls for call apps. A notification would be tidier, but there is no one

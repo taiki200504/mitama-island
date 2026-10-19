@@ -136,16 +136,22 @@ extension IslandPanelView {
     /// The old text pill sat fifth from the right, so it was always hidden.
     /// Recording is a solid red disc — the one state that must read at a glance.
     private var recordHeaderButton: some View {
-        let isRecording = model.settings.ambientListen.isEnabled
+        // Red only when audio is really being written. The switch alone said
+        // "recording" for a whole session while the engine had failed to start.
+        let isOn = model.settings.ambientListen.isEnabled
+        let isRecording = isOn && model.earshot.phase == .listening
+        let isBroken = isOn && !isRecording && model.earshot.phase != .pausedForCall
         let label = model.lang.t("settings.earshot.section") + " · "
-            + model.lang.t(isRecording ? "island.header.recording" : "island.header.record")
+            + model.lang.t(isRecording ? "island.header.recording"
+                : isBroken ? "island.header.recordFailed" : "island.header.record")
         return Button {
             model.settings.ambientListen.isEnabled.toggle()
             model.earshot.settingsChanged()
         } label: {
-            Image(systemName: isRecording ? "mic.fill" : "mic.slash")
+            Image(systemName: isRecording ? "mic.fill" : isBroken ? "exclamationmark.triangle.fill" : "mic.slash")
                 .font(.islandText(size: 10, weight: .bold))
-                .foregroundStyle(isRecording ? Color.white : V6Palette.paper.opacity(0.62))
+                .foregroundStyle(isRecording ? Color.white
+                    : isBroken ? SAOGrammar.Palette.accentOrange : V6Palette.paper.opacity(0.62))
                 .frame(width: Self.headerControlButtonSize, height: Self.headerControlButtonSize)
                 .background(isRecording ? Color.red : V6Palette.paper.opacity(0.08), in: Circle())
                 .shadow(color: isRecording ? Color.red.opacity(0.7) : .clear, radius: 4)
