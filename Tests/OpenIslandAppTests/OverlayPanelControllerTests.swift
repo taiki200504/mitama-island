@@ -208,6 +208,19 @@ struct OverlayPanelControllerTests {
         #expect(!OverlayPanelController.shouldActivatePanel(for: nil))
     }
 
+    // 他アプリのノッチ用の帯（VoiceOS は 33〜34）が開いた島の上に乗り、ボタンのクリックを全部取っていた。
+    @Test
+    func openedPanelSitsAboveOtherAppsNotchOverlaysButBelowMenus() {
+        let opened = OverlayPanelController.panelLevel(interactive: true)
+        #expect(opened.rawValue > 34)
+        #expect(opened < .popUpMenu)
+    }
+
+    @Test
+    func closedPanelStaysAtStatusBarLevel() {
+        #expect(OverlayPanelController.panelLevel(interactive: false) == .statusBar)
+    }
+
     // MARK: - islandClosedHeight
 
     @Test

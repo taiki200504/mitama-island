@@ -58,6 +58,15 @@ final class OverlayPanelController {
         panel?.isVisible == true
     }
 
+    /// Opened, the island has to sit above other apps' notch overlays —
+    /// VoiceOS draws its dictation bar at level 33–34 right over the notch,
+    /// and every click on the header went to it instead. Still below
+    /// `.popUpMenu` so a menu pulled down from the menu bar covers it.
+    /// Closed, it stays at `.statusBar` and leaves those overlays alone.
+    nonisolated static func panelLevel(interactive: Bool) -> NSWindow.Level {
+        interactive ? NSWindow.Level(rawValue: NSWindow.Level.popUpMenu.rawValue - 1) : .statusBar
+    }
+
     nonisolated static func shouldActivatePanel(for reason: NotchOpenReason?) -> Bool {
         reason == .click
     }
@@ -87,6 +96,7 @@ final class OverlayPanelController {
         presentPanel(panel, activates: Self.shouldActivatePanel(for: model.notchOpenReason))
         panel.ignoresMouseEvents = false
         panel.acceptsMouseMovedEvents = true
+        panel.level = Self.panelLevel(interactive: true)
         startEventMonitoring()
         return diagnostics
     }
@@ -94,6 +104,7 @@ final class OverlayPanelController {
     func hide() {
         panel?.ignoresMouseEvents = true
         panel?.acceptsMouseMovedEvents = false
+        panel?.level = Self.panelLevel(interactive: false)
     }
 
     func setInteractive(_ interactive: Bool) {
@@ -106,6 +117,7 @@ final class OverlayPanelController {
 
         panel.ignoresMouseEvents = !interactive
         panel.acceptsMouseMovedEvents = interactive
+        panel.level = Self.panelLevel(interactive: interactive)
 
         if interactive {
             presentPanel(panel, activates: Self.shouldActivatePanel(for: model?.notchOpenReason))
