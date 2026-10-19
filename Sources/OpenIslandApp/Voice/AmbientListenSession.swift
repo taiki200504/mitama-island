@@ -118,9 +118,10 @@ final class AmbientListenSession {
     }
 
     private func beginCapture() {
-        if VoiceCommandSettings(store: settings.store).prefersBuiltInMicrophone {
-            BuiltInMicrophone.pin(engine)
-        }
+        // No `BuiltInMicrophone.pin` here. With the pin the engine starts and
+        // the orange indicator lights, but the tap never receives a buffer —
+        // nothing reached disk from 10-15 (#115) to 10-20. The standing mic
+        // follows the system input instead.
         let input = engine.inputNode
         // The output side, not the input side: after `pin` the input side can
         // still report the previous default device (a 16 kHz Bluetooth
@@ -237,7 +238,9 @@ final class SegmentWriter: @unchecked Sendable {
     /// Below this RMS the buffer counts as silence. Picked to sit above room
     /// tone and fan noise on a laptop microphone while still catching speech
     /// from across a desk.
-    private static let voiceThreshold: Float = 0.012
+    // 0.012 was tuned on the built-in mic. A Bluetooth headset (OpenComm2,
+    // 16 kHz) peaks around 0.008 on speech, so nothing was ever kept.
+    private static let voiceThreshold: Float = 0.004
 
     private let directory: URL
     private let lock = NSLock()
