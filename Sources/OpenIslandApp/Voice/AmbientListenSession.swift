@@ -172,7 +172,12 @@ final class AmbientListenSession {
             forName: .AVAudioEngineConfigurationChange, object: engine, queue: .main
         ) { [weak self] _ in
             Task { @MainActor in
-                guard let self, self.phase == .listening else { return }
+                // Starting the engine posts this notification itself, so a
+                // restart on every one loops (measured: ten per second).
+                // Only restart an engine that really stopped, and wait for
+                // the route to settle first.
+                try? await Task.sleep(for: .seconds(2))
+                guard let self, self.phase == .listening, !self.engine.isRunning else { return }
                 Self.logger.notice("audio route changed; restarting")
                 self.engine.inputNode.removeTap(onBus: 0)
                 self.engine.stop()
