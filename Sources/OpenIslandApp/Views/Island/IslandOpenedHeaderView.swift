@@ -11,8 +11,11 @@ extension IslandPanelView {
                 let metrics = openedHeaderMetrics(for: geometry.size.width)
 
                 HStack(spacing: 0) {
-                    usageLaneView(providerGroups.left, alignment: .leading)
-                        .frame(width: metrics.leftUsageWidth, alignment: .leading)
+                    HStack(spacing: Self.headerControlSpacing) {
+                        recordHeaderButton
+                        usageLaneView(providerGroups.left, alignment: .leading)
+                    }
+                    .frame(width: metrics.leftUsageWidth, alignment: .leading)
 
                     Color.clear
                         .frame(width: metrics.centerGapWidth)
@@ -31,6 +34,8 @@ extension IslandPanelView {
             }
         } else {
             HStack(spacing: 12) {
+                recordHeaderButton
+
                 openedUsageSummary
                     .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -100,27 +105,6 @@ extension IslandPanelView {
                 }
             }
 
-            Button {
-                model.settings.ambientListen.isEnabled.toggle()
-                model.earshot.settingsChanged()
-            } label: {
-                HStack(spacing: 4) {
-                    if model.settings.ambientListen.isEnabled {
-                        Circle().fill(.red).frame(width: 5, height: 5)
-                    }
-                    Text(model.lang.t(model.settings.ambientListen.isEnabled
-                        ? "island.header.recording" : "island.header.record"))
-                        .lineLimit(1)
-                }
-                .font(.islandText(size: 10, weight: .semibold))
-                .foregroundStyle(V6Palette.paper.opacity(0.82))
-                .frame(width: Self.headerControlButtonSize + 64, height: Self.headerControlButtonSize)
-                .background(V6Palette.paper.opacity(0.08), in: Capsule())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(model.lang.t("settings.earshot.section") + " · " + model.lang.t(
-                model.settings.ambientListen.isEnabled ? "island.header.recording" : "island.header.record"))
-
             raphaelHeaderMenu
 
             headerIconButton(
@@ -144,6 +128,31 @@ extension IslandPanelView {
                 showingQuitConfirmation = true
             }
         }
+    }
+
+    /// The microphone switch. It sits left of the notch, first in the row,
+    /// because the right lane holds far fewer controls than it is given: on a
+    /// 552pt panel it shows about four, and the rest slide under the notch.
+    /// The old text pill sat fifth from the right, so it was always hidden.
+    /// Recording is a solid red disc — the one state that must read at a glance.
+    private var recordHeaderButton: some View {
+        let isRecording = model.settings.ambientListen.isEnabled
+        let label = model.lang.t("settings.earshot.section") + " · "
+            + model.lang.t(isRecording ? "island.header.recording" : "island.header.record")
+        return Button {
+            model.settings.ambientListen.isEnabled.toggle()
+            model.earshot.settingsChanged()
+        } label: {
+            Image(systemName: isRecording ? "mic.fill" : "mic.slash")
+                .font(.islandText(size: 10, weight: .bold))
+                .foregroundStyle(isRecording ? Color.white : V6Palette.paper.opacity(0.62))
+                .frame(width: Self.headerControlButtonSize, height: Self.headerControlButtonSize)
+                .background(isRecording ? Color.red : V6Palette.paper.opacity(0.08), in: Circle())
+                .shadow(color: isRecording ? Color.red.opacity(0.7) : .clear, radius: 4)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+        .help(label)
     }
 
     /// Says the camera is open, for as long as it is open.

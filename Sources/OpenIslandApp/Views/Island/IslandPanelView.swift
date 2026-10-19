@@ -128,11 +128,16 @@ struct IslandPanelView: View {
         // slot when shown, so the lane has to reserve room for them. A fixed
         // count here compresses the usage lane's neighbour instead of
         // widening the lane.
-        var controls = cameraIsWatching ? 8 : 7   // + Raphael, + keep awake, + mitama OS, + recording
+        // mitama OS, keep awake, timer, Raphael, sound, settings, quit.
+        // The record switch lives in the left lane, not here.
+        var controls = cameraIsWatching ? 8 : 7
+        if model.settings.clipboard.enabled {
+            controls += 1
+        }
         if model.settings.nowPlaying.enabled {
             controls += 1
         }
-        return (Self.headerControlButtonSize * CGFloat(controls)) + 64 // recording label
+        return (Self.headerControlButtonSize * CGFloat(controls))
             + (Self.headerControlSpacing * CGFloat(controls - 1))
     }
 
