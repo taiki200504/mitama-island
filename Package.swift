@@ -51,6 +51,11 @@ let package = Package(
             ],
             resources: [
                 .process("Resources"),
+            ],
+            swiftSettings: [
+                // Temporary macOS 27 executor-check crash mitigation; see
+                // docs/crash-main-actor-2026-10-20.md for scope and removal criteria.
+                .unsafeFlags(["-Xfrontend", "-disable-dynamic-actor-isolation"]),
             ]
         ),
         .testTarget(
