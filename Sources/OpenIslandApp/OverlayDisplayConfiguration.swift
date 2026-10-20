@@ -137,9 +137,8 @@ enum OverlayDisplayResolver {
     }
 
     /// Where a top-anchored overlay's own top edge should sit, in screen
-    /// coordinates: flush with the physical top edge for a notched display
-    /// (the notch is part of the bezel), or flush with the menu bar's
-    /// bottom edge otherwise.
+    /// coordinates: flush with the physical top edge on every display —
+    /// inside the notch, or inside the menu bar band where there is none.
     ///
     /// The single place both `pureFrame` above and the real window frame
     /// (`OverlayPanelController.panelFrame`) get this number from — so a
@@ -156,7 +155,9 @@ enum OverlayDisplayResolver {
         case .notch:
             screenFrame.maxY - height
         case .floatingPill:
-            visibleFrame.maxY - height
+            // Flush with the top edge too: the closed capsule lives inside the
+            // menu bar band, so it never covers the frontmost window's tabs.
+            screenFrame.maxY - height
         }
     }
 
