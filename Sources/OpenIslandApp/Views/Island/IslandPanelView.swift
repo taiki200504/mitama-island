@@ -168,16 +168,20 @@ struct IslandPanelView: View {
         .onAppear {
             syncOpenedSurfaceMount(with: model.notchStatus, immediate: true)
         }
-        .onChange(of: model.notchStatus) { _, status in
+        .onChange(of: model.settings.display.maxClosedIslandWidth) { _, _ in
+            model.refreshOverlayPlacement()
+        }
+        .onChange(of: model.notchStatus) { previous, status in
             syncOpenedSurfaceMount(with: status)
+            if status == .popping || previous == .popping { model.refreshOverlayPlacement() }
         }
     }
 
     @ViewBuilder
     private func notchContent(availableSize: CGSize) -> some View {
-        // Window is always at opened size — use opened insets unconditionally.
-        let panelShadowHorizontalInset = IslandChromeMetrics.openedShadowHorizontalInset
-        let panelShadowBottomInset = IslandChromeMetrics.openedShadowBottomInset
+        // The fitted closed window needs no opened shadow inset.
+        let panelShadowHorizontalInset = isOpened ? IslandChromeMetrics.openedShadowHorizontalInset : 0
+        let panelShadowBottomInset = isOpened ? IslandChromeMetrics.openedShadowBottomInset : 0
         let layoutWidth = max(0, availableSize.width - (panelShadowHorizontalInset * 2))
         let layoutHeight = max(0, availableSize.height - panelShadowBottomInset)
 
@@ -228,13 +232,16 @@ struct IslandPanelView: View {
                     // putting a file down felt far away.
                     .dropDestination(for: URL.self) { urls, _ in
                         guard model.putOnShelf(urls) else { return false }
+                        model.overlay.overlayPanelController.endClosedDropTargeting()
                         model.notchPop()
                         return true
-                    } isTargeted: { isClosedPillTargeted = $0 }
+                    } isTargeted: {
+                        isClosedPillTargeted = $0
+                        model.overlay.overlayPanelController.updateMousePassthrough(at: NSEvent.mouseLocation)
+                    }
             }
             .frame(maxWidth: .infinity, alignment: .top)
         }
-        .scaleEffect(closedSurfaceScale, anchor: .top)
         .padding(.horizontal, panelShadowHorizontalInset)
         .padding(.bottom, panelShadowBottomInset)
         // `motionRevision` bumps whenever Reduce Motion is toggled, so this
@@ -267,12 +274,6 @@ struct IslandPanelView: View {
         let accent = IslandThemes.current.accent
         if isClosedPillTargeted { return accent.opacity(0.9) }
         return isHovering ? accent.opacity(0.55) : .clear
-    }
-
-    private var closedSurfaceScale: CGFloat {
-        guard !usesOpenedVisualState else { return 1 }
-        if isClosedPillTargeted { return IslandChromeMetrics.closedHoverScale * 1.06 }
-        return isHovering ? IslandChromeMetrics.closedHoverScale : 1
     }
 
     private func syncOpenedSurfaceMount(with status: NotchStatus, immediate: Bool = false) {
@@ -308,14 +309,12 @@ struct IslandPanelView: View {
     @ViewBuilder
     private func v6ClosedSurface() -> some View {
         let layout: V6ClosedLayout = isExternalDisplayPlacement ? .external : .macbook
-        let physicalNotchWidth: CGFloat = targetOverlayScreen?.notchSize.width ?? 180
-        // Both layouts take the menu bar band's height and sit flush with the
-        // top edge, so the capsule never covers the frontmost window's tabs.
+        let physicalNotchWidth: CGFloat = targetOverlayScreen.map { max($0.notchSize.width, $0.measuredNotchSize.width) } ?? 180
         let pillHeight = closedNotchHeight
         // A pathologically long session title must not grow the pill past
         // a sane fraction of the screen — see `V6ClosedPill.externalMaxWidth`.
         let externalMaxWidth = V6ClosedPill.externalMaxWidth(
-            configuredMaxPanelWidth: CGFloat(model.settings.display.maxPanelWidth),
+            configuredMaxClosedIslandWidth: CGFloat(model.settings.display.maxClosedIslandWidth),
             visibleWidth: targetOverlayScreen?.visibleFrame.width ?? 1_200
         )
         // One tick a minute, which is the resolution the band shows. The pill
@@ -332,7 +331,7 @@ struct IslandPanelView: View {
                 height: pillHeight,
                 physicalNotchWidth: layout == .macbook ? physicalNotchWidth : 0,
                 minWidth: IslandChromeMetrics.floatingPillMinWidth,
-                maxWidth: layout == .external ? externalMaxWidth : nil,
+                maxWidth: layout == .external ? externalMaxWidth : CGFloat(model.settings.display.maxClosedIslandWidth),
                 motionRevision: model.motionRevision
             )
             .background(
@@ -344,7 +343,9 @@ struct IslandPanelView: View {
         .scaleEffect(isPopping ? 1.04 : 1, anchor: .top)
         .animation(IslandThemes.current.animationProfile.pop, value: isPopping)
         .onPreferenceChange(ClosedPillSizeKey.self) { size in
+            guard model.debugClosedPillSize != size else { return }
             model.debugClosedPillSize = size
+            if !isOpened { model.refreshOverlayPlacement() }
         }
     }
 
@@ -402,6 +403,7 @@ struct IslandPanelView: View {
                 // write site.
                 guard height > 0, abs(height - model.openedSurfaceMeasuredHeight) >= 2 else { return }
                 model.openedSurfaceMeasuredHeight = height
+                model.overlay.overlayPanelController.refreshMouseSurfaceGeometry()
             }
             .overlay {
                 surfaceShape

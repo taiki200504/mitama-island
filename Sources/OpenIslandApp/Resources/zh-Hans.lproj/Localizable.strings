@@ -1025,3 +1025,5 @@
 "keepAwake.alwaysOn.paused" = "因温度或电量，已暂停常时运行保持。";
 "keepAwake.alwaysOn.resumed" = "状态恢复安全，已恢复常时运行保持。";
 "statusItem.manualOnly" = "仅在需要时显示";
+"settings.display.maxClosedIslandWidth" = "收起岛的最大宽度";
+"settings.display.maxClosedIslandWidth.help" = "刘海屏的下限为实际刘海宽度加左右各33pt。";

@@ -1025,3 +1025,5 @@
 "keepAwake.alwaysOn.paused" = "Always-on holding paused due to heat or battery level.";
 "keepAwake.alwaysOn.resumed" = "Always-on holding resumed after conditions recovered.";
 "statusItem.manualOnly" = "Show only when needed";
+"settings.display.maxClosedIslandWidth" = "Maximum closed island width";
+"settings.display.maxClosedIslandWidth.help" = "On a notched screen, the physical notch plus 33pt on each side is the minimum.";

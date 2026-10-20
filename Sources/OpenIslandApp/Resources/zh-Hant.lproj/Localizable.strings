@@ -1024,3 +1024,5 @@
 "keepAwake.alwaysOn.paused" = "因溫度或電量，已暫停常時運行保持。";
 "keepAwake.alwaysOn.resumed" = "狀態恢復安全，已恢復常時運行保持。";
 "statusItem.manualOnly" = "僅在需要時顯示";
+"settings.display.maxClosedIslandWidth" = "收起島的最大寬度";
+"settings.display.maxClosedIslandWidth.help" = "瀏海螢幕的下限為實際瀏海寬度加左右各33pt。";
