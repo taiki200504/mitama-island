@@ -681,7 +681,11 @@ final class AppModel {
     private static let voiceLogger = Logger(subsystem: "com.mitama.island", category: "voice")
 
     /// What you put down in the island on the way somewhere else.
-    @ObservationIgnored let shelf = ShelfStore()
+    // Interactive harness drops must stay out of the daily shelf. Reuse its
+    // existing injectable directory; normal launches keep the usual location.
+    @ObservationIgnored let shelf = ShelfStore(directory: HarnessLaunchConfiguration().scenario == nil ? nil :
+        (HarnessLaunchConfiguration().artifactDirectoryURL ?? FileManager.default.temporaryDirectory.appendingPathComponent("island-harness-\(UUID().uuidString)"))
+            .appendingPathComponent("shelf"))
     /// Saved interruption points for quick resume without losing context.
     @ObservationIgnored let focusCardStore = ResumeCardStore()
     /// What the store holds, in a form a view can read without awaiting.
@@ -871,6 +875,7 @@ final class AppModel {
 
     var ignoresPointerExitDuringHarness = false
     var disablesOverlayEventMonitoringDuringHarness = false
+    var allowsInteractiveOverlayDuringHarness = false
 
     /// When the switcher's selection sound last played. A finger reading or a
     /// held arrow key can move the selection far faster than 80ms per row —
@@ -3654,6 +3659,8 @@ final class AppModel {
         coordinator.onOpenMitamaOS = { [weak self] in
             self?.openMitamaHub()
         }
+        coordinator.manualOnly = settings.behaviour.manualOnly
+        coordinator.onToggleIsland = { [weak self] in self?.toggleOverlay() }
         coordinator.onAction = { [weak self] action in
             self?.performShortcut(action)
         }

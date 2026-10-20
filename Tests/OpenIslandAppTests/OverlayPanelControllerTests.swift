@@ -108,7 +108,7 @@ struct OverlayPanelControllerTests {
     }
 
     @Test
-    func externalDisplayClosedWidthFollowsIntrinsicContentPlusHitSlop() {
+    func externalDisplayClosedWidthMatchesRenderedContent() {
         // v6 external layout: the floating capsule's hit area follows its
         // real content width (plus a little slop per side) instead of a
         // fixed guess, so a long waiting-agent name still gets a hit area
@@ -119,7 +119,7 @@ struct OverlayPanelControllerTests {
             intrinsicContentWidth: 140,
             notchStatus: .closed
         )
-        #expect(width == 140 + (IslandChromeMetrics.floatingPillHitPadding * 2))
+        #expect(width == 140)
     }
 
     @Test
@@ -192,7 +192,7 @@ struct OverlayPanelControllerTests {
             isNotchedDisplay: true,
             notchStatus: .popping
         )
-        #expect(width == 224 + (OverlayPanelController.closedPillSideBleed * 2) + 18)
+        #expect(width == (224 + OverlayPanelController.closedPillSideBleed * 2) * 1.04)
     }
 
     @Test

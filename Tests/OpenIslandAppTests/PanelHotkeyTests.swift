@@ -22,6 +22,12 @@ final class RecordingHotkeyRegistrar: HotkeyRegistering {
     }
 }
 
+@MainActor
+private final class MenuToggleCounter: NSObject {
+    var count = 0
+    @objc func toggle(_ sender: Any?) { count += 1 }
+}
+
 @Suite("Keycode resolution")
 struct KeycodeResolverTests {
     private let resolver = KeycodeResolver(table: KeycodeResolver.usFallbackTable)
@@ -69,6 +75,58 @@ struct PanelHotkeyCoordinatorTests {
             resolver: KeycodeResolver(table: KeycodeResolver.usFallbackTable)
         )
         return (coordinator, registrar, settings)
+    }
+
+    @Test("Island toggle stays live in manual-only mode with shortcuts off")
+    func manualEscapeBinding() {
+        let (coordinator, registrar, settings) = makeCoordinator { $0.keyboardShortcutsEnabled = false }
+        coordinator.manualOnly = true
+        coordinator.setEnabled(false, panelIsExpanded: true)
+        let keys = registrar.bindingsByScope[.persistent] ?? []
+        #expect(keys.count == 1)
+        #expect(keys.first?.id == PanelHotkeyCoordinator.islandToggleBindingID)
+        #expect(keys.first?.keyCode == 34)
+        #expect(keys.first?.modifiers == [.control, .option])
+        #expect(settings.keyboardShortcutsEnabled == false)
+        coordinator.manualOnly = false
+        #expect(registrar.bindingsByScope[.persistent]?.isEmpty == true)
+    }
+
+    @Test("Island toggle resolves the layout and dispatches once per fire")
+    func islandToggleDispatch() {
+        let (coordinator, registrar, _) = makeCoordinator()
+        coordinator.keyboardLayoutDidChange(to: KeycodeResolver(table: ["I": 7]))
+        #expect(registrar.bindingsByScope[.persistent]?.first {
+            $0.id == PanelHotkeyCoordinator.islandToggleBindingID
+        }?.keyCode == 7)
+        var count = 0
+        coordinator.onToggleIsland = { count += 1 }
+        registrar.onFire?(PanelHotkeyCoordinator.islandToggleBindingID)
+        #expect(count == 1)
+        registrar.onFire?(PanelHotkeyCoordinator.islandToggleBindingID)
+        #expect(count == 2)
+        #expect(registrar.bindingsByScope[.persistent]?.contains {
+            $0.id == PanelHotkeyCoordinator.switcherBindingID
+        } == true)
+    }
+
+    @Test("Status menu shows the key but does not dispatch a second toggle")
+    func menuDoesNotDoubleFire() {
+        let menu = IslandStatusMenu()
+        let counter = MenuToggleCounter()
+        let item = NSMenuItem(title: "Open / close island",
+            action: #selector(MenuToggleCounter.toggle(_:)), keyEquivalent: "i")
+        item.target = counter
+        item.keyEquivalentModifierMask = [.control, .option]
+        menu.addItem(item)
+        let event = NSEvent.keyEvent(with: .keyDown, location: .zero,
+            modifierFlags: [.control, .option, .capsLock], timestamp: 0, windowNumber: 0,
+            context: nil, characters: "i", charactersIgnoringModifiers: "i",
+            isARepeat: false, keyCode: 34)!
+        #expect(menu.performKeyEquivalent(with: event) == false)
+        #expect(counter.count == 0)
+        #expect(item.keyEquivalent == "i")
+        #expect(item.keyEquivalentModifierMask == [.control, .option])
     }
 
     @Test("Changing the modifier while closed updates persistent keys only")

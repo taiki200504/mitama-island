@@ -29,7 +29,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         guard statusItem == nil else { return }
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         item.button?.imagePosition = .imageOnly
-        let menu = NSMenu()
+        let menu = IslandStatusMenu()
         menu.delegate = self
         item.menu = menu
         statusItem = item
@@ -108,6 +108,16 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.addItem(awake)
         menu.addItem(.separator())
 
+        addItem(model.lang.t("statusItem.manualOnly"), to: menu) { [weak model] in
+            guard let model else { return }
+            model.settings.behaviour.manualOnly.toggle()
+            model.panelHotkeys?.manualOnly = model.settings.behaviour.manualOnly
+            model.notchClose()
+            model.refreshOverlayPlacement()
+        }
+        menu.items.last?.state = model.settings.behaviour.manualOnly ? .on : .off
+        menu.addItem(.separator())
+
         let shelfItems = model.shelf.items
         var shelfIndex = 0
 
@@ -120,8 +130,10 @@ final class StatusItemController: NSObject, NSMenuDelegate {
                         : model.lang.t("statusItem.openIsland"),
                     to: menu
                 ) { [weak model] in
-                    model?.notchOpen(reason: .click)
+                    model?.toggleOverlay()
                 }
+                menu.items.last?.keyEquivalent = "i"
+                menu.items.last?.keyEquivalentModifierMask = [.control, .option]
             case .toggleMute(let isMuted):
                 addItem(
                     model.lang.t(isMuted ? "statusItem.unmute" : "settings.sound.mute"),
@@ -379,5 +391,17 @@ enum StatusIconRenderer {
         path.line(to: NSPoint(x: rect.minX, y: rect.midY + chamfer))
         path.close()
         return path
+    }
+}
+
+/// Display the global Carbon binding without also dispatching an AppKit action.
+@MainActor
+final class IslandStatusMenu: NSMenu {
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if event.charactersIgnoringModifiers?.lowercased() == "i",
+           event.modifierFlags.intersection([.control, .option, .shift, .command]) == [.control, .option] {
+            return false
+        }
+        return super.performKeyEquivalent(with: event)
     }
 }

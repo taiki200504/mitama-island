@@ -103,7 +103,7 @@ struct V6ClosedPillExternalWidthTests {
         // A big screen: the configured panel width (well under 60% of
         // 2,400) is the binding constraint.
         let onABigScreen = V6ClosedPill.externalMaxWidth(
-            configuredMaxPanelWidth: 648,
+            configuredMaxClosedIslandWidth: 648,
             visibleWidth: 2_400
         )
         #expect(onABigScreen == 360)
@@ -111,7 +111,7 @@ struct V6ClosedPillExternalWidthTests {
         // A small screen: 60% of the visible width undercuts the
         // configured panel width instead.
         let onASmallScreen = V6ClosedPill.externalMaxWidth(
-            configuredMaxPanelWidth: 648,
+            configuredMaxClosedIslandWidth: 648,
             visibleWidth: 500
         )
         #expect(onASmallScreen == 300)

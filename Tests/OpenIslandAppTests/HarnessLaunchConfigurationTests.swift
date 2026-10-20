@@ -7,6 +7,7 @@ struct HarnessLaunchConfigurationTests {
     func defaultsMatchNormalAppLaunch() {
         let configuration = HarnessLaunchConfiguration(environment: [:])
 
+        #expect(!configuration.interactiveOverlay)
         #expect(configuration.scenario == nil)
         #expect(!configuration.presentOverlay)
         #expect(configuration.shouldStartBridge)
@@ -37,6 +38,18 @@ struct HarnessLaunchConfigurationTests {
         #expect(configuration.captureDelay == 1.5)
         #expect(configuration.autoExitAfter == 2.5)
         #expect(configuration.artifactDirectoryURL?.path == "/tmp/open-island-artifacts")
+    }
+
+    @Test func interactiveOverlayRequiresExplicitOptIn() {
+        let configuration = HarnessLaunchConfiguration(environment: [
+            "OPEN_ISLAND_HARNESS_SCENARIO": "closed",
+            "OPEN_ISLAND_HARNESS_INTERACTIVE_OVERLAY": "1",
+            "OPEN_ISLAND_HARNESS_START_BRIDGE": "0",
+            "OPEN_ISLAND_HARNESS_AUTO_EXIT_SECONDS": "300",
+        ])
+        #expect(configuration.interactiveOverlay)
+        #expect(!configuration.shouldStartBridge)
+        #expect(configuration.autoExitAfter == 300)
     }
 
     @Test

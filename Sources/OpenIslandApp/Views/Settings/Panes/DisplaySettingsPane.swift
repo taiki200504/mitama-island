@@ -96,6 +96,19 @@ struct DisplaySettingsPane: View {
                 format: points
             )
 
+            SettingsSliderRow(
+                title: lang.t("settings.display.maxClosedIslandWidth"),
+                help: lang.t("settings.display.maxClosedIslandWidth.help"),
+                value: Binding(
+                    get: { display.maxClosedIslandWidth },
+                    set: { display.maxClosedIslandWidth = $0; model.refreshOverlayPlacement() }
+                ),
+                range: DisplaySettings.Defaults.maxClosedIslandWidthRange,
+                step: 4,
+                defaultValue: DisplaySettings.Defaults.maxClosedIslandWidth,
+                format: points
+            )
+
             SettingsPickerRow(
                 title: lang.t("settings.display.agentIcon"),
                 help: lang.t("settings.display.agentIcon.help"),

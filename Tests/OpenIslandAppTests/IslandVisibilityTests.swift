@@ -36,6 +36,89 @@ struct IslandVisibilityTests {
         return session
     }
 
+    @Test
+    func manualOnlyPersistsAndDefaultsOff() {
+        let (_, settings) = makeModel()
+        #expect(!settings.behaviour.manualOnly)
+        settings.behaviour.manualOnly = true
+        #expect(BehaviourSettings(store: settings.behaviour.store).manualOnly)
+        settings.behaviour.manualOnly = false
+        #expect(!BehaviourSettings(store: settings.behaviour.store).manualOnly)
+    }
+
+    @Test
+    func manualOnlyHidesClosedPillAndRestoresItWhenDisabled() {
+        let (model, settings) = makeModel()
+        settings.behaviour.manualOnly = true
+        #expect(!model.islandMayBeVisible)
+        model.state = SessionState(sessions: [liveSession()])
+        #expect(!model.islandMayBeVisible)
+        model.overlay.notchStatus = .opened
+        #expect(model.islandMayBeVisible)
+        model.overlay.notchStatus = .closed
+        #expect(!model.islandMayBeVisible)
+        settings.behaviour.manualOnly = false
+        #expect(model.islandMayBeVisible)
+    }
+
+    @Test
+    func manualOnlyKeepsActionableRequestsAndSuppressesOrdinaryUpdates() {
+        let (model, settings) = makeModel()
+        settings.behaviour.manualOnly = true
+        settings.sound.isMuted = true
+        model.disablesOverlayEventMonitoringDuringHarness = true
+        defer { model.notchClose() }
+        for phase in [SessionPhase.waitingForApproval, .waitingForAnswer, .running, .completed] {
+            var session = liveSession()
+            session.phase = phase
+            model.state = SessionState(sessions: [session])
+            model.notchOpen(reason: .notification, surface: .sessionList(actionableSessionID: session.id))
+            let actionable = phase == .waitingForApproval || phase == .waitingForAnswer
+            #expect((model.notchStatus == .opened) == actionable)
+            model.notchClose()
+            #expect(!model.islandMayBeVisible)
+        }
+    }
+
+    @Test
+    func hiddenPillDoesNotCaptureTopBarClicks() {
+        let (model, settings) = makeModel()
+        settings.behaviour.manualOnly = true
+        let controller = OverlayPanelController()
+        controller.model = model
+        #expect(!controller.isPointInClosedSurfaceArea(.zero))
+    }
+
+    @Test
+    func manualOnlyExplicitToggleOpensAndCloses() {
+        let (_, settings) = makeModel()
+        settings.behaviour.manualOnly = true
+        settings.sound.isMuted = true
+        let overlay = OverlayUICoordinator(settings: settings)
+        overlay.toggleOverlay()
+        #expect(overlay.notchStatus == .opened)
+        #expect(overlay.islandMayBeVisible)
+        overlay.toggleOverlay()
+        #expect(overlay.notchStatus == .closed)
+        #expect(!overlay.islandMayBeVisible)
+        overlay.notchOpen(reason: .click)
+        #expect(overlay.islandMayBeVisible)
+        overlay.notchClose()
+        #expect(!overlay.islandMayBeVisible)
+    }
+
+    @Test
+    func manualOnlyRejectsAutomaticOpensAndPop() {
+        let (model, settings) = makeModel()
+        settings.behaviour.manualOnly = true
+        for reason in [NotchOpenReason.hover, .boot, .handGesture, .notification] {
+            model.overlay.notchOpen(reason: reason)
+            #expect(model.notchStatus == .closed)
+        }
+        model.overlay.notchPop()
+        #expect(model.notchStatus == .closed)
+    }
+
     // MARK: Smart suppression
 
     /// This behaviour already existed under the name
