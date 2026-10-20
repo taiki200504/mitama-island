@@ -19,7 +19,9 @@ struct BrowserAutomationActivityTests {
 
     @Test("Parses valid JSON with fresh timestamp")
     func parseFreshActivity() {
-        let now = Date()
+        // Whole seconds: ISO8601DateFormatter rounds sub-second dates, which could
+        // put "at" a fraction ahead of `now` and read as a future timestamp.
+        let now = Self.wholeSecondNow()
         let json = """
         {
             "accountId": "gugen",
@@ -56,7 +58,7 @@ struct BrowserAutomationActivityTests {
 
     @Test("Accepts null URL")
     func nullUrl() {
-        let now = Date()
+        let now = Self.wholeSecondNow()
         let json = """
         {
             "accountId": "gugen",
@@ -128,5 +130,9 @@ struct BrowserAutomationActivityTests {
         let data = json.data(using: .utf8)!
         let activity = BrowserAutomationActivity.parse(data, now: now, freshness: 600)
         #expect(activity == nil)
+    }
+
+    private static func wholeSecondNow() -> Date {
+        Date(timeIntervalSince1970: Date().timeIntervalSince1970.rounded(.down))
     }
 }
