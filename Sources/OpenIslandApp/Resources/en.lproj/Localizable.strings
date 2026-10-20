@@ -838,8 +838,8 @@
 "clipboard.kind.image" = "Image";
 
 /* Status Item (Menu Bar) */
-"statusItem.openIsland" = "Open the Island";
-"statusItem.openIsland.waiting" = "Open the Island (%d waiting)";
+"statusItem.openIsland" = "Open / close island";
+"statusItem.openIsland.waiting" = "Open / close island (%d waiting)";
 "statusItem.unmute" = "Unmute";
 "statusItem.cameraOn" = "Wake the Camera";
 "statusItem.cameraOff" = "Close the Camera";
@@ -1024,3 +1024,4 @@
 "keepAwake.alwaysOn.short" = "Always on";
 "keepAwake.alwaysOn.paused" = "Always-on holding paused due to heat or battery level.";
 "keepAwake.alwaysOn.resumed" = "Always-on holding resumed after conditions recovered.";
+"statusItem.manualOnly" = "Show only when needed";

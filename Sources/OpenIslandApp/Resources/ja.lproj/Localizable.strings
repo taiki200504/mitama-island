@@ -838,8 +838,8 @@
 "clipboard.kind.image" = "画像";
 
 /* Status Item (Menu Bar) */
-"statusItem.openIsland" = "島を開く";
-"statusItem.openIsland.waiting" = "島を開く（%d件待ち）";
+"statusItem.openIsland" = "島を開く / 閉じる";
+"statusItem.openIsland.waiting" = "島を開く / 閉じる（%d件待ち）";
 "statusItem.unmute" = "ミュート解除";
 "statusItem.cameraOn" = "カメラを起こす";
 "statusItem.cameraOff" = "カメラを閉じる";
@@ -1024,3 +1024,4 @@
 "keepAwake.alwaysOn.short" = "常時稼働";
 "keepAwake.alwaysOn.paused" = "熱またはバッテリー残量のため、常時稼働の保持を一時解除しました。";
 "keepAwake.alwaysOn.resumed" = "安全な状態に戻ったため、常時稼働の保持を再開しました。";
+"statusItem.manualOnly" = "必要なときだけ表示";

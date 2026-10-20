@@ -837,8 +837,8 @@
 "clipboard.kind.image" = "圖片";
 
 /* Status Item (Menu Bar) */
-"statusItem.openIsland" = "開啟島";
-"statusItem.openIsland.waiting" = "開啟島（%d 項等待）";
+"statusItem.openIsland" = "開啟 / 關閉島";
+"statusItem.openIsland.waiting" = "開啟 / 關閉島（%d 項等待）";
 "statusItem.unmute" = "取消靜音";
 "statusItem.raphael" = "拉斐爾";
 "statusItem.raphael.enable" = "顯示";
@@ -1023,3 +1023,4 @@
 "keepAwake.alwaysOn.short" = "常時運行";
 "keepAwake.alwaysOn.paused" = "因溫度或電量，已暫停常時運行保持。";
 "keepAwake.alwaysOn.resumed" = "狀態恢復安全，已恢復常時運行保持。";
+"statusItem.manualOnly" = "僅在需要時顯示";

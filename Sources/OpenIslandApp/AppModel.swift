@@ -3654,6 +3654,8 @@ final class AppModel {
         coordinator.onOpenMitamaOS = { [weak self] in
             self?.openMitamaHub()
         }
+        coordinator.manualOnly = settings.behaviour.manualOnly
+        coordinator.onToggleIsland = { [weak self] in self?.toggleOverlay() }
         coordinator.onAction = { [weak self] action in
             self?.performShortcut(action)
         }
