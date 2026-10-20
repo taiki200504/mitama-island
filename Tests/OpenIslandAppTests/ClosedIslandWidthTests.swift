@@ -151,6 +151,7 @@ struct ClosedIslandWidthTests {
         model.disablesOverlayEventMonitoringDuringHarness = true
         model.loadDebugSnapshot(IslandDebugScenario.closedFloating.snapshot(), presentOverlay: false)
         let controller = model.overlay.overlayPanelController
+        controller.reducesMotion = { false }
         let existing = Set(NSApp.windows.map(\.windowNumber))
         controller.ensurePanel(model: model, preferredScreenID: nil)
         let panel = try #require(NSApp.windows.first { !existing.contains($0.windowNumber) && $0 is NSPanel })

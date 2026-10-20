@@ -44,6 +44,8 @@ final class OverlayPanelController {
 
     private var panel: NotchPanel?
     private var eventMonitors = NotchEventMonitors()
+    /// Read live; a test pins it so the opening transition exists whatever the runner's setting.
+    var reducesMotion: () -> Bool = { IslandMotion.reducesMotion }
     private var mouseSurfaceRect: NSRect = .zero
     private var mouseSurfaceIsNotched = false
     private var openingMouseRelease: DispatchWorkItem?
@@ -124,7 +126,7 @@ final class OverlayPanelController {
         closedFrameUpdate = nil
         openingMouseRelease?.cancel()
         openingMouseRelease = nil
-        isOpeningTransition = interactive && !IslandMotion.reducesMotion
+        isOpeningTransition = interactive && !reducesMotion()
         panel.ignoresMouseEvents = true
         panel.acceptsMouseMovedEvents = interactive
         panel.level = Self.panelLevel(interactive: interactive)
