@@ -84,7 +84,7 @@ struct OverlayPanelControllerTests {
             notchedContentWidth: 508,
             notchStatus: .closed
         )
-        #expect(wide == 508)
+        #expect(wide == 360)
 
         // Narrow content never shrinks the hit area below the notch bleed.
         let narrow = OverlayPanelController.closedPanelWidth(
@@ -94,6 +94,17 @@ struct OverlayPanelControllerTests {
             notchStatus: .closed
         )
         #expect(narrow == 185 + (OverlayPanelController.closedPillSideBleed * 2))
+    }
+
+    @Test
+    func notchedDisplayClosedWidthKeepsPhysicalBleedFloorAboveCap() {
+        let width = OverlayPanelController.closedPanelWidth(
+            notchWidth: 400,
+            isNotchedDisplay: true,
+            notchedContentWidth: 900,
+            notchStatus: .closed
+        )
+        #expect(width == 466)
     }
 
     @Test
@@ -155,23 +166,23 @@ struct OverlayPanelControllerTests {
     }
 
     @Test
-    func floatingClosedSurfaceRectSitsBelowTheMenuBarCenteredOnScreen() {
+    func floatingClosedSurfaceRectSitsInsideTheMenuBarCenteredOnScreen() {
         let screenFrame = NSRect(x: 100, y: 0, width: 1_920, height: 1_080)
-        let visibleFrame = NSRect(x: 100, y: 0, width: 1_920, height: 1_056)
+        let menuBarHeight: CGFloat = 24
 
         let rect = OverlayPanelController.floatingClosedSurfaceRect(
             screenFrame: screenFrame,
-            visibleFrame: visibleFrame,
             width: 160,
-            height: 30
+            height: menuBarHeight
         )
 
         #expect(rect.width == 160)
-        #expect(rect.height == 30)
+        #expect(rect.height == menuBarHeight)
         #expect(rect.midX == screenFrame.midX)
-        // Floats `floatingPillGap` below the menu bar's bottom edge, not
-        // flush against the physical top edge.
-        #expect(rect.maxY == visibleFrame.maxY - IslandChromeMetrics.floatingPillGap)
+        // Flush with the top edge and no lower than the menu bar's bottom,
+        // so it can't cover the frontmost window's tab strip.
+        #expect(rect.maxY == screenFrame.maxY)
+        #expect(rect.minY == screenFrame.maxY - menuBarHeight)
     }
 
     @Test
@@ -195,6 +206,19 @@ struct OverlayPanelControllerTests {
         #expect(!OverlayPanelController.shouldActivatePanel(for: .notification))
         #expect(!OverlayPanelController.shouldActivatePanel(for: .boot))
         #expect(!OverlayPanelController.shouldActivatePanel(for: nil))
+    }
+
+    // 他アプリのノッチ用の帯（VoiceOS は 33〜34）が開いた島の上に乗り、ボタンのクリックを全部取っていた。
+    @Test
+    func openedPanelSitsAboveOtherAppsNotchOverlaysButBelowMenus() {
+        let opened = OverlayPanelController.panelLevel(interactive: true)
+        #expect(opened.rawValue > 34)
+        #expect(opened < .popUpMenu)
+    }
+
+    @Test
+    func closedPanelStaysAtStatusBarLevel() {
+        #expect(OverlayPanelController.panelLevel(interactive: false) == .statusBar)
     }
 
     // MARK: - islandClosedHeight

@@ -51,7 +51,8 @@ extension IslandPanelView {
                 // scroll rather than something unreachable.
                 GeometryReader { geometry in
                 AutoHeightScrollView(maxHeight: IslandChromeMetrics.notificationViewportHeight(
-                    maxPanelHeight: model.settings.display.maxPanelHeight, availableHeight: geometry.size.height)) {
+                    maxPanelHeight: model.settings.display.maxPanelHeight, availableHeight: max(0, geometry.size.height - 4)),
+                    alignTopOnFirstMeasure: true) {
                     sessionListContent(referenceDate: referenceDate)
                 }
                     .padding(.vertical, 2)
@@ -79,11 +80,14 @@ extension IslandPanelView {
             } else {
                 VStack(spacing: 0) {
                     sessionPanelHeader(referenceDate: referenceDate)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .layoutPriority(1)
 
                     ScrollView(.vertical) {
                         VStack(spacing: 0) {
                             sessionRowsContent(referenceDate: referenceDate)
                             IslandEcosystemSignalsStrip(model: model, sideInset: sessionListSideInset)
+                            mitamaHumanTaskSection
                             mitamaProposalSection
                             mitamaFeedSection
                         }
@@ -92,9 +96,64 @@ extension IslandPanelView {
                     .scrollBounceBehavior(.basedOnSize)
 
                     sessionPanelFooter
+                        .fixedSize(horizontal: false, vertical: true)
+                        .layoutPriority(1)
                 }
                 .padding(.vertical, 2)
             }
+        }
+    }
+
+    @ViewBuilder
+    private var mitamaHumanTaskSection: some View {
+        let feed = model.mitamaFeed
+        if !feed.humanTasks.isEmpty || feed.humanTaskMessage != nil {
+            VStack(alignment: .leading, spacing: 10) {
+                Button {
+                    model.openMitamaHub(path: "/decide")
+                } label: {
+                    Text("外部からの依頼 \(feed.humanTasks.count)件")
+                        .font(.islandText(size: 12, weight: .semibold))
+                }
+                .buttonStyle(.plain)
+                ForEach(feed.humanTasks) { task in
+                    DisclosureGroup {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("外部入力：\(task.originLabel) から届いた依頼です。金銭・法務・不可逆・対外操作の本人確認は引き続き必要です。MCP の不明な承認は一括許可しません。")
+                                .font(.islandText(size: 11, weight: .medium))
+                                .foregroundStyle(IslandDesignPalette.Status.waitingForAnswer)
+                            Text(verbatim: task.body ?? "（本文なし）")
+                                .textSelection(.enabled)
+                                .fixedSize(horizontal: false, vertical: true)
+                            // 「実行する」で積まれるのは本文ではなくこちら。押す前に同じ文面を見せる。
+                            if task.resumeAgent != "dots-dispatch",
+                               let objective = task.resumeObjective,
+                               !objective.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                Text("実行内容")
+                                    .font(.islandText(size: 11, weight: .semibold))
+                                Text(verbatim: objective)
+                                    .font(.islandText(size: 11, weight: .regular))
+                                    .textSelection(.enabled)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            HStack {
+                                Button("実行する") { feed.answer(task, with: .approve) }
+                                Button("却下") { feed.answer(task, with: .reject) }
+                            }
+                            .disabled(feed.answeringHumanTaskIDs.contains(task.id))
+                        }
+                        .padding(.vertical, 8)
+                    } label: {
+                        Text(verbatim: task.title)
+                    }
+                }
+                if let message = feed.humanTaskMessage {
+                    Text(message).font(.islandText(size: 11, weight: .medium))
+                }
+            }
+            .foregroundStyle(V6Palette.paper)
+            .padding(.horizontal, sessionListSideInset)
+            .padding(.vertical, 10)
         }
     }
 
@@ -189,7 +248,7 @@ extension IslandPanelView {
             VStack(spacing: 0) {
                 ForEach(notifications) { notification in
                     Button {
-                        model.openMitamaHub()
+                        model.openMitamaHub(path: "/decide")
                         model.mitamaFeed.markRead(notification)
                     } label: {
                         HStack(alignment: .top, spacing: 10) {

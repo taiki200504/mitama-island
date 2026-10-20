@@ -30,11 +30,10 @@ struct OverlayDisplayResolverTests {
     }
 
     @Test
-    func floatingPillModeFloatsBelowTheMenuBar() {
-        // The panel's own top edge lands exactly at the menu bar's bottom
-        // edge — the extra 6pt gap the closed capsule floats by is that
-        // pill's own inset *inside* the window, not part of the window's
-        // placement (see `IslandPanelView.v6ClosedSurface()`).
+    func floatingPillModeSitsFlushWithTheTopEdge() {
+        // The panel's top edge is the screen's top edge, so the closed
+        // capsule lives inside the menu bar band rather than below it, where
+        // it covered the frontmost window's tab strip.
         let visibleFrame = NSRect(x: 0, y: 0, width: 1_920, height: 1_056)
 
         let frame = OverlayDisplayResolver.pureFrame(
@@ -45,8 +44,7 @@ struct OverlayDisplayResolverTests {
             mode: .floatingPill
         )
 
-        #expect(frame.maxY == visibleFrame.maxY)
-        #expect(frame.maxY < screenFrame.maxY)
+        #expect(frame.maxY == screenFrame.maxY)
     }
 
     @Test
@@ -118,5 +116,23 @@ struct OverlayDisplayResolverTests {
         )
 
         #expect(frame.width == narrowVisibleFrame.width - 64)
+    }
+
+    @Test
+    func pointerScreenIsFoundAcrossStackedDisplays() {
+        // The layout this was found on: a built-in display with two
+        // monitors sitting above it.
+        let builtIn = NSRect(x: 0, y: 0, width: 1_512, height: 982)
+        let left = NSRect(x: -1_119, y: 982, width: 1_920, height: 1_080)
+        let right = NSRect(x: 801, y: 982, width: 1_920, height: 1_080)
+        let frames = [builtIn, left, right]
+
+        #expect(OverlayDisplayResolver.screenIndex(containing: NSPoint(x: 700, y: 500), in: frames) == 0)
+        #expect(OverlayDisplayResolver.screenIndex(containing: NSPoint(x: -500, y: 1_500), in: frames) == 1)
+        #expect(OverlayDisplayResolver.screenIndex(containing: NSPoint(x: 2_000, y: 2_062), in: frames) == 2)
+        // Pressed against the top of the built-in display, right under the
+        // monitor above it: still the built-in one, where its notch is.
+        #expect(OverlayDisplayResolver.screenIndex(containing: NSPoint(x: 900, y: 982), in: frames) == 0)
+        #expect(OverlayDisplayResolver.screenIndex(containing: NSPoint(x: 5_000, y: 5_000), in: frames) == nil)
     }
 }

@@ -14,6 +14,14 @@ struct VoiceCommandSettingsTests {
         return VoiceCommandSettings(store: PreferenceStore(suite: suite))
     }
 
+    @Test("The built-in microphone is preferred by default and the choice persists")
+    func builtInMicrophonePreference() {
+        let settings = makeSettings()
+        #expect(settings.prefersBuiltInMicrophone)
+        settings.prefersBuiltInMicrophone = false
+        #expect(!VoiceCommandSettings(store: settings.store).prefersBuiltInMicrophone)
+    }
+
     @Test("Voice answering is off until it is switched on")
     func offByDefault() {
         #expect(makeSettings().isEnabled == false)

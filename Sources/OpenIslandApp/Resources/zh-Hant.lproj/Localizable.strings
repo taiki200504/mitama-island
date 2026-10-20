@@ -840,6 +840,11 @@
 "statusItem.openIsland" = "開啟島";
 "statusItem.openIsland.waiting" = "開啟島（%d 項等待）";
 "statusItem.unmute" = "取消靜音";
+"statusItem.raphael" = "拉斐爾";
+"statusItem.raphael.enable" = "顯示";
+"statusItem.raphael.micMute" = "靜音麥克風";
+"statusItem.raphael.voiceMute" = "靜音語音";
+"statusItem.raphael.notInstalled" = "拉斐爾（未安裝）";
 "statusItem.cameraOn" = "喚醒攝影機";
 "statusItem.cameraOff" = "關閉攝影機";
 "statusItem.timer.start" = "開始計時…";
@@ -986,3 +991,34 @@
 "decision.paseo.forwardedOpen" = "在Paseo中開啟此問題的對話";
 
 "nowPlaying.unavailable" = "目前環境無法取得正在播放的資訊。";
+
+"mitamaOS.open" = "開啟 mitama OS";
+// Manual keep awake
+"keepAwake.title" = "保持喚醒";
+"keepAwake.mode.off" = "關閉";
+"keepAwake.mode.oneHour" = "1小時";
+"keepAwake.mode.threeHours" = "3小時";
+"keepAwake.mode.eightHours" = "8小時";
+"keepAwake.mode.indefinite" = "無限期";
+"keepAwake.mode.untilFinished" = "直到代理完成工作";
+"keepAwake.remaining" = "剩餘%d分鐘";
+"keepAwake.stop" = "停止";
+"keepAwake.display" = "螢幕也保持亮起";
+"keepAwake.closedLid" = "闔蓋後繼續執行";
+"keepAwake.closedLid.help" = "僅限手動模式且接上電源。僅首次設定時詢問密碼。之後拔掉電源會自動恢復睡眠。";
+"keepAwake.closedLid.revoke" = "移除此權限";
+"keepAwake.release.tooHot" = "Mac溫度過高，已停止保持喚醒。";
+"keepAwake.release.batteryLow" = "電量低於20%，已停止保持喚醒。";
+"keepAwake.release.lidClosedOnBattery" = "闔蓋且使用電池，已停止保持喚醒。";
+"keepAwake.restoreFailed" = "無法更改睡眠設定。請允許管理員認證後再次停止。";
+
+"settings.audio.builtInMic" = "使用 Mac 內建麥克風";
+"settings.audio.builtInMic.help" = "使用藍牙耳機的麥克風會降低音樂音質，因此固定使用內建麥克風。";
+
+"island.header.record" = "錄音";
+"island.header.recording" = "錄音中";
+
+"keepAwake.mode.alwaysOn" = "常時運行（代替 Mac mini）";
+"keepAwake.alwaysOn.short" = "常時運行";
+"keepAwake.alwaysOn.paused" = "因溫度或電量，已暫停常時運行保持。";
+"keepAwake.alwaysOn.resumed" = "狀態恢復安全，已恢復常時運行保持。";

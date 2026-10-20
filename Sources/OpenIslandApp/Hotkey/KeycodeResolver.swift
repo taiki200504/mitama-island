@@ -7,7 +7,7 @@ import Foundation
 /// AZERTY layout the key that produces "A" sits where a US keyboard has "Q", so
 /// registering the US code for "A" would give a French user the wrong key. This
 /// asks the active input source what each key actually produces.
-struct KeycodeResolver {
+struct KeycodeResolver: Equatable {
     /// Every code a physical keyboard can report for a letter or digit. Scanning
     /// this range and asking what each produces is cheap enough to do once per
     /// layout, and it needs no table of our own.

@@ -29,8 +29,11 @@ private final class FakeHTTP: MitamaRemoteHTTP, @unchecked Sendable {
 struct MitamaRemoteRelayTests {
     private let env = MitamaEnvironment(url: URL(string: "https://example.supabase.co")!, apiKey: "k")
 
-    private func makeRelay(_ http: FakeHTTP, now: @escaping @Sendable () -> Date = { Date() }) -> MitamaRemoteRelay {
-        let relay = MitamaRemoteRelay(http: http, environmentLoader: { env }, now: now, autoPoll: false)
+    private func makeRelay(
+        _ http: FakeHTTP, now: @escaping @Sendable () -> Date = { Date() },
+        idle: @escaping @Sendable () -> TimeInterval = { 600 }
+    ) -> MitamaRemoteRelay {
+        let relay = MitamaRemoteRelay(http: http, environmentLoader: { env }, now: now, idleSeconds: idle, autoPoll: false)
         relay.isEnabled = true
         return relay
     }
@@ -87,6 +90,16 @@ struct MitamaRemoteRelayTests {
         #expect(calls[0].body["working_directory"] == nil)
         #expect(calls[1].body["level"] as? String == "urgent")
         #expect(calls[1].body["source_ref"] as? String == "island:r1")
+        #expect(calls[1].body["body"] as? String == "Claude Code のセッション1件がツール実行の許可を待っています")
+        #expect(relay.pendingCountForTests() == 1)
+    }
+
+    @Test
+    func permissionAtTheMacIsNotPushedToThePhone() async {
+        let http = FakeHTTP()
+        let relay = makeRelay(http, idle: { 10 })
+        await register(relay)
+        #expect(http.calls.map(\.table) == ["mos_island_requests"])
         #expect(relay.pendingCountForTests() == 1)
     }
 
@@ -98,6 +111,66 @@ struct MitamaRemoteRelayTests {
         await register(relay)
         #expect(http.calls.isEmpty)
         #expect(relay.pendingCountForTests() == 0)
+    }
+
+    @Test
+    func questionRegistrationDoesNotPushConversation() async {
+        let http = FakeHTTP()
+        let relay = makeRelay(http)
+        await register(relay, kind: .question, options: ["Yes"])
+        #expect(http.calls.map(\.table) == ["mos_island_requests"])
+    }
+
+    @Test
+    func waitingEscalatesOnlyAfterTenMinutesWhileAwayAndOnlyOncePerSession() async {
+        let http = FakeHTTP()
+        let clock = Clock(Date(timeIntervalSince1970: 1_000_000))
+        let idle = Clock(Date(timeIntervalSince1970: 300))
+        let relay = MitamaRemoteRelay(http: http, environmentLoader: { env }, now: { clock.date },
+                                     idleSeconds: { idle.date.timeIntervalSince1970 }, autoPoll: false)
+        relay.isEnabled = true
+        relay.observeWaiting(sessionID: "s1", tool: "Codex", isWaiting: true)
+        await relay.escalateWaiting()
+        clock.date = clock.date.addingTimeInterval(599)
+        await relay.escalateWaiting()
+        #expect(http.calls.isEmpty)
+        clock.date = clock.date.addingTimeInterval(1)
+        idle.date = Date(timeIntervalSince1970: 299)
+        await relay.escalateWaiting()
+        #expect(http.calls.isEmpty)
+        idle.date = Date(timeIntervalSince1970: 300)
+        async let first: Void = relay.escalateWaiting()
+        async let duplicate: Void = relay.escalateWaiting()
+        _ = await (first, duplicate)
+        await relay.escalateWaiting()
+        relay.observeWaiting(sessionID: "s1", tool: "Codex", isWaiting: false)
+        relay.observeWaiting(sessionID: "s1", tool: "Codex", isWaiting: true)
+        clock.date = clock.date.addingTimeInterval(600)
+        await relay.escalateWaiting()
+        let pushes = http.calls.filter { $0.method == "POST" }
+        #expect(pushes.count == 1)
+        #expect(pushes.first?.body["title"] as? String == "確認待ちが続いています")
+        #expect(pushes.first?.body["body"] as? String == "Codex のセッション1件が10分以上返事を待っています")
+        #expect(pushes.first?.body["source_ref"] as? String == "island-waiting:s1")
+    }
+
+    @Test
+    func resolvedWaitingAndExistingNotificationDoNotPush() async {
+        let http = FakeHTTP()
+        let clock = Clock(Date())
+        let relay = MitamaRemoteRelay(http: http, environmentLoader: { env }, now: { clock.date },
+                                     idleSeconds: { 300 }, autoPoll: false)
+        relay.isEnabled = true
+        relay.observeWaiting(sessionID: "s1", tool: "Claude Code", isWaiting: true)
+        relay.observeWaiting(sessionID: "s1", tool: "Claude Code", isWaiting: false)
+        clock.date = clock.date.addingTimeInterval(600)
+        await relay.escalateWaiting()
+        #expect(http.calls.isEmpty)
+        relay.observeWaiting(sessionID: "s1", tool: "Claude Code", isWaiting: true)
+        clock.date = clock.date.addingTimeInterval(600)
+        http.respond = { _ in #"[{"id":"already-sent"}]"# }
+        await relay.escalateWaiting()
+        #expect(http.calls.allSatisfy { $0.method == "GET" })
     }
 
     // MARK: poll

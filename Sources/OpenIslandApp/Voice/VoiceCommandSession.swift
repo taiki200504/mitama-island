@@ -301,6 +301,9 @@ final class VoiceCommandSession {
         // holds it open until the loop is done.
         defer { withExtendedLifetime(analyzer) {} }
 
+        if settings.prefersBuiltInMicrophone {
+            BuiltInMicrophone.pin(engine)
+        }
         let microphoneFormat = engine.inputNode.outputFormat(forBus: 0)
 
         // The recogniser does not take whatever the microphone happens to

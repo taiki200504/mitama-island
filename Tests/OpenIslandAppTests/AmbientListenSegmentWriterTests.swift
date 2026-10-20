@@ -100,4 +100,32 @@ import Testing
         #expect(writer.currentSeconds == 0)
         #expect(!FileManager.default.fileExists(atPath: directory.path))
     }
+    @Test("Silent and muted buffers both refresh input liveness")
+    func buffersRefreshLiveness() throws {
+        let writer = SegmentWriter(directory: Self.temporaryDirectory())
+        let format = try Self.format()
+        writer.configure(format: format, silenceToClose: 5, maximumSeconds: 600)
+        #expect(writer.lastBufferAt == .distantPast)
+        let first = Date(timeIntervalSince1970: 100)
+        writer.append(try Self.buffer(format, amplitude: 0), now: first)
+        #expect(writer.lastBufferAt == first)
+        writer.configure(format: format, silenceToClose: 5, maximumSeconds: 600)
+        #expect(writer.lastBufferAt == first)
+        writer.setMuted(true)
+        let second = first.addingTimeInterval(2)
+        writer.append(try Self.buffer(format, amplitude: 0.5), now: second)
+        #expect(writer.lastBufferAt == second)
+        #expect(writer.currentSeconds == 0)
+    }
+
+    @Test("Input stalls at the threshold, not before it", arguments: [
+        (9.9, false), (10.0, true), (11.0, true), (-1.0, false)
+    ])
+    func stallThreshold(elapsed: Double, expected: Bool) {
+        let last = Date(timeIntervalSince1970: 100)
+        #expect(AmbientListenSession.isInputStalled(
+            now: last.addingTimeInterval(elapsed), lastBufferAt: last, threshold: 10
+        ) == expected)
+    }
+
 }

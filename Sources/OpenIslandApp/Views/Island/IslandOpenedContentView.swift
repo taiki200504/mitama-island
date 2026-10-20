@@ -12,8 +12,10 @@ private struct ContentHeightKey: PreferenceKey {
 /// When content exceeds maxHeight, wraps in ScrollView at fixed maxHeight.
 struct AutoHeightScrollView<Content: View>: View {
     let maxHeight: CGFloat
+    var alignTopOnFirstMeasure = false
     @ViewBuilder let content: () -> Content
     @State private var contentHeight: CGFloat = 0
+    @State private var didAlignTop = false
 
     private var isScrollable: Bool { contentHeight > maxHeight }
 
@@ -22,8 +24,12 @@ struct AutoHeightScrollView<Content: View>: View {
         // space for measurement.  Without this, a tight parent window can
         // cap the GeometryReader measurement, making long content appear
         // truncated instead of scrollable.
-        ScrollView(.vertical) {
-            content()
+        ScrollViewReader { proxy in
+            ScrollView(.vertical) {
+                VStack(spacing: 0) {
+                    Color.clear.frame(height: 0).id("scroll-top")
+                    content()
+                }
                 .background(
                     GeometryReader { geo in
                         Color.clear.preference(key: ContentHeightKey.self, value: geo.size.height)
@@ -32,10 +38,16 @@ struct AutoHeightScrollView<Content: View>: View {
                 .onPreferenceChange(ContentHeightKey.self) { height in
                     if height > 0 { contentHeight = height }
                 }
+            }
+            .scrollBounceBehavior(.basedOnSize)
+            .scrollIndicators(isScrollable ? .automatic : .hidden)
+            .frame(height: IslandChromeMetrics.scrollViewportHeight(contentHeight: contentHeight, maxHeight: maxHeight))
+            .onChange(of: contentHeight) { _, height in
+                guard alignTopOnFirstMeasure, height > maxHeight, !didAlignTop else { return }
+                didAlignTop = true
+                DispatchQueue.main.async { proxy.scrollTo("scroll-top", anchor: .top) }
+            }
         }
-        .scrollBounceBehavior(.basedOnSize)
-        .scrollIndicators(isScrollable ? .automatic : .hidden)
-        .frame(height: contentHeight > 0 ? min(contentHeight, maxHeight) : nil)
     }
 }
 

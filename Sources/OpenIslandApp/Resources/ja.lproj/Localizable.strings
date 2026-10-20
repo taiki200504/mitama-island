@@ -849,6 +849,11 @@
 "statusItem.clipboard.open" = "クリップボード…";
 "statusItem.nowPlaying.playing" = "再生中: %@";
 "statusItem.nowPlaying.paused" = "一時停止中: %@";
+"statusItem.raphael" = "ラファエル";
+"statusItem.raphael.enable" = "表示する";
+"statusItem.raphael.micMute" = "マイクをミュート";
+"statusItem.raphael.voiceMute" = "声をミュート";
+"statusItem.raphael.notInstalled" = "ラファエル（未導入）";
 "statusItem.shelf.header" = "置いてあるもの（%d）";
 "statusItem.settings" = "設定…";
 "session.stalled" = "しばらく応答がありません";
@@ -987,3 +992,34 @@
 "decision.paseo.forwardedOpen" = "この質問の会話をPaseoで開く";
 
 "nowPlaying.unavailable" = "この環境では再生中の情報を取得できません。";
+
+"mitamaOS.open" = "mitama OS を開く";
+// Manual keep awake
+"keepAwake.title" = "起こしておく";
+"keepAwake.mode.off" = "オフ";
+"keepAwake.mode.oneHour" = "1時間";
+"keepAwake.mode.threeHours" = "3時間";
+"keepAwake.mode.eightHours" = "8時間";
+"keepAwake.mode.indefinite" = "無期限";
+"keepAwake.mode.untilFinished" = "エージェントの作業が終わるまで";
+"keepAwake.remaining" = "残り%d分";
+"keepAwake.stop" = "止める";
+"keepAwake.display" = "画面も消さない";
+"keepAwake.closedLid" = "ふたを閉じても止めない";
+"keepAwake.closedLid.help" = "手動モード・AC接続中のみ。初回だけパスワードを聞きます。以後は電源が抜けたら自動で元に戻します。";
+"keepAwake.closedLid.revoke" = "この許可を外す";
+"keepAwake.release.tooHot" = "本体が熱くなったため、「起こしておく」を止めました。";
+"keepAwake.release.batteryLow" = "バッテリーが20%未満になったため、「起こしておく」を止めました。";
+"keepAwake.release.lidClosedOnBattery" = "ふたを閉じたままバッテリー駆動になったため、「起こしておく」を止めました。";
+"keepAwake.restoreFailed" = "スリープ設定を変更できませんでした。管理者の認証を許可して、もう一度停止してください。";
+
+"settings.audio.builtInMic" = "Mac内蔵マイクを使う";
+"settings.audio.builtInMic.help" = "Bluetoothイヤホンのマイクを使うと音楽の音質が落ちるため、内蔵マイクに固定します";
+
+"island.header.record" = "録音";
+"island.header.recording" = "録音中";
+
+"keepAwake.mode.alwaysOn" = "常時稼働（Mac mini の代わり）";
+"keepAwake.alwaysOn.short" = "常時稼働";
+"keepAwake.alwaysOn.paused" = "熱またはバッテリー残量のため、常時稼働の保持を一時解除しました。";
+"keepAwake.alwaysOn.resumed" = "安全な状態に戻ったため、常時稼働の保持を再開しました。";

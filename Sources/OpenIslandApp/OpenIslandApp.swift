@@ -9,6 +9,7 @@ final class OpenIslandAppDelegate: NSObject, NSApplicationDelegate {
     private lazy var harnessRuntimeMonitor = HarnessRuntimeMonitor(launchedAt: launchedAt)
     /// Never created during a harness run: a status item is one more thing
     /// that would sit in every screenshot the capture scripts take.
+    private var earshotDeviceReporter: EarshotDeviceReporter?
     private var statusItemController: StatusItemController?
 
     @MainActor
@@ -43,6 +44,9 @@ final class OpenIslandAppDelegate: NSObject, NSApplicationDelegate {
                 // The standing microphone, if it was switched on. Never during a
                 // harness run — an automated scenario must not open the mic.
                 model.earshot.start()
+                let reporter = EarshotDeviceReporter(session: model.earshot, settings: model.settings.ambientListen)
+                earshotDeviceReporter = reporter
+                reporter.start()
 
                 let controller = StatusItemController(model: model)
                 statusItemController = controller
@@ -113,6 +117,24 @@ final class OpenIslandAppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         }
+    }
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        Task { @MainActor in
+            model.isStoppingKeepAwake = true
+            model.keepAwakeTimer.invalidate()
+            model.keepAwake.apply(.release(.disabled))
+            let restored = await model.lidSleep.shutdown()
+            sender.reply(toApplicationShouldTerminate: restored)
+            if !restored {
+                model.settings.behaviour.manualKeepAwakeMode = .off
+                model.isStoppingKeepAwake = false
+                model.refreshKeepAwake()
+                model.resumeKeepAwakePolling()
+                model.present(notice: model.lang.t("keepAwake.restoreFailed"))
+            }
+        }
+        return .terminateLater
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {

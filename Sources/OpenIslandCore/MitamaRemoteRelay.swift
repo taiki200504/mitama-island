@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 import os
 
@@ -15,8 +16,9 @@ extension URLSession: MitamaRemoteHTTP {
 }
 
 /// Mirrors the island's permission / question prompts to mitama
-/// (`mos_island_requests` + an urgent `mos_notifications` row) so they can be
-/// answered from the iPhone, and applies the answer back through the same
+/// (`mos_island_requests`) so they can be
+/// answered from the iPhone. Permissions push immediately; ordinary waiting
+/// only escalates after ten minutes while away. Applies the answer through the same
 /// callbacks `WatchNotificationRelay` uses.
 ///
 /// The Mac stays the source of truth: nothing here is required for the island
@@ -25,6 +27,8 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
     private static let logger = Logger(subsystem: "app.openisland", category: "MitamaRemoteRelay")
 
     public static let pollInterval: TimeInterval = 3
+    /// Seconds without keyboard or mouse input before the person counts as away from the Mac.
+    static let awayAfter: TimeInterval = 300
     /// Matches the table's `expires_at` default.
     public static let requestLifetime: TimeInterval = 30 * 60
     static let summaryHead = 350
@@ -57,6 +61,10 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
     private let environmentLoader: @Sendable () -> MitamaEnvironment?
     private let now: @Sendable () -> Date
     private let autoPoll: Bool
+    private let idleSeconds: @Sendable () -> TimeInterval
+    public var isWaiting: (@Sendable @MainActor (String) -> Bool)?
+    private var waiting: [String: (since: Date, tool: String)] = [:]
+    private var escalated: Set<String> = []
 
     private let lock = NSLock()
     /// Off until the app turns it on: a model built in tests must never write to the real mitama.
@@ -69,12 +77,16 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
         http: MitamaRemoteHTTP = URLSession.shared,
         environmentLoader: @escaping @Sendable () -> MitamaEnvironment? = { MitamaEnvironment.load() },
         now: @escaping @Sendable () -> Date = { Date() },
+        idleSeconds: @escaping @Sendable () -> TimeInterval = {
+            CGEventSource.secondsSinceLastEventType(.hidSystemState, eventType: CGEventType(rawValue: UInt32.max)!)
+        },
         autoPoll: Bool = true
     ) {
         self.http = http
         self.environmentLoader = environmentLoader
         self.now = now
         self.autoPoll = autoPoll
+        self.idleSeconds = idleSeconds
     }
 
     /// Off means nothing is sent and nothing is polled. Turning it off also
@@ -86,6 +98,7 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
                 enabled = newValue
                 if !newValue {
                     pending.removeAll()
+                    waiting.removeAll()
                     pollTask?.cancel()
                     pollTask = nil
                 }
@@ -98,6 +111,10 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
     /// Called by AppModel after applying a tracked event, next to `WatchNotificationRelay`.
     public func notifyEvent(_ event: AgentEvent, session: AgentSession?) {
         guard isEnabled else { return }
+        if let session {
+            observeWaiting(sessionID: session.id, tool: session.tool.displayName,
+                           isWaiting: session.phase == .waitingForAnswer && session.isTrackedLiveSession)
+        }
         Task.detached { [self] in await handle(event, session: session) }
     }
 
@@ -192,13 +209,17 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
             return
         }
 
-        _ = await send(env, table: "mos_notifications", method: "POST", body: [
-            "level": "urgent",
-            "title": "\(agentTool): 確認待ち",
-            "body": Self.redact(title).prefix(100).description,
-            "read": false,
-            "source_ref": "island:\(id)",
-        ])
+        // At the Mac the island already shows the prompt; pushing it to the phone too fired
+        // ~40 urgent notifications a day. Only push when the person has stepped away.
+        if kind == .permission, idleSeconds() >= Self.awayAfter {
+            _ = await send(env, table: "mos_notifications", method: "POST", body: [
+                "level": "urgent",
+                "title": "\(agentTool): 確認待ち",
+                "body": "\(agentTool) のセッション1件がツール実行の許可を待っています",
+                "read": false,
+                "source_ref": "island:\(id)",
+            ])
+        }
 
         await retireSuperseded(sessionID: sessionID, keeping: id)
         startPollingIfNeeded()
@@ -236,7 +257,7 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
     private func startPollingIfNeeded() {
         guard autoPoll else { return }
         locked {
-            guard pollTask == nil, !pending.isEmpty else { return }
+            guard pollTask == nil, !pending.isEmpty || !waiting.isEmpty else { return }
             pollTask = Task.detached { [self] in
                 // Polls only while something is waiting; an idle island makes no requests.
                 while true {
@@ -246,7 +267,7 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
                     }
                     // Re-checked under the lock so a request registered just now is not stranded.
                     let done = locked { () -> Bool in
-                        guard Task.isCancelled || pending.isEmpty else { return false }
+                        guard Task.isCancelled || (pending.isEmpty && waiting.isEmpty) else { return false }
                         pollTask = nil
                         return true
                     }
@@ -256,11 +277,55 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
         }
     }
 
-    private var hasPending: Bool { locked { !pending.isEmpty } }
+    private var hasPending: Bool { locked { !pending.isEmpty || !waiting.isEmpty } }
 
     func pendingCountForTests() -> Int { locked { pending.count } }
 
+    func observeWaiting(sessionID: String, tool: String, isWaiting: Bool) {
+        guard isEnabled else { return }
+        locked {
+            if isWaiting {
+                if waiting[sessionID] == nil { waiting[sessionID] = (now(), tool) }
+            } else {
+                waiting.removeValue(forKey: sessionID)
+            }
+        }
+        startPollingIfNeeded()
+    }
+
+    func escalateWaiting() async {
+        guard isEnabled else { return }
+        let entries = locked { waiting }
+        for (id, entry) in entries {
+            if let isWaiting, !(await isWaiting(id)) {
+                locked { _ = waiting.removeValue(forKey: id) }
+                continue
+            }
+            guard now().timeIntervalSince(entry.since) >= 600, idleSeconds() >= Self.awayAfter,
+                  let env = await resolvedEnvironment() else { continue }
+            let claimed = locked { () -> Bool in
+                guard waiting[id]?.since == entry.since, !escalated.contains(id) else { return false }
+                escalated.insert(id)
+                return true
+            }
+            guard claimed else { continue }
+            let reference = "island-waiting:\(id)"
+            // Check the stable reference across app restarts; fail closed if the lookup fails.
+            guard let data = await send(env, table: "mos_notifications", method: "GET", query: [
+                URLQueryItem(name: "source_ref", value: "eq.\(reference)"),
+                URLQueryItem(name: "select", value: "id"), URLQueryItem(name: "limit", value: "1")
+            ]), let rows = try? JSONSerialization.jsonObject(with: data) as? [Any] else { continue }
+            guard rows.isEmpty else { continue }
+            _ = await send(env, table: "mos_notifications", method: "POST", body: [
+                "level": "urgent", "title": "確認待ちが続いています",
+                "body": "\(entry.tool) のセッション1件が10分以上返事を待っています",
+                "read": false, "source_ref": reference
+            ])
+        }
+    }
+
     func pollOnce() async {
+        await escalateWaiting()
         guard isEnabled, hasPending, let env = await resolvedEnvironment() else { return }
 
         let cutoff = now().addingTimeInterval(-Self.requestLifetime)

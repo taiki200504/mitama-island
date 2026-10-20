@@ -11,12 +11,8 @@ import OpenIslandCore
 /// render can never disagree is to test the exact function `macbookBody`
 /// calls for both.
 ///
-/// The symmetric two-sided macbook pill already routinely grows past
-/// `physicalNotchWidth + 66` on the body alone (a long agent name plus a
-/// real elapsed time, doubled for both sides of the notch) — that's an
-/// existing, accepted shape, not a regression these tests are chasing.
-/// What they check is narrower: the accessory never becomes the *reason*
-/// the pill is wider than the body alone would already require.
+/// Long body text is compacted within the cap; the physical notch keeps its
+/// bleed floor. Accessory decisions use the same width as the renderer.
 @MainActor
 @Suite("Closed content width")
 struct IslandClosedContentWidthTests {
@@ -40,8 +36,8 @@ struct IslandClosedContentWidthTests {
         )
     }
 
-    @Test("A long body already dominates the width, so its accessory rides along for free")
-    func longestCaseAccessoryAddsNoExtraWidth() {
+    @Test("A long body is compacted to the notched ceiling")
+    func longBodyRespectsNotchedCeiling() {
         let withAccessory = longestContent()
         var bodyOnly = withAccessory
         bodyOnly.accessory = nil
@@ -56,18 +52,20 @@ struct IslandClosedContentWidthTests {
             physicalNotchWidth: physicalNotchWidth, pad: pad
         )
 
-        #expect(withAccessoryResult.accessory != nil)
-        #expect(withAccessoryResult.outerWidth == bodyOnlyResult.outerWidth)
+        #expect(bodyOnlyResult.outerWidth == 360)
+        #expect(bodyOnlyResult.compactBody)
+        #expect(withAccessoryResult.outerWidth == 360)
+        #expect(withAccessoryResult.compactBody)
     }
 
-    @Test("The accessory survives when there's plainly enough room")
-    func accessoryKeptWhenThereIsRoom() {
+    @Test("A wide physical notch still uses its bleed ceiling")
+    func accessoryDoesNotExceedWideNotchFloor() {
         let content = IslandClosedContent(accessory: .timer(remainingMinutes: 12, label: "Focus"))
         let result = V6ClosedPill.macbookLayout(
             content: content, sneakPeek: nil, rightSlot: nil,
             physicalNotchWidth: 400, pad: pad
         )
-        #expect(result.accessory != nil)
+        #expect(result.outerWidth == 466)
     }
 
     @Test("The accessory is the one dropped when it would be the reason the pill grows")
@@ -141,15 +139,15 @@ struct IslandClosedContentWidthTests {
         #expect(result.accessory == nil)
     }
 
-    @Test("Empty sneak-peek text claims no width and does not suppress the accessory")
-    func emptySneakPeekTextDoesNotSuppressTheAccessory() {
+    @Test("Empty sneak-peek text claims no width beyond the notch floor")
+    func emptySneakPeekTextDoesNotWidenPill() {
         let sneakPeek = IslandSneakPeek(kind: .shelf, text: "", icon: "tray.full", until: .now)
         let content = IslandClosedContent(accessory: .timer(remainingMinutes: 12, label: "Focus"))
         let result = V6ClosedPill.macbookLayout(
             content: content, sneakPeek: sneakPeek, rightSlot: nil,
             physicalNotchWidth: 400, pad: pad
         )
-        #expect(result.accessory != nil)
+        #expect(result.outerWidth == 466)
     }
 
     @Test("With nothing to show, the pill still reports the bare glyph floor")
@@ -162,5 +160,30 @@ struct IslandClosedContentWidthTests {
         // leftContent = 24 (glyph only); halfReserve = max(44, pad + 24 + 6).
         let expectedHalfReserve = max(44, pad + 24 + 6)
         #expect(result.outerWidth == expectedHalfReserve * 2 + 180)
+    }
+
+    @Test("A wide physical notch keeps its original bleed floor")
+    func wideNotchKeepsBleedFloor() {
+        let result = V6ClosedPill.macbookLayout(
+            content: longestContent(), sneakPeek: nil, rightSlot: nil,
+            physicalNotchWidth: 400, pad: pad
+        )
+        #expect(result.outerWidth == 466)
+        #expect(V6ClosedPill.notchedMaxWidth(physicalNotchWidth: 400) == 466)
+    }
+
+    @Test("A 234pt notch has room for compact status and the right-side count")
+    func compactStatusAndCountStayOutsideNotch() {
+        let notchWidth: CGFloat = 234
+        let rightSlot = IslandRightSlotContent.count(9)
+        let result = V6ClosedPill.macbookLayout(
+            content: longestContent(), sneakPeek: nil, rightSlot: rightSlot,
+            physicalNotchWidth: notchWidth, pad: pad
+        )
+        let sideBudget = (result.outerWidth - notchWidth) / 2
+        #expect(result.outerWidth == 360)
+        #expect(result.compactBody)
+        #expect(pad + 24 + 6 + 6 <= sideBudget)
+        #expect(pad + V6RightSlotView.intrinsicWidth(of: rightSlot) + 6 <= sideBudget)
     }
 }

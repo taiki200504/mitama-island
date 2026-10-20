@@ -33,6 +33,7 @@ This index is the repository map for humans and coding agents. Read these files 
 - [docs/notch-surface-model.md](./notch-surface-model.md) for the island surface routing model and debug harness intent
 - [docs/peek-band-design.md](./peek-band-design.md) for the closed-island peek band that keeps a pending request visible until it is answered
 - [docs/island-modules.md](./island-modules.md) for the closed-island arbiter (one body + one accessory), sneak-peek rules, and the contract later timer/now-playing/calendar/lock/HUD modules build against
+- [docs/island-decide-verification.md](./island-decide-verification.md) for verifying the island /decide approval flow (Grok / Dots relay)
 - [docs/manus-integration.md](./manus-integration.md) for the Manus spec audit, phased implementation plan, and Focus Card / Resume Card requirements
 - [docs/app-ghostty-codex-chain.md](./app-ghostty-codex-chain.md) for terminal environment findings across the current supported chain
 - [docs/sound-design.md](./sound-design.md) for the bundled cue catalog, format, regeneration, and override precedence
@@ -56,6 +57,8 @@ This index is the repository map for humans and coding agents. Read these files 
 
 ## Investigations
 
+- [docs/crash-main-actor-2026-10-20.md](./crash-main-actor-2026-10-20.md) for executor-check crash evidence, mitigation scope, and soak measurement.
+
 - [docs/island-position-investigation.md](./island-position-investigation.md) for notch and external-display placement work
 - [docs/notchi-integration.md](./notchi-integration.md) for integration notes related to Notchi
 - [docs/installed-app-bundle-analysis.md](./installed-app-bundle-analysis.md) for installed-app bundle observations
@@ -69,3 +72,5 @@ This index is the repository map for humans and coding agents. Read these files 
 - [docs/settings-integration-audit-1005.md](./settings-integration-audit-1005.md) for the associated local implementation audit.
 
 - [docs/testing/paseo-fixture.md](./testing/paseo-fixture.md) for isolated native question, child, and unsupported-request fixtures.
+- [docs/mitama-os-window.md](./mitama-os-window.md) for the mitama OS window (Hub inside the island, ⌃⌥M). Sign in with the email code; Google sign-in is blocked inside embedded web views.
+- [docs/keep-awake-manual.md](./keep-awake-manual.md) for the manual keep-awake mode (Amphetamine-style), closed-lid restore and its sudoers scope.

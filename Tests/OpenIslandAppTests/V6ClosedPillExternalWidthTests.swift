@@ -106,14 +106,14 @@ struct V6ClosedPillExternalWidthTests {
             configuredMaxPanelWidth: 648,
             visibleWidth: 2_400
         )
-        #expect(onABigScreen == 648)
+        #expect(onABigScreen == 360)
 
         // A small screen: 60% of the visible width undercuts the
         // configured panel width instead.
         let onASmallScreen = V6ClosedPill.externalMaxWidth(
             configuredMaxPanelWidth: 648,
-            visibleWidth: 900
+            visibleWidth: 500
         )
-        #expect(onASmallScreen == 540)
+        #expect(onASmallScreen == 300)
     }
 }

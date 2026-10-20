@@ -69,8 +69,44 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     // MARK: - NSMenuDelegate
 
     func menuNeedsUpdate(_ menu: NSMenu) {
+        // Build immediately from the last known Raphael status, then refresh it in the background.
+        rebuildMenu(menu)
+        Task {
+            let status = await RaphaelControl.fetchStatus()
+            await MainActor.run {
+                guard status != self.model.raphaelStatus else { return }
+                self.model.raphaelStatus = status
+                self.rebuildMenu(menu)
+            }
+        }
+    }
+
+    private func rebuildMenu(_ menu: NSMenu) {
         menu.removeAllItems()
         actions.removeAll()
+        addItem(model.lang.t("mitamaOS.open"), to: menu) { [weak model] in
+            model?.openMitamaHub()
+        }
+
+        model.refreshKeepAwake()
+        let awake = NSMenuItem(title: model.lang.t("keepAwake.title") + " · " + model.manualKeepAwakeLabel,
+                               action: nil, keyEquivalent: "")
+        let awakeMenu = NSMenu()
+        for mode in ManualKeepAwakePolicy.Mode.allCases {
+            addItem(model.lang.t(mode.labelKey), to: awakeMenu) { [weak model] in
+                model?.setManualKeepAwake(mode)
+            }
+            awakeMenu.items.last?.state = model.settings.behaviour.manualKeepAwakeMode == mode ? .on : .off
+        }
+        if model.settings.behaviour.manualKeepAwakeMode != .off {
+            awakeMenu.addItem(.separator())
+            addItem(model.lang.t("keepAwake.stop"), to: awakeMenu) { [weak model] in
+                model?.setManualKeepAwake(.off)
+            }
+        }
+        awake.submenu = awakeMenu
+        menu.addItem(awake)
+        menu.addItem(.separator())
 
         let shelfItems = model.shelf.items
         var shelfIndex = 0
@@ -105,6 +141,13 @@ final class StatusItemController: NSObject, NSMenuDelegate {
                         model.beginTouchlessActivation()
                     }
                 }
+            case .toggleAmbientListen(let isEnabled):
+                addItem(model.lang.t("settings.earshot.section"), to: menu) { [weak model] in
+                    guard let model else { return }
+                    model.settings.ambientListen.isEnabled.toggle()
+                    model.earshot.settingsChanged()
+                }
+                menu.items.last?.state = isEnabled ? .on : .off
             case .startTimer(let presets):
                 let item = NSMenuItem(
                     title: model.lang.t("statusItem.timer.start"),
@@ -142,6 +185,91 @@ final class StatusItemController: NSObject, NSMenuDelegate {
                 ) { [weak model] in
                     model?.nowPlaying.togglePlayPause()
                 }
+            case .raphael(let status):
+                let item = NSMenuItem(
+                    title: model.lang.t("statusItem.raphael"),
+                    action: nil,
+                    keyEquivalent: ""
+                )
+                let submenu = NSMenu()
+
+                if let status = status {
+                    // 「表示する」toggle
+                    let enableItem = NSMenuItem(
+                        title: model.lang.t("statusItem.raphael.enable"),
+                        action: #selector(runAction(_:)),
+                        keyEquivalent: ""
+                    )
+                    enableItem.target = self
+                    enableItem.tag = actions.count
+                    enableItem.state = status.enabled ? .on : .off
+                    actions.append { [weak self] in
+                        Task {
+                            if status.enabled {
+                                await RaphaelControl.disable()
+                            } else {
+                                await RaphaelControl.enable()
+                            }
+                            self?.refreshRaphaelMenu()
+                        }
+                    }
+                    submenu.addItem(enableItem)
+
+                    // 「マイクをミュート」toggle
+                    let micItem = NSMenuItem(
+                        title: model.lang.t("statusItem.raphael.micMute"),
+                        action: #selector(runAction(_:)),
+                        keyEquivalent: ""
+                    )
+                    micItem.target = self
+                    micItem.tag = actions.count
+                    micItem.state = status.mic ? .off : .on   // checked = muted
+                    actions.append { [weak self] in
+                        Task {
+                            if status.mic {
+                                await RaphaelControl.muteMicrophone()
+                            } else {
+                                await RaphaelControl.unmuteMicrophone()
+                            }
+                            self?.refreshRaphaelMenu()
+                        }
+                    }
+                    submenu.addItem(micItem)
+
+                    // 「声をミュート」toggle
+                    let voiceItem = NSMenuItem(
+                        title: model.lang.t("statusItem.raphael.voiceMute"),
+                        action: #selector(runAction(_:)),
+                        keyEquivalent: ""
+                    )
+                    voiceItem.target = self
+                    voiceItem.tag = actions.count
+                    voiceItem.state = status.voice ? .off : .on   // checked = muted
+                    actions.append { [weak self] in
+                        Task {
+                            if status.voice {
+                                await RaphaelControl.muteVoice()
+                            } else {
+                                await RaphaelControl.unmuteVoice()
+                            }
+                            self?.refreshRaphaelMenu()
+                        }
+                    }
+                    submenu.addItem(voiceItem)
+                } else {
+                    // Not installed
+                    let notInstalledItem = NSMenuItem(
+                        title: model.lang.t("statusItem.raphael.notInstalled"),
+                        action: nil,
+                        keyEquivalent: ""
+                    )
+                    notInstalledItem.isEnabled = false
+                    submenu.addItem(notInstalledItem)
+                    item.isEnabled = false
+                }
+
+                item.submenu = submenu
+                menu.addItem(item)
             case .shelfHeader(let count):
                 let header = NSMenuItem(
                     title: model.lang.t("statusItem.shelf.header", count),
@@ -184,6 +312,13 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         item.tag = actions.count
         actions.append(action)
         menu.addItem(item)
+    }
+
+    private func refreshRaphaelMenu() {
+        guard statusItem?.menu != nil else { return }
+        Task { @MainActor in
+            statusItem?.menu?.update()
+        }
     }
 
     @objc

@@ -49,9 +49,22 @@ final class OverlayPanelController {
     weak var model: AppModel?
     private(set) var notchRect: NSRect = .zero
     private var preferredScreenID: String?
+    /// With no display picked by hand, the closed island moves to whichever
+    /// display the pointer is on — otherwise a newly connected monitor never
+    /// gets it, because the automatic choice always prefers the notch.
+    private var followedScreenID: String?
 
     var isVisible: Bool {
         panel?.isVisible == true
+    }
+
+    /// Opened, the island has to sit above other apps' notch overlays —
+    /// VoiceOS draws its dictation bar at level 33–34 right over the notch,
+    /// and every click on the header went to it instead. Still below
+    /// `.popUpMenu` so a menu pulled down from the menu bar covers it.
+    /// Closed, it stays at `.statusBar` and leaves those overlays alone.
+    nonisolated static func panelLevel(interactive: Bool) -> NSWindow.Level {
+        interactive ? NSWindow.Level(rawValue: NSWindow.Level.popUpMenu.rawValue - 1) : .statusBar
     }
 
     nonisolated static func shouldActivatePanel(for reason: NotchOpenReason?) -> Bool {
@@ -83,6 +96,7 @@ final class OverlayPanelController {
         presentPanel(panel, activates: Self.shouldActivatePanel(for: model.notchOpenReason))
         panel.ignoresMouseEvents = false
         panel.acceptsMouseMovedEvents = true
+        panel.level = Self.panelLevel(interactive: true)
         startEventMonitoring()
         return diagnostics
     }
@@ -90,6 +104,7 @@ final class OverlayPanelController {
     func hide() {
         panel?.ignoresMouseEvents = true
         panel?.acceptsMouseMovedEvents = false
+        panel?.level = Self.panelLevel(interactive: false)
     }
 
     func setInteractive(_ interactive: Bool) {
@@ -102,6 +117,7 @@ final class OverlayPanelController {
 
         panel.ignoresMouseEvents = !interactive
         panel.acceptsMouseMovedEvents = interactive
+        panel.level = Self.panelLevel(interactive: interactive)
 
         if interactive {
             presentPanel(panel, activates: Self.shouldActivatePanel(for: model?.notchOpenReason))
@@ -177,6 +193,7 @@ final class OverlayPanelController {
         }
 
         let windowFrame = panelFrame(for: model, on: screen)
+        let screenID = OverlayDisplayResolver.screenID(for: screen)
 
         // Always set the panel frame instantly — no AppKit animation.
         // All visual transitions (shape, size, opacity, corner radius) are
@@ -188,6 +205,14 @@ final class OverlayPanelController {
             panel.setFrame(windowFrame, display: true)
         }
         computeNotchRect(screen: screen)
+
+        if (preferredScreenID ?? self.preferredScreenID) == nil, followedScreenID == screenID {
+            return OverlayDisplayResolver.diagnostics(
+                for: screen,
+                selectionSummary: "automatic, follows pointer",
+                panelSize: panel.frame.size
+            )
+        }
 
         return OverlayDisplayResolver.diagnostics(
             preferredScreenID: preferredScreenID,
@@ -238,8 +263,14 @@ final class OverlayPanelController {
         let screens = NSScreen.screens
         guard !screens.isEmpty else { return nil }
 
-        if let preferredScreenID = preferredScreenID ?? self.preferredScreenID,
-           let screen = screens.first(where: { OverlayDisplayResolver.screenID(for: $0) == preferredScreenID }) {
+        let effectivePreferredID = preferredScreenID ?? self.preferredScreenID
+        if let effectivePreferredID,
+           let screen = screens.first(where: { OverlayDisplayResolver.screenID(for: $0) == effectivePreferredID }) {
+            return screen
+        }
+
+        if effectivePreferredID == nil, let followedScreenID,
+           let screen = screens.first(where: { OverlayDisplayResolver.screenID(for: $0) == followedScreenID }) {
             return screen
         }
 
@@ -273,6 +304,8 @@ final class OverlayPanelController {
     private func handleMouseMoved(_ screenLocation: NSPoint) {
         guard let model else { return }
 
+        followPointerScreen(screenLocation, model: model)
+
         // A pointer that is moving with no button held is not carrying
         // anything, so the closed island goes back to letting clicks through.
         // The safety net for the drop: a mouse-up during a drag session belongs
@@ -304,6 +337,28 @@ final class OverlayPanelController {
                 model.handlePointerExitedIslandSurface()
             }
         }
+    }
+
+    /// Moves the closed island to the display under the pointer.
+    ///
+    /// Only while closed: an opened or peeking island stays put so it can't
+    /// jump away from what the user is reading or clicking.
+    private func followPointerScreen(_ screenLocation: NSPoint, model: AppModel) {
+        guard model.notchStatus == .closed, preferredScreenID == nil, let panel else { return }
+
+        let screens = NSScreen.screens
+        guard let index = OverlayDisplayResolver.screenIndex(
+            containing: screenLocation,
+            in: screens.map(\.frame)
+        ) else { return }
+
+        let pointerScreenID = OverlayDisplayResolver.screenID(for: screens[index])
+        guard let current = resolveTargetScreen(),
+              OverlayDisplayResolver.screenID(for: current) != pointerScreenID else { return }
+
+        followedScreenID = pointerScreenID
+        cancelHoverOpen()
+        positionPanel(panel, preferredScreenID: nil, animated: false)
     }
 
     /// Lets the closed island take a file that is being carried towards it.
@@ -616,21 +671,18 @@ final class OverlayPanelController {
     }
 
     /// The floating capsule's hit rectangle on a non-notched display:
-    /// centered on the screen horizontally, floating `gap` below the menu
-    /// bar's bottom edge — the same placement `IslandPanelView.v6ClosedSurface()`
-    /// renders with (see `IslandPanelView.floatingPillTopOffset`), kept as a
-    /// pure function of the two screen frames so it's testable without real
-    /// display hardware.
+    /// centered on the screen horizontally and flush with its top edge,
+    /// inside the menu bar band — the same placement
+    /// `IslandPanelView.v6ClosedSurface()` renders with. Sitting below the
+    /// menu bar made it cover the frontmost window's tab strip.
     nonisolated static func floatingClosedSurfaceRect(
         screenFrame: NSRect,
-        visibleFrame: NSRect,
         width: CGFloat,
-        height: CGFloat,
-        gap: CGFloat = IslandChromeMetrics.floatingPillGap
+        height: CGFloat
     ) -> NSRect {
         NSRect(
             x: screenFrame.midX - width / 2,
-            y: visibleFrame.maxY - gap - height,
+            y: screenFrame.maxY - height,
             width: width,
             height: height
         )
@@ -676,7 +728,8 @@ final class OverlayPanelController {
     ) -> CGFloat {
         let popBonus: CGFloat = notchStatus == .popping ? 18 : 0
         if isNotchedDisplay {
-            return max(notchWidth + (closedPillSideBleed * 2), notchedContentWidth) + popBonus
+            return min(max(notchWidth + (closedPillSideBleed * 2), notchedContentWidth),
+                       V6ClosedPill.notchedMaxWidth(physicalNotchWidth: notchWidth)) + popBonus
         }
         let hitWidth = max(
             IslandChromeMetrics.floatingPillMinWidth,
@@ -699,9 +752,8 @@ final class OverlayPanelController {
             // calibration purposes elsewhere.
             return Self.floatingClosedSurfaceRect(
                 screenFrame: screen.frame,
-                visibleFrame: screen.visibleFrame,
                 width: closedWidth,
-                height: IslandChromeMetrics.floatingPillHeight
+                height: screen.islandClosedHeight
             )
         }
 
@@ -714,12 +766,10 @@ final class OverlayPanelController {
     private func panelFrame(for model: AppModel?, on screen: NSScreen) -> NSRect {
         let size = panelSize(for: model, on: screen)
         // Same top-anchoring rule the diagnostics-only `pureFrame` uses —
-        // on a non-notched display the window's own top edge now sits at
-        // the menu bar's bottom edge instead of the screen's physical top,
-        // so the opened surface drawn inside it no longer sinks under the
-        // menu bar. Sharing `topAnchoredY` is what keeps this window's real
-        // position and the diagnostics panel's reported position from
-        // disagreeing on a display with an auto-hidden menu bar.
+        // flush with the screen's top edge on every display, so the closed
+        // capsule sits inside the menu bar band. Sharing `topAnchoredY` is
+        // what keeps this window's real position and the diagnostics panel's
+        // reported position from disagreeing.
         let y = OverlayDisplayResolver.topAnchoredY(
             screenFrame: screen.frame,
             visibleFrame: screen.visibleFrame,
@@ -770,7 +820,7 @@ final class OverlayPanelController {
     private func closedPanelWidth(for model: AppModel, on screen: NSScreen) -> CGFloat {
         let notchWidth = screen.notchSize.width
         let isNotched = screen.safeAreaInsets.top > 0
-        let intrinsicContentWidth = isNotched ? 0 : closedFloatingIntrinsicWidth(for: model)
+        let intrinsicContentWidth = isNotched ? 0 : closedFloatingIntrinsicWidth(for: model, pillHeight: screen.islandClosedHeight)
         let notchedContentWidth = isNotched
             ? closedNotchedOuterWidth(for: model, notchWidth: notchWidth, pillHeight: screen.islandClosedHeight)
             : 0
@@ -806,13 +856,13 @@ final class OverlayPanelController {
     /// The floating capsule's own content width, computed with the exact
     /// same inputs `IslandPanelView.v6ClosedSurface()` renders with — so the
     /// hit area this drives can never disagree with what's actually drawn.
-    private func closedFloatingIntrinsicWidth(for model: AppModel) -> CGFloat {
+    private func closedFloatingIntrinsicWidth(for model: AppModel, pillHeight: CGFloat) -> CGFloat {
         V6ClosedPill.externalIntrinsicWidth(
             label: model.islandClosedLabel(),
             rightSlot: model.islandClosedRightSlotContent(),
             content: model.islandClosedContent(),
             sneakPeek: model.overlay.sneakPeek,
-            height: IslandChromeMetrics.floatingPillHeight
+            height: pillHeight
         )
     }
 
@@ -980,7 +1030,7 @@ final class OverlayPanelController {
         // The list scrolls past this, so the panel must be sized for the cap
         // rather than for the whole list — otherwise a long question pushes the
         // submit button outside the panel it is supposed to sit in.
-        let estimated = chromeHeight + min(listHeight, IslandChromeMetrics.questionOptionsViewportHeight(maxPanelHeight: maxPanelHeight))
+        let estimated = chromeHeight + listHeight
         return min(Self.questionCardMaxHeight, max(Self.questionCardBaseHeight, estimated))
     }
 
@@ -1183,22 +1233,17 @@ final class NotchEventMonitors {
         mouseDragHandler: @MainActor @escaping @Sendable (NSPoint) -> Void,
         mouseDragEndHandler: @MainActor @escaping @Sendable () -> Void
     ) {
-        let throttleInterval: TimeInterval = 0.05
+        // @Sendable keeps AppKit callbacks nonisolated; only the tasks enter MainActor.
+        let moveThrottle = EventThrottle()
 
-        nonisolated(unsafe) var sharedLastMove: TimeInterval = 0
-
-        globalMoveMonitor = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved) { event in
-            let now = ProcessInfo.processInfo.systemUptime
-            guard now - sharedLastMove >= throttleInterval else { return }
-            sharedLastMove = now
+        globalMoveMonitor = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved) { @Sendable event in
+            guard moveThrottle.shouldDeliver() else { return }
             let location = NSEvent.mouseLocation
             Task { @MainActor in mouseMoveHandler(location) }
         }
 
-        localMoveMonitor = NSEvent.addLocalMonitorForEvents(matching: .mouseMoved) { event in
-            let now = ProcessInfo.processInfo.systemUptime
-            guard now - sharedLastMove >= throttleInterval else { return event }
-            sharedLastMove = now
+        localMoveMonitor = NSEvent.addLocalMonitorForEvents(matching: .mouseMoved) { @Sendable event in
+            guard moveThrottle.shouldDeliver() else { return event }
             let location = NSEvent.mouseLocation
             Task { @MainActor in mouseMoveHandler(location) }
             return event
@@ -1207,43 +1252,54 @@ final class NotchEventMonitors {
         // A pointer with the button held down stops sending `.mouseMoved`
         // entirely, which is why a file dragged towards a closed island never
         // opened it: the shelf was unreachable without opening the panel first.
-        nonisolated(unsafe) var sharedLastDrag: TimeInterval = 0
+        let dragThrottle = EventThrottle()
 
-        globalDragMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDragged) { event in
-            let now = ProcessInfo.processInfo.systemUptime
-            guard now - sharedLastDrag >= throttleInterval else { return }
-            sharedLastDrag = now
+        globalDragMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDragged) { @Sendable event in
+            guard dragThrottle.shouldDeliver() else { return }
             let location = NSEvent.mouseLocation
             Task { @MainActor in mouseDragHandler(location) }
         }
 
-        localDragMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDragged) { event in
-            let now = ProcessInfo.processInfo.systemUptime
-            guard now - sharedLastDrag >= throttleInterval else { return event }
-            sharedLastDrag = now
+        localDragMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDragged) { @Sendable event in
+            guard dragThrottle.shouldDeliver() else { return event }
             let location = NSEvent.mouseLocation
             Task { @MainActor in mouseDragHandler(location) }
             return event
         }
 
-        globalDragEndMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseUp) { _ in
+        globalDragEndMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseUp) { @Sendable _ in
             Task { @MainActor in mouseDragEndHandler() }
         }
 
-        localDragEndMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseUp) { event in
+        localDragEndMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseUp) { @Sendable event in
             Task { @MainActor in mouseDragEndHandler() }
             return event
         }
 
-        globalClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown) { event in
+        globalClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown) { @Sendable event in
             let location = NSEvent.mouseLocation
             Task { @MainActor in mouseDownHandler(location) }
         }
 
-        localClickMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { event in
+        localClickMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { @Sendable event in
             let location = NSEvent.mouseLocation
             Task { @MainActor in mouseDownHandler(location) }
             return event
+        }
+    }
+
+    /// Global and local callbacks share a clock; the lock protects concurrent delivery.
+    private final class EventThrottle: @unchecked Sendable {
+        private let lock = NSLock()
+        private var lastTime: TimeInterval = 0
+
+        func shouldDeliver() -> Bool {
+            lock.lock()
+            defer { lock.unlock() }
+            let now = ProcessInfo.processInfo.systemUptime
+            guard now - lastTime >= 0.05 else { return false }
+            lastTime = now
+            return true
         }
     }
 

@@ -205,6 +205,7 @@ public struct PoseHoldDetector: Equatable, Sendable {
 
     private var holdStartedAt: TimeInterval?
     private var lastFiredAt: TimeInterval?
+    private var hasFiredForCurrentPose = false
 
     public init(configuration: Configuration = .init()) {
         self.configuration = configuration
@@ -214,8 +215,11 @@ public struct PoseHoldDetector: Equatable, Sendable {
     public mutating func push(isPosed: Bool, timestamp: TimeInterval) -> Bool {
         guard isPosed else {
             holdStartedAt = nil
+            hasFiredForCurrentPose = false
             return false
         }
+
+        guard !hasFiredForCurrentPose else { return false }
 
         if let lastFiredAt, timestamp - lastFiredAt < configuration.cooldownDuration {
             // Still inside the cooldown. The hand is usually still up at this
@@ -231,6 +235,7 @@ public struct PoseHoldDetector: Equatable, Sendable {
         guard timestamp - startedAt >= configuration.minimumHoldDuration else { return false }
         holdStartedAt = nil
         lastFiredAt = timestamp
+        hasFiredForCurrentPose = true
         return true
     }
 }

@@ -77,13 +77,24 @@ enum OverlayDisplayResolver {
             return nil
         }
 
-        let screen = resolvedScreen.screen
+        return diagnostics(
+            for: resolvedScreen.screen,
+            selectionSummary: resolvedScreen.selectionSummary,
+            panelSize: panelSize
+        )
+    }
+
+    static func diagnostics(
+        for screen: NSScreen,
+        selectionSummary: String,
+        panelSize: NSSize
+    ) -> OverlayPlacementDiagnostics {
         let overlayFrame = frame(for: screen, panelSize: panelSize)
 
         return OverlayPlacementDiagnostics(
             targetScreenID: screenID(for: screen),
             targetScreenName: screen.localizedName,
-            selectionSummary: resolvedScreen.selectionSummary,
+            selectionSummary: selectionSummary,
             mode: placementMode(for: screen),
             screenFrame: screen.frame,
             visibleFrame: screen.visibleFrame,
@@ -126,9 +137,8 @@ enum OverlayDisplayResolver {
     }
 
     /// Where a top-anchored overlay's own top edge should sit, in screen
-    /// coordinates: flush with the physical top edge for a notched display
-    /// (the notch is part of the bezel), or flush with the menu bar's
-    /// bottom edge otherwise.
+    /// coordinates: flush with the physical top edge on every display —
+    /// inside the notch, or inside the menu bar band where there is none.
     ///
     /// The single place both `pureFrame` above and the real window frame
     /// (`OverlayPanelController.panelFrame`) get this number from — so a
@@ -145,7 +155,9 @@ enum OverlayDisplayResolver {
         case .notch:
             screenFrame.maxY - height
         case .floatingPill:
-            visibleFrame.maxY - height
+            // Flush with the top edge too: the closed capsule lives inside the
+            // menu bar band, so it never covers the frontmost window's tabs.
+            screenFrame.maxY - height
         }
     }
 
@@ -181,6 +193,19 @@ enum OverlayDisplayResolver {
         }
 
         return (screens[0], "automatic")
+    }
+
+    /// Which display a global pointer location is on.
+    ///
+    /// The top edge counts as inside and the bottom edge doesn't: the pointer
+    /// pressed against the top of a display (where the island lives) reports
+    /// `y == frame.maxY`, and that same line is the bottom edge of a display
+    /// stacked above it.
+    static func screenIndex(containing point: NSPoint, in frames: [NSRect]) -> Int? {
+        frames.firstIndex { frame in
+            point.x >= frame.minX && point.x < frame.maxX
+                && point.y > frame.minY && point.y <= frame.maxY
+        }
     }
 
     private static func placementMode(for screen: NSScreen) -> OverlayPlacementMode {

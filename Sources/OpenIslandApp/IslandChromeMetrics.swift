@@ -7,20 +7,6 @@ enum IslandChromeMetrics {
     static let closedShadowBottomInset: CGFloat = 14
     static let closedHoverScale: CGFloat = 1.028
 
-    /// How tall the scrolling list of question options may grow.
-    ///
-    /// Shared with `OverlayPanelController` on purpose: the panel's *size*
-    /// still comes from the estimate below, and the panel's *hit rectangle*
-    /// (see `OverlayPanelController.interactiveRect`) comes from whichever is
-    /// larger of that same estimate and the SwiftUI-measured content height
-    /// (`AppModel.openedSurfaceMeasuredHeight`) — the estimate is the floor
-    /// for both, the measurement is the source of truth for hit-testing once
-    /// it exists. If the estimate and the scroll cap disagree, the submit
-    /// button ends up outside the panel — which is exactly the bug that made
-    /// a long question unanswerable from the island.
-    ///
-    static let questionOptionListMaxHeight: CGFloat = 260
-
     /// How tall a notification card may grow before it scrolls as a whole.
     ///
     /// The backstop for the panel getting its own height slightly wrong: past
@@ -32,21 +18,13 @@ enum IslandChromeMetrics {
         max(0, min(notificationContentMaxHeight, maxPanelHeight - notificationContentPadding, availableHeight))
     }
 
-    static func questionOptionsViewportHeight(maxPanelHeight: CGFloat) -> CGFloat {
-        min(questionOptionListMaxHeight, max(100, maxPanelHeight - 360))
+    static func scrollViewportHeight(contentHeight: CGFloat, maxHeight: CGFloat) -> CGFloat {
+        let cap = max(0, maxHeight)
+        return contentHeight > 0 ? min(contentHeight, cap) : cap
     }
 
     // MARK: - Floating pill (non-notched displays, closed island)
 
-    /// Height of the closed capsule on a display with no physical notch.
-    /// Independent of `NSScreen.islandClosedHeight` (which mirrors the menu
-    /// bar's reserved height) — the capsule floats below the menu bar
-    /// instead of sitting flush against the physical top edge, so nothing
-    /// ties its height to that measurement anymore.
-    static let floatingPillHeight: CGFloat = 30
-    /// Gap between the floating capsule's top edge and the menu bar's
-    /// bottom edge.
-    static let floatingPillGap: CGFloat = 6
     /// Corner radius for the opened surface's top corners on a non-notched
     /// display, replacing the notch profile's concave cut.
     static let floatingPillOpenedTopRadius: CGFloat = 12

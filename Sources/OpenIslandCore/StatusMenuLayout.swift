@@ -7,6 +7,7 @@ import Foundation
 /// be tested without standing up a real `NSStatusItem`.
 public struct StatusMenuInputs: Sendable {
     public var isMuted: Bool
+    public var ambientListenIsEnabled: Bool
     public var cameraIsWatching: Bool
     public var shelfItemNames: [String]
     /// Sessions waiting on an approval or an answer right now.
@@ -21,6 +22,8 @@ public struct StatusMenuInputs: Sendable {
     /// What's playing, or `nil` while nothing is (or the adapter has no
     /// title to report yet) — nil is what hides the row entirely.
     public var nowPlayingTrack: NowPlayingTrack?
+    /// The current state of the Raphael companion, or `nil` if unavailable.
+    public var raphaelStatus: RaphaelStatus?
 
     public struct NowPlayingTrack: Equatable, Sendable {
         public var title: String
@@ -39,8 +42,11 @@ public struct StatusMenuInputs: Sendable {
         waitingCount: Int,
         timerRunningLabel: String? = nil,
         clipboardIsEnabled: Bool = false,
-        nowPlayingTrack: NowPlayingTrack? = nil
+        nowPlayingTrack: NowPlayingTrack? = nil,
+        ambientListenIsEnabled: Bool = false,
+        raphaelStatus: RaphaelStatus? = nil
     ) {
+        self.ambientListenIsEnabled = ambientListenIsEnabled
         self.isMuted = isMuted
         self.cameraIsWatching = cameraIsWatching
         self.shelfItemNames = shelfItemNames
@@ -48,6 +54,7 @@ public struct StatusMenuInputs: Sendable {
         self.timerRunningLabel = timerRunningLabel
         self.clipboardIsEnabled = clipboardIsEnabled
         self.nowPlayingTrack = nowPlayingTrack
+        self.raphaelStatus = raphaelStatus
     }
 }
 
@@ -55,6 +62,7 @@ public struct StatusMenuInputs: Sendable {
 public enum StatusMenuEntry: Equatable, Sendable {
     case openIsland(waitingCount: Int)
     case toggleMute(isMuted: Bool)
+    case toggleAmbientListen(isEnabled: Bool)
     case toggleCamera(isWatching: Bool)
     /// Idle: offers the fixed preset list as its own submenu.
     case startTimer(presets: [FocusTimerPreset])
@@ -62,6 +70,8 @@ public enum StatusMenuEntry: Equatable, Sendable {
     case stopTimer
     case openClipboard
     case nowPlayingTrack(title: String, isPlaying: Bool)
+    /// Raphael companion control submenu. nil if not available.
+    case raphael(status: RaphaelStatus?)
     case shelfHeader(count: Int)
     case shelfItem(name: String)
     case clearShelf
@@ -88,6 +98,7 @@ public enum StatusMenuLayout {
             .openIsland(waitingCount: inputs.waitingCount),
             .toggleMute(isMuted: inputs.isMuted),
             .toggleCamera(isWatching: inputs.cameraIsWatching),
+            .toggleAmbientListen(isEnabled: inputs.ambientListenIsEnabled),
         ]
 
         if let label = inputs.timerRunningLabel {
@@ -104,6 +115,8 @@ public enum StatusMenuLayout {
         if let track = inputs.nowPlayingTrack {
             entries.append(.nowPlayingTrack(title: track.title, isPlaying: track.isPlaying))
         }
+
+        entries.append(.raphael(status: inputs.raphaelStatus))
 
         if !inputs.shelfItemNames.isEmpty {
             entries.append(.separator)

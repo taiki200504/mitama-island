@@ -29,6 +29,7 @@ final class PanelHotkeyCoordinator {
     var onTouchlessActivation: (() -> Void)?
     var onVoiceAnswer: (() -> Void)?
     var onLinkstart: (() -> Void)?
+    var onOpenMitamaOS: (() -> Void)?
     var onOpenClipboard: (() -> Void)?
     /// Save where you are and get out. Always live: an interruption is not a
     /// feature you remember to switch on beforehand.
@@ -80,6 +81,7 @@ final class PanelHotkeyCoordinator {
         case Self.voiceAnswerBindingID: onVoiceAnswer?()
         case Self.linkstartBindingID: onLinkstart?()
         case Self.clipboardOpenBindingID: onOpenClipboard?()
+        case Self.mitamaOSBindingID: onOpenMitamaOS?()
         case Self.focusCardBindingID: onSaveFocusCard?()
         default:
             guard let action = PanelShortcutAction(rawValue: id) else { return }
@@ -99,6 +101,7 @@ final class PanelHotkeyCoordinator {
     static let voiceAnswerBindingID = "voiceAnswer.begin"
     static let linkstartBindingID = "linkstart.play"
     static let clipboardOpenBindingID = "clipboard.open"
+    static let mitamaOSBindingID = "mitamaOS.open"
     static let focusCardBindingID = "focusCard.save"
 
     /// Backtick, next to the shift key on every layout this app runs on. Not
@@ -143,6 +146,10 @@ final class PanelHotkeyCoordinator {
                 scope: .persistent
             )
         ]
+        bindings.append(HotkeyBinding(
+            id: Self.mitamaOSBindingID, keyCode: 46,
+            modifiers: [.control, .option], scope: .persistent
+        ))
         if touchlessActivationEnabled {
             bindings.append(
                 HotkeyBinding(
@@ -266,8 +273,14 @@ final class PanelHotkeyCoordinator {
         if panelIsExpanded { panelDidExpand() }
     }
 
-    func keyboardLayoutDidChange() {
-        resolver = KeycodeResolver()
+    func keyboardLayoutDidChange(to newResolver: KeycodeResolver = KeycodeResolver()) {
+        // The notification also fires on every IME mode toggle and on app
+        // switches with per-document input sources — several times a second
+        // while typing Japanese. The letters only move when the layout does;
+        // tearing every Carbon key down on each of those left gaps where a
+        // press fell through.
+        guard newResolver != resolver else { return }
+        resolver = newResolver
         settingsDidChange(panelIsExpanded: panelIsExpanded)
     }
 
@@ -311,8 +324,8 @@ final class PanelHotkeyCoordinator {
             forName: NSNotification.Name(kTISNotifySelectedKeyboardInputSourceChanged as String),
             object: nil,
             queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated {
+        ) { @Sendable [weak self] _ in
+            Task { @MainActor in
                 guard let self else { return }
                 self.keyboardLayoutDidChange()
             }
