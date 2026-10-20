@@ -1017,6 +1017,7 @@
 "settings.audio.builtInMic.help" = "Bluetoothイヤホンのマイクを使うと音楽の音質が落ちるため、内蔵マイクに固定します";
 
 "island.header.record" = "録音";
+"island.header.recordFailed" = "録音できていません（押すと止めます）";
 "island.header.recording" = "録音中";
 
 "keepAwake.mode.alwaysOn" = "常時稼働（Mac mini の代わり）";

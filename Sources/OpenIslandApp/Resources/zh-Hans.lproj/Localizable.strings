@@ -1017,6 +1017,7 @@
 "settings.audio.builtInMic.help" = "使用蓝牙耳机的麦克风会降低音乐音质，因此固定使用内置麦克风。";
 
 "island.header.record" = "录音";
+"island.header.recordFailed" = "录音失败";
 "island.header.recording" = "录音中";
 
 "keepAwake.mode.alwaysOn" = "常时运行（代替 Mac mini）";

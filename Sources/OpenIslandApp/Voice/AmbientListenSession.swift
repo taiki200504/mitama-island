@@ -150,13 +150,16 @@ final class AmbientListenSession {
 
     private func beginCapture() {
         captureStartedAt = .now
-        if VoiceCommandSettings(store: settings.store).prefersBuiltInMicrophone {
-            BuiltInMicrophone.pin(engine)
-        }
-        // Keep this graph input-only: the default Bluetooth output can differ
-        // from the pinned microphone. Never instantiate the mixer/output nodes.
+        // No `BuiltInMicrophone.pin` here. With the pin the engine starts and
+        // the orange indicator lights, but the tap never receives a buffer —
+        // nothing reached disk from 10-15 (#115) to 10-20. The standing mic
+        // follows the system input instead.
         let input = engine.inputNode
-        let format = input.inputFormat(forBus: 0)
+        // The output side, not the input side: after `pin` the input side can
+        // still report the previous default device (a 16 kHz Bluetooth
+        // headset), and a tap in that format makes `start()` fail with -10868.
+        // Measured 2026-10-19 with OpenComm2 as the default input.
+        let format = input.outputFormat(forBus: 0)
         guard format.sampleRate > 0, format.channelCount > 0 else {
             phase = .unavailable
             Self.logger.error("no usable input format")
@@ -273,7 +276,9 @@ final class SegmentWriter: @unchecked Sendable {
     /// Below this RMS the buffer counts as silence. Picked to sit above room
     /// tone and fan noise on a laptop microphone while still catching speech
     /// from across a desk.
-    private static let voiceThreshold: Float = 0.012
+    // 0.012 was tuned on the built-in mic. A Bluetooth headset (OpenComm2,
+    // 16 kHz) peaks around 0.008 on speech, so nothing was ever kept.
+    private static let voiceThreshold: Float = 0.004
 
     private let directory: URL
     private let lock = NSLock()
@@ -312,6 +317,10 @@ final class SegmentWriter: @unchecked Sendable {
         self.maximumSeconds = maximumSeconds
     }
 
+    private var peakLevel: Float = 0
+    private var levelFrames: AVAudioFramePosition = 0
+    private static let levelLogger = Logger(subsystem: "com.mitama.island", category: "earshot")
+
     func setMuted(_ muted: Bool) {
         lock.lock()
         defer { lock.unlock() }
@@ -324,8 +333,19 @@ final class SegmentWriter: @unchecked Sendable {
         lastReceivedAt = now
         guard !muted, let format else { return }
 
-        let voiced = Self.rms(of: buffer) >= Self.voiceThreshold
+        let level = Self.rms(of: buffer)
+        let voiced = level >= Self.voiceThreshold
         let frames = AVAudioFramePosition(buffer.frameLength)
+
+        // One line a minute with the loudest buffer, so "is it hearing me"
+        // has an answer without opening a debugger.
+        peakLevel = max(peakLevel, level)
+        levelFrames += frames
+        if Double(levelFrames) >= format.sampleRate * 60 {
+            Self.levelLogger.notice("level peak=\(self.peakLevel, privacy: .public) threshold=\(Self.voiceThreshold, privacy: .public) open=\(self.file != nil, privacy: .public)")
+            peakLevel = 0
+            levelFrames = 0
+        }
 
         if file == nil {
             // Silence with nothing open is the common case all day. Do nothing
