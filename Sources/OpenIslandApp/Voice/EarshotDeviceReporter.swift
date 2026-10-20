@@ -90,6 +90,7 @@ final class EarshotDeviceReporter {
             switch session.phase {
             case .idle: phase = "idle"
             case .listening: phase = "recording"
+            case .stalled: phase = "stalled"
             case .pausedForCall: phase = "paused_call"
             case .denied, .unavailable: phase = "error"
             }

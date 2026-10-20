@@ -58,6 +58,15 @@ final class OverlayPanelController {
         panel?.isVisible == true
     }
 
+    /// Opened, the island has to sit above other apps' notch overlays —
+    /// VoiceOS draws its dictation bar at level 33–34 right over the notch,
+    /// and every click on the header went to it instead. Still below
+    /// `.popUpMenu` so a menu pulled down from the menu bar covers it.
+    /// Closed, it stays at `.statusBar` and leaves those overlays alone.
+    nonisolated static func panelLevel(interactive: Bool) -> NSWindow.Level {
+        interactive ? NSWindow.Level(rawValue: NSWindow.Level.popUpMenu.rawValue - 1) : .statusBar
+    }
+
     nonisolated static func shouldActivatePanel(for reason: NotchOpenReason?) -> Bool {
         reason == .click
     }
@@ -87,6 +96,7 @@ final class OverlayPanelController {
         presentPanel(panel, activates: Self.shouldActivatePanel(for: model.notchOpenReason))
         panel.ignoresMouseEvents = false
         panel.acceptsMouseMovedEvents = true
+        panel.level = Self.panelLevel(interactive: true)
         startEventMonitoring()
         return diagnostics
     }
@@ -94,6 +104,7 @@ final class OverlayPanelController {
     func hide() {
         panel?.ignoresMouseEvents = true
         panel?.acceptsMouseMovedEvents = false
+        panel?.level = Self.panelLevel(interactive: false)
     }
 
     func setInteractive(_ interactive: Bool) {
@@ -106,6 +117,7 @@ final class OverlayPanelController {
 
         panel.ignoresMouseEvents = !interactive
         panel.acceptsMouseMovedEvents = interactive
+        panel.level = Self.panelLevel(interactive: interactive)
 
         if interactive {
             presentPanel(panel, activates: Self.shouldActivatePanel(for: model?.notchOpenReason))
@@ -659,21 +671,18 @@ final class OverlayPanelController {
     }
 
     /// The floating capsule's hit rectangle on a non-notched display:
-    /// centered on the screen horizontally, floating `gap` below the menu
-    /// bar's bottom edge — the same placement `IslandPanelView.v6ClosedSurface()`
-    /// renders with (see `IslandPanelView.floatingPillTopOffset`), kept as a
-    /// pure function of the two screen frames so it's testable without real
-    /// display hardware.
+    /// centered on the screen horizontally and flush with its top edge,
+    /// inside the menu bar band — the same placement
+    /// `IslandPanelView.v6ClosedSurface()` renders with. Sitting below the
+    /// menu bar made it cover the frontmost window's tab strip.
     nonisolated static func floatingClosedSurfaceRect(
         screenFrame: NSRect,
-        visibleFrame: NSRect,
         width: CGFloat,
-        height: CGFloat,
-        gap: CGFloat = IslandChromeMetrics.floatingPillGap
+        height: CGFloat
     ) -> NSRect {
         NSRect(
             x: screenFrame.midX - width / 2,
-            y: visibleFrame.maxY - gap - height,
+            y: screenFrame.maxY - height,
             width: width,
             height: height
         )
@@ -743,9 +752,8 @@ final class OverlayPanelController {
             // calibration purposes elsewhere.
             return Self.floatingClosedSurfaceRect(
                 screenFrame: screen.frame,
-                visibleFrame: screen.visibleFrame,
                 width: closedWidth,
-                height: IslandChromeMetrics.floatingPillHeight
+                height: screen.islandClosedHeight
             )
         }
 
@@ -758,12 +766,10 @@ final class OverlayPanelController {
     private func panelFrame(for model: AppModel?, on screen: NSScreen) -> NSRect {
         let size = panelSize(for: model, on: screen)
         // Same top-anchoring rule the diagnostics-only `pureFrame` uses —
-        // on a non-notched display the window's own top edge now sits at
-        // the menu bar's bottom edge instead of the screen's physical top,
-        // so the opened surface drawn inside it no longer sinks under the
-        // menu bar. Sharing `topAnchoredY` is what keeps this window's real
-        // position and the diagnostics panel's reported position from
-        // disagreeing on a display with an auto-hidden menu bar.
+        // flush with the screen's top edge on every display, so the closed
+        // capsule sits inside the menu bar band. Sharing `topAnchoredY` is
+        // what keeps this window's real position and the diagnostics panel's
+        // reported position from disagreeing.
         let y = OverlayDisplayResolver.topAnchoredY(
             screenFrame: screen.frame,
             visibleFrame: screen.visibleFrame,
@@ -814,7 +820,7 @@ final class OverlayPanelController {
     private func closedPanelWidth(for model: AppModel, on screen: NSScreen) -> CGFloat {
         let notchWidth = screen.notchSize.width
         let isNotched = screen.safeAreaInsets.top > 0
-        let intrinsicContentWidth = isNotched ? 0 : closedFloatingIntrinsicWidth(for: model)
+        let intrinsicContentWidth = isNotched ? 0 : closedFloatingIntrinsicWidth(for: model, pillHeight: screen.islandClosedHeight)
         let notchedContentWidth = isNotched
             ? closedNotchedOuterWidth(for: model, notchWidth: notchWidth, pillHeight: screen.islandClosedHeight)
             : 0
@@ -850,13 +856,13 @@ final class OverlayPanelController {
     /// The floating capsule's own content width, computed with the exact
     /// same inputs `IslandPanelView.v6ClosedSurface()` renders with — so the
     /// hit area this drives can never disagree with what's actually drawn.
-    private func closedFloatingIntrinsicWidth(for model: AppModel) -> CGFloat {
+    private func closedFloatingIntrinsicWidth(for model: AppModel, pillHeight: CGFloat) -> CGFloat {
         V6ClosedPill.externalIntrinsicWidth(
             label: model.islandClosedLabel(),
             rightSlot: model.islandClosedRightSlotContent(),
             content: model.islandClosedContent(),
             sneakPeek: model.overlay.sneakPeek,
-            height: IslandChromeMetrics.floatingPillHeight
+            height: pillHeight
         )
     }
 

@@ -30,11 +30,10 @@ struct OverlayDisplayResolverTests {
     }
 
     @Test
-    func floatingPillModeFloatsBelowTheMenuBar() {
-        // The panel's own top edge lands exactly at the menu bar's bottom
-        // edge — the extra 6pt gap the closed capsule floats by is that
-        // pill's own inset *inside* the window, not part of the window's
-        // placement (see `IslandPanelView.v6ClosedSurface()`).
+    func floatingPillModeSitsFlushWithTheTopEdge() {
+        // The panel's top edge is the screen's top edge, so the closed
+        // capsule lives inside the menu bar band rather than below it, where
+        // it covered the frontmost window's tab strip.
         let visibleFrame = NSRect(x: 0, y: 0, width: 1_920, height: 1_056)
 
         let frame = OverlayDisplayResolver.pureFrame(
@@ -45,8 +44,7 @@ struct OverlayDisplayResolverTests {
             mode: .floatingPill
         )
 
-        #expect(frame.maxY == visibleFrame.maxY)
-        #expect(frame.maxY < screenFrame.maxY)
+        #expect(frame.maxY == screenFrame.maxY)
     }
 
     @Test

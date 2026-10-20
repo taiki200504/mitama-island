@@ -309,12 +309,9 @@ struct IslandPanelView: View {
     private func v6ClosedSurface() -> some View {
         let layout: V6ClosedLayout = isExternalDisplayPlacement ? .external : .macbook
         let physicalNotchWidth: CGFloat = targetOverlayScreen?.notchSize.width ?? 180
-        // The floating capsule is a fixed height, independent of
-        // `closedNotchHeight` (which mirrors the menu bar's reserved
-        // height) — it no longer sits flush against the physical top edge,
-        // so nothing ties its height to that measurement anymore.
-        let pillHeight = layout == .external ? IslandChromeMetrics.floatingPillHeight : closedNotchHeight
-        let topOffset = layout == .external ? floatingPillTopOffset : 0
+        // Both layouts take the menu bar band's height and sit flush with the
+        // top edge, so the capsule never covers the frontmost window's tabs.
+        let pillHeight = closedNotchHeight
         // A pathologically long session title must not grow the pill past
         // a sane fraction of the screen — see `V6ClosedPill.externalMaxWidth`.
         let externalMaxWidth = V6ClosedPill.externalMaxWidth(
@@ -344,25 +341,11 @@ struct IslandPanelView: View {
                 }
             )
         }
-        .padding(.top, topOffset)
         .scaleEffect(isPopping ? 1.04 : 1, anchor: .top)
         .animation(IslandThemes.current.animationProfile.pop, value: isPopping)
         .onPreferenceChange(ClosedPillSizeKey.self) { size in
             model.debugClosedPillSize = size
         }
-    }
-
-    /// How far below the window's own top edge the floating capsule sits.
-    /// Only meaningful on non-notched displays — the physical notch case
-    /// wants the pill flush with the top edge instead, and never reads this.
-    ///
-    /// The window's top edge is *already* the menu bar's bottom edge on
-    /// these displays (see `OverlayPanelController.panelFrame`, which
-    /// anchors it there via `OverlayDisplayResolver.topAnchoredY`) — so all
-    /// that's left for the pill itself to add is its own small floating
-    /// gap, not a second copy of the menu bar's height.
-    private var floatingPillTopOffset: CGFloat {
-        IslandChromeMetrics.floatingPillGap
     }
 
     // MARK: - Opened surface
