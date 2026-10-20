@@ -57,6 +57,11 @@ final class AmbientListenSession {
 
     private let settings: AmbientListenSettings
     private var engine = AVAudioEngine()
+    /// Engines replaced by `restartCapture`, held until CoreAudio has finished
+    /// delivering device-change callbacks to them. Releasing one immediately
+    /// let a late HAL property notification land in its freed IO unit
+    /// (SIGSEGV in AVAudioIOUnit::IOUnitPropertyListener, 2026-10-20 15:17).
+    private var retiredEngines: [AVAudioEngine] = []
     private var configurationObserver: NSObjectProtocol?
     private var engineGeneration = UUID()
     private var tapInstalled = false
@@ -142,7 +147,12 @@ final class AmbientListenSession {
         lastRestartAt = now
         let wasPaused = phase == .pausedForCall
         tearDownEngine()
+        let retired = engine
+        retiredEngines.append(retired)
         engine = AVAudioEngine()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 30) { [weak self] in
+            self?.retiredEngines.removeAll { $0 === retired }
+        }
         beginCapture()
         if phase == .unavailable { phase = .stalled }
         if wasPaused, phase == .listening { phase = .pausedForCall }
