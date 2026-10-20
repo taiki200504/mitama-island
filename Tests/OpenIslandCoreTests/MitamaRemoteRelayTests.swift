@@ -324,7 +324,8 @@ struct MitamaRemoteRelayTests {
         await register(relay, id: "r2", kind: .question, options: ["Yes", "No"])
 
         #expect(http.calls.filter { $0.table == "mos_island_requests" && $0.method == "POST" }.count == 1)
-        #expect(http.calls.filter { $0.table == "mos_notifications" }.count == 1)
+        // A question at the Mac pushes nothing to the phone (main 10-15); the duplicate must not either.
+        #expect(http.calls.filter { $0.table == "mos_notifications" }.isEmpty)
         #expect(relay.pendingCountForTests() == 1)
     }
 
