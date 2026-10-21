@@ -1027,3 +1027,6 @@
 "statusItem.manualOnly" = "仅在需要时显示";
 "settings.display.maxClosedIslandWidth" = "收起岛的最大宽度";
 "settings.display.maxClosedIslandWidth.help" = "刘海屏的下限为实际刘海宽度加左右各33pt。";
+
+"settings.earshot.liveTranscription" = "实时转写";
+"settings.earshot.liveTranscription.help" = "在本机识别语音，约每45秒保存一次已确认的文字。";
