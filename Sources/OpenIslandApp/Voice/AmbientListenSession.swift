@@ -5,7 +5,7 @@ import Observation
 import os
 
 /// Keeps the microphone open and writes what it hears to disk, in files split
-/// by silence. Nothing is recognised here and nothing is sent anywhere — the
+/// by silence. Recognition is on-device and nothing is sent anywhere — the
 /// batch under `mitama-os/scripts/earshot/` picks the files up, transcribes
 /// them locally, and decides what to do with them.
 ///
@@ -122,6 +122,7 @@ final class AmbientListenSession {
     /// Called when the switch is flipped in Settings.
     func settingsChanged() {
         if settings.isEnabled {
+            writer.setLiveTranscriptionEnabled(settings.liveTranscriptionEnabled)
             start()
         } else {
             stop()
@@ -179,7 +180,8 @@ final class AmbientListenSession {
         writer.configure(
             format: format,
             silenceToClose: settings.silenceToCloseSeconds,
-            maximumSeconds: settings.maximumMinutes * 60
+            maximumSeconds: settings.maximumMinutes * 60,
+            liveTranscription: settings.liveTranscriptionEnabled
         )
 
         // The tap runs on the render thread. It must not touch the main actor,
@@ -299,6 +301,8 @@ final class SegmentWriter: @unchecked Sendable {
     private var maximumSeconds: Double = 20 * 60
     private var writtenFrames: AVAudioFramePosition = 0
     private var silentFrames: AVAudioFramePosition = 0
+    private var liveTranscriptionEnabled = false
+    private var liveTranscription: AmbientLiveTranscription?
     private var muted = false
     private var lastReceivedAt = Date.distantPast
 
@@ -319,9 +323,10 @@ final class SegmentWriter: @unchecked Sendable {
         return Double(writtenFrames) / format.sampleRate
     }
 
-    func configure(format: AVAudioFormat, silenceToClose: Double, maximumSeconds: Double) {
+    func configure(format: AVAudioFormat, silenceToClose: Double, maximumSeconds: Double, liveTranscription: Bool = false) {
         lock.lock()
         defer { lock.unlock() }
+        self.liveTranscriptionEnabled = liveTranscription
         self.format = format
         self.silenceToClose = silenceToClose
         self.maximumSeconds = maximumSeconds
@@ -331,10 +336,21 @@ final class SegmentWriter: @unchecked Sendable {
     private var levelFrames: AVAudioFramePosition = 0
     private static let levelLogger = Logger(subsystem: "com.mitama.island", category: "earshot")
 
+    func setLiveTranscriptionEnabled(_ enabled: Bool) {
+        lock.lock()
+        defer { lock.unlock() }
+        liveTranscriptionEnabled = enabled
+        if !enabled {
+            liveTranscription?.finish()
+            liveTranscription = nil
+        }
+    }
+
     func setMuted(_ muted: Bool) {
         lock.lock()
         defer { lock.unlock() }
         self.muted = muted
+        if muted { closeLocked() }
     }
 
     func append(_ buffer: AVAudioPCMBuffer, now: Date = .now) {
@@ -375,6 +391,10 @@ final class SegmentWriter: @unchecked Sendable {
             closeLocked()
             return
         }
+        if liveTranscriptionEnabled, liveTranscription == nil, let file {
+            liveTranscription = AmbientLiveTranscription(format: format, audio: file.url.lastPathComponent, start: now)
+        }
+        liveTranscription?.append(buffer)
         writtenFrames += frames
         silentFrames = voiced ? 0 : silentFrames + frames
 
@@ -392,6 +412,8 @@ final class SegmentWriter: @unchecked Sendable {
     }
 
     private func closeLocked() {
+        liveTranscription?.finish()
+        liveTranscription = nil
         file = nil
         writtenFrames = 0
         silentFrames = 0

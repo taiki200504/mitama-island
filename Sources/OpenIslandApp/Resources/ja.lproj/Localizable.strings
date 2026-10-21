@@ -1027,3 +1027,6 @@
 "statusItem.manualOnly" = "必要なときだけ表示";
 "settings.display.maxClosedIslandWidth" = "閉じた島の最大幅";
 "settings.display.maxClosedIslandWidth.help" = "ノッチのある画面では、実際のノッチ幅＋左右33ptが下限です。";
+
+"settings.earshot.liveTranscription" = "リアルタイム文字起こし";
+"settings.earshot.liveTranscription.help" = "音声を外に送らず、確定した文字を約45秒ごとに保存します。";

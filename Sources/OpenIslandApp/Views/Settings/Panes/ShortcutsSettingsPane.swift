@@ -305,6 +305,17 @@ struct ShortcutsSettingsPane: View {
 
             if earshot.isEnabled {
                 SettingsToggleRow(
+                    title: lang.t("settings.earshot.liveTranscription"),
+                    help: lang.t("settings.earshot.liveTranscription.help"),
+                    isOn: Binding(
+                        get: { earshot.liveTranscriptionEnabled },
+                        set: {
+                            earshot.liveTranscriptionEnabled = $0
+                            model.earshot.settingsChanged()
+                        }
+                    )
+                )
+                SettingsToggleRow(
                     title: lang.t("settings.earshot.pauseCalls"),
                     help: lang.t("settings.earshot.pauseCalls.help"),
                     isOn: Binding(

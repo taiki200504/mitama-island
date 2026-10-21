@@ -1027,3 +1027,6 @@
 "statusItem.manualOnly" = "Show only when needed";
 "settings.display.maxClosedIslandWidth" = "Maximum closed island width";
 "settings.display.maxClosedIslandWidth.help" = "On a notched screen, the physical notch plus 33pt on each side is the minimum.";
+
+"settings.earshot.liveTranscription" = "Live transcription";
+"settings.earshot.liveTranscription.help" = "Saves finalized text about every 45 seconds, with speech recognized on this Mac.";

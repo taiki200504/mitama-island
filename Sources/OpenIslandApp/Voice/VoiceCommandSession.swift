@@ -8,9 +8,9 @@ import Speech
 /// Carries the sample-rate conversion onto the audio thread.
 ///
 /// `AVAudioConverter` is not `Sendable`, and the tap closure has to be. The
-/// unchecked conformance is sound here for one reason only: `installTap`
-/// delivers on a single render thread, so nothing else ever touches this.
-private final class AudioConverterBox: @unchecked Sendable {
+/// Each instance has one sequential consumer: either the voice-command tap
+/// or the ambient recognition task. A converter is never shared between them.
+final class AudioConverterBox: @unchecked Sendable {
     private let converter: AVAudioConverter
     private let outputFormat: AVAudioFormat
 

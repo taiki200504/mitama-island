@@ -24,6 +24,11 @@ final class AmbientListenSettings: PreferenceGroup {
         set { write(\.isEnabled, Keys.enabled, newValue) }
     }
 
+    var liveTranscriptionEnabled: Bool {
+        get { read(\.liveTranscriptionEnabled, Keys.liveTranscription, true) }
+        set { write(\.liveTranscriptionEnabled, Keys.liveTranscription, newValue) }
+    }
+
     var remoteCommandAt: Double {
         get { store.value("ambientListen.remoteCommandAt", default: 0.0) }
         set { store.setValue(newValue, forKey: "ambientListen.remoteCommandAt") }
@@ -70,6 +75,7 @@ extension AmbientListenSettings {
     }
 
     enum Keys {
+        static let liveTranscription = "ambientListen.liveTranscriptionEnabled"
         static let enabled = "ambientListen.enabled"
         static let silenceToClose = "ambientListen.silenceToCloseSeconds"
         static let maximumMinutes = "ambientListen.maximumMinutes"

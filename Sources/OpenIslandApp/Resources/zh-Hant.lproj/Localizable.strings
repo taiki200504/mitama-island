@@ -1026,3 +1026,6 @@
 "statusItem.manualOnly" = "僅在需要時顯示";
 "settings.display.maxClosedIslandWidth" = "收起島的最大寬度";
 "settings.display.maxClosedIslandWidth.help" = "瀏海螢幕的下限為實際瀏海寬度加左右各33pt。";
+
+"settings.earshot.liveTranscription" = "即時轉寫";
+"settings.earshot.liveTranscription.help" = "在本機辨識語音，約每45秒儲存一次已確認的文字。";
