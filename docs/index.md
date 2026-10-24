@@ -74,3 +74,4 @@ This index is the repository map for humans and coding agents. Read these files 
 - [docs/testing/paseo-fixture.md](./testing/paseo-fixture.md) for isolated native question, child, and unsupported-request fixtures.
 - [docs/mitama-os-window.md](./mitama-os-window.md) for the mitama OS window (Hub inside the island, ⌃⌥M). Sign in with the email code; Google sign-in is blocked inside embedded web views.
 - [docs/keep-awake-manual.md](./keep-awake-manual.md) for the manual keep-awake mode (Amphetamine-style), closed-lid restore and its sudoers scope.
+- [docs/live-transcription.md](./live-transcription.md) for on-device live transcription of the standing microphone.

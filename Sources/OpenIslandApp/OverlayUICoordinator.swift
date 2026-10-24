@@ -204,7 +204,8 @@ final class OverlayUICoordinator {
                 guard let id = surface.sessionID,
                       let session = appModel?.state.session(id: id),
                       session.phase == .waitingForApproval || session.phase == .waitingForAnswer else { return }
-            case .click, .switcher: break
+            // 呼びかけは本人がその場で島を呼んだもの。クリックと同じく通す。
+            case .click, .switcher, .voice: break
             }
         }
         // The gesture already gets its own distinct cue at the call site in

@@ -1030,3 +1030,10 @@
 
 "settings.earshot.liveTranscription" = "リアルタイム文字起こし";
 "settings.earshot.liveTranscription.help" = "音声を外に送らず、確定した文字を約45秒ごとに保存します。";
+
+/* ジャービスの呼びかけ（Raphael.app からの状態） */
+"island.jarvis.listening" = "聞いています";
+"island.jarvis.acking" = "応答しています";
+"island.jarvis.running" = "依頼の結果を確認しています";
+"island.jarvis.done" = "完了・照合済み";
+"island.jarvis.failed" = "完了を確認できませんでした";

@@ -79,6 +79,12 @@ final class AppModel {
     /// from `quietScenes`, which only polls whether the screen is obscured
     /// right now — this wants the moment itself.
     @ObservationIgnored let screenLockWatcher = ScreenLockWatcher()
+    /// Raphael.app の「ジャービス」の呼びかけ（分散通知）。島を開いて状態を1行出すだけ。
+    @ObservationIgnored let jarvisSummonWatcher = JarvisSummonWatcher()
+    /// 開いた島に出すラファエルの状態。照合中以外はしばらくすると消える。
+    var jarvisSummon: JarvisSummon?
+    @ObservationIgnored private var jarvisSummonClearTask: Task<Void, Never>?
+    static let jarvisSummonLingerSeconds: TimeInterval = 12
 
     var state = SessionState() {
         didSet {
@@ -1090,6 +1096,8 @@ final class AppModel {
             self?.presentLockScanGreeting()
         }
         screenLockWatcher.start()
+        jarvisSummonWatcher.onSummon = { [weak self] summon in self?.presentJarvisSummon(summon) }
+        jarvisSummonWatcher.start()
         startIdleSessionCleanup()
         shelf.expiryProvider = { [weak self] in self?.shelfExpiresAfter.ttl }
         startShelfExpiryPruning()
@@ -2377,6 +2385,22 @@ final class AppModel {
         overlay.notchOpen(reason: reason, surface: surface)
     }
     func notchClose() { overlay.notchClose() }
+
+    /// 呼びかけの状態を1行に出し、呼びかけと結果の時は島を開く。受付・承認はここではしない。
+    func presentJarvisSummon(_ summon: JarvisSummon) {
+        jarvisSummon = summon
+        jarvisSummonClearTask?.cancel()
+        if !summon.state.persists {
+            jarvisSummonClearTask = Task { @MainActor [weak self] in
+                try? await Task.sleep(for: .seconds(Self.jarvisSummonLingerSeconds))
+                guard !Task.isCancelled, let self, self.jarvisSummon == summon else { return }
+                self.jarvisSummon = nil
+            }
+        }
+        if summon.state.opensIsland, overlay.notchStatus != .opened {
+            notchOpen(reason: .voice)
+        }
+    }
     func notchPop() { overlay.notchPop() }
     func performBootAnimation() { overlay.performBootAnimation() }
     /// Opens the camera window, or opens the island outright when the window is
