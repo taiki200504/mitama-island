@@ -52,10 +52,14 @@ struct JarvisSummonTests {
         let t0 = Date(timeIntervalSince1970: 1000)
         let listening = JarvisSummon(requestID: nil, state: .listening)
         let acking = JarvisSummon(requestID: nil, state: .acking)
-        #expect(deduper.accept(listening, at: t0))
-        #expect(!deduper.accept(listening, at: t0.addingTimeInterval(1)))
-        #expect(deduper.accept(acking, at: t0.addingTimeInterval(2)))
-        #expect(deduper.accept(listening, at: t0.addingTimeInterval(3)))
-        #expect(deduper.accept(listening, at: t0.addingTimeInterval(9)))
+        // accept は mutating なので、#expect の外で評価してから確かめる
+        let results = [
+            deduper.accept(listening, at: t0),
+            deduper.accept(listening, at: t0.addingTimeInterval(1)),
+            deduper.accept(acking, at: t0.addingTimeInterval(2)),
+            deduper.accept(listening, at: t0.addingTimeInterval(3)),
+            deduper.accept(listening, at: t0.addingTimeInterval(9)),
+        ]
+        #expect(results == [true, false, true, true, true])
     }
 }
