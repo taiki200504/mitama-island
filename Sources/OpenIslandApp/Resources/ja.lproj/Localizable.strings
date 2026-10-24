@@ -1034,6 +1034,6 @@
 /* ジャービスの呼びかけ（Raphael.app からの状態） */
 "island.jarvis.listening" = "聞いています";
 "island.jarvis.acking" = "応答しています";
-"island.jarvis.running" = "受付済み・照合中";
+"island.jarvis.running" = "依頼の結果を確認しています";
 "island.jarvis.done" = "完了・照合済み";
 "island.jarvis.failed" = "完了を確認できませんでした";

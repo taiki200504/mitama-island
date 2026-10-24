@@ -1033,6 +1033,6 @@
 /* ジャービスの呼びかけ（Raphael.app からの状態） */
 "island.jarvis.listening" = "正在聆聽";
 "island.jarvis.acking" = "正在回應";
-"island.jarvis.running" = "已受理 · 核對中";
+"island.jarvis.running" = "正在確認請求結果";
 "island.jarvis.done" = "已完成 · 已核對";
 "island.jarvis.failed" = "無法確認結果";
