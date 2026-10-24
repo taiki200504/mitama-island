@@ -1030,3 +1030,10 @@
 
 "settings.earshot.liveTranscription" = "Live transcription";
 "settings.earshot.liveTranscription.help" = "Saves finalized text about every 45 seconds, with speech recognized on this Mac.";
+
+/* ジャービスの呼びかけ（Raphael.app からの状態） */
+"island.jarvis.listening" = "Listening";
+"island.jarvis.acking" = "Responding";
+"island.jarvis.running" = "Accepted · checking";
+"island.jarvis.done" = "Done · verified";
+"island.jarvis.failed" = "Could not confirm the result";

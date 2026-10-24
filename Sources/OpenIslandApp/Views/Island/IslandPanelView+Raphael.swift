@@ -14,6 +14,8 @@ extension IslandPanelView {
                 Toggle(model.lang.t("statusItem.raphael.enable"), isOn: raphaelBinding(status.enabled) { on in
                     on ? await RaphaelControl.enable() : await RaphaelControl.disable()
                 })
+                // mitama-os 版では旧 raphaelctl の on/off が旧アプリへ書き戻すので押せなくする。
+                .disabled(!status.canSwitchOnOff)
                 Toggle(model.lang.t("statusItem.raphael.micMute"), isOn: raphaelBinding(!status.mic) { muted in
                     muted ? await RaphaelControl.muteMicrophone() : await RaphaelControl.unmuteMicrophone()
                 })

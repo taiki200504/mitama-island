@@ -11,12 +11,23 @@ public struct RaphaelStatus: Sendable, Codable, Equatable {
     public let mic: Bool
     /// Whether the voice output is active (`false` = muted).
     public let voice: Bool
+    /// 島から on/off を出してよいか。`raphaelctl` の出力ではなく、登録済みの常駐（`RaphaelTarget`）から決める。
+    public var canSwitchOnOff: Bool = true
 
-    public init(enabled: Bool, running: Bool, mic: Bool, voice: Bool) {
+    private enum CodingKeys: String, CodingKey { case enabled, running, mic, voice }
+
+    public init(enabled: Bool, running: Bool, mic: Bool, voice: Bool, canSwitchOnOff: Bool = true) {
         self.enabled = enabled
         self.running = running
         self.mic = mic
         self.voice = voice
+        self.canSwitchOnOff = canSwitchOnOff
+    }
+
+    /// 操作先に合わせた表示用の状態。旧アプリ以外は、動いていると確かめられない限り「表示中」にしない。
+    public func presented(for target: RaphaelTarget) -> RaphaelStatus {
+        guard !target.allowsOnOff else { return self }
+        return RaphaelStatus(enabled: enabled && running, running: running, mic: mic, voice: voice, canSwitchOnOff: false)
     }
 
     /// Parse JSON status from `raphaelctl status` output.

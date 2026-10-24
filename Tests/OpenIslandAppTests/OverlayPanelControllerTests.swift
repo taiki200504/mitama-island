@@ -208,6 +208,12 @@ struct OverlayPanelControllerTests {
         #expect(!OverlayPanelController.shouldActivatePanel(for: nil))
     }
 
+    // 「ジャービス」の呼びかけで開いても、前面のアプリからフォーカスを奪わない。
+    @Test
+    func voiceSummonDoesNotActivateThePanel() {
+        #expect(!OverlayPanelController.shouldActivatePanel(for: .voice))
+    }
+
     // 他アプリのノッチ用の帯（VoiceOS は 33〜34）が開いた島の上に乗り、ボタンのクリックを全部取っていた。
     @Test
     func openedPanelSitsAboveOtherAppsNotchOverlaysButBelowMenus() {
