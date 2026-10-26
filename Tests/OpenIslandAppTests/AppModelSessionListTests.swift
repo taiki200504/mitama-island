@@ -655,6 +655,62 @@ struct AppModelSessionListTests {
     }
 
     @Test
+    func paseoHostedApprovalDoesNotOpenTheIsland() async throws {
+        let now = Date(timeIntervalSince1970: 2_000)
+        let model = isolatedAppModel(
+            isNotificationSessionAlreadyFrontmost: { _ in false }
+        )
+        model.notchStatus = .closed
+        model.notchOpenReason = nil
+        model.state = SessionState(
+            sessions: [
+                AgentSession(
+                    id: "paseo-session",
+                    title: "Claude · mitama",
+                    tool: .claudeCode,
+                    origin: .live,
+                    attachmentState: .attached,
+                    phase: .running,
+                    summary: "Working.",
+                    updatedAt: now,
+                    jumpTarget: JumpTarget(
+                        terminalApp: "Paseo",
+                        workspaceName: "mitama",
+                        paneTitle: "Claude",
+                        paseoAgentID: "agent-1",
+                        paseoServerID: "srv"
+                    )
+                ),
+            ]
+        )
+
+        model.applyTrackedEvent(
+            .permissionRequested(
+                PermissionRequested(
+                    sessionID: "paseo-session",
+                    request: PermissionRequest(
+                        title: "AskUserQuestion",
+                        summary: "どう進めますか？",
+                        affectedPath: ""
+                    ),
+                    timestamp: now.addingTimeInterval(1)
+                )
+            ),
+            updateLastActionMessage: false,
+            ingress: .bridge
+        )
+
+        for _ in 0..<20 {
+            await Task.yield()
+            try await Task.sleep(for: .milliseconds(10))
+        }
+
+        #expect(model.notchStatus == .closed)
+        #expect(model.notchOpenReason == nil)
+        #expect(model.state.session(id: "paseo-session")?.phase.requiresAttention == true)
+    }
+
+    @Test
     func bridgeNotificationStillPresentsWhenSessionIsNotFrontmost() async throws {
         let now = Date(timeIntervalSince1970: 2_000)
         let model = isolatedAppModel(
