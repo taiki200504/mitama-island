@@ -147,6 +147,7 @@ public final class WatchHTTPEndpoint: @unchecked Sendable {
     private var currentPairingCode: String = ""
     private var pairingCodeGeneratedAt: Date = .distantPast
     private var validTokens: Set<String> = []
+    private var pairingAttempts: [ContinuousClock.Instant] = []
 
     // SSE connections
     private var sseConnections: [UUID: NWConnection] = [:]
@@ -328,22 +329,31 @@ public final class WatchHTTPEndpoint: @unchecked Sendable {
     // MARK: - Private: Endpoint Handlers
 
     private func handlePair(body: String?, connection: NWConnection) {
+        let response = pairingResponse(body: body)
+        sendHTTPResponse(connection: connection, status: response.status, body: response.body)
+    }
+
+    /// Called on `queue`; the budget is shared by every connection and independent of code rotation.
+    func pairingResponse(body: String?, now: ContinuousClock.Instant = .now) -> (status: String, body: String) {
+        pairingAttempts.removeAll { $0.duration(to: now) >= .seconds(120) }
+        guard pairingAttempts.count < 5 else {
+            return ("429 Too Many Requests", #"{"error":"too many pairing attempts"}"#)
+        }
+        pairingAttempts.append(now)
+
         guard let body, let bodyData = body.data(using: .utf8),
               let request = try? JSONDecoder().decode(WatchPairRequest.self, from: bodyData) else {
-            sendHTTPResponse(connection: connection, status: "400 Bad Request", body: #"{"error":"invalid body"}"#)
-            return
+            return ("400 Bad Request", #"{"error":"invalid body"}"#)
         }
 
         // Check if pairing code expired
         if Date().timeIntervalSince(pairingCodeGeneratedAt) > Self.pairingCodeExpiry {
             regeneratePairingCodeUnsafe()
-            sendHTTPResponse(connection: connection, status: "410 Gone", body: #"{"error":"pairing code expired"}"#)
-            return
+            return ("410 Gone", #"{"error":"pairing code expired"}"#)
         }
 
         guard request.code == currentPairingCode else {
-            sendHTTPResponse(connection: connection, status: "403 Forbidden", body: #"{"error":"invalid pairing code"}"#)
-            return
+            return ("403 Forbidden", #"{"error":"invalid pairing code"}"#)
         }
 
         // Generate token
@@ -356,8 +366,9 @@ public final class WatchHTTPEndpoint: @unchecked Sendable {
         let response = WatchPairResponse(token: token)
         if let responseData = try? JSONEncoder().encode(response),
            let responseString = String(data: responseData, encoding: .utf8) {
-            sendHTTPResponse(connection: connection, status: "200 OK", body: responseString)
+            return ("200 OK", responseString)
         }
+        return ("500 Internal Server Error", #"{"error":"could not encode response"}"#)
     }
 
     private func handleEventsSSE(headers: [String: String], connection: NWConnection) {
