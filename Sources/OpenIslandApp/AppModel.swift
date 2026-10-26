@@ -4115,6 +4115,12 @@ final class AppModel {
               let session = state.session(id: sessionID) else {
             return false
         }
+        // Paseo が自分の画面で承認・質問を出す。定時実行や下請けの質問で島まで
+        // 勝手に開くと、頼んでいない承認を迫られる（2026-10-26 本人指摘）。
+        // 一覧には残すので、島を開けばそこからも答えられる。
+        if session.jumpTarget?.paseoAgentID != nil || session.jumpTarget?.terminalApp == "Paseo" {
+            return false
+        }
 
         return (ingress == .bridge || !isResolvingInitialLiveSessions)
             && (notchStatus == .closed || notchOpenReason == .notification)
