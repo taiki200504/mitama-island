@@ -188,6 +188,22 @@ struct SessionStateTests {
     }
 
     @Test
+    func sortedSessionsFollowPruningAndDismissal() {
+        let base = Date(timeIntervalSince1970: 3_000)
+        var state = SessionState(
+            sessions: [
+                AgentSession(id: "stale", title: "Stale", tool: .claudeCode, phase: .completed, summary: "", updatedAt: base),
+                AgentSession(id: "fresh", title: "Fresh", tool: .codex, phase: .running, summary: "", updatedAt: base.addingTimeInterval(600)),
+            ]
+        )
+        #expect(state.sessions.map(\.id) == ["fresh", "stale"])
+
+        #expect(state.pruneIdleSessions(olderThan: 300, now: base.addingTimeInterval(700)) == ["stale"])
+        #expect(state.sessions.map(\.id) == ["fresh"])
+        #expect(state == SessionState(sessions: state.sessions))
+    }
+
+    @Test
     func keepsQuestionStateWhileIncidentalRunningUpdatesArrive() {
         let startedAt = Date(timeIntervalSince1970: 2_500)
         var state = SessionState(
