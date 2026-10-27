@@ -2077,9 +2077,15 @@ final class AppModel {
         paseoQuestions.onRequestsChange = { [weak self] requests, previous in
             guard let self else { return }
             for (id, old) in previous where requests[id] == nil {
-                guard !self.bridgeServer.hasLivePendingHook(sessionID: id) else { continue }
+                // 同じ要求のフックが残っていれば放す。別の要求のフックなら島の答え待ちを残す。
+                var released = false
+                if self.bridgeServer.hasLivePendingHook(sessionID: id) {
+                    released = self.bridgeServer.releaseMatchingPaseoHook(old)
+                    guard released else { continue }
+                }
                 let session = self.state.session(id: id)
-                if session?.questionPrompt?.id == old.question?.prompt.id && old.question != nil
+                if released && session?.phase.requiresAttention == true
+                    || session?.questionPrompt?.id == old.question?.prompt.id && old.question != nil
                     || session?.permissionRequest?.id == old.permission?.id && old.permission != nil {
                     self.state.apply(.actionableStateResolved(ActionableStateResolved(sessionID: id,
                         summary: "Paseo側で要求が解消されました。", timestamp: .now)))
@@ -4113,12 +4119,6 @@ final class AppModel {
         guard let sessionID = surface.sessionID,
               !delegatedSessionIDs.contains(sessionID),
               let session = state.session(id: sessionID) else {
-            return false
-        }
-        // Paseo が自分の画面で承認・質問を出す。定時実行や下請けの質問で島まで
-        // 勝手に開くと、頼んでいない承認を迫られる（2026-10-26 本人指摘）。
-        // 一覧には残すので、島を開けばそこからも答えられる。
-        if session.jumpTarget?.paseoAgentID != nil || session.jumpTarget?.terminalApp == "Paseo" {
             return false
         }
 

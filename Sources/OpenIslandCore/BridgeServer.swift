@@ -205,6 +205,26 @@ public final class BridgeServer: @unchecked Sendable {
         }
     }
 
+    /// Paseo 側で答え終わった要求のフックを放す。Claude は SDK 側の答えで既に進んで
+    /// いるので返事の中身は使われない。放さないと島に「答え待ち」が残り、
+    /// 答えた後にもう一度承認を迫られる（フックは最大24時間居座る）。
+    public func releaseMatchingPaseoHook(_ pending: PaseoPendingRequest) -> Bool {
+        queue.sync {
+            guard let expectedID = pending.toolUseID,
+                  let interaction = pendingClaudeInteractions[pending.sessionID] else { return false }
+            let payload: ClaudeHookPayload
+            switch interaction.kind {
+            case let .permission(value): payload = value
+            case let .question(value, _): payload = value
+            }
+            guard payload.sessionID == pending.sessionID, payload.toolName == pending.name,
+                  claudeToolUseID(for: payload) == expectedID else { return false }
+            pendingClaudeInteractions.removeValue(forKey: pending.sessionID)
+            send(.response(.acknowledged), to: interaction.clientID)
+            return true
+        }
+    }
+
     public func hasMatchingPaseoHook(_ pending: PaseoPendingRequest) -> Bool {
         queue.sync {
             guard let expectedID = pending.toolUseID,
