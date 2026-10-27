@@ -181,6 +181,9 @@ public final class PaseoQuestionCoordinator {
     public var onHealthChange: ((PaseoConnectionState) -> Void)?
     private var sending: Set<String> = []
     private var bindings: [String: PaseoAgentBinding] = [:]
+    private var pendingCache: [String: (ids: Set<String>, pending: PaseoPendingRequest)] = [:]
+    // A response may finish while a status read is suspended; never cache that stale read.
+    private var cacheRevision: UInt64 = 0
     private var ambiguousBindingSessionIDs: Set<String> = []
     public private(set) var delegatedSessionIDs: Set<String> = []
     private var parentSessionIDs: [String: String] = [:]
@@ -200,6 +203,7 @@ public final class PaseoQuestionCoordinator {
     deinit { task?.cancel() }
     public func start() {
         guard task == nil else { return }
+        pendingCache.removeAll()
         lifecycleGeneration &+= 1
         updateHealth(.checking)
         task = Task { [weak self] in
@@ -210,6 +214,7 @@ public final class PaseoQuestionCoordinator {
         }
     }
     public func stop() {
+        pendingCache.removeAll()
         lifecycleGeneration &+= 1
         task?.cancel()
         task = nil
@@ -236,25 +241,50 @@ public final class PaseoQuestionCoordinator {
             guard let permissions = result.paseoObject?["permissions"]?.paseoArray else { throw PaseoQuestionError.invalidResponse }
             verifiedContact = true
             updateHealth(.connected)
-            let agentIDs = Set(permissions.compactMap { value -> String? in
-                guard let object = value.paseoObject, object["request"]?.paseoObject?["id"]?.paseoString != nil,
-                      let id = object["agentId"]?.paseoString, !id.isEmpty else { return nil }
-                return id
-            })
+            var requestIDs: [String: Set<String>] = [:]
+            for value in permissions {
+                guard let object = value.paseoObject,
+                      let requestID = object["request"]?.paseoObject?["id"]?.paseoString,
+                      let agentID = object["agentId"]?.paseoString, !agentID.isEmpty else { continue }
+                requestIDs[agentID, default: []].insert(requestID)
+            }
+            pendingCache = pendingCache.filter { requestIDs[$0.key] == $0.value.ids && !sending.contains($0.key) }
             var found = requests.filter { sending.contains($0.value.binding.agentID) }
             var ambiguous: Set<String> = []
-            for agentID in agentIDs.sorted() {
+            for agentID in requestIDs.keys.sorted() {
                 try Task.checkCancellation()
-                if sending.contains(agentID) { continue }
-                let status = try await call("get_agent_status", .object(["agentId": .string(agentID)]))
-                guard let snapshot = status.paseoObject?["snapshot"]?.paseoObject,
-                      let binding = Self.binding(snapshot: snapshot, agentID: agentID, aliases: providerAliases) else { throw PaseoQuestionError.invalidResponse }
+                guard !sending.contains(agentID), let ids = requestIDs[agentID] else { continue }
+                let binding: PaseoAgentBinding
+                var pending: PaseoPendingRequest
+                if let cached = pendingCache[agentID],
+                   bindings[cached.pending.sessionID] == cached.pending.binding,
+                   requests[cached.pending.sessionID] != nil {
+                    pending = cached.pending
+                    binding = pending.binding
+                } else {
+                    pendingCache.removeValue(forKey: agentID)
+                    let revision = cacheRevision
+                    let status = try await call("get_agent_status", .object(["agentId": .string(agentID)]))
+                    guard generation == lifecycleGeneration else { return }
+                    guard let snapshot = status.paseoObject?["snapshot"]?.paseoObject,
+                          let currentBinding = Self.binding(snapshot: snapshot, agentID: agentID, aliases: providerAliases) else { throw PaseoQuestionError.invalidResponse }
+                    binding = currentBinding
+                    if snapshot["pendingPermissions"]?.paseoArray?.isEmpty == true { sessionsWithoutPending.insert(binding.sessionID) }
+                    else { sessionsWithoutPending.remove(binding.sessionID) }
+                    guard let currentPending = Self.pending(snapshot: snapshot, binding: binding) else {
+                        await updateDelegation(binding)
+                        guard generation == lifecycleGeneration else { return }
+                        bindings[binding.sessionID] = binding
+                        continue
+                    }
+                    pending = currentPending
+                    if revision == cacheRevision, !sending.contains(agentID) {
+                        pendingCache[agentID] = (ids, pending)
+                    }
+                }
                 await updateDelegation(binding)
+                guard generation == lifecycleGeneration else { return }
                 bindings[binding.sessionID] = binding
-                if snapshot["pendingPermissions"]?.paseoArray?.isEmpty == true { sessionsWithoutPending.insert(binding.sessionID) }
-                else { sessionsWithoutPending.remove(binding.sessionID) }
-                // One actionable card per native session; subsequent SDK requests are picked up after resolution.
-                guard var pending = Self.pending(snapshot: snapshot, binding: binding) else { continue }
                 if pending.question != nil && parentSessionIDs[binding.sessionID] == nil {
                     delegatedSessionIDs.remove(binding.sessionID)
                     onDelegationChange?(delegatedSessionIDs)
@@ -441,7 +471,13 @@ public final class PaseoQuestionCoordinator {
 
     private func submit(_ pending: PaseoPendingRequest, response: ClaudeHookJSONValue) async throws {
         guard sending.insert(pending.binding.agentID).inserted else { throw PaseoQuestionError.sending }
-        defer { sending.remove(pending.binding.agentID) }
+        cacheRevision &+= 1
+        pendingCache.removeValue(forKey: pending.binding.agentID)
+        defer {
+            sending.remove(pending.binding.agentID)
+            cacheRevision &+= 1
+            pendingCache.removeValue(forKey: pending.binding.agentID)
+        }
         let status = try await call("get_agent_status", .object(["agentId": .string(pending.binding.agentID)]))
         guard let snapshot = status.paseoObject?["snapshot"]?.paseoObject,
               let binding = Self.binding(snapshot: snapshot, agentID: pending.binding.agentID, aliases: providerAliases), binding.sessionID == pending.sessionID,
