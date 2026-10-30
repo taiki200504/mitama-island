@@ -127,9 +127,13 @@ public enum FocusModeReader {
 /// The honest limits: sharing from a browser tab (Meet, a web Teams call) is
 /// invisible here, and a listed app that is merely open but not sharing counts as
 /// sharing. The help text says so rather than implying full coverage.
+///
+/// Zoom is matched by its share process (`CptHost`, started only while the screen
+/// is being shared), not by the app: Zoom stays open all day, and matching the app
+/// silenced every approval and question on the island (2026-10-30).
 public enum ScreenSharingApps {
     public static let bundleIdentifiers: Set<String> = [
-        "us.zoom.xos",
+        "us.zoom.CptHost",
         "com.microsoft.teams",
         "com.microsoft.teams2",
         "com.cisco.webexmeetingsapp",
