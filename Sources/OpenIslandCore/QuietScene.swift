@@ -124,9 +124,8 @@ public enum FocusModeReader {
 /// macOS exposes no API for "someone is recording or sharing my screen", so this
 /// matches the bundle identifiers of the apps that do it.
 ///
-/// The honest limits: sharing from a browser tab (Meet, a web Teams call) is
-/// invisible here, and a listed app that is merely open but not sharing counts as
-/// sharing. The help text says so rather than implying full coverage.
+/// The honest limits: Teams, Webex, Loom, Slack, and sharing from a browser
+/// are not detected. OBS requires an active recording or streaming log marker.
 ///
 /// Zoom is matched by its share process (`CptHost`, started only while the screen
 /// is being shared), not by the app: Zoom stays open all day, and matching the app
@@ -134,18 +133,35 @@ public enum FocusModeReader {
 public enum ScreenSharingApps {
     public static let bundleIdentifiers: Set<String> = [
         "us.zoom.CptHost",
-        "com.microsoft.teams",
-        "com.microsoft.teams2",
-        "com.cisco.webexmeetingsapp",
-        "com.obsproject.obs-studio",
-        "com.apple.ScreenSharing",
-        "com.apple.screencaptureui",
-        "com.apple.QuickTimePlayerX",
-        "com.loom.desktop",
-        "com.tinyspeck.slackmacgap.helper.screensharing"
+        "com.apple.screencaptureui"
     ]
 
     public static func isSharing(runningBundleIdentifiers: Set<String>) -> Bool {
         !runningBundleIdentifiers.isDisjoint(with: bundleIdentifiers)
+    }
+}
+
+/// OBS reports recording and streaming transitions in its session log.
+public enum OBSActivityReader {
+    public static func isActive(log: String) -> Bool {
+        var recording = false
+        var streaming = false
+        for line in log.split(whereSeparator: \.isNewline) {
+            if line.contains("==== Recording Start") { recording = true }
+            if line.contains("==== Recording Stop") { recording = false }
+            if line.contains("==== Streaming Start") { streaming = true }
+            if line.contains("==== Streaming Stop") { streaming = false }
+        }
+        return recording || streaming
+    }
+
+    public static func isActive(inLogsAt directory: URL) -> Bool {
+        guard let files = try? FileManager.default.contentsOfDirectory(
+            at: directory, includingPropertiesForKeys: [.contentModificationDateKey]
+        ), let latest = files.filter({ $0.pathExtension == "txt" }).max(by: {
+            ((try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast)
+                < ((try? $1.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate) ?? .distantPast)
+        }), let log = try? String(contentsOf: latest, encoding: .utf8) else { return false }
+        return isActive(log: log)
     }
 }

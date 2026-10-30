@@ -24,6 +24,7 @@ final class QuietSceneMonitor {
 
     private let assertionsURL: URL
     private let runningBundleIdentifiers: @MainActor () -> Set<String>
+    private let obsIsRecordingOrStreaming: () -> Bool
     private let screenIsLocked: () -> Bool
     private let timerBox = RepeatingTimerBox()
     private var observers: [NSObjectProtocol] = []
@@ -35,10 +36,15 @@ final class QuietSceneMonitor {
         runningBundleIdentifiers: @escaping @MainActor () -> Set<String> = {
             Set(NSWorkspace.shared.runningApplications.compactMap(\.bundleIdentifier))
         },
+        obsIsRecordingOrStreaming: @escaping () -> Bool = {
+            OBSActivityReader.isActive(inLogsAt: FileManager.default.homeDirectoryForCurrentUser
+                .appending(path: "Library/Application Support/obs-studio/logs"))
+        },
         screenIsLocked: @escaping () -> Bool = QuietSceneMonitor.readScreenLock
     ) {
         self.assertionsURL = assertionsURL
         self.runningBundleIdentifiers = runningBundleIdentifiers
+        self.obsIsRecordingOrStreaming = obsIsRecordingOrStreaming
         self.screenIsLocked = screenIsLocked
     }
 
@@ -66,12 +72,13 @@ final class QuietSceneMonitor {
 
     func refresh() {
         let previous = snapshot
+        let running = runningBundleIdentifiers()
         snapshot = QuietSceneSnapshot(
             activeFocusModes: FocusModeReader.activeModes(inAssertionsAt: assertionsURL),
             screenIsObscured: (screensAreAsleep || screenIsLocked()) ? .active : .inactive,
             screenIsBeingShared: ScreenSharingApps.isSharing(
-                runningBundleIdentifiers: runningBundleIdentifiers()
-            ) ? .active : .inactive
+                runningBundleIdentifiers: running
+            ) || (running.contains("com.obsproject.obs-studio") && obsIsRecordingOrStreaming()) ? .active : .inactive
         )
         if snapshot != previous { onSceneChanged?(snapshot) }
     }

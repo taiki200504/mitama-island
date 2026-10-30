@@ -24,6 +24,30 @@ struct QuietSceneMonitorTests {
         )
     }
 
+    @Test("OBS activity is read only while OBS is running", arguments: [false, true])
+    func readsOBSOnlyWhenRunning(running: Bool) {
+        var reads = 0
+        let monitor = QuietSceneMonitor(
+            runningBundleIdentifiers: { running ? ["com.obsproject.obs-studio"] : [] },
+            obsIsRecordingOrStreaming: { reads += 1; return true },
+            screenIsLocked: { false }
+        )
+        monitor.refresh()
+        #expect(reads == (running ? 1 : 0))
+        #expect(monitor.snapshot.screenIsBeingShared == (running ? .active : .inactive))
+    }
+
+    @Test("Idle OBS does not suppress the island")
+    func idleOBS() {
+        let monitor = QuietSceneMonitor(
+            runningBundleIdentifiers: { ["com.obsproject.obs-studio"] },
+            obsIsRecordingOrStreaming: { false },
+            screenIsLocked: { false }
+        )
+        monitor.refresh()
+        #expect(monitor.snapshot.screenIsBeingShared == .inactive)
+    }
+
     @Test("Reports the focus mode macOS has on")
     func readsFocus() throws {
         let monitor = try monitor(
