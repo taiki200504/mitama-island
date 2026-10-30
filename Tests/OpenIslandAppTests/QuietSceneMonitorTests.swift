@@ -52,7 +52,7 @@ struct QuietSceneMonitorTests {
 
     @Test("A running meeting app shows up as sharing")
     func readsSharing() throws {
-        let monitor = try monitor(running: ["us.zoom.xos"])
+        let monitor = try monitor(running: ["us.zoom.CptHost"])
         monitor.refresh()
         #expect(monitor.snapshot.screenIsBeingShared == .active)
     }
@@ -108,7 +108,7 @@ struct QuietSceneDefaultsTests {
         let behaviour = makeBehaviour()
         let monitor = QuietSceneMonitor(
             assertionsURL: URL(filePath: "/nonexistent/\(UUID().uuidString).json"),
-            runningBundleIdentifiers: { ["us.zoom.xos", "com.apple.QuickTimePlayerX"] },
+            runningBundleIdentifiers: { ["us.zoom.CptHost", "com.apple.QuickTimePlayerX"] },
             screenIsLocked: { false }
         )
         monitor.refresh()

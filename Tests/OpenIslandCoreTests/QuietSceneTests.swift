@@ -106,7 +106,12 @@ struct FocusModeReaderTests {
 struct ScreenSharingAppsTests {
     @Test("A known meeting app counts as sharing")
     func detectsKnownApp() {
-        #expect(ScreenSharingApps.isSharing(runningBundleIdentifiers: ["us.zoom.xos", "com.apple.finder"]))
+        #expect(ScreenSharingApps.isSharing(runningBundleIdentifiers: ["us.zoom.CptHost", "com.apple.finder"]))
+    }
+
+    @Test("Zoom open without sharing does not count")
+    func ignoresIdleZoom() {
+        #expect(ScreenSharingApps.isSharing(runningBundleIdentifiers: ["us.zoom.xos", "us.zoom.caphost"]) == false)
     }
 
     @Test("An ordinary set of apps does not")
