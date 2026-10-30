@@ -104,6 +104,18 @@ struct FocusModeReaderTests {
 
 @Suite("Screen sharing detection")
 struct ScreenSharingAppsTests {
+    @Test(arguments: ["com.microsoft.teams", "com.microsoft.teams2", "com.cisco.webexmeetingsapp",
+                      "com.loom.desktop", "com.apple.QuickTimePlayerX", "com.apple.ScreenSharing",
+                      "com.tinyspeck.slackmacgap.helper.screensharing", "com.obsproject.obs-studio"])
+    func openAppIsNotSharing(identifier: String) {
+        #expect(ScreenSharingApps.isSharing(runningBundleIdentifiers: [identifier]) == false)
+    }
+
+    @Test("macOS capture is detected")
+    func macOSCapture() {
+        #expect(ScreenSharingApps.isSharing(runningBundleIdentifiers: ["com.apple.screencaptureui"]))
+    }
+
     @Test("A known meeting app counts as sharing")
     func detectsKnownApp() {
         #expect(ScreenSharingApps.isSharing(runningBundleIdentifiers: ["us.zoom.CptHost", "com.apple.finder"]))
@@ -138,5 +150,33 @@ struct DesktopCoverTests {
             scene: QuietSceneSnapshot(screenIsBeingShared: .unavailable), isEnabled: true) == false)
         #expect(DesktopCover.shouldCover(
             scene: QuietSceneSnapshot(screenIsBeingShared: .inactive), isEnabled: true) == false)
+    }
+}
+
+@Suite("OBS activity logs")
+struct OBSActivityReaderTests {
+    @Test(arguments: [
+        ("18:40:38.614: ==== Recording Start ======", true),
+        ("==== Recording Start ====\n==== Recording Stop ====", false),
+        ("==== Streaming Start ====\n==== Recording Stop ====", true),
+        ("==== Streaming Start ====\n==== Streaming Stop ====", false),
+        ("", false)
+    ])
+    func readsLastTransition(log: String, expected: Bool) {
+        #expect(OBSActivityReader.isActive(log: log) == expected)
+    }
+
+    @Test("Only the newest txt log is read")
+    func newestLog() throws {
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let older = directory.appending(path: "older.txt")
+        try "==== Recording Start".write(to: older, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.modificationDate: Date.distantPast], ofItemAtPath: older.path)
+        try "==== Recording Stop".write(to: directory.appending(path: "newer.txt"), atomically: true, encoding: .utf8)
+        try "==== Recording Start".write(to: directory.appending(path: "ignored.json"), atomically: true, encoding: .utf8)
+        #expect(OBSActivityReader.isActive(inLogsAt: directory) == false)
+        #expect(OBSActivityReader.isActive(inLogsAt: directory.appending(path: "missing")) == false)
     }
 }
