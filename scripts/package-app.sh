@@ -118,6 +118,8 @@ cat > "$bundle_dir/Contents/Info.plist" <<EOF
     <string>14.0</string>
     <key>NSAppleEventsUsageDescription</key>
     <string>Open Island needs automation access to focus Terminal and iTerm sessions for jump-back.</string>
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>Movement mode disconnects and restores only your paired OpenComm2 on this Mac.</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>Open Island uses the microphone in two ways. Held shortcut: it hears a spoken yes or no for a request an agent is waiting on, recognized on this Mac and not saved. Earshot, which is off until you turn it on in Settings: it keeps the microphone open and writes what it hears to files on this Mac, which are transcribed locally and deleted on a timer. Nothing is sent from the app.</string>
     <key>NSSpeechRecognitionUsageDescription</key>
@@ -313,3 +315,4 @@ fi
 if [[ -n "$notary_profile" ]]; then
     echo "Notary profile: $notary_profile"
 fi
+
