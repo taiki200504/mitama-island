@@ -24,8 +24,12 @@ private enum TravelFailure: String, Error {
 }
 
 /// Bluetooth objects never cross isolation boundaries. Only a paired, locally pinned address is used.
-private enum TravelBluetooth {
+enum TravelBluetooth {
     struct Target: Sendable { let address: String; let connected: Bool }
+    static func matchesName(_ value: String) -> Bool {
+        let name = value.lowercased().filter { $0.isLetter || $0.isNumber }
+        return ["opencomm2", "shokzopencomm2", "opencomm2byshokz", "opencomm2uc", "opencomm2byshokzii"].contains(name)
+    }
     static func target(pinned: String?) async throws -> Target {
         try await Task.detached {
             guard IOBluetoothHostController.default()?.powerState == kBluetoothHCIPowerStateON else {
@@ -34,8 +38,7 @@ private enum TravelBluetooth {
             let paired = IOBluetoothDevice.pairedDevices() as? [IOBluetoothDevice] ?? []
             let matches = paired.filter { device in
                 if let pinned { return device.addressString == pinned }
-                let name = (device.name ?? "").lowercased().filter { $0.isLetter || $0.isNumber }
-                return ["opencomm2", "shokzopencomm2", "opencomm2byshokz", "opencomm2uc"].contains(name)
+                return matchesName(device.name ?? "")
             }
             guard !matches.isEmpty else { throw TravelFailure.targetMissing }
             guard matches.count == 1, let address = matches[0].addressString else { throw TravelFailure.targetAmbiguous }
