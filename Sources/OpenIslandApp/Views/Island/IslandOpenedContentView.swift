@@ -128,6 +128,13 @@ extension IslandPanelView {
                     .transition(IslandTransition.resolved(IslandTransition.panelDrop))
             }
 
+            if let summon = model.jarvisSummon {
+                jarvisSummonBar(summon)
+                    .padding(.horizontal, 18)
+                    .padding(.top, 8)
+                    .transition(IslandTransition.resolved(IslandTransition.panelDrop))
+            }
+
             if let notice = model.notice {
                 noticeBar(notice)
                     .padding(.horizontal, 18)
@@ -207,6 +214,28 @@ extension IslandPanelView {
     /// fact worth its own row in the opened island rather than living only
     /// on the closed pill. No dedicated surface exists for this; it sits
     /// here the same way the notice bar and the shelf badge do.
+    /// 「ジャービス」の呼びかけの状態を1行で出す。固定の言葉だけで、依頼の本文は出さない。
+    private func jarvisSummonBar(_ summon: JarvisSummon) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "sparkles")
+                .font(.islandText(size: 11, weight: .semibold))
+                .foregroundStyle(SAOGrammar.Palette.accentOrange)
+            Text(model.lang.t("island.jarvis.\(summon.state.rawValue)"))
+                .font(.islandText(size: 12, weight: .medium))
+                .foregroundStyle(V6Palette.paper.opacity(0.9))
+                .lineLimit(1)
+                .truncationMode(.tail)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(
+            IslandThemes.current.shape(cornerRadius: 10)
+                .fill(V6Palette.paper.opacity(0.07))
+        )
+        .accessibilityElement(children: .combine)
+    }
+
     private func currentEventBar(_ event: UpcomingCalendarEvent.Current, url: URL) -> some View {
         HStack(spacing: 8) {
             Text(model.lang.t("island.currentEvent.now"))

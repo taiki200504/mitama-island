@@ -38,7 +38,7 @@ enum IslandOpenedRouting {
             return .bootSplash
         case .handGesture:
             return .sessionList(highlight: firstActionableID)
-        case .click, .hover, .none:
+        case .click, .hover, .voice, .none:
             return .sessionList(highlight: nil)
         }
     }

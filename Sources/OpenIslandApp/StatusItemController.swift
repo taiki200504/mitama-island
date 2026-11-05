@@ -215,6 +215,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
                     enableItem.target = self
                     enableItem.tag = actions.count
                     enableItem.state = status.enabled ? .on : .off
+                    // mitama-os 版では旧 raphaelctl の on/off が旧アプリへ書き戻すので押せなくする（action 無し＝無効）。
+                    if !status.canSwitchOnOff { enableItem.action = nil }
                     actions.append { [weak self] in
                         Task {
                             if status.enabled {

@@ -1030,3 +1030,10 @@
 
 "settings.earshot.liveTranscription" = "实时转写";
 "settings.earshot.liveTranscription.help" = "在本机识别语音，约每45秒保存一次已确认的文字。";
+
+/* ジャービスの呼びかけ（Raphael.app からの状態） */
+"island.jarvis.listening" = "正在聆听";
+"island.jarvis.acking" = "正在回应";
+"island.jarvis.running" = "正在确认请求结果";
+"island.jarvis.done" = "已完成 · 已核对";
+"island.jarvis.failed" = "无法确认结果";
