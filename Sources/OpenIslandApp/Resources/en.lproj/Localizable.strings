@@ -555,7 +555,7 @@
 "settings.notifications.quiet.focus.help" = "Reads the Focus macOS keeps on disk. Do Not Disturb, Personal, Work and Sleep all count.";
 "settings.notifications.quiet.focus.unavailable" = "This Mac does not expose its Focus state, so this switch cannot fire.";
 "settings.notifications.quiet.screenLocked.help" = "Covers a locked screen and sleeping displays. The Watch still gets notified.";
-"settings.notifications.quiet.screenShared.help" = "Detects known recording and meeting apps. Sharing from a browser tab cannot be seen.";
+"settings.notifications.quiet.screenShared.help" = "Detects only Zoom screen sharing, macOS screen recording, and OBS recording or streaming.";
 "settings.pending.focusModeDetection" = "Needs Focus mode detection.";
 "settings.pending.screenStateDetection" = "Needs screen lock and sleep detection.";
 "settings.pending.screenCaptureDetection" = "Needs screen recording detection.";

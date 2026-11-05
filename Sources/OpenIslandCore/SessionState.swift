@@ -1,14 +1,26 @@
 import Foundation
 
 public struct SessionState: Equatable, Sendable {
-    public private(set) var sessionsByID: [String: AgentSession]
-
-    public init(sessions: [AgentSession] = []) {
-        self.sessionsByID = Dictionary(uniqueKeysWithValues: sessions.map { ($0.id, $0) })
+    public private(set) var sessionsByID: [String: AgentSession] {
+        didSet { sessions = Self.sorted(sessionsByID) }
     }
 
-    public var sessions: [AgentSession] {
-        sessionsByID.values.sorted { lhs, rhs in
+    /// 並べ替え済みの一覧。読むたびに全件を並べ替えていたのがアイドル時 CPU の最大要因だったので、
+    /// sessionsByID が変わったときだけ作り直す。
+    public private(set) var sessions: [AgentSession]
+
+    public init(sessions: [AgentSession] = []) {
+        let byID = Dictionary(uniqueKeysWithValues: sessions.map { ($0.id, $0) })
+        self.sessionsByID = byID
+        self.sessions = Self.sorted(byID)
+    }
+
+    public static func == (lhs: SessionState, rhs: SessionState) -> Bool {
+        lhs.sessionsByID == rhs.sessionsByID
+    }
+
+    private static func sorted(_ byID: [String: AgentSession]) -> [AgentSession] {
+        byID.values.sorted { lhs, rhs in
             if lhs.updatedAt == rhs.updatedAt {
                 return lhs.title.localizedStandardCompare(rhs.title) == .orderedAscending
             }
@@ -59,7 +71,7 @@ public struct SessionState: Equatable, Sendable {
         let expired = sessionsByID.values
             .filter { !$0.phase.requiresAttention && $0.updatedAt < cutoff }
             .map(\.id)
-        for id in expired { sessionsByID.removeValue(forKey: id) }
+        if !expired.isEmpty { sessionsByID = sessionsByID.filter { !expired.contains($0.key) } }
         return expired
     }
 

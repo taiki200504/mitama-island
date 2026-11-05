@@ -11,6 +11,16 @@ import Security
 /// Values are written by `addkey`, which stores them as generic passwords under
 /// `service = <NAME>`, `account = $USER`.
 public enum MitamaKeychain {
+    // SecKeychain's legacy CSSM path and its process-wide interaction flag must
+    // never be entered concurrently by the relay, device reporter or travel poll.
+    private static let readLock = NSLock()
+
+    static func serializedRead<T>(_ body: () -> T) -> T {
+        readLock.lock()
+        defer { readLock.unlock() }
+        return body()
+    }
+
     public static let urlAccount = "MITAMA_SUPABASE_URL"
     public static let keyAccount = "MITAMA_SUPABASE_KEY"
 
@@ -43,6 +53,10 @@ public enum MitamaKeychain {
     /// caller falls back to the .env file. An app already on the list still
     /// reads without any UI, so nothing is lost by refusing to ask.
     public static func value(for service: String) -> String? {
+        serializedRead { valueUnlocked(for: service) }
+    }
+
+    private static func valueUnlocked(for service: String) -> String? {
         setUserInteraction(allowed: false)
         defer { setUserInteraction(allowed: true) }
 

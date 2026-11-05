@@ -555,7 +555,7 @@
 "settings.notifications.quiet.focus.help" = "macOS が保存している集中モードを読みます。おやすみ・パーソナル・仕事・睡眠が対象。";
 "settings.notifications.quiet.focus.unavailable" = "この Mac は集中モードの状態を渡してくれないため、この項目は働きません。";
 "settings.notifications.quiet.screenLocked.help" = "画面ロック中とディスプレイのスリープ中。Apple Watch には引き続き届きます。";
-"settings.notifications.quiet.screenShared.help" = "画面収録・会議アプリが起動しているかで判断します。ブラウザのタブからの共有は検知できません。";
+"settings.notifications.quiet.screenShared.help" = "Zoomの画面共有・macOSの画面収録・OBSの収録／配信のみ検知します。";
 "settings.pending.focusModeDetection" = "集中モードの検知が要ります。";
 "settings.pending.screenStateDetection" = "画面ロック・スリープの検知が要ります。";
 "settings.pending.screenCaptureDetection" = "画面収録の検知が要ります。";

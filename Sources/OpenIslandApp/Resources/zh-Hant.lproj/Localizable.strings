@@ -554,7 +554,7 @@
 "settings.notifications.quiet.focus.help" = "讀取 macOS 儲存的專注模式。勿擾、個人、工作、睡眠皆適用。";
 "settings.notifications.quiet.focus.unavailable" = "此 Mac 不提供專注模式狀態，此開關無法生效。";
 "settings.notifications.quiet.screenLocked.help" = "涵蓋鎖定畫面與顯示器睡眠。Apple Watch 仍會收到通知。";
-"settings.notifications.quiet.screenShared.help" = "依據已知的錄製與會議應用判斷。瀏覽器分頁的共享無法偵測。";
+"settings.notifications.quiet.screenShared.help" = "僅偵測 Zoom 螢幕分享、macOS 螢幕錄影及 OBS 錄製或直播。";
 "settings.pending.focusModeDetection" = "需要專注模式偵測。";
 "settings.pending.screenStateDetection" = "需要螢幕鎖定與睡眠偵測。";
 "settings.pending.screenCaptureDetection" = "需要螢幕錄製偵測。";

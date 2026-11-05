@@ -2085,9 +2085,15 @@ final class AppModel {
         paseoQuestions.onRequestsChange = { [weak self] requests, previous in
             guard let self else { return }
             for (id, old) in previous where requests[id] == nil {
-                guard !self.bridgeServer.hasLivePendingHook(sessionID: id) else { continue }
+                // 同じ要求のフックが残っていれば放す。別の要求のフックなら島の答え待ちを残す。
+                var released = false
+                if self.bridgeServer.hasLivePendingHook(sessionID: id) {
+                    released = self.bridgeServer.releaseMatchingPaseoHook(old)
+                    guard released else { continue }
+                }
                 let session = self.state.session(id: id)
-                if session?.questionPrompt?.id == old.question?.prompt.id && old.question != nil
+                if released && session?.phase.requiresAttention == true
+                    || session?.questionPrompt?.id == old.question?.prompt.id && old.question != nil
                     || session?.permissionRequest?.id == old.permission?.id && old.permission != nil {
                     self.state.apply(.actionableStateResolved(ActionableStateResolved(sessionID: id,
                         summary: "Paseo側で要求が解消されました。", timestamp: .now)))

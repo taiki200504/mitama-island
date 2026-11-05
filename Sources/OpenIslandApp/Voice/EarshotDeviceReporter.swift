@@ -27,6 +27,7 @@ final class EarshotDeviceReporter {
     private let network: URLSession
     private let deviceID: String?
     private var task: Task<Void, Never>?
+    private lazy var travelMode = TravelModeController(session: session, network: network)
 
     init(session: AmbientListenSession, settings: AmbientListenSettings, network: URLSession = .shared) {
         self.session = session
@@ -47,6 +48,7 @@ final class EarshotDeviceReporter {
 
     func start() {
         guard task == nil else { return }
+        if let deviceID { travelMode.start(deviceID: deviceID) }
         task = Task { [weak self] in
             var lastReport = Date.distantPast
             var previousPhase: AmbientListenSession.Phase?
@@ -152,3 +154,4 @@ final class EarshotDeviceReporter {
         return data
     }
 }
+
