@@ -136,7 +136,7 @@ extension AgentSession {
         // workspace context visible at a glance.
         if let workspace = jumpTarget?.workspaceName.trimmedForSurface,
            !workspace.isEmpty, workspace != "/" {
-            return "\(terminalApp) · \(HexEscapedUTF8.decodeIfNeeded(workspace))"
+            return "\(terminalApp) · \(workspace)"
         }
         return terminalApp
     }
