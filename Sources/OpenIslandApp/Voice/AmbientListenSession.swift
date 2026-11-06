@@ -81,12 +81,20 @@ final class AmbientListenSession {
             .appendingPathComponent(".mitama/earshot/audio", isDirectory: true)
     }
 
+    private var travelSuspended = false
+
+    func setTravelSuspended(_ value: Bool) {
+        guard value != travelSuspended else { return }
+        travelSuspended = value
+        if value { stop() } else { settingsChanged() }
+    }
+
     var isRunning: Bool { phase == .listening || phase == .pausedForCall || phase == .stalled }
 
     /// Turns listening on. Does nothing while the switch is off, so the caller
     /// can call this on launch without checking first.
     func start() {
-        guard settings.isEnabled else { return }
+        guard settings.isEnabled, !travelSuspended else { return }
         guard !isRunning else { return }
 
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
@@ -121,7 +129,7 @@ final class AmbientListenSession {
 
     /// Called when the switch is flipped in Settings.
     func settingsChanged() {
-        if settings.isEnabled {
+        if settings.isEnabled && !travelSuspended {
             writer.setLiveTranscriptionEnabled(settings.liveTranscriptionEnabled)
             start()
         } else {
@@ -160,6 +168,7 @@ final class AmbientListenSession {
     }
 
     private func beginCapture() {
+        guard settings.isEnabled, !travelSuspended else { return }
         captureStartedAt = .now
         // No `BuiltInMicrophone.pin` here. With the pin the engine starts and
         // the orange indicator lights, but the tap never receives a buffer —
@@ -472,3 +481,4 @@ final class SegmentWriter: @unchecked Sendable {
         }
     }
 }
+

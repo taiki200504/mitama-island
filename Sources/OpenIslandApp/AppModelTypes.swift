@@ -20,6 +20,8 @@ enum NotchOpenReason: Equatable {
     /// A gesture needs its own reason so its intentional feedback never turns
     /// ordinary pointer-driven opens into a stream of sounds.
     case handGesture
+    /// Raphael.app の「ジャービス」の呼びかけ（分散通知）。フォーカスは奪わない。
+    case voice
 }
 
 enum TrackedEventIngress {

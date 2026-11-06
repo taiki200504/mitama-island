@@ -51,3 +51,38 @@ extension BridgeAnswerDeliveryTests {
         #expect(try client.send(.resolvePermission(sessionID: "live", resolution: .allowOnce(), expectedRequestID: id)) == .rejected)
     }
 }
+
+extension BridgeAnswerDeliveryTests {
+    @Test func paseoResolvedRequestReleasesItsLiveHook() async throws {
+        let socket = BridgeSocketLocation.uniqueTestURL()
+        let server = BridgeServer(socketURL: socket)
+        try server.start()
+        defer { server.stop() }
+        let observer = LocalBridgeClient(socketURL: socket)
+        let stream = try observer.connect()
+        defer { observer.disconnect() }
+        try await observer.send(.registerClient(role: .observer))
+        let input: ClaudeHookJSONValue = .object(["questions": .array([.object(["question": .string("Choose")])])])
+        let payload = ClaudeHookPayload(cwd: "/tmp/fixture", hookEventName: .permissionRequest,
+            sessionID: "paseo-live", toolName: "AskUserQuestion", toolInput: input, toolUseID: "tool-1")
+        let waiting = Task.detached { try BridgeCommandClient(socketURL: socket).send(.processClaudeHook(payload), timeout: 5) }
+        var iterator = stream.makeAsyncIterator()
+        while let event = try await iterator.next() {
+            if case .questionAsked = event { break }
+            if case .permissionRequested = event { break }
+        }
+        #expect(server.hasLivePendingHook(sessionID: "paseo-live"))
+        let binding = PaseoAgentBinding(agentID: "agent", sessionID: "paseo-live", provider: "claude",
+            hostProvider: "claude", title: "t", cwd: "/tmp/fixture")
+        func pending(_ toolUseID: String) -> PaseoPendingRequest {
+            PaseoPendingRequest(binding: binding, requestID: "r", name: "AskUserQuestion", kind: "question",
+                input: .object(["questions": .array([]), "allowOther": .boolean(true)]), toolUseID: toolUseID,
+                originalRequest: .object([:]))
+        }
+        #expect(!server.releaseMatchingPaseoHook(pending("other-tool")))
+        #expect(server.hasLivePendingHook(sessionID: "paseo-live"))
+        #expect(server.releaseMatchingPaseoHook(pending("tool-1")))
+        _ = try await waiting.value
+        #expect(!server.hasLivePendingHook(sessionID: "paseo-live"))
+    }
+}

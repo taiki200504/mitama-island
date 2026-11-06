@@ -24,6 +24,30 @@ struct QuietSceneMonitorTests {
         )
     }
 
+    @Test("OBS activity is read only while OBS is running", arguments: [false, true])
+    func readsOBSOnlyWhenRunning(running: Bool) {
+        var reads = 0
+        let monitor = QuietSceneMonitor(
+            runningBundleIdentifiers: { running ? ["com.obsproject.obs-studio"] : [] },
+            obsIsRecordingOrStreaming: { reads += 1; return true },
+            screenIsLocked: { false }
+        )
+        monitor.refresh()
+        #expect(reads == (running ? 1 : 0))
+        #expect(monitor.snapshot.screenIsBeingShared == (running ? .active : .inactive))
+    }
+
+    @Test("Idle OBS does not suppress the island")
+    func idleOBS() {
+        let monitor = QuietSceneMonitor(
+            runningBundleIdentifiers: { ["com.obsproject.obs-studio"] },
+            obsIsRecordingOrStreaming: { false },
+            screenIsLocked: { false }
+        )
+        monitor.refresh()
+        #expect(monitor.snapshot.screenIsBeingShared == .inactive)
+    }
+
     @Test("Reports the focus mode macOS has on")
     func readsFocus() throws {
         let monitor = try monitor(
@@ -52,7 +76,7 @@ struct QuietSceneMonitorTests {
 
     @Test("A running meeting app shows up as sharing")
     func readsSharing() throws {
-        let monitor = try monitor(running: ["us.zoom.xos"])
+        let monitor = try monitor(running: ["us.zoom.CptHost"])
         monitor.refresh()
         #expect(monitor.snapshot.screenIsBeingShared == .active)
     }
@@ -108,7 +132,7 @@ struct QuietSceneDefaultsTests {
         let behaviour = makeBehaviour()
         let monitor = QuietSceneMonitor(
             assertionsURL: URL(filePath: "/nonexistent/\(UUID().uuidString).json"),
-            runningBundleIdentifiers: { ["us.zoom.xos", "com.apple.QuickTimePlayerX"] },
+            runningBundleIdentifiers: { ["us.zoom.CptHost", "com.apple.QuickTimePlayerX"] },
             screenIsLocked: { false }
         )
         monitor.refresh()
