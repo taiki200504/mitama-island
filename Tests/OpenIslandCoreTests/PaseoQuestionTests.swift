@@ -30,11 +30,16 @@ private actor PaseoMock {
     var calls: [(String, ClaudeHookJSONValue)] = []
     var failAnswer = false
     var delayAnswer = false
+    var answerContinuation: CheckedContinuation<Void, Never>?
     var omitSuccess = false
     init() throws { snapshot = try paseoFixture(paseoSnapshot) }
     func replace(_ text: String) throws { snapshot = try paseoFixture(text) }
     func setFailure(_ value: Bool) { failAnswer = value }
     func setDelay() { delayAnswer = true }
+    func releaseAnswer() {
+        answerContinuation?.resume()
+        answerContinuation = nil
+    }
     func setOmittedSuccess() { omitSuccess = true }
     func call(_ name: String, _ input: ClaudeHookJSONValue) async throws -> ClaudeHookJSONValue {
         calls.append((name, input))
@@ -54,7 +59,9 @@ private actor PaseoMock {
             ])])])
         case "get_agent_status": return .object(["snapshot": snapshot])
         case "respond_to_permission":
-            if delayAnswer { try await Task.sleep(for: .milliseconds(80)) }
+            if delayAnswer {
+                await withCheckedContinuation { answerContinuation = $0 }
+            }
             if failAnswer { throw PaseoQuestionError.invalidResponse }
             return omitSuccess ? .object([:]) : .object(["success": .boolean(true)])
         default: throw PaseoQuestionError.invalidResponse
@@ -284,6 +291,7 @@ struct PaseoQuestionTests {
         } catch {}
         await coordinator.poll()
         #expect(coordinator.questions[question.sessionID] == question)
+        await mock.releaseAnswer()
         try await first.value
         let beforePoll = await mock.calls.filter { $0.0 == "get_agent_status" }.count
         await coordinator.poll()
