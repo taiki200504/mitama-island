@@ -64,21 +64,21 @@ public enum RecipientAppCheck {
     }
 }
 
-/// Who rings the meeting-start alert. Exactly one of the island, the Mac app and the iPhone app at a time; the island
-/// keeps it until the new app's alert has passed three days in a row. Kept on this machine for now; sharing it
-/// across the account's devices is decided later (the Mac app is the default new owner until then).
+/// Who rings the meeting-start alert: exactly one of the island, the Mac app and the iPhone app, kept in one place in
+/// the database (`mos_owner_settings.meeting_ringer`, written through the owner's RPC). The island has no owner login,
+/// so it only reads that row with its own service key; if it cannot read it, it stays quiet.
 public enum MeetingAlertOwner: String, Sendable { case island, mac, iphone }
 
-public final class MeetingAlertOwnerSetting: @unchecked Sendable {
-    private static let key = "mitama.meetingAlert.owner"
-    private let defaults: UserDefaults
-
-    public init(defaults: UserDefaults = .standard) { self.defaults = defaults }
-
-    public var owner: MeetingAlertOwner {
-        get { defaults.string(forKey: Self.key).flatMap(MeetingAlertOwner.init(rawValue:)) ?? .island }
-        set { defaults.set(newValue.rawValue, forKey: Self.key) }
+public enum MeetingRinger {
+    /// The owner from the PostgREST rows. No row yet means it was never switched, so it is still the island (the
+    /// database's default). Anything unreadable or unknown is nil.
+    public static func owner(fromRows data: Data) -> MeetingAlertOwner? {
+        guard let rows = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else { return nil }
+        guard let row = rows.first else { return .island }
+        guard let value = row["meeting_ringer"] as? String else { return nil }
+        return MeetingAlertOwner(rawValue: value)
     }
 
-    public var islandMayRing: Bool { owner == .island }
+    /// A missed alert is better than the same meeting ringing on two devices.
+    public static func islandMayRing(_ owner: MeetingAlertOwner?) -> Bool { owner == .island }
 }

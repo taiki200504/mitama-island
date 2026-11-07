@@ -236,6 +236,20 @@ public struct MitamaWorkLogClient: Sendable {
 
     static let enqueuePreference = "resolution=ignore-duplicates"
 
+    /// Who rings meeting-start alerts, read from the one place in the database. Nil when it cannot be read.
+    public func meetingRinger() async -> MeetingAlertOwner? {
+        guard let url = environment.endpoint(
+            "mos_owner_settings",
+            queryItems: [
+                URLQueryItem(name: "select", value: "meeting_ringer"),
+                URLQueryItem(name: "order", value: "updated_at.desc"),
+                URLQueryItem(name: "limit", value: "1"),
+            ]
+        ), let (data, response) = try? await session.data(for: environment.authorized(URLRequest(url: url))),
+              let status = (response as? HTTPURLResponse)?.statusCode, (200..<300).contains(status) else { return nil }
+        return MeetingRinger.owner(fromRows: data)
+    }
+
     /// The agents mitama will actually run work for, newest first.
     ///
     /// Derived from jobs that completed rather than from a roster table: the

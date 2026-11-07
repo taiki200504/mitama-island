@@ -639,7 +639,8 @@ final class AppModel {
     /// What is coming up, for the closed island's otherwise blank state.
     let calendar = CalendarWatcher()
     let voiceRequestSettings = VoiceRequestSettings()
-    let meetingAlertOwner = MeetingAlertOwnerSetting()
+    /// Who rings meeting-start alerts, as last read from the database; nil until read or when unreadable (then quiet).
+    private(set) var meetingAlertOwner: MeetingAlertOwner?
     let voiceRequest = VoiceRequestSession()
     /// The last result of a spoken request, as a localization key the pane shows; nil clears it.
     private(set) var voiceRequestStatusKey: String?
@@ -1115,6 +1116,14 @@ final class AppModel {
         // `alertsWhenEventStarts` before doing anything, and the watcher only
         // ever calls it while it's actually running.
         wireVoiceRequest()
+        Task { @MainActor in
+            await refreshMeetingAlertOwner()
+            // Re-read every few minutes so a cut-over to the new app is noticed without a restart.
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(300))
+                await refreshMeetingAlertOwner()
+            }
+        }
         calendar.onEventStarted = { [weak self] current in
             self?.handleCalendarEventStarted(current)
         }
@@ -1747,7 +1756,7 @@ final class AppModel {
     /// ended meeting has to disappear from the body the instant `now`
     /// passes its `endsAt`, not only at the next five-minute refresh.
     private func liveClosedEventStarted(at now: Date) -> IslandClosedInputs.EventStarted? {
-        guard settings.display.alertsWhenEventStarts, meetingAlertOwner.islandMayRing, let current = calendar.current(at: now) else { return nil }
+        guard settings.display.alertsWhenEventStarts, MeetingRinger.islandMayRing(meetingAlertOwner), let current = calendar.current(at: now) else { return nil }
         return IslandClosedInputs.EventStarted(
             title: current.title,
             startedAt: current.startsAt,
@@ -1761,7 +1770,20 @@ final class AppModel {
     /// watcher is running — the setting gate here is what actually decides
     /// whether the moment is worth announcing.
     private func handleCalendarEventStarted(_ current: UpcomingCalendarEvent.Current) {
-        guard settings.display.alertsWhenEventStarts, meetingAlertOwner.islandMayRing else { return }
+        guard settings.display.alertsWhenEventStarts else { return }
+        // Ask the one place right now: if it cannot be read, or says another device rings, stay quiet.
+        Task { @MainActor in
+            await refreshMeetingAlertOwner()
+            guard MeetingRinger.islandMayRing(meetingAlertOwner) else { return }
+            ringMeetingStart(current)
+        }
+    }
+
+    func refreshMeetingAlertOwner() async {
+        meetingAlertOwner = await mitamaFeed.workLog?.meetingRinger()
+    }
+
+    private func ringMeetingStart(_ current: UpcomingCalendarEvent.Current) {
         NotificationSoundService.play(.eventStarting, settings: settings.sound)
         overlay.presentSneakPeek(
             IslandSneakPeek(

@@ -106,31 +106,38 @@ struct RecipientAppCheckTests {
     }
 }
 
-/// T-N, the island's side — it stops ringing meeting-start alerts once another owner has them.
-struct MeetingAlertOwnerSettingTests {
-    private func setting() -> MeetingAlertOwnerSetting { MeetingAlertOwnerSetting(defaults: UserDefaults(suiteName: UUID().uuidString)!) }
+/// T-N, the island's side — the island rings a meeting-start alert only when the one place in the database says it is
+/// the owner. If that cannot be read, it does not ring (a missed alert beats a doubled one).
+struct MeetingRingerTests {
+    private func rows(_ json: String) -> MeetingAlertOwner? { MeetingRinger.owner(fromRows: Data(json.utf8)) }
 
     @Test
-    func theIslandOwnsItUntilTheSwitch() {
-        #expect(setting().owner == .island)
-        #expect(setting().islandMayRing)
+    func theValueInTheRowIsTheOwner() {
+        #expect(rows(#"[{"meeting_ringer":"island"}]"#) == .island)
+        #expect(rows(#"[{"meeting_ringer":"mac"}]"#) == .mac)
+        #expect(rows(#"[{"meeting_ringer":"iphone"}]"#) == .iphone)
     }
 
     @Test
-    func afterTheSwitchTheIslandStaysQuiet() {
-        let s = setting()
-        s.owner = .mac
-        #expect(s.islandMayRing == false)
-        s.owner = .iphone
-        #expect(s.islandMayRing == false)
-        s.owner = .island
-        #expect(s.islandMayRing)
+    func noRowYetMeansTheIslandKeepsItLikeTheDatabaseDefault() {
+        #expect(rows("[]") == .island)
     }
 
     @Test
-    func anUnknownStoredValueMeansTheIslandKeepsRinging() {
-        let defaults = UserDefaults(suiteName: UUID().uuidString)!
-        defaults.set("tablet", forKey: "mitama.meetingAlert.owner")
-        #expect(MeetingAlertOwnerSetting(defaults: defaults).owner == .island)
+    func anythingUnreadableIsNil() {
+        #expect(rows(#"[{"meeting_ringer":"tablet"}]"#) == nil)
+        #expect(rows(#"[{"meeting_ringer":null}]"#) == nil)
+        #expect(rows(#"[{"other":"mac"}]"#) == nil)
+        #expect(rows(#"{"meeting_ringer":"mac"}"#) == nil)
+        #expect(rows("not json") == nil)
+        #expect(rows("") == nil)
+    }
+
+    @Test
+    func theIslandRingsOnlyWhenItIsTheKnownOwner() {
+        #expect(MeetingRinger.islandMayRing(.island))
+        #expect(!MeetingRinger.islandMayRing(.mac))
+        #expect(!MeetingRinger.islandMayRing(.iphone))
+        #expect(!MeetingRinger.islandMayRing(nil))      // unreadable → quiet
     }
 }
