@@ -1037,3 +1037,20 @@
 "island.jarvis.running" = "依頼の結果を確認しています";
 "island.jarvis.done" = "完了・照合済み";
 "island.jarvis.failed" = "完了を確認できませんでした";
+
+/* Spoken requests (hold to talk) */
+"settings.mitama.section.voice" = "声で頼む";
+"settings.mitama.voice.enabled" = "声で mitama に頼む";
+"settings.mitama.voice.enabled.help" = "初期はオフです。ボタンを押している間だけ聞き、この Mac の中で文字にします。音は保存しません。";
+"settings.mitama.voice.hold" = "押して話す";
+"settings.mitama.voice.hold.button" = "押している間、話す";
+"settings.mitama.voice.release" = "放すと送ります";
+"settings.mitama.voice.status.off" = "声での依頼はオフです。";
+"settings.mitama.voice.status.listening" = "聞いています…";
+"settings.mitama.voice.status.heardNothing" = "聞き取れませんでした。";
+"settings.mitama.voice.status.sentMac" = "この Mac の mitama アプリに渡しました。そちらで「送る」を押してください。";
+"settings.mitama.voice.status.sentHub" = "mitama OS を開きました。1回押すと送ります。";
+"settings.mitama.voice.status.tooLong" = "長すぎます（4000字まで）。短くして、もう一度話してください。";
+"settings.mitama.voice.status.tooLongHeld" = "60秒で止めました。";
+"settings.mitama.voice.status.denied" = "システム設定で、マイクと音声認識を許可してください。";
+"settings.mitama.voice.status.unsupported" = "この Mac では、端末内の日本語認識を使えません。";

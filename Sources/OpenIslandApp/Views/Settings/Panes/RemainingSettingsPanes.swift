@@ -190,6 +190,7 @@ struct MitamaSettingsPane: View {
         SettingsPane(tab: .mitama) {
             scoreboardSection
             handoffSection
+            voiceSection
             Section(lang.t("settings.mitama.section.feed")) {
                 SettingsToggleRow(
                     title: lang.t("settings.general.mitamaFeed"),
@@ -336,6 +337,35 @@ struct MitamaSettingsPane: View {
             agents = await model.mitamaAgents()
             agentID = agents.first?.id ?? ""
         }
+    }
+
+    /// Ask mitama out loud: off until switched on, and it listens only while the button is held.
+    private var voiceSection: some View {
+        Section(lang.t("settings.mitama.section.voice")) {
+            SettingsToggleRow(
+                title: lang.t("settings.mitama.voice.enabled"),
+                help: lang.t("settings.mitama.voice.enabled.help"),
+                isOn: Binding(
+                    get: { model.voiceRequestSettings.isEnabled },
+                    set: { model.voiceRequestSettings.isEnabled = $0 }
+                )
+            )
+            if model.voiceRequestSettings.isEnabled {
+                SettingsRow(title: lang.t("settings.mitama.voice.hold"), help: model.voiceRequest.transcript.isEmpty ? nil : model.voiceRequest.transcript) {
+                    Text(model.voiceRequest.isListening ? lang.t("settings.mitama.voice.release") : lang.t("settings.mitama.voice.hold.button"))
+                        .padding(.horizontal, 12).padding(.vertical, 6)
+                        .background(model.voiceRequest.isListening ? Color.accentColor.opacity(0.35) : Color.secondary.opacity(0.15), in: Capsule())
+                        .onLongPressGesture(minimumDuration: 0, maximumDistance: 80, perform: {}, onPressingChanged: { down in
+                            if down { model.voiceRequest.press() } else { model.voiceRequest.release() }
+                        })
+                        .accessibilityAddTraits(.isButton)
+                }
+                if let key = model.voiceRequestStatusKey ?? model.voiceRequest.statusKey {
+                    Text(lang.t(key)).foregroundStyle(.secondary)
+                }
+            }
+        }
+        .onDisappear { model.voiceRequest.cancelAll() }
     }
 
     private func send() {

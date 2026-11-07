@@ -638,6 +638,11 @@ final class AppModel {
     @ObservationIgnored let idle = UserIdleWatcher()
     /// What is coming up, for the closed island's otherwise blank state.
     let calendar = CalendarWatcher()
+    let voiceRequestSettings = VoiceRequestSettings()
+    let meetingAlertOwner = MeetingAlertOwnerSetting()
+    let voiceRequest = VoiceRequestSession()
+    /// The last result of a spoken request, as a localization key the pane shows; nil clears it.
+    private(set) var voiceRequestStatusKey: String?
     /// The one countdown/Pomodoro/eye-break the app runs.
     let focusTimer = FocusTimerCoordinator()
     /// What you've recently copied. Off by default — see `ClipboardSettings`.
@@ -762,14 +767,42 @@ final class AppModel {
         return await workLog.enqueue(submission)
     }
 
-    /// Hands a spoken request to the signed-in Mac app (or the Hub if the app is not installed). The caller shows the
-    /// result: `.tooLong` and `.empty` mean nothing was opened and the owner must be told.
+    /// The Mac app's code requirement for the voice hand-off (bundle id `app.mitama.os.mac`). It comes from Info.plist
+    /// (`MitamaMacAppRequirement`); with none set the Mac path is never used and the Hub gets the request (fail closed).
+    private static var macAppRequirement: String? { Bundle.main.object(forInfoDictionaryKey: "MitamaMacAppRequirement") as? String }
+
+    nonisolated static let handoffStore = PendingHandoffStore()
+
+    /// Wires the hold-to-talk session to the hand-off (called once at launch).
+    func wireVoiceRequest() {
+        voiceRequest.onHeard = { [weak self] id, text in
+            guard let self else { return }
+            switch self.handOffVoice(utteranceID: id, text: text) {
+            case .mac: self.voiceRequestStatusKey = "settings.mitama.voice.status.sentMac"
+            case .hub: self.voiceRequestStatusKey = "settings.mitama.voice.status.sentHub"
+            case .tooLong: self.voiceRequestStatusKey = "settings.mitama.voice.status.tooLong"
+            case .empty: self.voiceRequestStatusKey = "settings.mitama.voice.status.heardNothing"
+            }
+        }
+    }
+
+    /// Hands a spoken request over. The utterance id was minted when recognition started and is kept until the
+    /// receipt is confirmed, so a resend is the same request. It opens the Mac app only after its bundle id and
+    /// signature were checked (`open(_:withApplicationAt:)` names that app), otherwise the Hub.
+    /// The caller shows the result: `.tooLong` and `.empty` mean nothing was opened and the owner must be told.
     @discardableResult
-    func handOffVoice(text: String) -> VoiceHandoff.Plan {
-        let installed = URL(string: "\(VoiceHandoff.macScheme)://request").flatMap { NSWorkspace.shared.urlForApplication(toOpen: $0) } != nil
-        let plan = VoiceHandoff.plan(text: text, macAppInstalled: installed)
+    func handOffVoice(utteranceID: String, text: String) -> VoiceHandoff.Plan {
+        guard let pending = Self.handoffStore.begin(utteranceID: utteranceID, text: text) else {
+            return text.trimmingCharacters(in: .whitespacesAndNewlines).count > VoiceHandoff.maxTextLength ? .tooLong(length: text.count) : .empty
+        }
+        let probe = URL(string: "\(VoiceHandoff.macScheme)://request")
+        let candidate = probe.flatMap { NSWorkspace.shared.urlForApplication(toOpen: $0) }
+        let app = RecipientAppCheck.verified(candidate, bundleID: "app.mitama.os.mac", requirement: Self.macAppRequirement)
+        let plan = VoiceHandoff.plan(pending, macAppVerified: app != nil)
         switch plan {
-        case .mac(let url), .hub(let url): NSWorkspace.shared.open(url)
+        case .mac(let url):
+            if let app { NSWorkspace.shared.open([url], withApplicationAt: app, configuration: NSWorkspace.OpenConfiguration()) }
+        case .hub(let url): NSWorkspace.shared.open(url)
         case .tooLong, .empty: break
         }
         return plan
@@ -1081,6 +1114,7 @@ final class AppModel {
         // Wired regardless of the setting below: the callback itself checks
         // `alertsWhenEventStarts` before doing anything, and the watcher only
         // ever calls it while it's actually running.
+        wireVoiceRequest()
         calendar.onEventStarted = { [weak self] current in
             self?.handleCalendarEventStarted(current)
         }
@@ -1713,7 +1747,7 @@ final class AppModel {
     /// ended meeting has to disappear from the body the instant `now`
     /// passes its `endsAt`, not only at the next five-minute refresh.
     private func liveClosedEventStarted(at now: Date) -> IslandClosedInputs.EventStarted? {
-        guard settings.display.alertsWhenEventStarts, let current = calendar.current(at: now) else { return nil }
+        guard settings.display.alertsWhenEventStarts, meetingAlertOwner.islandMayRing, let current = calendar.current(at: now) else { return nil }
         return IslandClosedInputs.EventStarted(
             title: current.title,
             startedAt: current.startsAt,
@@ -1727,7 +1761,7 @@ final class AppModel {
     /// watcher is running — the setting gate here is what actually decides
     /// whether the moment is worth announcing.
     private func handleCalendarEventStarted(_ current: UpcomingCalendarEvent.Current) {
-        guard settings.display.alertsWhenEventStarts else { return }
+        guard settings.display.alertsWhenEventStarts, meetingAlertOwner.islandMayRing else { return }
         NotificationSoundService.play(.eventStarting, settings: settings.sound)
         overlay.presentSneakPeek(
             IslandSneakPeek(

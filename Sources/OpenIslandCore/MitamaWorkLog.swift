@@ -131,15 +131,14 @@ public enum VoiceHandoff {
         case empty
     }
 
-    /// Where a spoken request goes, with fresh utterance and conversation ids (one per request).
-    public static func plan(text: String, macAppInstalled: Bool) -> Plan {
-        let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !cleaned.isEmpty else { return .empty }
-        guard cleaned.count <= maxTextLength else { return .tooLong(length: cleaned.count) }
-        let utterance = UUID().uuidString.lowercased()
-        let thread = UUID().uuidString.lowercased()
-        if macAppInstalled, let url = macURL(utteranceID: utterance, thread: thread, text: cleaned) { return .mac(url) }
-        if let url = url(utteranceID: utterance, thread: thread, text: cleaned) { return .hub(url) }
+    /// Where a spoken request goes. The ids come from the pending request (minted once at recognition, kept until the
+    /// receipt is confirmed); this never mints new ones, so a resend is the same request.
+    public static func plan(_ pending: PendingHandoff, macAppVerified: Bool) -> Plan {
+        let text = pending.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return .empty }
+        guard text.count <= maxTextLength else { return .tooLong(length: text.count) }
+        if macAppVerified, let link = macURL(utteranceID: pending.utteranceID, thread: pending.thread, text: text) { return .mac(link) }
+        if let link = Self.url(utteranceID: pending.utteranceID, thread: pending.thread, text: text) { return .hub(link) }
         return .empty
     }
 
