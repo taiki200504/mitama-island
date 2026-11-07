@@ -88,13 +88,90 @@ public struct MitamaAgent: Equatable, Sendable, Identifiable {
 }
 
 /// A piece of work handed to mitama from the island.
+///
+/// The id is minted once per submission (a lowercase UUIDv4) and kept: a retry hands over the same request id,
+/// so one hand-off is one request. It travels through the Mac app or the Hub, never a direct queue write (v305).
 public struct IslandJobSubmission: Equatable, Sendable {
+    public let id: String
     public let objective: String
     public let agentID: String
 
-    public init(objective: String, agentID: String) {
+    public init(id: String = UUID().uuidString.lowercased(), objective: String, agentID: String) {
+        self.id = id
         self.objective = objective
         self.agentID = agentID
+    }
+
+}
+
+/// A spoken request leaves the island as a link to the Hub's /ai: the island holds no owner login,
+/// so the Hub (which does) binds the ids and the owner presses once. The text rides in the fragment,
+/// which is never sent to a server.
+public enum VoiceHandoff {
+    public static let keyPrefix = "voice-utterance:"
+
+    /// The queue's objective limit. A longer request is told to the owner; it is never cut and never dropped silently.
+    public static let maxTextLength = 4000
+
+    public enum Plan: Equatable, Sendable {
+        /// Hand it to the signed-in Mac app on this machine (checked by code signature there).
+        case mac(URL)
+        /// The Mac app is not installed: open the Hub's /ai, which holds the login.
+        case hub(URL)
+        case tooLong(length: Int)
+        case empty
+    }
+
+    /// Where a spoken request goes. The ids come from the pending request (minted once at recognition, kept until the
+    /// receipt is confirmed); this never mints new ones, so a resend is the same request.
+    public static func plan(_ pending: PendingHandoff, macAppVerified: Bool) -> Plan {
+        let text = pending.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return .empty }
+        guard text.count <= maxTextLength else { return .tooLong(length: text.count) }
+        if macAppVerified, let link = macURL(utteranceID: pending.utteranceID, thread: pending.thread, text: text) { return .mac(link) }
+        if let link = Self.url(utteranceID: pending.utteranceID, thread: pending.thread, text: text) { return .hub(link) }
+        return .empty
+    }
+
+    public static func sourceRef(utteranceID: String) -> String { keyPrefix + utteranceID }
+
+    public static func url(utteranceID: String, thread: String, text: String, base: URL = MitamaOSURL.defaultURL) -> URL? {
+        let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard isUUIDv4(utteranceID), isUUIDv4(thread), !cleaned.isEmpty, cleaned.count <= maxTextLength else { return nil }
+        // The Hub reads the fragment with URLSearchParams, which turns `+` into a space. URLComponents leaves `+`
+        // unescaped, so every value is escaped by hand (encodeURIComponent's set) and the fragment is set as-is.
+        let fragment = [("utterance", utteranceID), ("thread", thread), ("text", cleaned)]
+            .map { "\($0.0)=\(Self.encodeComponent($0.1))" }
+            .joined(separator: "&")
+        var parts = URLComponents(url: base.appendingPathComponent("ai"), resolvingAgainstBaseURL: false)
+        parts?.percentEncodedFragment = fragment
+        return parts?.url
+    }
+
+    /// The same request handed to the signed-in Mac app on this machine (no network). The Mac app checks this app's
+    /// code signature before it reads the link, so only this app can use it.
+    public static let macScheme = "app.mitama.os.mac.voice"
+
+    public static func macURL(utteranceID: String, thread: String, text: String) -> URL? {
+        let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard isUUIDv4(utteranceID), isUUIDv4(thread), !cleaned.isEmpty, cleaned.count <= maxTextLength else { return nil }
+        let query = [("utterance", utteranceID), ("thread", thread), ("text", cleaned)]
+            .map { "\($0.0)=\(encodeComponent($0.1))" }
+            .joined(separator: "&")
+        return URL(string: "\(macScheme)://request?\(query)")
+    }
+
+    /// JavaScript's encodeURIComponent: everything but letters, digits and `-_.!~*'()` is percent-encoded.
+    static func encodeComponent(_ value: String) -> String {
+        var allowed = CharacterSet.alphanumerics
+        allowed.insert(charactersIn: "-_.!~*'()")
+        return value.addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
+    }
+
+    /// Lowercase UUIDv4 only (the form the DB check accepts).
+    public static func isUUIDv4(_ value: String) -> Bool {
+        guard value == value.lowercased(), let uuid = UUID(uuidString: value) else { return false }
+        return uuid.uuid.6 >> 4 == 4 && uuid.uuid.8 >> 6 == 0b10
     }
 }
 
@@ -143,18 +220,18 @@ public struct MitamaWorkLogClient: Sendable {
         )
     }
 
-    @discardableResult
-    public func enqueue(_ job: IslandJobSubmission) async -> Bool {
-        await post(
-            table: "mos_job_queue",
-            body: [
-                "id": UUID().uuidString,
-                "agent_id": job.agentID,
-                "source": "island",
-                "status": "enqueued",
-                "input": ["objective": job.objective],
-            ]
-        )
+    /// Who rings meeting-start alerts, read from the one place in the database. Nil when it cannot be read — including
+    /// when more than one row comes back. Filtered by the owner's id when this island knows it.
+    public func meetingRinger(ownerID: String? = MeetingRinger.configuredOwnerID()) async -> MeetingAlertOwner? {
+        var query = [
+            URLQueryItem(name: "select", value: "owner_id,meeting_ringer"),
+            URLQueryItem(name: "limit", value: "2"),
+        ]
+        if let ownerID { query.append(URLQueryItem(name: "owner_id", value: "eq.\(ownerID)")) }
+        guard let url = environment.endpoint("mos_owner_settings", queryItems: query),
+              let (data, response) = try? await session.data(for: environment.authorized(URLRequest(url: url))),
+              let status = (response as? HTTPURLResponse)?.statusCode, (200..<300).contains(status) else { return nil }
+        return MeetingRinger.owner(fromRows: data, ownerID: ownerID)
     }
 
     /// The agents mitama will actually run work for, newest first.

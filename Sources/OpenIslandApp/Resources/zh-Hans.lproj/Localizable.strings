@@ -1037,3 +1037,20 @@
 "island.jarvis.running" = "正在确认请求结果";
 "island.jarvis.done" = "已完成 · 已核对";
 "island.jarvis.failed" = "无法确认结果";
+
+/* Spoken requests (hold to talk) */
+"settings.mitama.section.voice" = "语音请求";
+"settings.mitama.voice.enabled" = "用语音拜托 mitama";
+"settings.mitama.voice.enabled.help" = "默认关闭。只在按住按钮时收听，在这台 Mac 上识别，不保存音频。";
+"settings.mitama.voice.hold" = "按住说话";
+"settings.mitama.voice.hold.button" = "按住说话";
+"settings.mitama.voice.release" = "松开发送";
+"settings.mitama.voice.status.off" = "语音请求已关闭。";
+"settings.mitama.voice.status.listening" = "正在收听…";
+"settings.mitama.voice.status.heardNothing" = "没有听到内容。";
+"settings.mitama.voice.status.sentMac" = "已交给这台 Mac 上的 mitama 应用。请在那里按“发送”。";
+"settings.mitama.voice.status.sentHub" = "已打开 mitama OS。按一次即可发送。";
+"settings.mitama.voice.status.tooLong" = "太长了（超过 4000 字）。请缩短后再试。";
+"settings.mitama.voice.status.tooLongHeld" = "已在 60 秒后停止。";
+"settings.mitama.voice.status.denied" = "请在系统设置中允许麦克风和语音识别。";
+"settings.mitama.voice.status.unsupported" = "这台 Mac 无法使用设备端日语识别。";
