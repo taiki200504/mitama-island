@@ -762,10 +762,13 @@ final class AppModel {
         return await workLog.activeAgents(since: .now.addingTimeInterval(-30 * 24 * 60 * 60))
     }
 
-    /// Puts a piece of work in mitama's queue.
+    /// Hands a piece of work to mitama the way a spoken request goes: the signed-in Mac app on this machine, or the Hub.
+    /// The island holds no owner login, so it never writes the job queue itself (v305). True when something was opened.
     func handToMitama(_ submission: IslandJobSubmission) async -> Bool {
-        guard let workLog = mitamaFeed.workLog else { return false }
-        return await workLog.enqueue(submission)
+        switch handOffVoice(utteranceID: submission.id, text: submission.objective) {
+        case .mac, .hub: true
+        case .tooLong, .empty: false
+        }
     }
 
     /// The Mac app's code requirement for the voice hand-off (bundle id `app.mitama.os.mac`). It comes from Info.plist

@@ -98,26 +98,38 @@ struct MitamaEnvironmentTests {
     }
 }
 
-/// E2b (mitama-os docs/mitama-v3/e2-voice-design.md §2): one hand-off is one queue row, however many times it is retried.
+/// The island holds a service key and no owner login, so it never writes the job queue (v305). Work handed over from the
+/// settings screen goes the way a spoken request does: the signed-in Mac app, or the Hub.
 struct MitamaHandoffIdentityTests {
+    private func sourceText(_ relative: String) throws -> String {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appending(path: "../../Sources").standardized
+        return try String(contentsOf: root.appending(path: relative), encoding: .utf8)
+    }
+
     @Test
-    func enqueueRetryReusesID() {
+    func aSubmissionKeepsOneLowercaseV4IdSoARetryIsTheSameRequest() {
         let job = IslandJobSubmission(objective: "朝の準備", agentID: "butler")
-        #expect(job.row["id"] as? String == job.row["id"] as? String)
-        // A retry sends the same submission; a new input is a new submission.
+        #expect(VoiceHandoff.isUUIDv4(job.id))
         #expect(IslandJobSubmission(objective: "朝の準備", agentID: "butler").id != job.id)
-        #expect(job.row["input"] as? [String: String] == ["objective": "朝の準備"])
+        #expect(IslandJobSubmission(id: "fixed", objective: "x", agentID: "a").id == "fixed")
     }
 
     @Test
-    func theInsertIgnoresADuplicateID() {
-        #expect(MitamaWorkLogClient.enqueuePreference == "resolution=ignore-duplicates")
+    func theWorkLogClientHasNoWayToWriteTheJobQueue() throws {
+        let text = try sourceText("OpenIslandCore/MitamaWorkLog.swift")
+        #expect(!text.contains("table: \"mos_job_queue\""))
+        #expect(!text.contains("enqueuePreference"))
+        #expect(!text.contains("func enqueue"))
+        #expect(!text.contains("var row: [String: Any]"))
     }
 
     @Test
-    func anExplicitIDIsKept() {
-        let job = IslandJobSubmission(id: "fixed", objective: "x", agentID: "a")
-        #expect(job.row["id"] as? String == "fixed")
+    func handingWorkToMitamaGoesThroughTheMacAppOrTheHub() throws {
+        let model = try sourceText("OpenIslandApp/AppModel.swift")
+        #expect(!model.contains("workLog.enqueue"))
+        let start = try #require(model.range(of: "func handToMitama"))
+        let body = String(model[start.lowerBound...].prefix(600))
+        #expect(body.contains("handOffVoice(utteranceID:"))
     }
 }
 

@@ -89,28 +89,19 @@ public struct MitamaAgent: Equatable, Sendable, Identifiable {
 
 /// A piece of work handed to mitama from the island.
 ///
-/// The row id is minted once per submission and kept: a retry after a timeout sends the same id,
-/// and the insert ignores a duplicate, so one hand-off is one queue row (E2b).
+/// The id is minted once per submission (a lowercase UUIDv4) and kept: a retry hands over the same request id,
+/// so one hand-off is one request. It travels through the Mac app or the Hub, never a direct queue write (v305).
 public struct IslandJobSubmission: Equatable, Sendable {
     public let id: String
     public let objective: String
     public let agentID: String
 
-    public init(id: String = UUID().uuidString, objective: String, agentID: String) {
+    public init(id: String = UUID().uuidString.lowercased(), objective: String, agentID: String) {
         self.id = id
         self.objective = objective
         self.agentID = agentID
     }
 
-    var row: [String: Any] {
-        [
-            "id": id,
-            "agent_id": agentID,
-            "source": "island",
-            "status": "enqueued",
-            "input": ["objective": objective],
-        ]
-    }
 }
 
 /// A spoken request leaves the island as a link to the Hub's /ai: the island holds no owner login,
@@ -228,13 +219,6 @@ public struct MitamaWorkLogClient: Sendable {
             body: action.body(now: now)
         )
     }
-
-    @discardableResult
-    public func enqueue(_ job: IslandJobSubmission) async -> Bool {
-        await post(table: "mos_job_queue", body: job.row, preferences: Self.enqueuePreference)
-    }
-
-    static let enqueuePreference = "resolution=ignore-duplicates"
 
     /// Who rings meeting-start alerts, read from the one place in the database. Nil when it cannot be read — including
     /// when more than one row comes back. Filtered by the owner's id when this island knows it.
