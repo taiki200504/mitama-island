@@ -4268,6 +4268,10 @@ final class AppModel {
         let restoreGrace = min(completedStaleThreshold.seconds, Self.restoredSessionVisibilityWindow)
         for session in rankedSessions {
             guard !session.isSubagentSession else { continue }
+            if session.isCodexAppSession,
+               session.isStaleCompletedForIsland(at: now, threshold: completedStaleThreshold.seconds) {
+                continue
+            }
 
             let isLive = session.isVisibleInIsland
             let isRecentlyActive = now.timeIntervalSince(session.islandActivityDate) < restoreGrace
