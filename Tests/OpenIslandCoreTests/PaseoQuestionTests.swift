@@ -30,11 +30,16 @@ private actor PaseoMock {
     var calls: [(String, ClaudeHookJSONValue)] = []
     var failAnswer = false
     var delayAnswer = false
+    var answerContinuation: CheckedContinuation<Void, Never>?
     var omitSuccess = false
     init() throws { snapshot = try paseoFixture(paseoSnapshot) }
     func replace(_ text: String) throws { snapshot = try paseoFixture(text) }
     func setFailure(_ value: Bool) { failAnswer = value }
     func setDelay() { delayAnswer = true }
+    func releaseAnswer() {
+        answerContinuation?.resume()
+        answerContinuation = nil
+    }
     func setOmittedSuccess() { omitSuccess = true }
     func call(_ name: String, _ input: ClaudeHookJSONValue) async throws -> ClaudeHookJSONValue {
         calls.append((name, input))
@@ -54,7 +59,9 @@ private actor PaseoMock {
             ])])])
         case "get_agent_status": return .object(["snapshot": snapshot])
         case "respond_to_permission":
-            if delayAnswer { try await Task.sleep(for: .milliseconds(80)) }
+            if delayAnswer {
+                await withCheckedContinuation { answerContinuation = $0 }
+            }
             if failAnswer { throw PaseoQuestionError.invalidResponse }
             return omitSuccess ? .object([:]) : .object(["success": .boolean(true)])
         default: throw PaseoQuestionError.invalidResponse
@@ -63,6 +70,41 @@ private actor PaseoMock {
 }
 
 struct PaseoQuestionTests {
+    @Test @MainActor func reusesPendingUntilRequestIDsChangeOrAgentDisappears() async throws {
+        let mock = try PaseoMock()
+        let coordinator = PaseoQuestionCoordinator(call: { try await mock.call($0, $1) })
+        await coordinator.poll()
+        let first = coordinator.requests
+        await coordinator.poll()
+        #expect(await mock.calls.filter { $0.0 == "get_agent_status" }.count == 1)
+        #expect(coordinator.requests == first)
+        try await mock.replace(paseoSnapshot.replacingOccurrences(of: "request-1", with: "request-2"))
+        await coordinator.poll()
+        #expect(await mock.calls.filter { $0.0 == "get_agent_status" }.count == 2)
+        #expect(coordinator.requests["native-session"]?.requestID == "request-2")
+        try await mock.replace(#"{"pendingPermissions":[]}"#)
+        await coordinator.poll()
+        #expect(coordinator.requests.isEmpty)
+        try await mock.replace(paseoSnapshot)
+        await coordinator.poll()
+        #expect(await mock.calls.filter { $0.0 == "get_agent_status" }.count == 3)
+    }
+
+    @Test @MainActor func stopAndResolutionInvalidatePendingCache() async throws {
+        let mock = try PaseoMock()
+        let coordinator = PaseoQuestionCoordinator(call: { try await mock.call($0, $1) })
+        await coordinator.poll()
+        coordinator.stop()
+        await coordinator.poll()
+        #expect(await mock.calls.filter { $0.0 == "get_agent_status" }.count == 2)
+        let question = try #require(coordinator.questions["native-session"])
+        try await coordinator.answer(sessionID: question.sessionID, promptID: question.prompt.id,
+                                     response: .init(answers: ["Which?": "One", "Why?": "Yes"]))
+        await coordinator.poll()
+        #expect(await mock.calls.filter { $0.0 == "get_agent_status" }.count == 4)
+        #expect(coordinator.requests["native-session"] != nil)
+    }
+
     @Test func decodesJSONAndSSEAndRejectsErrors() throws {
         let json = #"{"jsonrpc":"2.0","id":"123","result":{"structuredContent":{"agents":[]}}}"#
         let expected = try paseoFixture(#"{"agents":[]}"#)
@@ -247,7 +289,13 @@ struct PaseoQuestionTests {
             try await coordinator.answer(sessionID: question.sessionID, promptID: question.prompt.id, response: .init(answers: ["Which?": "Two", "Why?": "Yes"]))
             Issue.record("Duplicate send must throw")
         } catch {}
+        await coordinator.poll()
+        #expect(coordinator.questions[question.sessionID] == question)
+        await mock.releaseAnswer()
         try await first.value
+        let beforePoll = await mock.calls.filter { $0.0 == "get_agent_status" }.count
+        await coordinator.poll()
+        #expect(await mock.calls.filter { $0.0 == "get_agent_status" }.count == beforePoll + 1)
         let responses = await mock.calls.filter { $0.0 == "respond_to_permission" }
         #expect(responses.count == 1)
     }
