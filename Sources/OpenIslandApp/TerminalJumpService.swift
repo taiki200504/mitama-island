@@ -128,7 +128,8 @@ struct TerminalJumpService {
         TerminalAppDescriptor(
             displayName: "Zed",
             bundleIdentifier: "dev.zed.Zed",
-            aliases: ["zed"]
+            aliases: ["zed"],
+            alternateBundleIdentifiers: ["dev.zed.Zed-Preview"]
         ),
         TerminalAppDescriptor(
             displayName: "Zed Preview",

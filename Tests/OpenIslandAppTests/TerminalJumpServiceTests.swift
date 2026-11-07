@@ -682,8 +682,8 @@ final class TerminalJumpServiceTests: XCTestCase {
             )
         )
 
-        XCTAssertTrue(result == "Activated Zed. tmux pane targeting failed.")
-        XCTAssertTrue(openedArguments.values == [["-b", "dev.zed.Zed-Preview"]])
+        XCTAssertEqual(result, "Activated Zed. tmux pane targeting failed.")
+        XCTAssertEqual(openedArguments.values, [["-b", "dev.zed.Zed-Preview"]])
     }
 
     func testTmuxJumpDoesNotActivateStoppedApps() throws {
