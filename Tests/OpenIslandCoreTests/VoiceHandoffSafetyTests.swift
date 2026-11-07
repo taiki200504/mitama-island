@@ -134,6 +134,36 @@ struct MeetingRingerTests {
     }
 
     @Test
+    func moreThanOneRowIsNotTrustedSoNobodyRings() {
+        #expect(rows(#"[{"meeting_ringer":"island"},{"meeting_ringer":"mac"}]"#) == nil)
+        #expect(rows(#"[{"meeting_ringer":"island"},{"meeting_ringer":"island"}]"#) == nil)
+    }
+
+    @Test
+    func aRowForSomeoneElseIsNotTheOwners() {
+        let mine = "11111111-1111-4111-8111-111111111111"
+        let other = "22222222-2222-4222-8222-222222222222"
+        let ok = #"[{"owner_id":"\#(mine)","meeting_ringer":"mac"}]"#
+        let wrong = #"[{"owner_id":"\#(other)","meeting_ringer":"mac"}]"#
+        #expect(MeetingRinger.owner(fromRows: Data(ok.utf8), ownerID: mine) == .mac)
+        #expect(MeetingRinger.owner(fromRows: Data(wrong.utf8), ownerID: mine) == nil)
+        #expect(MeetingRinger.owner(fromRows: Data(#"[{"meeting_ringer":"mac"}]"#.utf8), ownerID: mine) == nil)   // no owner_id to check
+        #expect(MeetingRinger.owner(fromRows: Data("[]".utf8), ownerID: mine) == .island)
+    }
+
+    @Test
+    func theConfiguredOwnerIDIsALowercaseUUIDOrNothing() {
+        let defaults = UserDefaults(suiteName: UUID().uuidString)!
+        #expect(MeetingRinger.configuredOwnerID(environment: [:], defaults: defaults) == nil)
+        #expect(MeetingRinger.configuredOwnerID(environment: ["MITAMA_OWNER_ID": "11111111-1111-4111-8111-111111111111"], defaults: defaults) == "11111111-1111-4111-8111-111111111111")
+        #expect(MeetingRinger.configuredOwnerID(environment: ["MITAMA_OWNER_ID": "11111111-1111-4111-8111-111111111111&select=*"], defaults: defaults) == nil)
+        defaults.set("33333333-3333-4333-8333-333333333333", forKey: "mitama.ownerID")
+        #expect(MeetingRinger.configuredOwnerID(environment: [:], defaults: defaults) == "33333333-3333-4333-8333-333333333333")
+        defaults.set("not-a-uuid", forKey: "mitama.ownerID")
+        #expect(MeetingRinger.configuredOwnerID(environment: [:], defaults: defaults) == nil)
+    }
+
+    @Test
     func theIslandRingsOnlyWhenItIsTheKnownOwner() {
         #expect(MeetingRinger.islandMayRing(.island))
         #expect(!MeetingRinger.islandMayRing(.mac))

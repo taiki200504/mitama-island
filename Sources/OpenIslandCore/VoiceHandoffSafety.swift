@@ -70,13 +70,25 @@ public enum RecipientAppCheck {
 public enum MeetingAlertOwner: String, Sendable { case island, mac, iphone }
 
 public enum MeetingRinger {
-    /// The owner from the PostgREST rows. No row yet means it was never switched, so it is still the island (the
-    /// database's default). Anything unreadable or unknown is nil.
-    public static func owner(fromRows data: Data) -> MeetingAlertOwner? {
+    /// The owner from the PostgREST rows. Exactly one row is trusted: no row yet means it was never switched, so it is
+    /// still the island (the database's default); more than one row is not trusted at all. With `ownerID`, the row must
+    /// carry that owner_id. Anything unreadable or unknown is nil.
+    public static func owner(fromRows data: Data, ownerID: String? = nil) -> MeetingAlertOwner? {
         guard let rows = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else { return nil }
+        guard rows.count <= 1 else { return nil }
         guard let row = rows.first else { return .island }
+        if let ownerID, (row["owner_id"] as? String)?.lowercased() != ownerID { return nil }
         guard let value = row["meeting_ringer"] as? String else { return nil }
         return MeetingAlertOwner(rawValue: value)
+    }
+
+    /// The owner's id this island should filter on: `MITAMA_OWNER_ID` in the environment or `mitama.ownerID` in the
+    /// preferences — a lowercase UUID, or nothing (it goes into a query, so anything else is dropped).
+    public static func configuredOwnerID(environment: [String: String] = ProcessInfo.processInfo.environment, defaults: UserDefaults = .standard) -> String? {
+        for candidate in [environment["MITAMA_OWNER_ID"], defaults.string(forKey: "mitama.ownerID")] {
+            if let candidate, UUID(uuidString: candidate) != nil, candidate == candidate.lowercased() { return candidate }
+        }
+        return nil
     }
 
     /// A missed alert is better than the same meeting ringing on two devices.
