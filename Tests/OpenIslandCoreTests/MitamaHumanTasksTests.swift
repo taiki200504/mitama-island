@@ -2,94 +2,53 @@ import Foundation
 import Testing
 @testable import OpenIslandCore
 
+/// The island holds a service key and no owner login. It may read what is waiting; it must never answer a decision
+/// (v305: answers go through `mos_human_answer` with the owner's JWT — Hub, or the signed-in Mac app).
 struct MitamaHumanTasksTests {
     actor Mock {
-        let cas: String
         var requests: [URLRequest] = []
-        init(cas: String) { self.cas = cas }
         func send(_ request: URLRequest) -> (Data, URLResponse) {
             requests.append(request)
-            let isCAS = request.value(forHTTPHeaderField: "Prefer") == "return=representation"
-            return (Data((isCAS ? cas : "").utf8), HTTPURLResponse(url: request.url!, statusCode: isCAS ? 200 : 204, httpVersion: nil, headerFields: nil)!)
+            return (Data("[]".utf8), HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!)
         }
     }
-    private let id = "e546785d-4b72-45a0-819c-a5f160180501"
-    private var environment: MitamaEnvironment {
-        .init(url: URL(string: "https://example.supabase.co")!, apiKey: "test-key")
-    }
-    private func task(source: String? = nil) throws -> MitamaHumanTask {
-        let sourceField = source.map { ",\"source\":\"\($0)\"" } ?? ""
-        let data = Data("""
-        {"id":"\(id)","title":"依頼","body":"全文","resume_objective":"作業する","created_at":"2026-10-12T00:00:00Z"\(sourceField)}
-        """.utf8)
-        return try MitamaNotificationClient(environment: environment).decoder.decode(MitamaHumanTask.self, from: data)
+    private var environment: MitamaEnvironment { .init(url: URL(string: "https://example.supabase.co")!, apiKey: "test-key") }
+
+    private func sourceText(_ relative: String) throws -> String {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appending(path: "../../Sources").standardized
+        return try String(contentsOf: root.appending(path: relative), encoding: .utf8)
     }
 
-    @Test func casZeroDoesNotWriteAnythingElse() async throws {
-        let mock = Mock(cas: "[]")
+    @Test func listingWhatIsWaitingIsAReadOnlyGet() async throws {
+        let mock = Mock()
         let client = MitamaHumanTaskClient(environment: environment, transport: { await mock.send($0) })
-        #expect(try await client.answer(task(), with: .approve) == .alreadyAnswered)
+        _ = try await client.fetchOpen()
         let requests = await mock.requests
         #expect(requests.count == 1)
-        #expect(requests[0].httpMethod == "PATCH")
-        let query = URLComponents(url: requests[0].url!, resolvingAgainstBaseURL: false)!.queryItems!
-        #expect(query.contains(.init(name: "status", value: "eq.open")))
-        #expect(query.contains(.init(name: "id", value: "eq.\(id)")))
+        #expect(requests[0].httpMethod == "GET")
+        #expect(requests[0].url?.lastPathComponent == "mos_human_tasks")
     }
 
-    @Test func rejectRecordsDecisionWithoutEnqueue() async throws {
-        let mock = Mock(cas: "[{\"id\":\"\(id)\"}]")
-        let client = MitamaHumanTaskClient(environment: environment, transport: { await mock.send($0) })
-        #expect(try await client.answer(task(), with: .reject) == .answered(jobID: nil, warning: nil))
-        let requests = await mock.requests
-        #expect(requests.count == 2)
-        #expect(!requests.contains { $0.url!.lastPathComponent == "mos_job_queue" })
-        let decision = try JSONSerialization.jsonObject(with: requests[1].httpBody!) as! [String: String]
-        #expect(decision == ["topic": "依頼", "decision": "却下", "source": "island-decide"])
+    @Test func aTaskStillDecodesWithItsOrigin() throws {
+        let data = Data(#"{"id":"t","title":"依頼","body":"全文","resume_objective":"作業する","created_at":"2026-10-12T00:00:00Z","source":"dots-relay"}"#.utf8)
+        let task = try MitamaNotificationClient(environment: environment).decoder.decode(MitamaHumanTask.self, from: data)
+        #expect(task.originLabel == "Dots")
     }
 
-    @Test func approveEnqueuesExactlyOneRelayJobAndLinksIt() async throws {
-        let mock = Mock(cas: "[{\"id\":\"\(id)\"}]")
-        let client = MitamaHumanTaskClient(environment: environment, transport: { await mock.send($0) })
-        let result = try await client.answer(task(), with: .approve, now: Date(timeIntervalSince1970: 1000))
-        guard case .answered(let jobID, nil) = result else { Issue.record("回答が完了しませんでした"); return }
-        let requests = await mock.requests
-        let jobs = requests.filter { $0.url!.lastPathComponent == "mos_job_queue" }
-        #expect(jobs.count == 1)
-        let job = try JSONSerialization.jsonObject(with: jobs[0].httpBody!) as! [String: Any]
-        #expect(job["id"] as? String == jobID)
-        #expect(jobID?.hasPrefix("island-decide-1000000-") == true)
-        #expect(job["agent_id"] as? String == "relay")
-        #expect(job["source"] as? String == "hub")
-        #expect(job["status"] as? String == "enqueued")
-        #expect(job["priority"] as? Int == 5)
-        let input = job["input"] as! [String: String]
-        #expect(input == ["objective": "作業する\n\n本人の決定: 実行する", "human_task_id": id])
-        let resume = try JSONSerialization.jsonObject(with: requests.last!.httpBody!) as! [String: String]
-        #expect(resume["resume_job_id"] == jobID)
-        #expect(requests.count == 4)
+    @Test(arguments: ["OpenIslandCore/MitamaHumanTasks.swift", "OpenIslandApp/MitamaFeedCoordinator.swift", "OpenIslandApp/Views/Island/IslandSessionListView.swift"])
+    func noPathLetsTheIslandWriteADecisionOrQueueAJob(file: String) throws {
+        let text = try sourceText(file)
+        #expect(!text.contains("\"PATCH\""), "\(file)")
+        #expect(!text.contains("mos_ceo_decisions"), "\(file)")
+        #expect(!text.contains("mos_job_queue"), "\(file)")
+        #expect(!text.contains("island-decide"), "\(file)")
+        #expect(!text.contains("MitamaHumanAnswer"), "\(file)")
+        #expect(!text.contains("feed.answer"), "\(file)")
     }
 
-    @Test func dotsTaskIsAnsweredOnItsOwnSourceAndTagged() async throws {
-        let mock = Mock(cas: "[{\"id\":\"\(id)\"}]")
-        let client = MitamaHumanTaskClient(environment: environment, transport: { await mock.send($0) })
-        let dots = try task(source: "dots-relay")
-        #expect(dots.originLabel == "Dots")
-        _ = try await client.answer(dots, with: .approve, now: Date(timeIntervalSince1970: 1000))
-        let requests = await mock.requests
-        #expect(requests.first!.url!.query!.contains("source=eq.dots-relay"))
-        let job = try JSONSerialization.jsonObject(with: requests.first { $0.url!.lastPathComponent == "mos_job_queue" }!.httpBody!) as! [String: Any]
-        #expect((job["input"] as! [String: Any])["relay_source"] as? String == "dots-relay")
-    }
-
-    @Test func dotsRoutedApprovalDoesNotEnqueueRelay() async throws {
-        let mock = Mock(cas: "[{\"id\":\"\(id)\"}]")
-        let client = MitamaHumanTaskClient(environment: environment, transport: { await mock.send($0) })
-        var routed = try task()
-        routed.resumeAgent = "dots-dispatch"
-        let result = try await client.answer(routed, with: .approve, now: Date(timeIntervalSince1970: 1000))
-        guard case .answered(nil, _) = result else { Issue.record("ジョブを積まずに回答だけのはず"); return }
-        let requests = await mock.requests
-        #expect(!requests.contains { $0.url!.lastPathComponent == "mos_job_queue" })
+    @Test func theIslandOnlyOpensTheHubToAnswer() throws {
+        let view = try sourceText("OpenIslandApp/Views/Island/IslandSessionListView.swift")
+        #expect(view.contains("Hubで答える"))
+        #expect(view.contains("openMitamaHub(path: \"/decide\")"))
     }
 }

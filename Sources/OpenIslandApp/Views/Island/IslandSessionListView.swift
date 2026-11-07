@@ -125,7 +125,7 @@ extension IslandPanelView {
                             Text(verbatim: task.body ?? "（本文なし）")
                                 .textSelection(.enabled)
                                 .fixedSize(horizontal: false, vertical: true)
-                            // 「実行する」で積まれるのは本文ではなくこちら。押す前に同じ文面を見せる。
+                            // Hub で「実行する」と答えたときに積まれるのは本文ではなくこちら。先に同じ文面を見せる。
                             if task.resumeAgent != "dots-dispatch",
                                let objective = task.resumeObjective,
                                !objective.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -136,11 +136,8 @@ extension IslandPanelView {
                                     .textSelection(.enabled)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
-                            HStack {
-                                Button("実行する") { feed.answer(task, with: .approve) }
-                                Button("却下") { feed.answer(task, with: .reject) }
-                            }
-                            .disabled(feed.answeringHumanTaskIDs.contains(task.id))
+                            // 島は本人のログインを持たない。判断の回答はログイン済みの Hub で行う(v305)。
+                            Button("Hubで答える") { model.openMitamaHub(path: "/decide") }
                         }
                         .padding(.vertical, 8)
                     } label: {

@@ -20,24 +20,15 @@ public struct MitamaHumanTask: Decodable, Identifiable, Equatable, Sendable {
     }
 }
 
-public enum MitamaHumanAnswer: String, Encodable, Sendable {
-    case approve, reject
-    public var label: String { self == .approve ? "実行する" : "却下" }
-}
-
-/// Only typed answers, relay jobs and decision records can be written through this client.
+/// Reads what is waiting. The island has a service key and no owner login, so it never answers a decision (v305): the owner
+/// answers through `mos_human_answer` in the Hub, or in the signed-in Mac app.
 public struct MitamaHumanTaskClient: Sendable {
-    public enum Result: Equatable, Sendable {
-        case answered(jobID: String?, warning: String?)
-        case alreadyAnswered
-    }
     public enum ClientError: Error, LocalizedError {
-        case invalidTask, requestFailed(Int), partial(String)
+        case invalidRequest, requestFailed(Int)
         public var errorDescription: String? {
             switch self {
-            case .invalidTask: "依頼の形式が正しくありません"
+            case .invalidRequest: "依頼の形式が正しくありません"
             case .requestFailed(let status): "判断待ちの通信に失敗しました (HTTP \(status))"
-            case .partial(let message): message
             }
         }
     }
@@ -65,70 +56,11 @@ public struct MitamaHumanTaskClient: Sendable {
             .decoder.decode([MitamaHumanTask].self, from: data)
     }
 
-    private struct Answer: Encodable {
-        let status = "answered"
-        let answer_key: MitamaHumanAnswer
-        let answered_at: String
-    }
-    private struct RelayJob: Encodable {
-        struct Input: Encodable { let objective: String; let human_task_id: String; let relay_source: String? }
-        let id: String
-        let agent_id = "relay"
-        let source = "hub"
-        let status = "enqueued"
-        let priority = 5
-        let input: Input
-    }
-    private struct Resume: Encodable { let resume_job_id: String }
-    private struct Decision: Encodable {
-        let topic: String
-        let decision: String
-        let source = "island-decide"
-    }
-    private struct Row: Decodable { let id: String }
-
-    public func answer(_ task: MitamaHumanTask, with answer: MitamaHumanAnswer, now: Date = .now) async throws -> Result {
-        guard !task.id.isEmpty, task.id.count <= 200,
-              task.id.unicodeScalars.allSatisfy({ CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_:")).contains($0) }),
-              answer == .reject || !(task.resumeObjective ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            throw ClientError.invalidTask
-        }
-        let relaySource = task.source == "dots-relay" ? "dots-relay" : "grok-relay"
-        let filters: [URLQueryItem] = [.init(name: "id", value: "eq.\(task.id)"), .init(name: "source", value: "eq.\(relaySource)")]
-        let data = try await send(table: "mos_human_tasks", method: "PATCH",
-            filters: filters + [.init(name: "status", value: "eq.open"), .init(name: "select", value: "id")],
-            body: JSONEncoder().encode(Answer(answer_key: answer, answered_at: ISO8601DateFormatter().string(from: now))), representation: true)
-        let rows = try JSONDecoder().decode([Row].self, from: data)
-        guard !rows.isEmpty else { return .alreadyAnswered }
-        guard rows.count == 1, rows[0].id == task.id else { throw ClientError.invalidTask }
-
-        var warning: String?
-        do {
-            _ = try await send(table: "mos_ceo_decisions", method: "POST",
-                body: JSONEncoder().encode(Decision(topic: task.title, decision: answer.label)))
-        } catch { warning = "回答は保存済みですが、決定の記録に失敗しました" }
-        guard answer == .approve, task.resumeAgent != "dots-dispatch" else { return .answered(jobID: nil, warning: warning) }
-        let jobID = "island-decide-\(Int(now.timeIntervalSince1970 * 1000))-\(UUID().uuidString.prefix(8).lowercased())"
-        do {
-            _ = try await send(table: "mos_job_queue", method: "POST", body: JSONEncoder().encode(RelayJob(
-                id: jobID, input: .init(objective: task.resumeObjective! + "\n\n本人の決定: 実行する", human_task_id: task.id, relay_source: task.source == "dots-relay" ? relaySource : nil))))
-        } catch { throw ClientError.partial("回答は保存済みですが、実行ジョブを積めませんでした。Hubで確認してください") }
-        do {
-            _ = try await send(table: "mos_human_tasks", method: "PATCH", filters: filters,
-                body: JSONEncoder().encode(Resume(resume_job_id: jobID)))
-        } catch { warning = "実行ジョブは登録済みですが、依頼との紐付けに失敗しました。Hubで確認してください" }
-        return .answered(jobID: jobID, warning: warning)
-    }
-
-    private func send(table: String, method: String = "GET", filters: [URLQueryItem] = [], body: Data? = nil, representation: Bool = false) async throws -> Data {
-        guard method != "PATCH" || !filters.isEmpty,
-              let url = environment.endpoint(table, queryItems: filters) else { throw ClientError.invalidTask }
+    private func send(table: String, filters: [URLQueryItem] = []) async throws -> Data {
+        guard let url = environment.endpoint(table, queryItems: filters) else { throw ClientError.invalidRequest }
         var request = environment.authorized(URLRequest(url: url))
-        request.httpMethod = method
-        request.httpBody = body
+        request.httpMethod = "GET"
         request.timeoutInterval = 30
-        if body != nil { request.setValue("application/json", forHTTPHeaderField: "Content-Type") }
-        if representation { request.setValue("return=representation", forHTTPHeaderField: "Prefer") }
         let (data, response) = try await transport(request)
         guard let response = response as? HTTPURLResponse, (200..<300).contains(response.statusCode) else {
             throw ClientError.requestFailed((response as? HTTPURLResponse)?.statusCode ?? -1)
