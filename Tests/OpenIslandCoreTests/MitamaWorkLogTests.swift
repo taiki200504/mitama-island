@@ -139,6 +139,27 @@ struct VoiceHandoffURLTests {
         #expect(!fragment.contains("&確認"))
     }
 
+    /// Reads the fragment the way the Hub does (URLSearchParams: `+` is a space, then percent-decoding).
+    private func hubRead(_ fragment: String) -> [String: String] {
+        var result: [String: String] = [:]
+        for pair in fragment.split(separator: "&", omittingEmptySubsequences: false) {
+            let parts = pair.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
+            let decode = { (s: String) in s.replacingOccurrences(of: "+", with: " ").removingPercentEncoding ?? s }
+            result[decode(parts[0])] = decode(parts.count > 1 ? parts[1] : "")
+        }
+        return result
+    }
+
+    @Test(arguments: ["C++ の本", "a+b=c&d", "100%の確率", "今日の予定 を 確認", "x y+z", "😀 emoji + 記号 #?/", "it's (ok)!"])
+    func theHubReadsTheTextBackExactly(text: String) throws {
+        let url = try #require(VoiceHandoff.url(utteranceID: utterance, thread: thread, text: text))
+        let read = hubRead(try #require(url.fragment))
+        #expect(read["text"] == text)
+        #expect(read["utterance"] == utterance)
+        #expect(read["thread"] == thread)
+        #expect(!(url.absoluteString.contains("+")))
+    }
+
     @Test
     func refusesAnythingButLowercaseUUIDv4OrEmptyText() {
         #expect(VoiceHandoff.url(utteranceID: "u1", thread: thread, text: "x") == nil)

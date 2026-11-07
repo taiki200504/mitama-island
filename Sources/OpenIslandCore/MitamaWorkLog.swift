@@ -124,15 +124,21 @@ public enum VoiceHandoff {
     public static func url(utteranceID: String, thread: String, text: String, base: URL = MitamaOSURL.defaultURL) -> URL? {
         let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard isUUIDv4(utteranceID), isUUIDv4(thread), !cleaned.isEmpty else { return nil }
-        var query = URLComponents()
-        query.queryItems = [
-            URLQueryItem(name: "utterance", value: utteranceID),
-            URLQueryItem(name: "thread", value: thread),
-            URLQueryItem(name: "text", value: cleaned),
-        ]
+        // The Hub reads the fragment with URLSearchParams, which turns `+` into a space. URLComponents leaves `+`
+        // unescaped, so every value is escaped by hand (encodeURIComponent's set) and the fragment is set as-is.
+        let fragment = [("utterance", utteranceID), ("thread", thread), ("text", cleaned)]
+            .map { "\($0.0)=\(Self.encodeComponent($0.1))" }
+            .joined(separator: "&")
         var parts = URLComponents(url: base.appendingPathComponent("ai"), resolvingAgainstBaseURL: false)
-        parts?.percentEncodedFragment = query.percentEncodedQuery
+        parts?.percentEncodedFragment = fragment
         return parts?.url
+    }
+
+    /// JavaScript's encodeURIComponent: everything but letters, digits and `-_.!~*'()` is percent-encoded.
+    static func encodeComponent(_ value: String) -> String {
+        var allowed = CharacterSet.alphanumerics
+        allowed.insert(charactersIn: "-_.!~*'()")
+        return value.addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
     }
 
     /// Lowercase UUIDv4 only (the form the DB check accepts).
