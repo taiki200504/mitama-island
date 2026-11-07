@@ -75,3 +75,4 @@ This index is the repository map for humans and coding agents. Read these files 
 - [docs/mitama-os-window.md](./mitama-os-window.md) for the mitama OS window (Hub inside the island, ⌃⌥M). Sign in with the email code; Google sign-in is blocked inside embedded web views.
 - [docs/keep-awake-manual.md](./keep-awake-manual.md) for the manual keep-awake mode (Amphetamine-style), closed-lid restore and its sudoers scope.
 - [docs/live-transcription.md](./live-transcription.md) for ambient live transcription (on-device, written to live-in about every 45 seconds).
+- [docs/upstream-picks-2026-11-07.md](./upstream-picks-2026-11-07.md) for which upstream (open-vibe-island) PRs were cherry-picked or skipped on 2026-11-07, and why.
