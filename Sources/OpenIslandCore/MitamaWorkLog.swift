@@ -134,6 +134,19 @@ public enum VoiceHandoff {
         return parts?.url
     }
 
+    /// The same request handed to the signed-in Mac app on this machine (no network). The Mac app checks this app's
+    /// code signature before it reads the link, so only this app can use it.
+    public static let macScheme = "app.mitama.os.mac.voice"
+
+    public static func macURL(utteranceID: String, thread: String, text: String) -> URL? {
+        let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard isUUIDv4(utteranceID), isUUIDv4(thread), !cleaned.isEmpty else { return nil }
+        let query = [("utterance", utteranceID), ("thread", thread), ("text", cleaned)]
+            .map { "\($0.0)=\(encodeComponent($0.1))" }
+            .joined(separator: "&")
+        return URL(string: "\(macScheme)://request?\(query)")
+    }
+
     /// JavaScript's encodeURIComponent: everything but letters, digits and `-_.!~*'()` is percent-encoded.
     static func encodeComponent(_ value: String) -> String {
         var allowed = CharacterSet.alphanumerics

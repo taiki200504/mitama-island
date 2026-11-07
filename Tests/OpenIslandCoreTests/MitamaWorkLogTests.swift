@@ -168,6 +168,27 @@ struct VoiceHandoffURLTests {
         #expect(VoiceHandoff.url(utteranceID: utterance, thread: thread, text: "  ") == nil)
     }
 
+    /// The Mac app reads exactly these three fields; nothing else may ride along.
+    @Test
+    func theMacLinkCarriesOnlyTheThreeFieldsAndRoundTrips() throws {
+        let text = "C++ の本 & 100%"
+        let url = try #require(VoiceHandoff.macURL(utteranceID: utterance, thread: thread, text: text))
+        #expect(url.scheme == "app.mitama.os.mac.voice")
+        #expect(url.host == "request")
+        #expect(url.fragment == nil)
+        let items = Dictionary(uniqueKeysWithValues: (URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []).map { ($0.name, $0.value ?? "") })
+        #expect(Set(items.keys) == ["utterance", "thread", "text"])
+        #expect(items["text"] == text)
+        #expect(!url.absoluteString.contains("+"))
+    }
+
+    @Test
+    func theMacLinkRefusesABadIDOrEmptyText() {
+        #expect(VoiceHandoff.macURL(utteranceID: "u1", thread: thread, text: "x") == nil)
+        #expect(VoiceHandoff.macURL(utteranceID: utterance, thread: "t", text: "x") == nil)
+        #expect(VoiceHandoff.macURL(utteranceID: utterance, thread: thread, text: " ") == nil)
+    }
+
     @Test
     func theKeyIsNeverRaphaelsVoicePrefix() {
         #expect(VoiceHandoff.sourceRef(utteranceID: utterance) == "voice-utterance:\(utterance)")
