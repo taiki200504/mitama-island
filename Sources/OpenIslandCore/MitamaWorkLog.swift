@@ -119,11 +119,35 @@ public struct IslandJobSubmission: Equatable, Sendable {
 public enum VoiceHandoff {
     public static let keyPrefix = "voice-utterance:"
 
+    /// The queue's objective limit. A longer request is told to the owner; it is never cut and never dropped silently.
+    public static let maxTextLength = 4000
+
+    public enum Plan: Equatable, Sendable {
+        /// Hand it to the signed-in Mac app on this machine (checked by code signature there).
+        case mac(URL)
+        /// The Mac app is not installed: open the Hub's /ai, which holds the login.
+        case hub(URL)
+        case tooLong(length: Int)
+        case empty
+    }
+
+    /// Where a spoken request goes, with fresh utterance and conversation ids (one per request).
+    public static func plan(text: String, macAppInstalled: Bool) -> Plan {
+        let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty else { return .empty }
+        guard cleaned.count <= maxTextLength else { return .tooLong(length: cleaned.count) }
+        let utterance = UUID().uuidString.lowercased()
+        let thread = UUID().uuidString.lowercased()
+        if macAppInstalled, let url = macURL(utteranceID: utterance, thread: thread, text: cleaned) { return .mac(url) }
+        if let url = url(utteranceID: utterance, thread: thread, text: cleaned) { return .hub(url) }
+        return .empty
+    }
+
     public static func sourceRef(utteranceID: String) -> String { keyPrefix + utteranceID }
 
     public static func url(utteranceID: String, thread: String, text: String, base: URL = MitamaOSURL.defaultURL) -> URL? {
         let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard isUUIDv4(utteranceID), isUUIDv4(thread), !cleaned.isEmpty else { return nil }
+        guard isUUIDv4(utteranceID), isUUIDv4(thread), !cleaned.isEmpty, cleaned.count <= maxTextLength else { return nil }
         // The Hub reads the fragment with URLSearchParams, which turns `+` into a space. URLComponents leaves `+`
         // unescaped, so every value is escaped by hand (encodeURIComponent's set) and the fragment is set as-is.
         let fragment = [("utterance", utteranceID), ("thread", thread), ("text", cleaned)]
@@ -140,7 +164,7 @@ public enum VoiceHandoff {
 
     public static func macURL(utteranceID: String, thread: String, text: String) -> URL? {
         let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard isUUIDv4(utteranceID), isUUIDv4(thread), !cleaned.isEmpty else { return nil }
+        guard isUUIDv4(utteranceID), isUUIDv4(thread), !cleaned.isEmpty, cleaned.count <= maxTextLength else { return nil }
         let query = [("utterance", utteranceID), ("thread", thread), ("text", cleaned)]
             .map { "\($0.0)=\(encodeComponent($0.1))" }
             .joined(separator: "&")
@@ -155,7 +179,7 @@ public enum VoiceHandoff {
     }
 
     /// Lowercase UUIDv4 only (the form the DB check accepts).
-    static func isUUIDv4(_ value: String) -> Bool {
+    public static func isUUIDv4(_ value: String) -> Bool {
         guard value == value.lowercased(), let uuid = UUID(uuidString: value) else { return false }
         return uuid.uuid.6 >> 4 == 4 && uuid.uuid.8 >> 6 == 0b10
     }

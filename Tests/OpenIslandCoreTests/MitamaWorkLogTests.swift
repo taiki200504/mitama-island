@@ -189,6 +189,37 @@ struct VoiceHandoffURLTests {
         #expect(VoiceHandoff.macURL(utteranceID: utterance, thread: thread, text: " ") == nil)
     }
 
+    /// The ceiling matches the queue's objective (4000): a longer request is shown to the owner, never cut or dropped.
+    @Test
+    func theCeilingIs4000AndALongerRequestIsReportedWithItsLength() {
+        #expect(VoiceHandoff.maxTextLength == 4000)
+        let atLimit = String(repeating: "あ", count: 4000)
+        let over = String(repeating: "あ", count: 4001)
+        #expect(VoiceHandoff.macURL(utteranceID: utterance, thread: thread, text: atLimit) != nil)
+        #expect(VoiceHandoff.macURL(utteranceID: utterance, thread: thread, text: over) == nil)
+        #expect(VoiceHandoff.url(utteranceID: utterance, thread: thread, text: over) == nil)
+        #expect(VoiceHandoff.plan(text: over, macAppInstalled: true) == .tooLong(length: 4001))
+        if case .mac = VoiceHandoff.plan(text: atLimit, macAppInstalled: true) {} else { Issue.record("4000 字ちょうどは通る") }
+    }
+
+    @Test
+    func thePlanPrefersTheMacAppAndFallsBackToTheHub() throws {
+        guard case .mac(let mac) = VoiceHandoff.plan(text: "朝の準備", macAppInstalled: true) else { Issue.record("Mac アプリがあれば Mac へ"); return }
+        #expect(mac.scheme == VoiceHandoff.macScheme)
+        guard case .hub(let hub) = VoiceHandoff.plan(text: "朝の準備", macAppInstalled: false) else { Issue.record("無ければ Hub へ"); return }
+        #expect(hub.host == "mitama-os-hub.vercel.app")
+        #expect(VoiceHandoff.plan(text: "  ", macAppInstalled: true) == .empty)
+    }
+
+    @Test
+    func everyPlanMintsFreshLowercaseUUIDv4IDsAndTheMacLinkCarriesThem() throws {
+        guard case .mac(let a) = VoiceHandoff.plan(text: "x", macAppInstalled: true), case .mac(let b) = VoiceHandoff.plan(text: "x", macAppInstalled: true) else { Issue.record("mac"); return }
+        #expect(a != b)
+        let items = Dictionary(uniqueKeysWithValues: (URLComponents(url: a, resolvingAgainstBaseURL: false)?.queryItems ?? []).map { ($0.name, $0.value ?? "") })
+        #expect(VoiceHandoff.isUUIDv4(items["utterance"] ?? ""))
+        #expect(VoiceHandoff.isUUIDv4(items["thread"] ?? ""))
+    }
+
     @Test
     func theKeyIsNeverRaphaelsVoicePrefix() {
         #expect(VoiceHandoff.sourceRef(utteranceID: utterance) == "voice-utterance:\(utterance)")

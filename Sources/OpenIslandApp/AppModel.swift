@@ -762,6 +762,19 @@ final class AppModel {
         return await workLog.enqueue(submission)
     }
 
+    /// Hands a spoken request to the signed-in Mac app (or the Hub if the app is not installed). The caller shows the
+    /// result: `.tooLong` and `.empty` mean nothing was opened and the owner must be told.
+    @discardableResult
+    func handOffVoice(text: String) -> VoiceHandoff.Plan {
+        let installed = URL(string: "\(VoiceHandoff.macScheme)://request").flatMap { NSWorkspace.shared.urlForApplication(toOpen: $0) } != nil
+        let plan = VoiceHandoff.plan(text: text, macAppInstalled: installed)
+        switch plan {
+        case .mac(let url), .hub(let url): NSWorkspace.shared.open(url)
+        case .tooLong, .empty: break
+        }
+        return plan
+    }
+
     // MARK: - Watch Notification
 
     private static let watchNotificationEnabledKey = "watch.notification.enabled"
