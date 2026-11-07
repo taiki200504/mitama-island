@@ -757,9 +757,9 @@ final class AppModel {
     }
 
     /// Puts a piece of work in mitama's queue.
-    func handToMitama(objective: String, agentID: String) async -> Bool {
+    func handToMitama(_ submission: IslandJobSubmission) async -> Bool {
         guard let workLog = mitamaFeed.workLog else { return false }
-        return await workLog.enqueue(IslandJobSubmission(objective: objective, agentID: agentID))
+        return await workLog.enqueue(submission)
     }
 
     // MARK: - Watch Notification

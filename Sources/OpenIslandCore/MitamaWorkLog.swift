@@ -88,13 +88,57 @@ public struct MitamaAgent: Equatable, Sendable, Identifiable {
 }
 
 /// A piece of work handed to mitama from the island.
+///
+/// The row id is minted once per submission and kept: a retry after a timeout sends the same id,
+/// and the insert ignores a duplicate, so one hand-off is one queue row (E2b).
 public struct IslandJobSubmission: Equatable, Sendable {
+    public let id: String
     public let objective: String
     public let agentID: String
 
-    public init(objective: String, agentID: String) {
+    public init(id: String = UUID().uuidString, objective: String, agentID: String) {
+        self.id = id
         self.objective = objective
         self.agentID = agentID
+    }
+
+    var row: [String: Any] {
+        [
+            "id": id,
+            "agent_id": agentID,
+            "source": "island",
+            "status": "enqueued",
+            "input": ["objective": objective],
+        ]
+    }
+}
+
+/// A spoken request leaves the island as a link to the Hub's /ai: the island holds no owner login,
+/// so the Hub (which does) binds the ids and the owner presses once. The text rides in the fragment,
+/// which is never sent to a server.
+public enum VoiceHandoff {
+    public static let keyPrefix = "voice-utterance:"
+
+    public static func sourceRef(utteranceID: String) -> String { keyPrefix + utteranceID }
+
+    public static func url(utteranceID: String, thread: String, text: String, base: URL = MitamaOSURL.defaultURL) -> URL? {
+        let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard isUUIDv4(utteranceID), isUUIDv4(thread), !cleaned.isEmpty else { return nil }
+        var query = URLComponents()
+        query.queryItems = [
+            URLQueryItem(name: "utterance", value: utteranceID),
+            URLQueryItem(name: "thread", value: thread),
+            URLQueryItem(name: "text", value: cleaned),
+        ]
+        var parts = URLComponents(url: base.appendingPathComponent("ai"), resolvingAgainstBaseURL: false)
+        parts?.percentEncodedFragment = query.percentEncodedQuery
+        return parts?.url
+    }
+
+    /// Lowercase UUIDv4 only (the form the DB check accepts).
+    static func isUUIDv4(_ value: String) -> Bool {
+        guard value == value.lowercased(), let uuid = UUID(uuidString: value) else { return false }
+        return uuid.uuid.6 >> 4 == 4 && uuid.uuid.8 >> 6 == 0b10
     }
 }
 
@@ -145,17 +189,10 @@ public struct MitamaWorkLogClient: Sendable {
 
     @discardableResult
     public func enqueue(_ job: IslandJobSubmission) async -> Bool {
-        await post(
-            table: "mos_job_queue",
-            body: [
-                "id": UUID().uuidString,
-                "agent_id": job.agentID,
-                "source": "island",
-                "status": "enqueued",
-                "input": ["objective": job.objective],
-            ]
-        )
+        await post(table: "mos_job_queue", body: job.row, preferences: Self.enqueuePreference)
     }
+
+    static let enqueuePreference = "resolution=ignore-duplicates"
 
     /// The agents mitama will actually run work for, newest first.
     ///

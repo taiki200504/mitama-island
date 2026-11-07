@@ -171,6 +171,7 @@ struct MitamaSettingsPane: View {
     var model: AppModel
 
     @State private var objective = ""
+    @State private var pendingSubmission: IslandJobSubmission?
     @State private var agents: [MitamaAgent] = []
     @State private var agentID = ""
     @State private var handoffState: HandoffState = .idle
@@ -341,10 +342,15 @@ struct MitamaSettingsPane: View {
         let text = objective.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, !agentID.isEmpty else { return }
         handoffState = .sending
+        // The same input and agent keep one id until it is accepted, so a retry cannot make a second row.
+        if pendingSubmission?.objective != text || pendingSubmission?.agentID != agentID {
+            pendingSubmission = IslandJobSubmission(objective: text, agentID: agentID)
+        }
+        guard let submission = pendingSubmission else { return }
         Task {
-            let sent = await model.handToMitama(objective: text, agentID: agentID)
+            let sent = await model.handToMitama(submission)
             handoffState = sent ? .sent : .failed
-            if sent { objective = "" }
+            if sent { objective = ""; pendingSubmission = nil }
         }
     }
 

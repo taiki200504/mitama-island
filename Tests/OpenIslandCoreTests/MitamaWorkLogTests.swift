@@ -97,3 +97,58 @@ struct MitamaEnvironmentTests {
         )
     }
 }
+
+/// E2b (mitama-os docs/mitama-v3/e2-voice-design.md §2): one hand-off is one queue row, however many times it is retried.
+struct MitamaHandoffIdentityTests {
+    @Test
+    func enqueueRetryReusesID() {
+        let job = IslandJobSubmission(objective: "朝の準備", agentID: "butler")
+        #expect(job.row["id"] as? String == job.row["id"] as? String)
+        // A retry sends the same submission; a new input is a new submission.
+        #expect(IslandJobSubmission(objective: "朝の準備", agentID: "butler").id != job.id)
+        #expect(job.row["input"] as? [String: String] == ["objective": "朝の準備"])
+    }
+
+    @Test
+    func theInsertIgnoresADuplicateID() {
+        #expect(MitamaWorkLogClient.enqueuePreference == "resolution=ignore-duplicates")
+    }
+
+    @Test
+    func anExplicitIDIsKept() {
+        let job = IslandJobSubmission(id: "fixed", objective: "x", agentID: "a")
+        #expect(job.row["id"] as? String == "fixed")
+    }
+}
+
+/// The island has no owner login, so a spoken request is handed to the Hub's /ai, which holds the session.
+struct VoiceHandoffURLTests {
+    private let utterance = "6f1c2d3e-4a5b-4c6d-8e7f-0a1b2c3d4e5f"
+    private let thread = "0a1b2c3d-4e5f-4a6b-9c7d-8e9f0a1b2c3d"
+
+    @Test
+    func opensTheHubWithTheIDsInTheFragment() throws {
+        let url = try #require(VoiceHandoff.url(utteranceID: utterance, thread: thread, text: "今日の予定 & 確認"))
+        #expect(url.host == "mitama-os-hub.vercel.app")
+        #expect(url.path == "/ai")
+        #expect(url.query == nil)  // the text must not reach a server log
+        let fragment = try #require(url.fragment)
+        #expect(fragment.contains("utterance=\(utterance)"))
+        #expect(fragment.contains("thread=\(thread)"))
+        #expect(!fragment.contains(" "))
+        #expect(!fragment.contains("&確認"))
+    }
+
+    @Test
+    func refusesAnythingButLowercaseUUIDv4OrEmptyText() {
+        #expect(VoiceHandoff.url(utteranceID: "u1", thread: thread, text: "x") == nil)
+        #expect(VoiceHandoff.url(utteranceID: utterance.uppercased(), thread: thread, text: "x") == nil)
+        #expect(VoiceHandoff.url(utteranceID: utterance, thread: "not-a-uuid", text: "x") == nil)
+        #expect(VoiceHandoff.url(utteranceID: utterance, thread: thread, text: "  ") == nil)
+    }
+
+    @Test
+    func theKeyIsNeverRaphaelsVoicePrefix() {
+        #expect(VoiceHandoff.sourceRef(utteranceID: utterance) == "voice-utterance:\(utterance)")
+    }
+}
