@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import OpenIslandCore
 
@@ -114,6 +115,18 @@ extension IslandPanelView {
                     : V6Palette.paper.opacity(0.62)
             ) {
                 model.toggleSoundMuted()
+            }
+
+            // 新しい Mac のメニュー(mitama)を開く。メニューバーのアイコンがノッチの陰に隠れていても、ここから開ける。
+            // 新しいアプリが入っていない Mac では押しても何も起きないので、出さない。
+            if MitamaMenuLink.shouldOffer(applicationURL: NSWorkspace.shared.urlForApplication(toOpen: MitamaMenuLink.url)) {
+                headerIconButton(
+                    systemName: "circle.hexagongrid",
+                    tint: V6Palette.paper.opacity(0.62),
+                    accessibilityLabel: model.lang.t("island.header.mitamaMenu")
+                ) {
+                    NSWorkspace.shared.open(MitamaMenuLink.url)
+                }
             }
 
             headerIconButton(systemName: "gearshape.fill", tint: V6Palette.paper.opacity(0.62)) {

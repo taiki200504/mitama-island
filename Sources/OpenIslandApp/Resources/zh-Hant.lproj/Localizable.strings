@@ -187,6 +187,7 @@
 "island.recentSessions" = "最近的工作階段將保留在這裡，直到終端機重新開啟";
 "island.hint.installHooks" = "尚未安裝任何代理 hook，工作階段不會觸發事件 · 點擊設定";
 "island.header.timer" = "計時器";
+"island.header.mitamaMenu" = "打開 mitama 選單";
 "island.header.clipboard" = "剪貼簿";
 "island.header.nowPlaying" = "正在播放";
 

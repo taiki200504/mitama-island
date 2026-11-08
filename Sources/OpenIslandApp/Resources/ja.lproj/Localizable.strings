@@ -188,6 +188,7 @@
 "island.recentSessions" = "最近のセッションは、ターミナルを開き直すまでここに残ります";
 "island.hint.installHooks" = "フックが未導入です。このままではイベントを受け取れません。タップして設定します。";
 "island.header.timer" = "タイマー";
+"island.header.mitamaMenu" = "mitama のメニューを開く";
 "island.header.clipboard" = "クリップボード";
 "island.header.nowPlaying" = "再生中";
 

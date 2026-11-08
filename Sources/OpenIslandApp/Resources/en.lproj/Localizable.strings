@@ -187,6 +187,7 @@
 "island.recentSessions" = "Recent sessions are kept here until the terminal is open again";
 "island.hint.installHooks" = "No agent hooks installed — sessions won't surface events. Tap to set up.";
 "island.header.timer" = "Timer";
+"island.header.mitamaMenu" = "Open mitama menu";
 "island.header.clipboard" = "Clipboard";
 "island.header.nowPlaying" = "Now Playing";
 
