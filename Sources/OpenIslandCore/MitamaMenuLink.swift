@@ -7,4 +7,7 @@ import Foundation
 public enum MitamaMenuLink {
     public static let scheme = "app.mitama.os.mac.menu"
     public static let url = URL(string: "\(scheme)://open")!
+
+    /// 新しいアプリが入っていない Mac では、押しても何も起きない。入っているとき(リンクを開けるアプリが見つかったとき)だけボタンを出す。
+    public static func shouldOffer(applicationURL: URL?) -> Bool { applicationURL != nil }
 }

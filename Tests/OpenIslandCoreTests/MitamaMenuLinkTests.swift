@@ -10,4 +10,10 @@ struct MitamaMenuLinkTests {
         #expect(MitamaMenuLink.url.scheme == MitamaMenuLink.scheme)
         #expect(MitamaMenuLink.url.host == "open")
     }
+
+    @Test("the button is offered only when something can open the link")
+    func offerOnlyWhenInstalled() {
+        #expect(MitamaMenuLink.shouldOffer(applicationURL: nil) == false)
+        #expect(MitamaMenuLink.shouldOffer(applicationURL: URL(fileURLWithPath: "/Applications/MitamaMac.app")))
+    }
 }
