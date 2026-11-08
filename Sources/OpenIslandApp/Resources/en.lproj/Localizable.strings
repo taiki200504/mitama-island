@@ -1037,3 +1037,20 @@
 "island.jarvis.running" = "Checking the request's result";
 "island.jarvis.done" = "Done · verified";
 "island.jarvis.failed" = "Could not confirm the result";
+
+/* Spoken requests (hold to talk) */
+"settings.mitama.section.voice" = "Ask out loud";
+"settings.mitama.voice.enabled" = "Ask mitama by voice";
+"settings.mitama.voice.enabled.help" = "Off by default. Listens only while you hold the button, recognized on this Mac, nothing saved.";
+"settings.mitama.voice.hold" = "Hold to talk";
+"settings.mitama.voice.hold.button" = "Hold to talk";
+"settings.mitama.voice.release" = "Release to send";
+"settings.mitama.voice.status.off" = "Voice requests are off.";
+"settings.mitama.voice.status.listening" = "Listening…";
+"settings.mitama.voice.status.heardNothing" = "Nothing was heard.";
+"settings.mitama.voice.status.sentMac" = "Handed to the mitama app on this Mac. Press Send there.";
+"settings.mitama.voice.status.sentHub" = "Opened in mitama OS. Press once to send.";
+"settings.mitama.voice.status.tooLong" = "Too long (over 4000 characters). Shorten it and try again.";
+"settings.mitama.voice.status.tooLongHeld" = "Stopped after 60 seconds.";
+"settings.mitama.voice.status.denied" = "Allow the microphone and speech recognition in System Settings.";
+"settings.mitama.voice.status.unsupported" = "On-device Japanese recognition is not available on this Mac.";

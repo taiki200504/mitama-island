@@ -97,3 +97,134 @@ struct MitamaEnvironmentTests {
         )
     }
 }
+
+/// The island holds a service key and no owner login, so it never writes the job queue (v305). Work handed over from the
+/// settings screen goes the way a spoken request does: the signed-in Mac app, or the Hub.
+struct MitamaHandoffIdentityTests {
+    private func sourceText(_ relative: String) throws -> String {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appending(path: "../../Sources").standardized
+        return try String(contentsOf: root.appending(path: relative), encoding: .utf8)
+    }
+
+    @Test
+    func aSubmissionKeepsOneLowercaseV4IdSoARetryIsTheSameRequest() {
+        let job = IslandJobSubmission(objective: "朝の準備", agentID: "butler")
+        #expect(VoiceHandoff.isUUIDv4(job.id))
+        #expect(IslandJobSubmission(objective: "朝の準備", agentID: "butler").id != job.id)
+        #expect(IslandJobSubmission(id: "fixed", objective: "x", agentID: "a").id == "fixed")
+    }
+
+    @Test
+    func theWorkLogClientHasNoWayToWriteTheJobQueue() throws {
+        let text = try sourceText("OpenIslandCore/MitamaWorkLog.swift")
+        #expect(!text.contains("table: \"mos_job_queue\""))
+        #expect(!text.contains("enqueuePreference"))
+        #expect(!text.contains("func enqueue"))
+        #expect(!text.contains("var row: [String: Any]"))
+    }
+
+    @Test
+    func handingWorkToMitamaGoesThroughTheMacAppOrTheHub() throws {
+        let model = try sourceText("OpenIslandApp/AppModel.swift")
+        #expect(!model.contains("workLog.enqueue"))
+        let start = try #require(model.range(of: "func handToMitama"))
+        let body = String(model[start.lowerBound...].prefix(600))
+        #expect(body.contains("handOffVoice(utteranceID:"))
+    }
+}
+
+/// The island has no owner login, so a spoken request is handed to the Hub's /ai, which holds the session.
+struct VoiceHandoffURLTests {
+    private let utterance = "6f1c2d3e-4a5b-4c6d-8e7f-0a1b2c3d4e5f"
+    private let thread = "0a1b2c3d-4e5f-4a6b-9c7d-8e9f0a1b2c3d"
+
+    @Test
+    func opensTheHubWithTheIDsInTheFragment() throws {
+        let url = try #require(VoiceHandoff.url(utteranceID: utterance, thread: thread, text: "今日の予定 & 確認"))
+        #expect(url.host == "mitama-os-hub.vercel.app")
+        #expect(url.path == "/ai")
+        #expect(url.query == nil)  // the text must not reach a server log
+        let fragment = try #require(url.fragment)
+        #expect(fragment.contains("utterance=\(utterance)"))
+        #expect(fragment.contains("thread=\(thread)"))
+        #expect(!fragment.contains(" "))
+        #expect(!fragment.contains("&確認"))
+    }
+
+    /// Reads the fragment the way the Hub does (URLSearchParams: `+` is a space, then percent-decoding).
+    private func hubRead(_ fragment: String) -> [String: String] {
+        var result: [String: String] = [:]
+        for pair in fragment.split(separator: "&", omittingEmptySubsequences: false) {
+            let parts = pair.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false).map(String.init)
+            let decode = { (s: String) in s.replacingOccurrences(of: "+", with: " ").removingPercentEncoding ?? s }
+            result[decode(parts[0])] = decode(parts.count > 1 ? parts[1] : "")
+        }
+        return result
+    }
+
+    @Test(arguments: ["C++ の本", "a+b=c&d", "100%の確率", "今日の予定 を 確認", "x y+z", "😀 emoji + 記号 #?/", "it's (ok)!"])
+    func theHubReadsTheTextBackExactly(text: String) throws {
+        let url = try #require(VoiceHandoff.url(utteranceID: utterance, thread: thread, text: text))
+        let read = hubRead(try #require(url.fragment))
+        #expect(read["text"] == text)
+        #expect(read["utterance"] == utterance)
+        #expect(read["thread"] == thread)
+        #expect(!(url.absoluteString.contains("+")))
+    }
+
+    @Test
+    func refusesAnythingButLowercaseUUIDv4OrEmptyText() {
+        #expect(VoiceHandoff.url(utteranceID: "u1", thread: thread, text: "x") == nil)
+        #expect(VoiceHandoff.url(utteranceID: utterance.uppercased(), thread: thread, text: "x") == nil)
+        #expect(VoiceHandoff.url(utteranceID: utterance, thread: "not-a-uuid", text: "x") == nil)
+        #expect(VoiceHandoff.url(utteranceID: utterance, thread: thread, text: "  ") == nil)
+    }
+
+    /// The Mac app reads exactly these three fields; nothing else may ride along.
+    @Test
+    func theMacLinkCarriesOnlyTheThreeFieldsAndRoundTrips() throws {
+        let text = "C++ の本 & 100%"
+        let url = try #require(VoiceHandoff.macURL(utteranceID: utterance, thread: thread, text: text))
+        #expect(url.scheme == "app.mitama.os.mac.voice")
+        #expect(url.host == "request")
+        #expect(url.fragment == nil)
+        let items = Dictionary(uniqueKeysWithValues: (URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []).map { ($0.name, $0.value ?? "") })
+        #expect(Set(items.keys) == ["utterance", "thread", "text"])
+        #expect(items["text"] == text)
+        #expect(!url.absoluteString.contains("+"))
+    }
+
+    @Test
+    func theMacLinkRefusesABadIDOrEmptyText() {
+        #expect(VoiceHandoff.macURL(utteranceID: "u1", thread: thread, text: "x") == nil)
+        #expect(VoiceHandoff.macURL(utteranceID: utterance, thread: "t", text: "x") == nil)
+        #expect(VoiceHandoff.macURL(utteranceID: utterance, thread: thread, text: " ") == nil)
+    }
+
+    /// The ceiling matches the queue's objective (4000): a longer request is shown to the owner, never cut or dropped.
+    @Test
+    func theCeilingIs4000AndALongerRequestIsReportedWithItsLength() {
+        #expect(VoiceHandoff.maxTextLength == 4000)
+        let atLimit = String(repeating: "あ", count: 4000)
+        let over = String(repeating: "あ", count: 4001)
+        #expect(VoiceHandoff.macURL(utteranceID: utterance, thread: thread, text: atLimit) != nil)
+        #expect(VoiceHandoff.macURL(utteranceID: utterance, thread: thread, text: over) == nil)
+        #expect(VoiceHandoff.url(utteranceID: utterance, thread: thread, text: over) == nil)
+        #expect(VoiceHandoff.plan(PendingHandoff(utteranceID: utterance, thread: thread, text: over), macAppVerified: true) == .tooLong(length: 4001))
+        if case .mac = VoiceHandoff.plan(PendingHandoff(utteranceID: utterance, thread: thread, text: atLimit), macAppVerified: true) {} else { Issue.record("4000 字ちょうどは通る") }
+    }
+
+    @Test
+    func thePlanPrefersTheMacAppAndFallsBackToTheHub() throws {
+        guard case .mac(let mac) = VoiceHandoff.plan(PendingHandoff(utteranceID: utterance, thread: thread, text: "朝の準備"), macAppVerified: true) else { Issue.record("Mac アプリがあれば Mac へ"); return }
+        #expect(mac.scheme == VoiceHandoff.macScheme)
+        guard case .hub(let hub) = VoiceHandoff.plan(PendingHandoff(utteranceID: utterance, thread: thread, text: "朝の準備"), macAppVerified: false) else { Issue.record("無ければ Hub へ"); return }
+        #expect(hub.host == "mitama-os-hub.vercel.app")
+        #expect(VoiceHandoff.plan(PendingHandoff(utteranceID: utterance, thread: thread, text: "  "), macAppVerified: true) == .empty)
+    }
+
+    @Test
+    func theKeyIsNeverRaphaelsVoicePrefix() {
+        #expect(VoiceHandoff.sourceRef(utteranceID: utterance) == "voice-utterance:\(utterance)")
+    }
+}

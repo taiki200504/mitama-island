@@ -26,7 +26,6 @@ final class MitamaFeedCoordinator {
     private static let maxPollInterval: TimeInterval = 10 * 60
 
     private(set) var humanTasks: [MitamaHumanTask] = []
-    private(set) var answeringHumanTaskIDs: Set<String> = []
     private(set) var humanTaskMessage: String?
     @ObservationIgnored private var humanTaskClient: MitamaHumanTaskClient?
 
@@ -189,25 +188,6 @@ final class MitamaFeedCoordinator {
             // Back off instead of hammering: the usual failure here is being
             // offline, and that can last hours.
             currentInterval = min(currentInterval * 2, Self.maxPollInterval)
-        }
-    }
-
-    func answer(_ task: MitamaHumanTask, with answer: MitamaHumanAnswer) {
-        guard let humanTaskClient, answeringHumanTaskIDs.insert(task.id).inserted else { return }
-        humanTaskMessage = nil
-        Task {
-            defer { answeringHumanTaskIDs.remove(task.id) }
-            do {
-                switch try await humanTaskClient.answer(task, with: answer) {
-                case .alreadyAnswered:
-                    humanTaskMessage = "ほかで回答済み"
-                case .answered(_, let warning):
-                    humanTaskMessage = warning ?? "回答しました：\(answer.label)"
-                }
-                humanTasks.removeAll { $0.id == task.id }
-            } catch {
-                humanTaskMessage = error.localizedDescription
-            }
         }
     }
 

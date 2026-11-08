@@ -121,9 +121,9 @@ cat > "$bundle_dir/Contents/Info.plist" <<EOF
     <key>NSBluetoothAlwaysUsageDescription</key>
     <string>Movement mode disconnects and restores only your paired OpenComm2 on this Mac.</string>
     <key>NSMicrophoneUsageDescription</key>
-    <string>Open Island uses the microphone in two ways. Held shortcut: it hears a spoken yes or no for a request an agent is waiting on, recognized on this Mac and not saved. Earshot, which is off until you turn it on in Settings: it keeps the microphone open and writes what it hears to files on this Mac, which are transcribed locally and deleted on a timer. Nothing is sent from the app.</string>
+    <string>Open Island uses the microphone in two ways. Held shortcut: it hears a spoken yes or no for a request an agent is waiting on, recognized on this Mac and not saved. Earshot, which is off until you turn it on in Settings: it keeps the microphone open and writes what it hears to files on this Mac, which are transcribed locally and deleted on a timer. Nothing is sent from the app. 声で mitama に頼むときは、ボタンを押している間だけ聞き、音は保存しません。</string>
     <key>NSSpeechRecognitionUsageDescription</key>
-    <string>Speech is recognized on this Mac so a waiting request can be answered out loud. Nothing is saved or sent.</string>
+    <string>話した日本語を、この Mac の中だけで文字にします（待っている確認への声の返事と、mitama への声の依頼）。音は保存も送信もしません。</string>
     <key>NSCalendarsFullAccessUsageDescription</key>
     <string>Open Island reads your calendar so the closed island can say what is coming up next. Nothing is written, saved, or sent.</string>
     <key>NSCalendarsUsageDescription</key>
