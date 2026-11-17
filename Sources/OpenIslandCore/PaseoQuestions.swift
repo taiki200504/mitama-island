@@ -251,12 +251,15 @@ public final class PaseoQuestionCoordinator {
             pendingCache = pendingCache.filter { requestIDs[$0.key] == $0.value.ids && !sending.contains($0.key) }
             var found = requests.filter { sending.contains($0.value.binding.agentID) }
             var ambiguous: Set<String> = []
+            var statusSnapshots: [String: ClaudeHookJSONValue] = [:]
             for agentID in requestIDs.keys.sorted() {
                 try Task.checkCancellation()
                 guard !sending.contains(agentID), let ids = requestIDs[agentID] else { continue }
                 let binding: PaseoAgentBinding
                 var pending: PaseoPendingRequest
+                // Escalation labels can change without a new permission request ID.
                 if let cached = pendingCache[agentID],
+                   !(cached.pending.permission != nil && cached.pending.binding.parentAgentID != nil),
                    bindings[cached.pending.sessionID] == cached.pending.binding,
                    requests[cached.pending.sessionID] != nil {
                     pending = cached.pending
@@ -264,15 +267,14 @@ public final class PaseoQuestionCoordinator {
                 } else {
                     pendingCache.removeValue(forKey: agentID)
                     let revision = cacheRevision
-                    let status = try await call("get_agent_status", .object(["agentId": .string(agentID)]))
+                    let snapshot = try await statusSnapshot(agentID: agentID, snapshots: &statusSnapshots)
                     guard generation == lifecycleGeneration else { return }
-                    guard let snapshot = status.paseoObject?["snapshot"]?.paseoObject,
-                          let currentBinding = Self.binding(snapshot: snapshot, agentID: agentID, aliases: providerAliases) else { throw PaseoQuestionError.invalidResponse }
+                    guard let currentBinding = Self.binding(snapshot: snapshot, agentID: agentID, aliases: providerAliases) else { throw PaseoQuestionError.invalidResponse }
                     binding = currentBinding
                     if snapshot["pendingPermissions"]?.paseoArray?.isEmpty == true { sessionsWithoutPending.insert(binding.sessionID) }
                     else { sessionsWithoutPending.remove(binding.sessionID) }
                     guard let currentPending = Self.pending(snapshot: snapshot, binding: binding) else {
-                        await updateDelegation(binding)
+                        await updateDelegation(binding, snapshots: &statusSnapshots)
                         guard generation == lifecycleGeneration else { return }
                         bindings[binding.sessionID] = binding
                         continue
@@ -282,7 +284,7 @@ public final class PaseoQuestionCoordinator {
                         pendingCache[agentID] = (ids, pending)
                     }
                 }
-                await updateDelegation(binding)
+                await updateDelegation(binding, isPermission: pending.permission != nil, snapshots: &statusSnapshots)
                 guard generation == lifecycleGeneration else { return }
                 bindings[binding.sessionID] = binding
                 if pending.question != nil && parentSessionIDs[binding.sessionID] == nil {
@@ -295,6 +297,13 @@ public final class PaseoQuestionCoordinator {
                     bindings.removeValue(forKey: binding.sessionID)
                     ambiguous.insert(binding.sessionID)
                     continue
+                }
+                if var permission = pending.permission,
+                   let parentID = binding.parentAgentID, parentID != binding.agentID {
+                    let heading = await approvalHeading(for: pending, snapshots: &statusSnapshots)
+                    guard generation == lifecycleGeneration else { return }
+                    permission.summary = heading + "\n" + permission.summary
+                    pending.permission = permission
                 }
                 if let old = requests[binding.sessionID], old.requestID == pending.requestID,
                    old.originalRequest == pending.originalRequest {
@@ -347,14 +356,15 @@ public final class PaseoQuestionCoordinator {
         guard let agents = result.paseoObject?["agents"]?.paseoArray else { throw PaseoQuestionError.invalidResponse }
         var matches: [String: PaseoAgentBinding] = [:]
         var ambiguous: Set<String> = []
+        var statusSnapshots: [String: ClaudeHookJSONValue] = [:]
         for agent in agents {
             try Task.checkCancellation()
             guard let id = agent.paseoObject?["id"]?.paseoString else { continue }
-            let status = try await call("get_agent_status", .object(["agentId": .string(id)]))
-            guard let snapshot = status.paseoObject?["snapshot"]?.paseoObject,
-                  let binding = Self.binding(snapshot: snapshot, agentID: id, aliases: providerAliases), sessionIDs.contains(binding.sessionID) else { continue }
+            let snapshot = try await statusSnapshot(agentID: id, snapshots: &statusSnapshots)
+            guard let binding = Self.binding(snapshot: snapshot, agentID: id, aliases: providerAliases), sessionIDs.contains(binding.sessionID) else { continue }
             if matches[binding.sessionID] != nil { ambiguous.insert(binding.sessionID); continue }
-            await updateDelegation(binding)
+            await updateDelegation(binding, isPermission: Self.pending(snapshot: snapshot, binding: binding)?.permission != nil,
+                                   snapshots: &statusSnapshots)
             matches[binding.sessionID] = binding
             if snapshot["pendingPermissions"]?.paseoArray?.isEmpty == true { sessionsWithoutPending.insert(binding.sessionID) }
             else { sessionsWithoutPending.remove(binding.sessionID) }
@@ -366,13 +376,57 @@ public final class PaseoQuestionCoordinator {
         return matches
     }
 
-    /// A child remains actionable internally; its existing parent owns its permission workflow.
-    private func updateDelegation(_ binding: PaseoAgentBinding) async {
+    private func statusSnapshot(agentID: String, snapshots: inout [String: ClaudeHookJSONValue]) async throws -> [String: ClaudeHookJSONValue] {
+        if let cached = snapshots[agentID] {
+            guard let snapshot = cached.paseoObject else { throw PaseoQuestionError.invalidResponse }
+            return snapshot
+        }
+        // Also remember failed lookups so siblings never repeat them within a poll.
+        snapshots[agentID] = .null
+        let result = try await call("get_agent_status", .object(["agentId": .string(agentID)]))
+        guard let snapshot = result.paseoObject?["snapshot"]?.paseoObject else { throw PaseoQuestionError.invalidResponse }
+        snapshots[agentID] = .object(snapshot)
+        return snapshot
+    }
+
+    private func approvalHeading(for pending: PaseoPendingRequest, snapshots: inout [String: ClaudeHookJSONValue]) async -> String {
+        func title(_ value: String?, agentID: String) -> String {
+            let title = value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            return title.isEmpty || title == "Paseo" ? String(agentID.prefix(8)) : title
+        }
+        var ancestors: [String] = []
+        var seen: Set<String> = [pending.binding.agentID]
+        var parentID = pending.binding.parentAgentID
+        while let id = parentID, ancestors.count < 3, seen.insert(id).inserted {
+            if let parent = bindings.values.first(where: { $0.agentID == id }) {
+                ancestors.append(title(parent.title, agentID: id))
+                parentID = parent.parentAgentID
+            } else if let snapshot = try? await statusSnapshot(agentID: id, snapshots: &snapshots),
+                      snapshot["id"]?.paseoString == id {
+                ancestors.append(title(snapshot["title"]?.paseoString, agentID: id))
+                parentID = snapshot["labels"]?.paseoObject?["paseo.parent-agent-id"]?.paseoString?.trimmingCharacters(in: .whitespacesAndNewlines)
+                if parentID?.isEmpty == true { parentID = nil }
+                if let parent = Self.binding(snapshot: snapshot, agentID: id, aliases: providerAliases) {
+                    bindings[parent.sessionID] = parent
+                }
+            } else {
+                ancestors.append(title(nil, agentID: id))
+                break
+            }
+        }
+        let escalated = snapshots[pending.binding.agentID]?.paseoObject?["labels"]?.paseoObject?["approval.escalate"]?.paseoString == pending.requestID
+        let prefix = escalated ? "親が本人へ上げた: " : "子の承認: "
+        let lineage = ancestors.isEmpty ? "" : "（親: \(ancestors.joined(separator: " ← "))）"
+        return prefix + title(pending.binding.title, agentID: pending.binding.agentID) + lineage
+    }
+
+    /// Questions are forwarded to their parent; permissions stay directly actionable.
+    private func updateDelegation(_ binding: PaseoAgentBinding, isPermission: Bool = false,
+                                  snapshots: inout [String: ClaudeHookJSONValue]) async {
         var delegated = false
         parentSessionIDs.removeValue(forKey: binding.sessionID)
-        if let parentID = binding.parentAgentID, parentID != binding.agentID,
-           let result = try? await call("get_agent_status", .object(["agentId": .string(parentID)])),
-           let snapshot = result.paseoObject?["snapshot"]?.paseoObject {
+        if !isPermission, let parentID = binding.parentAgentID, parentID != binding.agentID,
+           let snapshot = try? await statusSnapshot(agentID: parentID, snapshots: &snapshots) {
             delegated = Self.parentCanHandle(snapshot: snapshot, parentID: parentID)
             if delegated, let parent = Self.binding(snapshot: snapshot, agentID: parentID, aliases: providerAliases), parent.sessionID != binding.sessionID {
                 bindings[parent.sessionID] = parent
@@ -395,7 +449,7 @@ public final class PaseoQuestionCoordinator {
     }
 
     public func needsParentHandoff(sessionID: String) -> Bool {
-        bindings[sessionID]?.parentAgentID != nil && !delegatedSessionIDs.contains(sessionID)
+        requests[sessionID]?.question != nil && bindings[sessionID]?.parentAgentID != nil && !delegatedSessionIDs.contains(sessionID)
     }
 
     public func answer(sessionID: String, promptID: UUID, response: QuestionPromptResponse) async throws {
