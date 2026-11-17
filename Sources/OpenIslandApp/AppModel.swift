@@ -124,7 +124,8 @@ final class AppModel {
 
     private var delegatedSessionIDs: Set<String> {
         let local = state.sessions.compactMap { child -> String? in
-            guard child.questionPrompt == nil, child.phase != .waitingForAnswer,
+            guard child.permissionRequest?.paseoContext == nil,
+                  child.questionPrompt == nil, child.phase != .waitingForAnswer,
                   liveLocalCodexParent(of: child) != nil else { return nil }
             return child.id
         }
@@ -2199,7 +2200,7 @@ final class AppModel {
                     let event = AgentEvent.questionAsked(QuestionAsked(sessionID: id, prompt: question.prompt, timestamp: .now))
                     if mergesHook || previous[id]?.requestID == pending.requestID || self.paseoDelegatedSessionIDs.contains(id) { self.state.apply(event) }
                     else { self.applyTrackedEvent(event, updateLastActionMessage: false) }
-                } else if let permission = pending.permission, self.state.session(id: id)?.permissionRequest?.id != permission.id {
+                } else if let permission = pending.permission, self.state.session(id: id)?.permissionRequest != permission {
                     let event = AgentEvent.permissionRequested(PermissionRequested(sessionID: id, request: permission, timestamp: .now))
                     if mergesHook || previous[id]?.requestID == pending.requestID || self.paseoDelegatedSessionIDs.contains(id) { self.state.apply(event) }
                     else { self.applyTrackedEvent(event, updateLastActionMessage: false) }
