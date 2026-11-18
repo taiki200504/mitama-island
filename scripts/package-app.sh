@@ -40,8 +40,13 @@ hooks_binary="$build_bin_dir/OpenIslandHooks"
 setup_binary="$build_bin_dir/OpenIslandSetup"
 brand_icon="$repo_root/Assets/Brand/OpenIsland.icns"
 
-python3 "$brand_script"
-python3 "$dmg_bg_script"
+if command -v uv >/dev/null 2>&1; then
+    uv run --with pillow python3 "$brand_script" || true
+    uv run --with pillow python3 "$dmg_bg_script" || true
+else
+    python3 "$brand_script" || true
+    python3 "$dmg_bg_script" || true
+fi
 
 rm -rf "$bundle_dir" "$zip_path" "$dmg_path"
 mkdir -p "$bundle_dir/Contents/MacOS" "$bundle_dir/Contents/Helpers" "$bundle_dir/Contents/Resources" "$bundle_dir/Contents/Frameworks"
