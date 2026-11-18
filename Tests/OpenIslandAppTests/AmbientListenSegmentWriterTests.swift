@@ -128,4 +128,19 @@ import Testing
         ) == expected)
     }
 
+    @Test("Failed capture recovery is retried after a cooldown, not abandoned")
+    func recoveryRetriesAfterCooldown() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let lastRestart = now.addingTimeInterval(-61)
+        #expect(AmbientListenSession.shouldAttemptInputRecovery(
+            now: now, lastRestartAt: lastRestart, recoveryAttempted: true
+        ))
+        #expect(!AmbientListenSession.shouldAttemptInputRecovery(
+            now: now, lastRestartAt: now.addingTimeInterval(-10), recoveryAttempted: true
+        ))
+        #expect(AmbientListenSession.shouldAttemptInputRecovery(
+            now: now, lastRestartAt: nil, recoveryAttempted: true
+        ))
+    }
+
 }

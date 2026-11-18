@@ -26,6 +26,15 @@ struct EarshotDeviceReporterTests {
         #expect(next.applicable(after: saved)?.enabled == true)
     }
 
+    @Test func remoteOffRespectsLocalListenOnAfterward() {
+        let command = EarshotRemoteCommand(listen_command: false, command_at: "2026-10-13T01:00:00Z")
+        let at = command.applicable(after: 0)!.at
+        let localOnAt = at + 60
+        #expect(command.applicable(after: 0, localListenChangedAt: localOnAt) == nil)
+        let newerOff = EarshotRemoteCommand(listen_command: false, command_at: "2026-10-13T01:05:00Z")
+        #expect(newerOff.applicable(after: at, localListenChangedAt: localOnAt)?.enabled == false)
+    }
+
     @Test func missingOrMalformedCommandsAreIgnored() {
         #expect(EarshotRemoteCommand(listen_command: nil, command_at: "2026-10-13T01:00:00Z").applicable(after: 0) == nil)
         #expect(EarshotRemoteCommand(listen_command: true, command_at: nil).applicable(after: 0) == nil)
