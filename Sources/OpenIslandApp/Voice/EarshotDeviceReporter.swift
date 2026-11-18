@@ -9,13 +9,16 @@ struct EarshotRemoteCommand: Decodable, Equatable {
     let command_at: String?
 
     /// A replay, including after relaunch or a local switch, must not win again.
-    func applicable(after savedAt: Double) -> (enabled: Bool, at: Double)? {
+    /// Remote off is ignored when the person switched listening on locally later.
+    func applicable(after savedAt: Double, localListenChangedAt: Double = 0) -> (enabled: Bool, at: Double)? {
         guard let enabled = listen_command, let text = command_at else { return nil }
         let fractional = try? Date.ISO8601FormatStyle(includingFractionalSeconds: true).parse(text)
         let wholeSeconds = try? Date.ISO8601FormatStyle().parse(text)
-        guard let date = fractional ?? wholeSeconds,
-              date.timeIntervalSince1970 > savedAt else { return nil }
-        return (enabled, date.timeIntervalSince1970)
+        guard let date = fractional ?? wholeSeconds else { return nil }
+        let at = date.timeIntervalSince1970
+        guard at > savedAt else { return nil }
+        if !enabled, at <= localListenChangedAt { return nil }
+        return (enabled, at)
     }
 }
 
@@ -126,7 +129,11 @@ final class EarshotDeviceReporter {
             guard let url = components?.url else { return }
             let data = try await send(environment.authorized(URLRequest(url: url, timeoutInterval: 15)))
             let commands = try JSONDecoder().decode([EarshotRemoteCommand].self, from: data)
-            guard !Task.isCancelled, let command = commands.first?.applicable(after: settings.remoteCommandAt) else { return }
+            guard !Task.isCancelled,
+                  let command = commands.first?.applicable(
+                    after: settings.remoteCommandAt,
+                    localListenChangedAt: settings.localListenChangedAt
+                  ) else { return }
             settings.isEnabled = command.enabled
             session.settingsChanged()
             settings.remoteCommandAt = command.at

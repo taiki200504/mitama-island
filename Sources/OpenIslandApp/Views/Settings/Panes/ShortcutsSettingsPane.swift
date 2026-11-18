@@ -297,6 +297,7 @@ struct ShortcutsSettingsPane: View {
                 isOn: Binding(
                     get: { earshot.isEnabled },
                     set: {
+                        earshot.markLocalListenChange()
                         earshot.isEnabled = $0
                         model.earshot.settingsChanged()
                     }

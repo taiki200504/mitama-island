@@ -145,6 +145,7 @@ extension IslandPanelView {
             + model.lang.t(isRecording ? "island.header.recording"
                 : isBroken ? "island.header.recordFailed" : "island.header.record")
         return Button {
+            model.settings.ambientListen.markLocalListenChange()
             model.settings.ambientListen.isEnabled.toggle()
             model.earshot.settingsChanged()
         } label: {

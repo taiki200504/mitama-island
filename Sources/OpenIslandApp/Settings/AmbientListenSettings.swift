@@ -34,6 +34,16 @@ final class AmbientListenSettings: PreferenceGroup {
         set { store.setValue(newValue, forKey: "ambientListen.remoteCommandAt") }
     }
 
+    /// Last time the person toggled listening in the app (not Hub playback).
+    var localListenChangedAt: Double {
+        get { store.value("ambientListen.localListenChangedAt", default: 0.0) }
+        set { store.setValue(newValue, forKey: "ambientListen.localListenChangedAt") }
+    }
+
+    func markLocalListenChange(at: Date = .now) {
+        localListenChangedAt = at.timeIntervalSince1970
+    }
+
     /// How much silence closes the current recording. Matches the batch's
     /// episode rule (90 seconds always splits), so the file boundary and the
     /// episode boundary agree and the batch has less to stitch back together.

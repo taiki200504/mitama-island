@@ -247,6 +247,25 @@ final class AmbientListenSession {
         now.timeIntervalSince(lastBufferAt) >= threshold
     }
 
+    /// After the first failed restart, keep the switch on but retry capture on a
+    /// timer. A single attempt left Bluetooth headsets (OpenComm2, 16 kHz)
+    /// stuck in `.stalled` until someone flipped the switch — 2026-11-18.
+    nonisolated static func shouldAttemptInputRecovery(
+        now: Date,
+        lastRestartAt: Date?,
+        recoveryAttempted: Bool,
+        minRestartInterval: TimeInterval = 5,
+        retryAfterStall: TimeInterval = 60
+    ) -> Bool {
+        if !recoveryAttempted { return true }
+        guard let lastRestartAt else { return true }
+        return now.timeIntervalSince(lastRestartAt) >= retryAfterStall
+    }
+
+    nonisolated static func canRestartCapture(now: Date, lastRestartAt: Date?, minRestartInterval: TimeInterval = 5) -> Bool {
+        lastRestartAt.map { now.timeIntervalSince($0) >= minRestartInterval } ?? true
+    }
+
     private func checkInputHealth(now: Date) {
         guard phase == .listening || phase == .stalled else { return }
         if !Self.isInputStalled(now: now, lastBufferAt: max(writer.lastBufferAt, captureStartedAt)) {
@@ -254,8 +273,11 @@ final class AmbientListenSession {
                 recoveryAttempted = false
                 phase = .listening
             }
-        } else if !recoveryAttempted {
-            guard lastRestartAt.map({ now.timeIntervalSince($0) >= 5 }) ?? true else { return }
+        } else if Self.shouldAttemptInputRecovery(now: now, lastRestartAt: lastRestartAt, recoveryAttempted: recoveryAttempted) {
+            guard Self.canRestartCapture(now: now, lastRestartAt: lastRestartAt) else {
+                if recoveryAttempted { phase = .stalled }
+                return
+            }
             recoveryAttempted = true
             restartCapture(now: now)
         } else {

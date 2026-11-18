@@ -156,6 +156,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             case .toggleAmbientListen(let isEnabled):
                 addItem(model.lang.t("settings.earshot.section"), to: menu) { [weak model] in
                     guard let model else { return }
+                    model.settings.ambientListen.markLocalListenChange()
                     model.settings.ambientListen.isEnabled.toggle()
                     model.earshot.settingsChanged()
                 }
