@@ -782,8 +782,11 @@ struct SetupSettingsPane: View {
                     }
 
                     if hasRepairableIssues {
-                        Button(lang.t("setup.diagnostics.repair")) {
+                        Button {
                             model.repairHooks()
+                        } label: {
+                            Text(lang.t("setup.diagnostics.repair"))
+                                .foregroundStyle(V6Palette.ink)
                         }
                         .buttonStyle(.borderedProminent)
                     }
@@ -1132,7 +1135,7 @@ struct RemoteConnectionSection: View {
             HStack(spacing: 6) {
                 Text(number)
                     .font(.system(size: 9, weight: .bold, design: .rounded))
-                    .foregroundStyle(V6Palette.paper)
+                    .foregroundStyle(V6Palette.ink)
                     .frame(width: 16, height: 16)
                     .background(Circle().fill(IslandDesignPalette.selection.opacity(0.7)))
                 Text(title)
@@ -1195,7 +1198,7 @@ struct UpdateBanner: View {
                 Image(systemName: "arrow.down.to.line")
                     .font(.system(size: 10, weight: .bold))
             }
-            .foregroundStyle(V6Palette.paper)
+            .foregroundStyle(V6Palette.ink)
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
             .background(

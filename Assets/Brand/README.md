@@ -26,3 +26,7 @@ The committed `Assets/Brand/OpenIsland.icns` is the source of truth for packagin
 ## Legacy sources and generator
 
 `Source/logo.png` retains the original 1280×1280 Scout source. `app-icon-v6.png` is the legacy Bar+Dot app icon master. `scripts/generate_brand_icons.py` still regenerates the existing internal Scout assets and rewrites both app icon sets and the ICNS from that legacy app icon master. After running it for the internal artwork, restore the Ribbon packaging assets using the steps above before packaging the app.
+
+## In-app accent
+
+The shared Island accent is Ribbon lavender (`#C8B6FF`) on the dark surface. Completion-card links use deep violet (`#493797`) on white. The settings update banner and numbered setup steps use dark ink on their lavender fills. Semantic orange in the SAO palette and agent and status colors keep their existing roles. The rendered UI has not been verified for this change.
