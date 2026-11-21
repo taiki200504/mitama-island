@@ -1,47 +1,32 @@
 # Brand Assets
 
-This directory contains the current `Scout` mascot icon assets for macOS app packaging and internal product surfaces.
+- `AppIcon.appiconset/`, `OpenIsland.iconset/`, and `OpenIsland.icns` package the approved light Ribbon macOS app icon.
+- `Source/` holds the original source artwork. `Internal/` contains the existing Scout artwork used inside the app.
 
-Structure:
+## Rebuild the Ribbon app icon
 
-- `Source/` keeps raw brand source assets that should not be treated as generated runtime output.
-- `AppIcon.appiconset/`, `OpenIsland.iconset/`, and `OpenIsland.icns` are generated packaging assets.
-- `Internal/` contains small derived assets for in-app surfaces.
+Use the ten approved PNGs from the mitama Browser `apps/browser/assets/AppIcon.appiconset/`. They were resized proportionally from the approved `docs/design/brand/app-icon-light.png` in the mitama-os repository. The original PNG has SHA-256 `1ec0ee613769e5fe93b8b3481677f0de804441644cc931c7df61fddfb53ec71c`.
 
-Generation workflow:
+From the Island repository root, point the first line at that approved Browser iconset. The command uses the original filenames and preserves the existing asset-catalog metadata.
 
-- regenerate everything with `python3 scripts/generate_brand_icons.py`
-- the script outputs:
-  - `AppIcon.appiconset/` for future asset-catalog use
-  - `OpenIsland.iconset/` and `OpenIsland.icns` for manual macOS bundle packaging
-  - `Internal/color/` for in-app colored usage
-  - `Internal/template/` for monochrome template-style usage
-  - `Internal/badge/` for small boxed icon treatments
+```sh
+browser_iconset=/absolute/path/to/mitama-os/apps/browser/assets/AppIcon.appiconset
+for slot in Assets/Brand/AppIcon.appiconset/icon_*.png; do
+  name=${slot##*/}
+  cp "$browser_iconset/$name" "$slot" &&
+    cp "$browser_iconset/$name" "Assets/Brand/OpenIsland.iconset/$name" || exit 1
+done
+iconutil -c icns Assets/Brand/OpenIsland.iconset -o Assets/Brand/OpenIsland.icns
+```
 
-Current raw source assets:
+The two sets use the same five macOS sizes (16, 32, 128, 256, 512 points), each at 1× and 2×. The asset catalog uses the PNGs and the manually assembled development bundle uses the ICNS via `CFBundleIconFile`.
 
-- `Source/logo.png`: original 1280x1280 logo source image
+The committed `Assets/Brand/OpenIsland.icns` is the source of truth for packaging and development launch. Both scripts check that it exists and is nonempty, then copy it as-is. Rebuild it manually using the steps above when the approved artwork changes.
 
-macOS app icon sizes included:
+## Legacy sources and generator
 
-- `16x16`
-- `16x16@2x`
-- `32x32`
-- `32x32@2x`
-- `128x128`
-- `128x128@2x`
-- `256x256`
-- `256x256@2x`
-- `512x512`
-- `512x512@2x`
+`Source/logo.png` retains the original 1280×1280 Scout source. `app-icon-v6.png` is the legacy Bar+Dot app icon master. `scripts/generate_brand_icons.py` still regenerates the existing internal Scout assets and rewrites both app icon sets and the ICNS from that legacy app icon master. After running it for the internal artwork, restore the Ribbon packaging assets using the steps above before packaging the app.
 
-Why both formats exist:
+## In-app accent
 
-- Apple’s asset-catalog workflow for macOS expects explicit icon sizes for the platform.
-- Our current dev app bundle is assembled manually by `scripts/launch-dev-app.sh`, so it also needs a bundled `.icns` referenced by `CFBundleIconFile`.
-
-Current design direction:
-
-- shell: black glass face with a cool metallic rim
-- mark: white `Scout` mascot with the three-square punctuation column from the chosen icon reference
-- internal surfaces: simplified mascot-only versions without punctuation when space is tight
+The shared Island accent is Ribbon lavender (`#C8B6FF`) on the dark surface. Completion-card links use deep violet (`#493797`) on white. The settings update banner and numbered setup steps use dark ink on their lavender fills. Semantic orange in the SAO palette and agent and status colors keep their existing roles. The rendered UI has not been verified for this change.

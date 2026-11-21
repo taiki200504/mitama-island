@@ -1,0 +1,19 @@
+{
+  "base": "bfee40c9976e5ca7d94edcc04048e6833a29c946",
+  "swiftParse": {
+    "exitCode": 0,
+    "files": [
+      "IslandTheme.swift",
+      "IslandCompletionActionView.swift",
+      "SettingsView.swift"
+    ],
+    "command": "nice -n15 heavy xcrun swiftc -frontend -parse <3 changed Swift files>",
+    "scope": "syntax only, no typecheck or link"
+  },
+  "diffCheck": true,
+  "fullTypecheck": false,
+  "swiftTests": false,
+  "nativeUI": false,
+  "jev": false,
+  "ready_for_prod": false
+}

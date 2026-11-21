@@ -70,7 +70,8 @@ struct SAOTheme: Sendable {
     /// Text and anything drawn on top of `ink`.
     let paper = SAOGrammar.Palette.paper
     /// The one colour that means "this is the app talking".
-    let accent = SAOGrammar.Palette.accentOrange
+    let accent = Color(hex: 0xC8B6FF)
+    let accentOnLight = Color(hex: 0x493797)
 
     let statusTints = IslandStatusTints(
         running: SAOGrammar.Palette.systemCyan,

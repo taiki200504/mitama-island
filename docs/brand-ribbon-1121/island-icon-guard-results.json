@@ -1,0 +1,35 @@
+{
+  "scope": "Extracted ICNS preflight only; no launch/build/package/sign/install code executed",
+  "cases": [
+    {
+      "script": "package-app.sh",
+      "case": "valid",
+      "exit": 0
+    },
+    {
+      "script": "package-app.sh",
+      "case": "missing",
+      "exit": 1
+    },
+    {
+      "script": "package-app.sh",
+      "case": "empty",
+      "exit": 1
+    },
+    {
+      "script": "launch-dev-app.sh",
+      "case": "valid",
+      "exit": 0
+    },
+    {
+      "script": "launch-dev-app.sh",
+      "case": "missing",
+      "exit": 1
+    },
+    {
+      "script": "launch-dev-app.sh",
+      "case": "empty",
+      "exit": 1
+    }
+  ]
+}

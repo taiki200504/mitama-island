@@ -102,7 +102,7 @@ extension MarkdownUI.Theme {
             FontWeight(.medium)
         }
         .link {
-            ForegroundColor(IslandThemes.current.accent)
+            ForegroundColor(IslandThemes.current.accentOnLight)
         }
         .strong {
             FontWeight(.bold)

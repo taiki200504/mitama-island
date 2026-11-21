@@ -19,7 +19,11 @@ dmg_path="${OPEN_ISLAND_DMG_PATH:-$package_root/$app_name.dmg}"
 signing_identity="${OPEN_ISLAND_SIGN_IDENTITY:-}"
 notary_profile="${OPEN_ISLAND_NOTARY_PROFILE:-}"
 
-brand_script="$repo_root/scripts/generate_brand_icons.py"
+brand_icon="$repo_root/Assets/Brand/OpenIsland.icns"
+if [[ ! -f "$brand_icon" || ! -s "$brand_icon" ]]; then
+    echo "ERROR: missing or empty app icon ICNS: $brand_icon" >&2
+    exit 1
+fi
 dmg_bg_script="$repo_root/scripts/generate_dmg_background.py"
 entitlements_path="${OPEN_ISLAND_ENTITLEMENTS:-$repo_root/config/packaging/OpenIslandApp.entitlements}"
 
@@ -38,9 +42,7 @@ build_bin_dir="$(swift build -c release "${arch_flags[@]}" --show-bin-path)"
 app_binary="$build_bin_dir/OpenIslandApp"
 hooks_binary="$build_bin_dir/OpenIslandHooks"
 setup_binary="$build_bin_dir/OpenIslandSetup"
-brand_icon="$repo_root/Assets/Brand/OpenIsland.icns"
 
-python3 "$brand_script"
 python3 "$dmg_bg_script"
 
 rm -rf "$bundle_dir" "$zip_path" "$dmg_path"
