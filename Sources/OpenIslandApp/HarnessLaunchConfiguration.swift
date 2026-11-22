@@ -12,7 +12,7 @@ struct HarnessLaunchConfiguration {
     let settingsTab: String?
     let interactiveOverlay: Bool
 
-    var skipsClipboardStartup: Bool {
+    var isNoninteractiveSnapshot: Bool {
         scenario != nil && !interactiveOverlay && !shouldStartBridge && settingsTab == nil
     }
 

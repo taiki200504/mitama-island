@@ -1140,7 +1140,7 @@ final class AppModel {
 
         startAmbientBoardIfEnabled()
         configureFocusTimer()
-        if !HarnessLaunchConfiguration().skipsClipboardStartup {
+        if !HarnessLaunchConfiguration().isNoninteractiveSnapshot {
             configureClipboard()
         }
         configureNowPlaying()

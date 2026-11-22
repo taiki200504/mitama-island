@@ -11,6 +11,9 @@ struct GeneralSettingsPane: View {
 
     private var lang: LanguageManager { model.lang }
     private var behaviour: BehaviourSettings { model.settings.behaviour }
+    private var lidPermissionControlsDisabled: Bool {
+        changingLidPermission || HarnessLaunchConfiguration().isNoninteractiveSnapshot
+    }
 
     var body: some View {
         SettingsPane(tab: .general) {
@@ -36,6 +39,7 @@ struct GeneralSettingsPane: View {
                 title: lang.t("keepAwake.closedLid"),
                 help: lang.t("keepAwake.closedLid.help"),
                 isOn: Binding(get: { behaviour.keepAwakeClosedLid }, set: { enabled in
+                    guard !lidPermissionControlsDisabled else { return }
                     changingLidPermission = true
                     Task { @MainActor in
                         if enabled { await model.lidSleep.preparePermission() }
@@ -44,8 +48,9 @@ struct GeneralSettingsPane: View {
                     }
                 })
             )
-            .disabled(changingLidPermission)
+            .disabled(lidPermissionControlsDisabled)
             Button(lang.t("keepAwake.closedLid.revoke")) {
+                guard !lidPermissionControlsDisabled else { return }
                 changingLidPermission = true
                 Task { @MainActor in
                     behaviour.keepAwakeClosedLid = false
@@ -55,7 +60,7 @@ struct GeneralSettingsPane: View {
                     changingLidPermission = false
                 }
             }
-            .disabled(changingLidPermission)
+            .disabled(lidPermissionControlsDisabled)
             SettingsToggleRow(
                 title: lang.t("settings.general.launchAtLogin"),
                 isOn: Binding(

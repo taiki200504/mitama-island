@@ -121,6 +121,8 @@ final class OpenIslandAppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        // A snapshot never acquires a sleep assertion. The durable marker may belong to the running app.
+        guard !harnessLaunchConfiguration.isNoninteractiveSnapshot else { return .terminateNow }
         Task { @MainActor in
             model.isStoppingKeepAwake = true
             model.keepAwakeTimer.invalidate()

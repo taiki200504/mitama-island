@@ -28,6 +28,7 @@ extension AppModel {
     }
 
     func setManualKeepAwake(_ mode: ManualKeepAwakePolicy.Mode) {
+        guard !HarnessLaunchConfiguration().isNoninteractiveSnapshot else { return }
         if mode == .alwaysOn {
             Task { @MainActor [weak self] in
                 guard let self else { return }
