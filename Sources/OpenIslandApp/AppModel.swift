@@ -1147,16 +1147,22 @@ final class AppModel {
             calendar.start()
         }
 
-        startAmbientBoardIfEnabled()
-        configureFocusTimer()
+        if harnessConfiguration.isNoninteractiveSnapshot {
+            configureAmbientBoard(refreshVideos: false)
+        } else {
+            startAmbientBoardIfEnabled()
+        }
+        configureFocusTimer(startAutomatically: !harnessConfiguration.isNoninteractiveSnapshot)
         if !harnessConfiguration.isNoninteractiveSnapshot {
             configureClipboard()
         }
-        configureNowPlaying()
+        configureNowPlaying(startAutomatically: !harnessConfiguration.isNoninteractiveSnapshot)
         configureSystemHUD()
 
         quietScenes.onSceneChanged = { [weak self] _ in self?.applyDesktopCover() }
-        quietScenes.start()
+        if !harnessConfiguration.isNoninteractiveSnapshot {
+            quietScenes.start()
+        }
         screenLockWatcher.onLocked = { [weak self] in
             // The poll that backs `quietScenes` runs every 5s; a lock is
             // worth knowing about the moment it happens rather than waiting
@@ -1166,7 +1172,9 @@ final class AppModel {
         screenLockWatcher.onUnlocked = { [weak self] in
             self?.presentLockScanGreeting()
         }
-        screenLockWatcher.start()
+        if !harnessConfiguration.isNoninteractiveSnapshot {
+            screenLockWatcher.start()
+        }
         jarvisSummonWatcher.onSummon = { [weak self] summon in self?.presentJarvisSummon(summon) }
         if !harnessConfiguration.isNoninteractiveSnapshot {
             jarvisSummonWatcher.start()
@@ -1594,7 +1602,7 @@ final class AppModel {
 
     /// Tells the board where to get what it draws. Always wired, whether or not
     /// the idle clock is running — the harness presents it directly.
-    private func configureAmbientBoard() {
+    private func configureAmbientBoard(refreshVideos: Bool = true) {
         ambient.lang = lang
         ambient.board = { [weak self] in
             guard let self else { return .make(for: []) }
@@ -1629,7 +1637,9 @@ final class AppModel {
         }
         ambient.onDismiss = { [weak self] in self?.idle.markActive() }
         idle.onTick = { [weak self] seconds in self?.considerAmbientBoard(idleFor: seconds) }
-        refreshAmbientVideoCache()
+        if refreshVideos {
+            refreshAmbientVideoCache()
+        }
     }
 
     /// Starts or stops the idle clock to match the setting.
@@ -1648,12 +1658,12 @@ final class AppModel {
     /// Wires the timer coordinator to sound, language and the overlay it
     /// posts its sneak peeks through, then starts the eye-break loop if the
     /// setting says it should already be running.
-    private func configureFocusTimer() {
+    private func configureFocusTimer(startAutomatically: Bool) {
         focusTimer.soundSettings = settings.sound
         focusTimer.timerSettings = settings.timer
         focusTimer.lang = lang
         focusTimer.overlay = overlay
-        if settings.timer.eyeBreakEnabled {
+        if startAutomatically && settings.timer.eyeBreakEnabled {
             focusTimer.start(.eyeBreak())
         }
     }
@@ -1665,11 +1675,11 @@ final class AppModel {
     /// if the setting says it should be running. Safe to call even when the
     /// framework was never vendored — `NowPlayingCoordinator.start()` just
     /// reports itself unavailable in that case rather than failing.
-    private func configureNowPlaying() {
+    private func configureNowPlaying(startAutomatically: Bool) {
         nowPlaying.overlay = overlay
         nowPlaying.lang = lang
         nowPlaying.settings = settings.nowPlaying
-        if settings.nowPlaying.enabled {
+        if startAutomatically && settings.nowPlaying.enabled {
             nowPlaying.start()
         }
     }
@@ -2921,7 +2931,7 @@ final class AppModel {
             // same reason the completion banner does.
             mitamaFeed.loadAmbientFixture(pulse: snapshot.debugPulse, card: snapshot.debugLearnCard)
             ambient.cardElapsedOverride = snapshot.debugCardElapsed
-            configureAmbientBoard()
+            configureAmbientBoard(refreshVideos: !HarnessLaunchConfiguration().isNoninteractiveSnapshot)
             if let ambientDate = snapshot.debugAmbientDate {
                 // Pinned so a headless capture always lands on the same
                 // gradient, rather than whichever phase the wall clock
