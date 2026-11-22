@@ -483,6 +483,34 @@ def main() -> None:
         if selected_session_phase(report) != "waitingForAnswer":
             assert_contains_any(button_labels, ["Go to Terminal", "JWT tokens"], "questionCard button labels")
 
+    elif scenario in ("paseoApprovalCard", "paseoQuestionCard"):
+        # The basic mock fixture has one actionable session and fixed Japanese option text.
+        fixture_id = "paseo-fixture-session"
+        is_question = scenario == "paseoQuestionCard"
+        if report.get("startedBridge") is not False:
+            fail(f"{scenario} must run with the bridge disabled")
+        if notch_status != "opened":
+            fail(f"expected opened notch for {scenario}, got {notch_status!r}")
+        if island_surface != f"sessionList:actionable({fixture_id})" or report.get("selectedSessionID") != fixture_id:
+            fail(f"{scenario} must show and select {fixture_id}")
+        expected_phase = "waitingForAnswer" if is_question else "waitingForApproval"
+        if selected_session_phase(report) != expected_phase:
+            fail(f"{scenario} selected session must be {expected_phase}")
+        require_frame_between(
+            overlay_frame,
+            width=(520, 780),
+            height=(180, 580) if is_question else (240, 480),
+            context=f"{scenario} overlay frame",
+        )
+        if is_question:
+            for option in ("現在の設定を維持して続ける", "Paseoで詳細を確認する"):
+                if option not in button_labels:
+                    fail(f"{scenario} is missing the option {option!r}")
+            if not ({"回答を送信", "Submit Answers"} & button_labels):
+                fail(f"{scenario} is missing the submit button")
+        elif not ({"今回だけ許可", "拒否"} <= button_labels or {"Allow once", "Deny"} <= button_labels):
+            fail(f"{scenario} is missing the allow-once or deny button")
+
     elif scenario == "completionCard":
         if notch_status != "opened":
             fail(f"expected opened notch for completionCard, got {notch_status!r}")
