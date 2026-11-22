@@ -997,19 +997,19 @@ final class OverlayPanelController {
         let isNotificationMode = model.notchOpenReason == .notification && actionableID != nil
 
         if isNotificationMode {
-            // Use SwiftUI-measured height when available (accurate after first render).
-            if model.measuredNotificationContentHeight > 0 {
-                return min(maxHeight, model.measuredNotificationContentHeight + Self.notificationMeasuredContentPadding)
+            let session = actionableID.flatMap { model.state.session(id: $0) }
+            let measured = model.measuredNotificationContentHeight
+            let measuredHeight = measured > 0 ? measured + Self.notificationMeasuredContentPadding : 0
+            if measured > 0 && session?.phase != .waitingForApproval {
+                return min(maxHeight, measuredHeight)
             }
-            // First render: estimate from the actionable session's content so the
-            // initial window is close to the final size. This avoids a large blank
-            // panel flash (the previous 500pt fallback) and reduces the chance of
-            // a measurement→reposition cycle.
-            if let actionableID,
-               let session = model.state.session(id: actionableID) {
+            if let session {
                 let rowHeight = session.estimatedIslandRowHeight(at: now, fields: IslandSessionCardFields(display: model.settings.display))
                 let bodyHeight = actionableBodyHeight(for: session, model: model)
-                return min(maxHeight, rowHeight + bodyHeight + Self.notificationEstimatedVerticalInsets)
+                let estimatedHeight = rowHeight + bodyHeight + Self.notificationEstimatedVerticalInsets
+                // Approval controls need the first-render estimate even when the
+                // measured scroll viewport has already been compressed by the panel.
+                return min(maxHeight, max(estimatedHeight, measuredHeight))
             }
             return min(maxHeight, 300)
         }
