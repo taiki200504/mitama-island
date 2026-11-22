@@ -1140,7 +1140,9 @@ final class AppModel {
 
         startAmbientBoardIfEnabled()
         configureFocusTimer()
-        configureClipboard()
+        if !HarnessLaunchConfiguration().skipsClipboardStartup {
+            configureClipboard()
+        }
         configureNowPlaying()
         configureSystemHUD()
 

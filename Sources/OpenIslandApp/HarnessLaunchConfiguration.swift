@@ -12,6 +12,10 @@ struct HarnessLaunchConfiguration {
     let settingsTab: String?
     let interactiveOverlay: Bool
 
+    var skipsClipboardStartup: Bool {
+        scenario != nil && !interactiveOverlay && !shouldStartBridge && settingsTab == nil
+    }
+
     init(environment: [String: String] = ProcessInfo.processInfo.environment) {
         interactiveOverlay = Self.boolValue(environment["OPEN_ISLAND_HARNESS_INTERACTIVE_OVERLAY"], default: false)
         scenario = Self.scenarioValue(from: environment["OPEN_ISLAND_HARNESS_SCENARIO"])
