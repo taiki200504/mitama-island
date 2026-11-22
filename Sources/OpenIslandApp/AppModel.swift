@@ -570,7 +570,7 @@ final class AppModel {
     /// owner of that queue asks it to.
     var mitamaFeedEnabled: Bool = false {
         didSet {
-            guard mitamaFeedEnabled != oldValue else { return }
+            guard !isRestoringSnapshotPreferences, mitamaFeedEnabled != oldValue else { return }
             UserDefaults.standard.set(mitamaFeedEnabled, forKey: Self.mitamaFeedEnabledKey)
             if mitamaFeedEnabled {
                 mitamaFeed.start()
@@ -593,7 +593,7 @@ final class AppModel {
     /// poll, and the job counts ride the feed's existing query.
     var automationSignalEnabled: Bool = true {
         didSet {
-            guard automationSignalEnabled != oldValue else { return }
+            guard !isRestoringSnapshotPreferences, automationSignalEnabled != oldValue else { return }
             UserDefaults.standard.set(automationSignalEnabled, forKey: Self.automationSignalKey)
             ecosystemSignals.automationEnabled = automationSignalEnabled
         }
@@ -601,7 +601,7 @@ final class AppModel {
 
     var jobSignalEnabled: Bool = true {
         didSet {
-            guard jobSignalEnabled != oldValue else { return }
+            guard !isRestoringSnapshotPreferences, jobSignalEnabled != oldValue else { return }
             UserDefaults.standard.set(jobSignalEnabled, forKey: Self.jobSignalKey)
             mitamaFeed.jobSummaryEnabled = jobSignalEnabled
         }
@@ -609,7 +609,7 @@ final class AppModel {
 
     var codexSignalEnabled: Bool = true {
         didSet {
-            guard codexSignalEnabled != oldValue else { return }
+            guard !isRestoringSnapshotPreferences, codexSignalEnabled != oldValue else { return }
             UserDefaults.standard.set(codexSignalEnabled, forKey: Self.codexSignalKey)
             ecosystemSignals.codexEnabled = codexSignalEnabled
         }
@@ -817,11 +817,11 @@ final class AppModel {
 
     private static let watchNotificationEnabledKey = "watch.notification.enabled"
 
-    @ObservationIgnored private var isRestoringWatchPreferenceWithoutRelay = false
+    @ObservationIgnored private var isRestoringSnapshotPreferences = false
 
     var watchNotificationEnabled: Bool = false {
         didSet {
-            guard !isRestoringWatchPreferenceWithoutRelay, watchNotificationEnabled != oldValue else { return }
+            guard !isRestoringSnapshotPreferences, watchNotificationEnabled != oldValue else { return }
             UserDefaults.standard.set(watchNotificationEnabled, forKey: Self.watchNotificationEnabledKey)
             if watchNotificationEnabled {
                 startWatchRelay()
@@ -1094,6 +1094,7 @@ final class AppModel {
         ) ?? .topBar
         notchAppearancePreferences = Self.loadAppearancePreferences(for: .notch)
         topBarAppearancePreferences = Self.loadAppearancePreferences(for: .topBar)
+        isRestoringSnapshotPreferences = harnessConfiguration.isNoninteractiveSnapshot
         mitamaFeedEnabled = UserDefaults.standard.bool(forKey: Self.mitamaFeedEnabledKey)
         // Default ON: `bool(forKey:)` answers false for a key nobody has
         // written yet, so the absence of the key has to be asked about first.
@@ -1102,18 +1103,19 @@ final class AppModel {
         jobSignalEnabled = defaults.object(forKey: Self.jobSignalKey) as? Bool ?? true
         codexSignalEnabled = defaults.object(forKey: Self.codexSignalKey) as? Bool ?? true
         mitamaFeed.jobSummaryEnabled = jobSignalEnabled
-        ecosystemSignals.automationEnabled = automationSignalEnabled
-        ecosystemSignals.codexEnabled = codexSignalEnabled
-        ecosystemSignals.start()
+        if !harnessConfiguration.isNoninteractiveSnapshot {
+            ecosystemSignals.automationEnabled = automationSignalEnabled
+            ecosystemSignals.codexEnabled = codexSignalEnabled
+            ecosystemSignals.start()
+        }
         mitamaFeed.onJobCompleted = { [weak self] completion in
             self?.presentJobCompletedPeek(completion)
         }
-        if mitamaFeedEnabled {
+        if mitamaFeedEnabled && !harnessConfiguration.isNoninteractiveSnapshot {
             mitamaFeed.start()
         }
-        isRestoringWatchPreferenceWithoutRelay = harnessConfiguration.isNoninteractiveSnapshot
         watchNotificationEnabled = UserDefaults.standard.bool(forKey: Self.watchNotificationEnabledKey)
-        isRestoringWatchPreferenceWithoutRelay = false
+        isRestoringSnapshotPreferences = false
         if watchNotificationEnabled && !harnessConfiguration.isNoninteractiveSnapshot {
             startWatchRelay()
         }
@@ -1125,12 +1127,14 @@ final class AppModel {
         // `alertsWhenEventStarts` before doing anything, and the watcher only
         // ever calls it while it's actually running.
         wireVoiceRequest()
-        Task { @MainActor in
-            await refreshMeetingAlertOwner()
-            // Re-read every few minutes so a cut-over to the new app is noticed without a restart.
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(300))
+        if !harnessConfiguration.isNoninteractiveSnapshot {
+            Task { @MainActor in
                 await refreshMeetingAlertOwner()
+                // Re-read every few minutes so a cut-over to the new app is noticed without a restart.
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .seconds(300))
+                    await refreshMeetingAlertOwner()
+                }
             }
         }
         calendar.onEventStarted = { [weak self] current in
@@ -1139,7 +1143,7 @@ final class AppModel {
 
         // Never prompts: if access was granted before, this picks it back up;
         // if it was not, the setting is the only place that asks.
-        if settings.display.showsNextEvent {
+        if !harnessConfiguration.isNoninteractiveSnapshot && settings.display.showsNextEvent {
             calendar.start()
         }
 
@@ -1164,7 +1168,9 @@ final class AppModel {
         }
         screenLockWatcher.start()
         jarvisSummonWatcher.onSummon = { [weak self] summon in self?.presentJarvisSummon(summon) }
-        jarvisSummonWatcher.start()
+        if !harnessConfiguration.isNoninteractiveSnapshot {
+            jarvisSummonWatcher.start()
+        }
         startIdleSessionCleanup()
         shelf.expiryProvider = { [weak self] in self?.shelfExpiresAfter.ttl }
         if !harnessConfiguration.isNoninteractiveSnapshot {
