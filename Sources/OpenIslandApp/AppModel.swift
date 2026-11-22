@@ -2043,14 +2043,16 @@ final class AppModel {
         // Only a launched app mirrors prompts; models built in tests stay off the network.
         remoteRelay.isEnabled = remoteAnswerEnabled && startBridge
 
-        shelf.load()
-        shelf.pruneExpired()
-        power.start()
-        power.onChange = { [weak self] in
-            self?.refreshSustainedCamera()
-            self?.refreshKeepAwake()
+        if loadRuntimeState {
+            shelf.load()
+            shelf.pruneExpired()
+            power.start()
+            power.onChange = { [weak self] in
+                self?.refreshSustainedCamera()
+                self?.refreshKeepAwake()
+            }
+            configureKeepAwake()
         }
-        configureKeepAwake()
 
         // Typing in the island borrows application focus and gives it back when
         // the island closes. Leaving by any other route — the user switching
@@ -2064,10 +2066,12 @@ final class AppModel {
             Task { @MainActor in TextInputFocusHandoff.forget() }
         }
 
-        // ponytail: 顔ゲートを消した版に一度でも上がれば不要になる。2026-10 以降に削除する。
-        try? FileManager.default.removeItem(at: Self.legacyCameraReferenceURL)
-        for key in Self.legacyFaceGateDefaultsKeys {
-            UserDefaults.standard.removeObject(forKey: key)
+        if loadRuntimeState {
+            // ponytail: 顔ゲートを消した版に一度でも上がれば不要になる。2026-10 以降に削除する。
+            try? FileManager.default.removeItem(at: Self.legacyCameraReferenceURL)
+            for key in Self.legacyFaceGateDefaultsKeys {
+                UserDefaults.standard.removeObject(forKey: key)
+            }
         }
 
         // Hot keys are registered process-wide. A harness run would take them
