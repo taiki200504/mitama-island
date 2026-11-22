@@ -313,7 +313,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                 notchOpenReason: nil,
                 islandSurface: .sessionList(),
                 sessions: DebugSessionFactory.notificationSessions(lead: waiting, now: now),
-                selectedSessionID: waiting.id
+                selectedSessionID: waiting.id,
+                forcesExternalLayout: true
             )
 
         case .sessionList:
@@ -584,7 +585,8 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
                 islandSurface: .sessionList(),
                 sessions: DebugSessionFactory.notificationSessions(lead: waiting, now: now),
                 selectedSessionID: waiting.id,
-                debugAccessoryTimer: IslandClosedInputs.Timer(remainingMinutes: 12, label: "Focus")
+                debugAccessoryTimer: IslandClosedInputs.Timer(remainingMinutes: 12, label: "Focus"),
+                forcesExternalLayout: true
             )
 
         case .nowPlayingClosed:

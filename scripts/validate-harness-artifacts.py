@@ -404,43 +404,31 @@ def main() -> None:
         if not isinstance(live_count, int) or live_count <= 0:
             fail("closed scenario is missing the live session count value")
 
-    elif scenario == "closedFloating":
+    elif scenario in ("closedFloating", "peekBand", "closedAccessoryTimer"):
         # Forced onto the non-notched layout (see AppModel.debugForcesExternalLayout),
         # so the closed island renders as the floating capsule instead of
-        # whatever the real display would normally pick. The window itself
-        # stays at its always-opened size, so the capsule's real dimensions
-        # only show up in `closedPillSize` (see HarnessArtifactRecorder),
-        # not in the window frame the other "closed" scenarios check.
+        # whatever the real display would normally pick. Check the capsule's
+        # measured size directly (see HarnessArtifactRecorder).
         if notch_status != "closed":
-            fail(f"expected closed notch for closedFloating, got {notch_status!r}")
+            fail(f"expected closed notch for {scenario}, got {notch_status!r}")
         closed_pill_size = report.get("closedPillSize")
         if not isinstance(closed_pill_size, dict):
-            fail("closedFloating report is missing closedPillSize")
+            fail(f"{scenario} report is missing closedPillSize")
         require_frame_between(
             closed_pill_size,
             width=(96, 320),
             height=(28, 34),
-            context="closedFloating pill size",
+            context=f"{scenario} pill size",
         )
         if not any("CODEX" in value for value in text_values):
-            fail("closedFloating is missing the waiting agent")
-
-    elif scenario == "peekBand":
-        if notch_status != "closed":
-            fail(f"expected closed notch for peekBand, got {notch_status!r}")
-        require_frame_between(
-            overlay_frame,
-            width=(520, 780),
-            height=(35, CLOSED_WINDOW_MAX_HEIGHT),
-            context="peek band overlay frame",
-        )
+            fail(f"{scenario} is missing the waiting agent")
         # The band is the whole point of the scenario: the agent that is
         # waiting, and how long it has been. Checked by the agent name and the
         # number alone so the assertion survives a change of UI language.
-        if not any("CODEX" in value for value in text_values):
-            fail("peek band is missing the waiting agent")
-        if not any("8" in value for value in text_values):
+        if scenario == "peekBand" and not any("8" in value for value in text_values):
             fail("peek band is missing the elapsed time")
+        if scenario == "closedAccessoryTimer" and not any("12" in value for value in text_values):
+            fail("closedAccessoryTimer is missing the timer accessory")
 
     elif scenario == "sessionList":
         if notch_status != "opened":
@@ -652,23 +640,6 @@ def main() -> None:
         )
         if not any("READY" in value for value in text_values):
             fail("sneakPeekPop is missing its override text")
-
-    elif scenario == "closedAccessoryTimer":
-        # Both a waiting body and a timer accessory have to be visible at
-        # once — the whole point is that the accessory never hides the agent
-        # that's actually waiting on you.
-        if notch_status != "closed":
-            fail(f"expected closed notch for closedAccessoryTimer, got {notch_status!r}")
-        require_frame_between(
-            overlay_frame,
-            width=(520, 780),
-            height=(35, CLOSED_WINDOW_MAX_HEIGHT),
-            context="closedAccessoryTimer overlay frame",
-        )
-        if not any("CODEX" in value for value in text_values):
-            fail("closedAccessoryTimer is missing the waiting agent")
-        if not any("12" in value for value in text_values):
-            fail("closedAccessoryTimer is missing the timer accessory")
 
     elif scenario == "shelfSurface":
         if notch_status != "opened":
