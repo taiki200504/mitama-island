@@ -1000,7 +1000,9 @@ final class OverlayPanelController {
             let session = actionableID.flatMap { model.state.session(id: $0) }
             let measured = model.measuredNotificationContentHeight
             let measuredHeight = measured > 0 ? measured + Self.notificationMeasuredContentPadding : 0
-            let needsEstimatedFloor = session?.phase == .waitingForApproval || session?.phase == .completed
+            let needsEstimatedFloor = session?.phase == .waitingForApproval
+                || session?.phase == .waitingForAnswer
+                || session?.phase == .completed
             if measured > 0 && !needsEstimatedFloor {
                 return min(maxHeight, measuredHeight)
             }
