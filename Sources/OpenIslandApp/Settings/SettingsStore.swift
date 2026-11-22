@@ -46,6 +46,8 @@ final class SettingsStore: Sendable {
         nowPlaying = NowPlayingSettings(store: store)
         hud = HUDSettings(store: store)
 
-        DisplaySettings.migrateLegacyTheme(in: store)
+        if !HarnessLaunchConfiguration().isNoninteractiveSnapshot {
+            DisplaySettings.migrateLegacyTheme(in: store)
+        }
     }
 }

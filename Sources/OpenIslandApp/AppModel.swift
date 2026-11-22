@@ -426,20 +426,20 @@ final class AppModel {
     }
     var selectedSoundName: String = NotificationSoundService.defaultSoundName {
         didSet {
-            guard selectedSoundName != oldValue else { return }
+            guard !isRestoringSnapshotPreferences, selectedSoundName != oldValue else { return }
             NotificationSoundService.selectedSoundName = selectedSoundName
         }
     }
     var overlayDisplaySelectionID: String {
         get { overlay.overlayDisplaySelectionID }
-        set { overlay.overlayDisplaySelectionID = newValue }
+        set { overlay.selectOverlayDisplay(newValue) }
     }
 
     // MARK: - Appearance
 
     var appearanceSettingsProfile: IslandAppearanceDisplayProfile = .topBar {
         didSet {
-            guard appearanceSettingsProfile != oldValue else { return }
+            guard !isRestoringSnapshotPreferences, appearanceSettingsProfile != oldValue else { return }
             UserDefaults.standard.set(appearanceSettingsProfile.rawValue, forKey: Self.appearanceProfileSettingsDefaultsKey)
         }
     }
@@ -447,7 +447,9 @@ final class AppModel {
     private var notchAppearancePreferences = IslandAppearancePreferences() {
         didSet {
             guard notchAppearancePreferences != oldValue else { return }
-            persistAppearancePreferences(notchAppearancePreferences, for: .notch)
+            if !isRestoringSnapshotPreferences {
+                persistAppearancePreferences(notchAppearancePreferences, for: .notch)
+            }
             if activeAppearanceProfile == .notch { appearancePreferencesDidChange(oldValue: oldValue, newValue: notchAppearancePreferences) }
         }
     }
@@ -455,7 +457,9 @@ final class AppModel {
     private var topBarAppearancePreferences = IslandAppearancePreferences() {
         didSet {
             guard topBarAppearancePreferences != oldValue else { return }
-            persistAppearancePreferences(topBarAppearancePreferences, for: .topBar)
+            if !isRestoringSnapshotPreferences {
+                persistAppearancePreferences(topBarAppearancePreferences, for: .topBar)
+            }
             if activeAppearanceProfile == .topBar { appearancePreferencesDidChange(oldValue: oldValue, newValue: topBarAppearancePreferences) }
         }
     }
@@ -843,7 +847,9 @@ final class AppModel {
     var remoteAnswerEnabled: Bool = true {
         didSet {
             guard remoteAnswerEnabled != oldValue else { return }
-            UserDefaults.standard.set(remoteAnswerEnabled, forKey: Self.remoteAnswerEnabledKey)
+            if !isRestoringSnapshotPreferences {
+                UserDefaults.standard.set(remoteAnswerEnabled, forKey: Self.remoteAnswerEnabledKey)
+            }
             remoteRelay.isEnabled = remoteAnswerEnabled && hasStarted
         }
     }
@@ -1065,6 +1071,7 @@ final class AppModel {
             Self.completionReplyEnabledDefaultsKey: false,
             Self.showsMenuBarIconDefaultsKey: true,
         ])
+        isRestoringSnapshotPreferences = harnessConfiguration.isNoninteractiveSnapshot
         selectedSoundName = NotificationSoundService.selectedSoundName
         showDockIcon = UserDefaults.standard.bool(forKey: Self.showDockIconDefaultsKey)
         hapticFeedbackEnabled = UserDefaults.standard.bool(forKey: Self.hapticFeedbackEnabledDefaultsKey)
@@ -1094,7 +1101,6 @@ final class AppModel {
         ) ?? .topBar
         notchAppearancePreferences = Self.loadAppearancePreferences(for: .notch)
         topBarAppearancePreferences = Self.loadAppearancePreferences(for: .topBar)
-        isRestoringSnapshotPreferences = harnessConfiguration.isNoninteractiveSnapshot
         mitamaFeedEnabled = UserDefaults.standard.bool(forKey: Self.mitamaFeedEnabledKey)
         // Default ON: `bool(forKey:)` answers false for a key nobody has
         // written yet, so the absence of the key has to be asked about first.
@@ -1115,12 +1121,12 @@ final class AppModel {
             mitamaFeed.start()
         }
         watchNotificationEnabled = UserDefaults.standard.bool(forKey: Self.watchNotificationEnabledKey)
-        isRestoringSnapshotPreferences = false
         if watchNotificationEnabled && !harnessConfiguration.isNoninteractiveSnapshot {
             startWatchRelay()
         }
         // Default ON, so the missing key has to be asked about first.
         remoteAnswerEnabled = defaults.object(forKey: Self.remoteAnswerEnabledKey) as? Bool ?? true
+        isRestoringSnapshotPreferences = false
         setupRemoteRelayCallbacks()
 
         // Wired regardless of the setting below: the callback itself checks
