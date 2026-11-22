@@ -817,9 +817,11 @@ final class AppModel {
 
     private static let watchNotificationEnabledKey = "watch.notification.enabled"
 
+    @ObservationIgnored private var isRestoringWatchPreferenceWithoutRelay = false
+
     var watchNotificationEnabled: Bool = false {
         didSet {
-            guard watchNotificationEnabled != oldValue else { return }
+            guard !isRestoringWatchPreferenceWithoutRelay, watchNotificationEnabled != oldValue else { return }
             UserDefaults.standard.set(watchNotificationEnabled, forKey: Self.watchNotificationEnabledKey)
             if watchNotificationEnabled {
                 startWatchRelay()
@@ -1041,6 +1043,7 @@ final class AppModel {
         discovery: SessionDiscoveryCoordinator = SessionDiscoveryCoordinator(),
         hookAnswerSender: (@Sendable (BridgeCommand) async throws -> BridgeResponse?)? = nil
     ) {
+        let harnessConfiguration = HarnessLaunchConfiguration()
         self.hookAnswerSender = hookAnswerSender
         self.discovery = discovery
         self.quietScenes = quietScenes
@@ -1108,8 +1111,10 @@ final class AppModel {
         if mitamaFeedEnabled {
             mitamaFeed.start()
         }
+        isRestoringWatchPreferenceWithoutRelay = harnessConfiguration.isNoninteractiveSnapshot
         watchNotificationEnabled = UserDefaults.standard.bool(forKey: Self.watchNotificationEnabledKey)
-        if watchNotificationEnabled {
+        isRestoringWatchPreferenceWithoutRelay = false
+        if watchNotificationEnabled && !harnessConfiguration.isNoninteractiveSnapshot {
             startWatchRelay()
         }
         // Default ON, so the missing key has to be asked about first.
@@ -1140,7 +1145,7 @@ final class AppModel {
 
         startAmbientBoardIfEnabled()
         configureFocusTimer()
-        if !HarnessLaunchConfiguration().isNoninteractiveSnapshot {
+        if !harnessConfiguration.isNoninteractiveSnapshot {
             configureClipboard()
         }
         configureNowPlaying()
@@ -1162,7 +1167,9 @@ final class AppModel {
         jarvisSummonWatcher.start()
         startIdleSessionCleanup()
         shelf.expiryProvider = { [weak self] in self?.shelfExpiresAfter.ttl }
-        startShelfExpiryPruning()
+        if !harnessConfiguration.isNoninteractiveSnapshot {
+            startShelfExpiryPruning()
+        }
 
         // Load Resume Cards from disk on startup.
         //
@@ -1171,7 +1178,7 @@ final class AppModel {
         // replace it with whatever the real machine happens to hold — which,
         // on a clean runner, is nothing. The clipboard fixture avoids the same
         // race by never going through its store either.
-        if HarnessLaunchConfiguration().scenario == nil {
+        if harnessConfiguration.scenario == nil {
             Task { @MainActor in
                 do {
                     try await focusCardStore.load()
