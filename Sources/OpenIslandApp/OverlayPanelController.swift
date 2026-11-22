@@ -1000,16 +1000,19 @@ final class OverlayPanelController {
             let session = actionableID.flatMap { model.state.session(id: $0) }
             let measured = model.measuredNotificationContentHeight
             let measuredHeight = measured > 0 ? measured + Self.notificationMeasuredContentPadding : 0
-            if measured > 0 && session?.phase != .waitingForApproval {
+            let needsEstimatedFloor = session?.phase == .waitingForApproval || session?.phase == .completed
+            if measured > 0 && !needsEstimatedFloor {
                 return min(maxHeight, measuredHeight)
             }
             if let session {
                 let rowHeight = session.estimatedIslandRowHeight(at: now, fields: IslandSessionCardFields(display: model.settings.display))
                 let bodyHeight = actionableBodyHeight(for: session, model: model)
                 let estimatedHeight = rowHeight + bodyHeight + Self.notificationEstimatedVerticalInsets
-                // Approval controls need the first-render estimate even when the
-                // measured scroll viewport has already been compressed by the panel.
-                return min(maxHeight, max(estimatedHeight, measuredHeight))
+                // A compressed scroll viewport cannot replace the card's estimate.
+                let contentHeightLimit = session.phase == .completed
+                    ? min(maxHeight, CGFloat(model.settings.display.completionCardMaxHeight))
+                    : maxHeight
+                return min(contentHeightLimit, max(estimatedHeight, measuredHeight))
             }
             return min(maxHeight, 300)
         }
