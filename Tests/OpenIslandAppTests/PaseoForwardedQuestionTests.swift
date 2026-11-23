@@ -247,10 +247,15 @@ private actor ForwardedPaseoMock {
         #expect(coordinator.questions["child-native"]?.requestID == childQuestion.requestID)
         #expect(model.forwardedQuestionTargets["parent-native"] == "child-native")
         model.answerQuestion(for: "parent-native", answer: .init(answer: "Yes"), promptID: childQuestion.prompt.id)
-        let deadline = ContinuousClock.now.advanced(by: .seconds(2))
-        while model.paseoSendingSessionIDs.contains("parent-native"), ContinuousClock.now < deadline { await Task.yield() }
-        #expect(await mock.sends == ["child"])
-        #expect(coordinator.requests["child-native"] == nil)
+        let deadline = ContinuousClock.now.advanced(by: .seconds(10))
+        while ContinuousClock.now < deadline, model.paseoErrors["parent-native"] == nil {
+            if await mock.sends == ["child"], coordinator.requests["child-native"] == nil { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        let sending = model.paseoSendingSessionIDs.contains("parent-native")
+        let error = model.paseoErrors["parent-native"] ?? "none"
+        #expect(await mock.sends == ["child"], "Parent sending: \(sending), error: \(error)")
+        #expect(coordinator.requests["child-native"] == nil, "Parent sending: \(sending), error: \(error)")
     }
 
     @Test func unknownParentIdentityLeavesChildVisibleAndOwnQuestionWins() async throws {

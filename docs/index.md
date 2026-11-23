@@ -67,6 +67,10 @@ This index is the repository map for humans and coding agents. Read these files 
 
 ## Local Island Overhaul Verification
 
+- [docs/brand-ribbon-1121/island-icon-review.md](./brand-ribbon-1121/island-icon-review.md) for the desktop icon verification.
+- [docs/brand-ribbon-1121/island-accent-review.md](./brand-ribbon-1121/island-accent-review.md) for the native accent and contrast review.
+
+
 - [docs/1005-independent-critique.md](./1005-independent-critique.md) for the independent Grok critique and identified risks.
 - [docs/1005-island-overhaul-acceptance.md](./1005-island-overhaul-acceptance.md) for local scope and verified acceptance evidence.
 - [docs/settings-integration-audit-1005.md](./settings-integration-audit-1005.md) for the associated local implementation audit.

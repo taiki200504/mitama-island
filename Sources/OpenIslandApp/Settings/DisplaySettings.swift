@@ -9,7 +9,8 @@ final class DisplaySettings: PreferenceGroup {
 
     init(store: PreferenceStore = .standard) {
         self.store = store
-        if store.hasValue(forKey: Keys.maxClosedIslandWidth) {
+        if !HarnessLaunchConfiguration().isNoninteractiveSnapshot,
+           store.hasValue(forKey: Keys.maxClosedIslandWidth) {
             let raw: Double = store.value(Keys.maxClosedIslandWidth, default: Defaults.maxClosedIslandWidth)
             let safe = Self.safeClosedWidth(raw)
             if safe != raw { store.setValue(safe, forKey: Keys.maxClosedIslandWidth) }

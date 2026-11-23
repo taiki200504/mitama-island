@@ -52,6 +52,24 @@ struct HarnessLaunchConfigurationTests {
         #expect(configuration.autoExitAfter == 300)
     }
 
+    @Test func identifiesNoninteractiveSnapshots() {
+        let snapshot = [
+            "OPEN_ISLAND_HARNESS_SCENARIO": "closed",
+            "OPEN_ISLAND_HARNESS_START_BRIDGE": "0",
+        ]
+        #expect(HarnessLaunchConfiguration(environment: snapshot).isNoninteractiveSnapshot)
+        #expect(!HarnessLaunchConfiguration(environment: [:]).isNoninteractiveSnapshot)
+        for (key, value) in [
+            ("OPEN_ISLAND_HARNESS_INTERACTIVE_OVERLAY", "1"),
+            ("OPEN_ISLAND_HARNESS_START_BRIDGE", "1"),
+            ("OPEN_ISLAND_HARNESS_SETTINGS_TAB", "clipboard"),
+        ] {
+            var environment = snapshot
+            environment[key] = value
+            #expect(!HarnessLaunchConfiguration(environment: environment).isNoninteractiveSnapshot)
+        }
+    }
+
     @Test
     func ignoresInvalidInputs() {
         let configuration = HarnessLaunchConfiguration(

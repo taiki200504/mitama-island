@@ -64,14 +64,15 @@ final class OverlayUICoordinator {
     var overlayDisplayOptions: [OverlayDisplayOption] = []
     var overlayPlacementDiagnostics: OverlayPlacementDiagnostics?
 
-    var overlayDisplaySelectionID = OverlayDisplayOption.automaticID {
-        didSet {
-            guard overlayDisplaySelectionID != oldValue else {
-                return
-            }
+    private(set) var overlayDisplaySelectionID = OverlayDisplayOption.automaticID
+
+    func selectOverlayDisplay(_ id: String, persist: Bool = true) {
+        guard overlayDisplaySelectionID != id else { return }
+        overlayDisplaySelectionID = id
+        if persist {
             persistOverlayDisplayPreference()
-            refreshOverlayPlacement()
         }
+        refreshOverlayPlacement()
     }
 
     @ObservationIgnored
@@ -155,9 +156,10 @@ final class OverlayUICoordinator {
     // MARK: - Initialization
 
     func restoreDisplayPreference() {
-        overlayDisplaySelectionID = UserDefaults.standard.string(
+        let savedID = UserDefaults.standard.string(
             forKey: "overlay.display.preference"
         ) ?? OverlayDisplayOption.automaticID
+        selectOverlayDisplay(savedID, persist: !HarnessLaunchConfiguration().isNoninteractiveSnapshot)
     }
 
     /// Re-syncs the cached display options and the target panel placement
@@ -471,7 +473,10 @@ final class OverlayUICoordinator {
 
         let validSelectionIDs = Set(overlayDisplayOptions.map(\.id))
         if !validSelectionIDs.contains(overlayDisplaySelectionID) {
-            overlayDisplaySelectionID = OverlayDisplayOption.automaticID
+            selectOverlayDisplay(
+                OverlayDisplayOption.automaticID,
+                persist: !HarnessLaunchConfiguration().isNoninteractiveSnapshot
+            )
             return
         }
 

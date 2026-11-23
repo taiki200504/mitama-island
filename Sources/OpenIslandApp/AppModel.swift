@@ -426,20 +426,20 @@ final class AppModel {
     }
     var selectedSoundName: String = NotificationSoundService.defaultSoundName {
         didSet {
-            guard selectedSoundName != oldValue else { return }
+            guard !isRestoringSnapshotPreferences, selectedSoundName != oldValue else { return }
             NotificationSoundService.selectedSoundName = selectedSoundName
         }
     }
     var overlayDisplaySelectionID: String {
         get { overlay.overlayDisplaySelectionID }
-        set { overlay.overlayDisplaySelectionID = newValue }
+        set { overlay.selectOverlayDisplay(newValue) }
     }
 
     // MARK: - Appearance
 
     var appearanceSettingsProfile: IslandAppearanceDisplayProfile = .topBar {
         didSet {
-            guard appearanceSettingsProfile != oldValue else { return }
+            guard !isRestoringSnapshotPreferences, appearanceSettingsProfile != oldValue else { return }
             UserDefaults.standard.set(appearanceSettingsProfile.rawValue, forKey: Self.appearanceProfileSettingsDefaultsKey)
         }
     }
@@ -447,7 +447,9 @@ final class AppModel {
     private var notchAppearancePreferences = IslandAppearancePreferences() {
         didSet {
             guard notchAppearancePreferences != oldValue else { return }
-            persistAppearancePreferences(notchAppearancePreferences, for: .notch)
+            if !isRestoringSnapshotPreferences {
+                persistAppearancePreferences(notchAppearancePreferences, for: .notch)
+            }
             if activeAppearanceProfile == .notch { appearancePreferencesDidChange(oldValue: oldValue, newValue: notchAppearancePreferences) }
         }
     }
@@ -455,7 +457,9 @@ final class AppModel {
     private var topBarAppearancePreferences = IslandAppearancePreferences() {
         didSet {
             guard topBarAppearancePreferences != oldValue else { return }
-            persistAppearancePreferences(topBarAppearancePreferences, for: .topBar)
+            if !isRestoringSnapshotPreferences {
+                persistAppearancePreferences(topBarAppearancePreferences, for: .topBar)
+            }
             if activeAppearanceProfile == .topBar { appearancePreferencesDidChange(oldValue: oldValue, newValue: topBarAppearancePreferences) }
         }
     }
@@ -570,7 +574,7 @@ final class AppModel {
     /// owner of that queue asks it to.
     var mitamaFeedEnabled: Bool = false {
         didSet {
-            guard mitamaFeedEnabled != oldValue else { return }
+            guard !isRestoringSnapshotPreferences, mitamaFeedEnabled != oldValue else { return }
             UserDefaults.standard.set(mitamaFeedEnabled, forKey: Self.mitamaFeedEnabledKey)
             if mitamaFeedEnabled {
                 mitamaFeed.start()
@@ -593,7 +597,7 @@ final class AppModel {
     /// poll, and the job counts ride the feed's existing query.
     var automationSignalEnabled: Bool = true {
         didSet {
-            guard automationSignalEnabled != oldValue else { return }
+            guard !isRestoringSnapshotPreferences, automationSignalEnabled != oldValue else { return }
             UserDefaults.standard.set(automationSignalEnabled, forKey: Self.automationSignalKey)
             ecosystemSignals.automationEnabled = automationSignalEnabled
         }
@@ -601,7 +605,7 @@ final class AppModel {
 
     var jobSignalEnabled: Bool = true {
         didSet {
-            guard jobSignalEnabled != oldValue else { return }
+            guard !isRestoringSnapshotPreferences, jobSignalEnabled != oldValue else { return }
             UserDefaults.standard.set(jobSignalEnabled, forKey: Self.jobSignalKey)
             mitamaFeed.jobSummaryEnabled = jobSignalEnabled
         }
@@ -609,7 +613,7 @@ final class AppModel {
 
     var codexSignalEnabled: Bool = true {
         didSet {
-            guard codexSignalEnabled != oldValue else { return }
+            guard !isRestoringSnapshotPreferences, codexSignalEnabled != oldValue else { return }
             UserDefaults.standard.set(codexSignalEnabled, forKey: Self.codexSignalKey)
             ecosystemSignals.codexEnabled = codexSignalEnabled
         }
@@ -817,9 +821,11 @@ final class AppModel {
 
     private static let watchNotificationEnabledKey = "watch.notification.enabled"
 
+    @ObservationIgnored private var isRestoringSnapshotPreferences = false
+
     var watchNotificationEnabled: Bool = false {
         didSet {
-            guard watchNotificationEnabled != oldValue else { return }
+            guard !isRestoringSnapshotPreferences, watchNotificationEnabled != oldValue else { return }
             UserDefaults.standard.set(watchNotificationEnabled, forKey: Self.watchNotificationEnabledKey)
             if watchNotificationEnabled {
                 startWatchRelay()
@@ -841,7 +847,9 @@ final class AppModel {
     var remoteAnswerEnabled: Bool = true {
         didSet {
             guard remoteAnswerEnabled != oldValue else { return }
-            UserDefaults.standard.set(remoteAnswerEnabled, forKey: Self.remoteAnswerEnabledKey)
+            if !isRestoringSnapshotPreferences {
+                UserDefaults.standard.set(remoteAnswerEnabled, forKey: Self.remoteAnswerEnabledKey)
+            }
             remoteRelay.isEnabled = remoteAnswerEnabled && hasStarted
         }
     }
@@ -1041,6 +1049,7 @@ final class AppModel {
         discovery: SessionDiscoveryCoordinator = SessionDiscoveryCoordinator(),
         hookAnswerSender: (@Sendable (BridgeCommand) async throws -> BridgeResponse?)? = nil
     ) {
+        let harnessConfiguration = HarnessLaunchConfiguration()
         self.hookAnswerSender = hookAnswerSender
         self.discovery = discovery
         self.quietScenes = quietScenes
@@ -1062,6 +1071,7 @@ final class AppModel {
             Self.completionReplyEnabledDefaultsKey: false,
             Self.showsMenuBarIconDefaultsKey: true,
         ])
+        isRestoringSnapshotPreferences = harnessConfiguration.isNoninteractiveSnapshot
         selectedSoundName = NotificationSoundService.selectedSoundName
         showDockIcon = UserDefaults.standard.bool(forKey: Self.showDockIconDefaultsKey)
         hapticFeedbackEnabled = UserDefaults.standard.bool(forKey: Self.hapticFeedbackEnabledDefaultsKey)
@@ -1099,33 +1109,38 @@ final class AppModel {
         jobSignalEnabled = defaults.object(forKey: Self.jobSignalKey) as? Bool ?? true
         codexSignalEnabled = defaults.object(forKey: Self.codexSignalKey) as? Bool ?? true
         mitamaFeed.jobSummaryEnabled = jobSignalEnabled
-        ecosystemSignals.automationEnabled = automationSignalEnabled
-        ecosystemSignals.codexEnabled = codexSignalEnabled
-        ecosystemSignals.start()
+        if !harnessConfiguration.isNoninteractiveSnapshot {
+            ecosystemSignals.automationEnabled = automationSignalEnabled
+            ecosystemSignals.codexEnabled = codexSignalEnabled
+            ecosystemSignals.start()
+        }
         mitamaFeed.onJobCompleted = { [weak self] completion in
             self?.presentJobCompletedPeek(completion)
         }
-        if mitamaFeedEnabled {
+        if mitamaFeedEnabled && !harnessConfiguration.isNoninteractiveSnapshot {
             mitamaFeed.start()
         }
         watchNotificationEnabled = UserDefaults.standard.bool(forKey: Self.watchNotificationEnabledKey)
-        if watchNotificationEnabled {
+        if watchNotificationEnabled && !harnessConfiguration.isNoninteractiveSnapshot {
             startWatchRelay()
         }
         // Default ON, so the missing key has to be asked about first.
         remoteAnswerEnabled = defaults.object(forKey: Self.remoteAnswerEnabledKey) as? Bool ?? true
+        isRestoringSnapshotPreferences = false
         setupRemoteRelayCallbacks()
 
         // Wired regardless of the setting below: the callback itself checks
         // `alertsWhenEventStarts` before doing anything, and the watcher only
         // ever calls it while it's actually running.
         wireVoiceRequest()
-        Task { @MainActor in
-            await refreshMeetingAlertOwner()
-            // Re-read every few minutes so a cut-over to the new app is noticed without a restart.
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(300))
+        if !harnessConfiguration.isNoninteractiveSnapshot {
+            Task { @MainActor in
                 await refreshMeetingAlertOwner()
+                // Re-read every few minutes so a cut-over to the new app is noticed without a restart.
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .seconds(300))
+                    await refreshMeetingAlertOwner()
+                }
             }
         }
         calendar.onEventStarted = { [weak self] current in
@@ -1134,18 +1149,26 @@ final class AppModel {
 
         // Never prompts: if access was granted before, this picks it back up;
         // if it was not, the setting is the only place that asks.
-        if settings.display.showsNextEvent {
+        if !harnessConfiguration.isNoninteractiveSnapshot && settings.display.showsNextEvent {
             calendar.start()
         }
 
-        startAmbientBoardIfEnabled()
-        configureFocusTimer()
-        configureClipboard()
-        configureNowPlaying()
+        if harnessConfiguration.isNoninteractiveSnapshot {
+            configureAmbientBoard(refreshVideos: false)
+        } else {
+            startAmbientBoardIfEnabled()
+        }
+        configureFocusTimer(startAutomatically: !harnessConfiguration.isNoninteractiveSnapshot)
+        if !harnessConfiguration.isNoninteractiveSnapshot {
+            configureClipboard()
+        }
+        configureNowPlaying(startAutomatically: !harnessConfiguration.isNoninteractiveSnapshot)
         configureSystemHUD()
 
         quietScenes.onSceneChanged = { [weak self] _ in self?.applyDesktopCover() }
-        quietScenes.start()
+        if !harnessConfiguration.isNoninteractiveSnapshot {
+            quietScenes.start()
+        }
         screenLockWatcher.onLocked = { [weak self] in
             // The poll that backs `quietScenes` runs every 5s; a lock is
             // worth knowing about the moment it happens rather than waiting
@@ -1155,12 +1178,18 @@ final class AppModel {
         screenLockWatcher.onUnlocked = { [weak self] in
             self?.presentLockScanGreeting()
         }
-        screenLockWatcher.start()
+        if !harnessConfiguration.isNoninteractiveSnapshot {
+            screenLockWatcher.start()
+        }
         jarvisSummonWatcher.onSummon = { [weak self] summon in self?.presentJarvisSummon(summon) }
-        jarvisSummonWatcher.start()
+        if !harnessConfiguration.isNoninteractiveSnapshot {
+            jarvisSummonWatcher.start()
+        }
         startIdleSessionCleanup()
         shelf.expiryProvider = { [weak self] in self?.shelfExpiresAfter.ttl }
-        startShelfExpiryPruning()
+        if !harnessConfiguration.isNoninteractiveSnapshot {
+            startShelfExpiryPruning()
+        }
 
         // Load Resume Cards from disk on startup.
         //
@@ -1169,7 +1198,7 @@ final class AppModel {
         // replace it with whatever the real machine happens to hold — which,
         // on a clean runner, is nothing. The clipboard fixture avoids the same
         // race by never going through its store either.
-        if HarnessLaunchConfiguration().scenario == nil {
+        if harnessConfiguration.scenario == nil {
             Task { @MainActor in
                 do {
                     try await focusCardStore.load()
@@ -1579,7 +1608,7 @@ final class AppModel {
 
     /// Tells the board where to get what it draws. Always wired, whether or not
     /// the idle clock is running — the harness presents it directly.
-    private func configureAmbientBoard() {
+    private func configureAmbientBoard(refreshVideos: Bool = true) {
         ambient.lang = lang
         ambient.board = { [weak self] in
             guard let self else { return .make(for: []) }
@@ -1614,7 +1643,9 @@ final class AppModel {
         }
         ambient.onDismiss = { [weak self] in self?.idle.markActive() }
         idle.onTick = { [weak self] seconds in self?.considerAmbientBoard(idleFor: seconds) }
-        refreshAmbientVideoCache()
+        if refreshVideos {
+            refreshAmbientVideoCache()
+        }
     }
 
     /// Starts or stops the idle clock to match the setting.
@@ -1633,12 +1664,12 @@ final class AppModel {
     /// Wires the timer coordinator to sound, language and the overlay it
     /// posts its sneak peeks through, then starts the eye-break loop if the
     /// setting says it should already be running.
-    private func configureFocusTimer() {
+    private func configureFocusTimer(startAutomatically: Bool) {
         focusTimer.soundSettings = settings.sound
         focusTimer.timerSettings = settings.timer
         focusTimer.lang = lang
         focusTimer.overlay = overlay
-        if settings.timer.eyeBreakEnabled {
+        if startAutomatically && settings.timer.eyeBreakEnabled {
             focusTimer.start(.eyeBreak())
         }
     }
@@ -1650,11 +1681,11 @@ final class AppModel {
     /// if the setting says it should be running. Safe to call even when the
     /// framework was never vendored — `NowPlayingCoordinator.start()` just
     /// reports itself unavailable in that case rather than failing.
-    private func configureNowPlaying() {
+    private func configureNowPlaying(startAutomatically: Bool) {
         nowPlaying.overlay = overlay
         nowPlaying.lang = lang
         nowPlaying.settings = settings.nowPlaying
-        if settings.nowPlaying.enabled {
+        if startAutomatically && settings.nowPlaying.enabled {
             nowPlaying.start()
         }
     }
@@ -2043,14 +2074,16 @@ final class AppModel {
         // Only a launched app mirrors prompts; models built in tests stay off the network.
         remoteRelay.isEnabled = remoteAnswerEnabled && startBridge
 
-        shelf.load()
-        shelf.pruneExpired()
-        power.start()
-        power.onChange = { [weak self] in
-            self?.refreshSustainedCamera()
-            self?.refreshKeepAwake()
+        if loadRuntimeState {
+            shelf.load()
+            shelf.pruneExpired()
+            power.start()
+            power.onChange = { [weak self] in
+                self?.refreshSustainedCamera()
+                self?.refreshKeepAwake()
+            }
+            configureKeepAwake()
         }
-        configureKeepAwake()
 
         // Typing in the island borrows application focus and gives it back when
         // the island closes. Leaving by any other route — the user switching
@@ -2064,10 +2097,12 @@ final class AppModel {
             Task { @MainActor in TextInputFocusHandoff.forget() }
         }
 
-        // ponytail: 顔ゲートを消した版に一度でも上がれば不要になる。2026-10 以降に削除する。
-        try? FileManager.default.removeItem(at: Self.legacyCameraReferenceURL)
-        for key in Self.legacyFaceGateDefaultsKeys {
-            UserDefaults.standard.removeObject(forKey: key)
+        if loadRuntimeState {
+            // ponytail: 顔ゲートを消した版に一度でも上がれば不要になる。2026-10 以降に削除する。
+            try? FileManager.default.removeItem(at: Self.legacyCameraReferenceURL)
+            for key in Self.legacyFaceGateDefaultsKeys {
+                UserDefaults.standard.removeObject(forKey: key)
+            }
         }
 
         // Hot keys are registered process-wide. A harness run would take them
@@ -2902,7 +2937,7 @@ final class AppModel {
             // same reason the completion banner does.
             mitamaFeed.loadAmbientFixture(pulse: snapshot.debugPulse, card: snapshot.debugLearnCard)
             ambient.cardElapsedOverride = snapshot.debugCardElapsed
-            configureAmbientBoard()
+            configureAmbientBoard(refreshVideos: !HarnessLaunchConfiguration().isNoninteractiveSnapshot)
             if let ambientDate = snapshot.debugAmbientDate {
                 // Pinned so a headless capture always lands on the same
                 // gradient, rather than whichever phase the wall clock
