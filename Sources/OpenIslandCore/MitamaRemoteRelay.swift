@@ -55,6 +55,8 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
         let fingerprint: String
         /// Local request IDs folded into this card. The answer goes to whichever is live at answer time.
         var aliases: [String] = []
+        /// Agent tool name shown in the late (stepped-away) urgent notice.
+        var tool: String? = nil
     }
 
     private let http: MitamaRemoteHTTP
@@ -65,6 +67,11 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
     public var isWaiting: (@Sendable @MainActor (String) -> Bool)?
     private var waiting: [String: (since: Date, tool: String)] = [:]
     private var escalated: Set<String> = []
+    /// Permission cards whose urgent push was sent (or claimed) already.
+    private var pushedPermissions: Set<String> = []
+    /// Cards expired by the 30-minute cutoff, kept briefly so a later Mac-side answer can still retire them on the phone.
+    private var expiredCards: [String: (sessionID: String, at: Date)] = [:]
+    static let expiredMemory: TimeInterval = 2 * 3600
 
     private let lock = NSLock()
     /// Off until the app turns it on: a model built in tests must never write to the real mitama.
@@ -99,6 +106,8 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
                 if !newValue {
                     pending.removeAll()
                     waiting.removeAll()
+                    pushedPermissions.removeAll()
+                    expiredCards.removeAll()
                     pollTask?.cancel()
                     pollTask = nil
                 }
@@ -187,7 +196,7 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
         let created = now()
         locked {
             pending[id] = Pending(sessionID: sessionID, kind: kind, options: options, createdAt: created,
-                                  fingerprint: fingerprint)
+                                  fingerprint: fingerprint, tool: agentTool)
         }
 
         var row: [String: Any] = [
@@ -212,6 +221,7 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
         // At the Mac the island already shows the prompt; pushing it to the phone too fired
         // ~40 urgent notifications a day. Only push when the person has stepped away.
         if kind == .permission, idleSeconds() >= Self.awayAfter {
+            locked { _ = pushedPermissions.insert(id) }
             _ = await send(env, table: "mos_notifications", method: "POST", body: [
                 "level": "urgent",
                 "title": "\(agentTool): 確認待ち",
@@ -324,14 +334,52 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
         }
     }
 
+    /// A permission that was registered while the person was at the Mac, and is still pending after they left.
+    func escalatePermissions() async {
+        guard isEnabled, idleSeconds() >= Self.awayAfter else { return }
+        let candidates = locked { () -> [String] in
+            pushedPermissions.formIntersection(pending.keys)
+            return pending.filter { $0.value.kind == .permission && !pushedPermissions.contains($0.key) }.map(\.key)
+        }
+        guard !candidates.isEmpty, let env = await resolvedEnvironment() else { return }
+        for id in candidates {
+            let claimed = locked { pending[id] != nil && pushedPermissions.insert(id).inserted }
+            guard claimed else { continue }
+            let reference = "island:\(id)"
+            // Fail closed, but release the claim so the next poll can retry.
+            guard let data = await send(env, table: "mos_notifications", method: "GET", query: [
+                URLQueryItem(name: "source_ref", value: "eq.\(reference)"),
+                URLQueryItem(name: "select", value: "id"), URLQueryItem(name: "limit", value: "1")
+            ]), let rows = try? JSONSerialization.jsonObject(with: data) as? [Any] else {
+                locked { _ = pushedPermissions.remove(id) }
+                continue
+            }
+            guard rows.isEmpty, let entry = locked({ pending[id] }) else { continue }
+            let tool = entry.tool ?? locked { waiting[entry.sessionID]?.tool } ?? "Agent"
+            _ = await send(env, table: "mos_notifications", method: "POST", body: [
+                "level": "urgent",
+                "title": "\(tool): 確認待ち",
+                "body": "\(tool) のセッション1件がツール実行の許可を待っています",
+                "read": false,
+                "source_ref": reference,
+            ])
+        }
+    }
+
     func pollOnce() async {
         await escalateWaiting()
+        await escalatePermissions()
         guard isEnabled, hasPending, let env = await resolvedEnvironment() else { return }
 
         let cutoff = now().addingTimeInterval(-Self.requestLifetime)
         let expired = locked { pending.filter { $0.value.createdAt < cutoff }.map(\.key) }
         if !expired.isEmpty {
-            locked { expired.forEach { pending.removeValue(forKey: $0) } }
+            let stamp = now()
+            locked {
+                for id in expired {
+                    if let entry = pending.removeValue(forKey: id) { expiredCards[id] = (entry.sessionID, stamp) }
+                }
+            }
             _ = await patch(env, filters: ["id": "in.(\(expired.joined(separator: ",")))", "status": "eq.pending"],
                             body: ["status": "expired"])
         }
@@ -383,13 +431,17 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
     // MARK: - Resolved on the Mac
 
     func resolveElsewhere(sessionID: String) async {
+        let cutoff = now().addingTimeInterval(-Self.expiredMemory)
         let ids = locked {
+            expiredCards = expiredCards.filter { $0.value.at >= cutoff }
+            let expiredIDs = expiredCards.filter { $0.value.sessionID == sessionID }.map(\.key)
+            expiredIDs.forEach { expiredCards.removeValue(forKey: $0) }
             let ids = pending.filter { $0.value.sessionID == sessionID }.map(\.key)
             ids.forEach { pending.removeValue(forKey: $0) }
-            return ids
+            return ids + expiredIDs
         }
         guard !ids.isEmpty, let env = await resolvedEnvironment() else { return }
-        _ = await patch(env, filters: ["id": "in.(\(ids.joined(separator: ",")))", "status": "in.(pending,answered)"],
+        _ = await patch(env, filters: ["id": "in.(\(ids.joined(separator: ",")))", "status": "in.(pending,answered,expired)"],
                         body: ["status": "resolved_elsewhere"])
     }
 
@@ -398,7 +450,7 @@ public final class MitamaRemoteRelay: @unchecked Sendable {
     static func isValid(answer: String, for entry: Pending) -> Bool {
         switch entry.kind {
         case .permission: answer == "allow" || answer == "deny"
-        case .question: entry.options.contains(answer)
+        case .question: entry.options.contains(answer) && !RemoteAnswerPolicy.isEscalation(answer)
         }
     }
 
