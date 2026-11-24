@@ -825,6 +825,20 @@ struct IslandClosedAccessoryView: View {
     var body: some View {
         Group {
             switch accessory {
+            case .meetingRecording(let minutes):
+                // Red, always: a recorder that is running must read as running
+                // at a glance, whatever else the island is showing.
+                HStack(spacing: 3) {
+                    Circle()
+                        .fill(Color.red)
+                        .frame(width: 7, height: 7)
+                        .shadow(color: Color.red.opacity(0.7), radius: 3)
+                    Text("\(minutes)m")
+                        .font(.islandMono(size: 11, weight: .semibold))
+                        .foregroundStyle(V6Palette.paper.opacity(0.85))
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(LanguageManager.shared.t("meeting.recording"))
             case .timer(let remainingMinutes, _):
                 Text("\(remainingMinutes)m")
                     .font(.islandMono(size: 11, weight: .semibold))
@@ -883,6 +897,8 @@ struct IslandClosedAccessoryView: View {
     static func intrinsicWidth(of accessory: IslandClosedAccessory) -> CGFloat {
         let charWidth: CGFloat = 7.2
         switch accessory {
+        case .meetingRecording(let minutes):
+            return 7 + 3 + CGFloat("\(minutes)m".count) * charWidth
         case .timer(let remainingMinutes, _):
             return CGFloat("\(remainingMinutes)m".count) * charWidth
         case .nowPlaying(_, let artworkThumbnailPNG):

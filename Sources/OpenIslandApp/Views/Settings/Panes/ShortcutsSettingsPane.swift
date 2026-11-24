@@ -21,6 +21,7 @@ struct ShortcutsSettingsPane: View {
             cameraGestureSection
             voiceAnswerSection
             earshotSection
+            meetingCaptureSection
             linkstartSection
             clipboardSection
             panelSection
@@ -328,6 +329,91 @@ struct ShortcutsSettingsPane: View {
             Text(lang.t("settings.earshot.section"))
         } footer: {
             Text(lang.t("settings.earshot.section.footer"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var meetingCapture: MeetingCaptureSettings { model.settings.meetingCapture }
+
+    /// Separate from earshot: earshot pauses during calls, this records them —
+    /// only while a meeting is detected, with a red mark on the island the
+    /// whole time. The lists are plain text, one entry per line.
+    private var meetingCaptureSection: some View {
+        Section {
+            SettingsToggleRow(
+                title: lang.t("settings.meeting.enabled"),
+                help: lang.t("settings.meeting.enabled.help"),
+                isOn: Binding(
+                    get: { meetingCapture.isEnabled },
+                    set: {
+                        meetingCapture.isEnabled = $0
+                        model.meetingCapture.settingsChanged()
+                    }
+                )
+            )
+
+            if meetingCapture.isEnabled {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(lang.t("settings.meeting.doNotRecord"))
+                    TextField(
+                        lang.t("settings.meeting.doNotRecord.placeholder"),
+                        text: Binding(
+                            get: { meetingCapture.doNotRecordText },
+                            set: { meetingCapture.doNotRecordText = $0 }
+                        ),
+                        axis: .vertical
+                    )
+                    .lineLimit(2...6)
+                    .textFieldStyle(.roundedBorder)
+                    Text(lang.t("settings.meeting.doNotRecord.help"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(lang.t("settings.meeting.company"))
+                    TextField(
+                        lang.t("settings.meeting.company.keywords"),
+                        text: Binding(
+                            get: { meetingCapture.companyKeywordsText },
+                            set: { meetingCapture.companyKeywordsText = $0 }
+                        ),
+                        axis: .vertical
+                    )
+                    .lineLimit(1...4)
+                    .textFieldStyle(.roundedBorder)
+                    TextField(
+                        lang.t("settings.meeting.company.domains"),
+                        text: Binding(
+                            get: { meetingCapture.companyDomainsText },
+                            set: { meetingCapture.companyDomainsText = $0 }
+                        ),
+                        axis: .vertical
+                    )
+                    .lineLimit(1...4)
+                    .textFieldStyle(.roundedBorder)
+                    Text(lang.t("settings.meeting.company.help"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                SettingsRow(title: lang.t("settings.meeting.inbox"), help: lang.t("settings.meeting.inbox.help")) {
+                    TextField(
+                        MeetingCaptureSettings.Defaults.inboxPath,
+                        text: Binding(
+                            get: { meetingCapture.inboxPath },
+                            set: { meetingCapture.inboxPath = $0 }
+                        )
+                    )
+                    .textFieldStyle(.roundedBorder)
+                    .frame(maxWidth: 220)
+                }
+            }
+        } header: {
+            Text(lang.t("settings.meeting.section"))
+        } footer: {
+            Text(lang.t("settings.meeting.section.footer"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

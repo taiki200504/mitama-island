@@ -1054,3 +1054,31 @@
 "settings.mitama.voice.status.tooLongHeld" = "已在 60 秒后停止。";
 "settings.mitama.voice.status.denied" = "请在系统设置中允许麦克风和语音识别。";
 "settings.mitama.voice.status.unsupported" = "这台 Mac 无法使用设备端日语识别。";
+
+/* Meeting auto-capture */
+"meeting.recording" = "录音中";
+"meeting.stop" = "停止";
+"meeting.discard" = "丢弃";
+"meeting.processing" = "正在生成会议记录…";
+"meeting.openHub" = "打开";
+"meeting.dismiss" = "关闭";
+"meeting.notice.started" = "正在录制会议：%@";
+"meeting.notice.skipped" = "不录制 %@（不录制列表：%@）";
+"meeting.notice.discarded" = "已丢弃会议录音。";
+"meeting.notice.failed" = "无法录制会议——请检查麦克风和屏幕录制权限。";
+"meeting.notice.handoffFailed" = "录音已保存，但未能交给 mitama。";
+"meeting.notice.processing" = "会议已结束，正在生成 %@ 的会议记录。";
+"meeting.notice.summaryReady" = "会议记录已完成：%@";
+"settings.meeting.section" = "会议录音";
+"settings.meeting.section.footer" = "仅在检测到会议时录音（麦克风使用中，且有会议应用、Meet/Zoom/Teams 浏览器标签页或带通话链接的日程）。麦克风和会议应用的声音分别保存为两个文件，会议结束后移入 mitama 收件箱。不会从这里上传。录音期间岛上会显示红点。";
+"settings.meeting.enabled" = "自动录制会议";
+"settings.meeting.enabled.help" = "需要麦克风和屏幕录制权限。可随时在岛上停止或丢弃。";
+"settings.meeting.doNotRecord" = "不录制列表";
+"settings.meeting.doNotRecord.placeholder" = "每行一项：应用、标题、对象或 @域名";
+"settings.meeting.doNotRecord.help" = "应用、标题、日程或参与者包含任一项时不录制。";
+"settings.meeting.company" = "公司会议";
+"settings.meeting.company.keywords" = "标题关键词（每行一个）";
+"settings.meeting.company.domains" = "参与者域名（每行一个）";
+"settings.meeting.company.help" = "仍会录音，但标记为公司会议，会议记录发往公司侧而非个人 Hub。";
+"settings.meeting.inbox" = "交接文件夹";
+"settings.meeting.inbox.help" = "会议结束后供 mitama-os 读取的位置。";

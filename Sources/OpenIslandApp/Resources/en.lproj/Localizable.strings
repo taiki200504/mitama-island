@@ -1054,3 +1054,31 @@
 "settings.mitama.voice.status.tooLongHeld" = "Stopped after 60 seconds.";
 "settings.mitama.voice.status.denied" = "Allow the microphone and speech recognition in System Settings.";
 "settings.mitama.voice.status.unsupported" = "On-device Japanese recognition is not available on this Mac.";
+
+/* Meeting auto-capture */
+"meeting.recording" = "Recording meeting";
+"meeting.stop" = "Stop";
+"meeting.discard" = "Discard";
+"meeting.processing" = "Making notes…";
+"meeting.openHub" = "Open";
+"meeting.dismiss" = "Close";
+"meeting.notice.started" = "Recording meeting: %@";
+"meeting.notice.skipped" = "Not recording %@ (do-not-record: %@)";
+"meeting.notice.discarded" = "Meeting recording discarded.";
+"meeting.notice.failed" = "Could not record the meeting — check Microphone and Screen Recording permissions.";
+"meeting.notice.handoffFailed" = "Meeting saved, but could not be handed to mitama.";
+"meeting.notice.processing" = "Meeting ended — making notes for %@.";
+"meeting.notice.summaryReady" = "Notes ready: %@";
+"settings.meeting.section" = "Meeting recording";
+"settings.meeting.section.footer" = "Records only while a meeting is detected (microphone in use plus a meeting app, a Meet/Zoom/Teams browser tab, or a calendar entry with a call link). Your microphone and the meeting app's audio are saved as two files on this Mac and moved to the mitama inbox when the meeting ends. Nothing is uploaded from here. A red mark stays on the island while recording.";
+"settings.meeting.enabled" = "Record meetings automatically";
+"settings.meeting.enabled.help" = "Needs Microphone and Screen Recording permission. Stop or discard from the island at any time.";
+"settings.meeting.doNotRecord" = "Never record";
+"settings.meeting.doNotRecord.placeholder" = "One per line: app, title, person or @domain";
+"settings.meeting.doNotRecord.help" = "A meeting whose app, title, calendar entry or attendee contains any entry is not recorded.";
+"settings.meeting.company" = "Company meetings";
+"settings.meeting.company.keywords" = "Title keywords, one per line";
+"settings.meeting.company.domains" = "Attendee domains, one per line";
+"settings.meeting.company.help" = "Still recorded, but tagged as company so mitama sends the notes to the company side instead of your Hub.";
+"settings.meeting.inbox" = "Hand-off folder";
+"settings.meeting.inbox.help" = "Where finished meetings go for mitama-os to pick up.";

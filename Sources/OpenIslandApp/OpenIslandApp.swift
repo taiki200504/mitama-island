@@ -49,6 +49,13 @@ final class OpenIslandAppDelegate: NSObject, NSApplicationDelegate {
                 earshotDeviceReporter = reporter
                 reporter.start()
 
+                // Meeting auto-capture. Same rule as earshot: never during a
+                // harness run.
+                let appModel = model
+                model.meetingSignals.calendarNow = { [weak appModel] in appModel?.currentMeetingCalendarEntry }
+                model.meetingCapture.onNotice = { [weak appModel] text in appModel?.present(notice: text) }
+                model.meetingCapture.start()
+
                 let controller = StatusItemController(model: model)
                 statusItemController = controller
                 model.onShowsMenuBarIconChanged = { [weak controller] isOn in

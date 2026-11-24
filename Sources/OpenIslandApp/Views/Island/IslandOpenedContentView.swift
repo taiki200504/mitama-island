@@ -128,6 +128,13 @@ extension IslandPanelView {
                     .transition(IslandTransition.resolved(IslandTransition.panelDrop))
             }
 
+            if model.meetingCapture.phase != .idle {
+                MeetingCaptureBar(capture: model.meetingCapture)
+                    .padding(.horizontal, 18)
+                    .padding(.top, 8)
+                    .transition(IslandTransition.resolved(IslandTransition.panelDrop))
+            }
+
             if let summon = model.jarvisSummon {
                 jarvisSummonBar(summon)
                     .padding(.horizontal, 18)
