@@ -366,6 +366,104 @@ struct MitamaRemoteRelayTests {
         #expect(patch?.query.contains("r1") == true && patch?.query.contains("r2") == true)
         #expect(relay.pendingCountForTests() == 0)
     }
+
+    // MARK: remote guard
+
+    @Test
+    func escalationLabelsAreDetected() {
+        for label in ["常に許可", "Always allow", "Don’t ask again", "すべて許可", "Bypass permissions",
+                      "このセッション中は許可", "Allow all edits", "ＡＬＷＡＹＳ", "for this session", "確認なしで実行"] {
+            #expect(RemoteAnswerPolicy.isEscalation(label), "\(label)")
+        }
+        for label in ["Yes", "No", "許可", "拒否", "src/main.swift を編集"] {
+            #expect(!RemoteAnswerPolicy.isEscalation(label), "\(label)")
+        }
+    }
+
+    @Test
+    func escalatingQuestionAnswerIsDroppedEvenIfOffered() async {
+        let http = FakeHTTP()
+        http.respond = { call in
+            switch (call.method, call.table) {
+            case ("GET", "mos_island_requests"): return #"[{"id":"r1","answer":"Always allow"}]"#
+            case ("PATCH", _): return #"[{"id":"r1"}]"#
+            default: return "[]"
+            }
+        }
+        let relay = makeRelay(http)
+        let answered = Recorder()
+        relay.onAnswerQuestion = { answered.record("\($0):\($2)") }
+        await register(relay, kind: .question, options: ["Yes", "Always allow"])
+        await relay.pollOnce()
+        #expect(answered.values.isEmpty)
+        #expect(relay.pendingCountForTests() == 0)
+        #expect(http.calls.last { $0.method == "PATCH" }?.body["status"] as? String == "expired")
+    }
+
+    @Test
+    func answeringOnTheMacAfterExpiryStillMarksResolvedElsewhere() async {
+        let http = FakeHTTP()
+        let clock = Clock(Date(timeIntervalSince1970: 1_000_000))
+        let relay = makeRelay(http) { clock.date }
+        await register(relay)
+        clock.date = clock.date.addingTimeInterval(31 * 60)
+        await relay.pollOnce()
+        clock.date = clock.date.addingTimeInterval(10 * 60)
+        await relay.resolveElsewhere(sessionID: "s1")
+        let patch = http.calls.last { $0.method == "PATCH" }
+        #expect(patch?.body["status"] as? String == "resolved_elsewhere")
+        #expect(patch?.query.contains("r1") == true)
+        #expect(patch?.query.contains("expired") == true)
+    }
+
+    @Test
+    func expiredMemoryIsForgottenAfterTwoHours() async {
+        let http = FakeHTTP()
+        let clock = Clock(Date(timeIntervalSince1970: 1_000_000))
+        let relay = makeRelay(http) { clock.date }
+        await register(relay)
+        clock.date = clock.date.addingTimeInterval(31 * 60)
+        await relay.pollOnce()
+        let before = http.calls.count
+        clock.date = clock.date.addingTimeInterval(3 * 3600)
+        await relay.resolveElsewhere(sessionID: "s1")
+        #expect(http.calls.count == before)
+    }
+
+    @Test
+    func permissionRegisteredAtTheMacIsPushedOnceAfterTheUserLeaves() async {
+        let http = FakeHTTP()
+        let idle = Clock(Date(timeIntervalSince1970: 10))
+        let relay = makeRelay(http, idle: { idle.date.timeIntervalSince1970 })
+        await register(relay)
+        await relay.pollOnce()
+        #expect(http.calls.filter { $0.table == "mos_notifications" }.isEmpty)
+        idle.date = Date(timeIntervalSince1970: 400)
+        await relay.pollOnce()
+        await relay.pollOnce()
+        let pushes = http.calls.filter { $0.table == "mos_notifications" && $0.method == "POST" }
+        #expect(pushes.count == 1)
+        #expect(pushes.first?.body["source_ref"] as? String == "island:r1")
+        #expect(pushes.first?.body["level"] as? String == "urgent")
+    }
+
+    @Test
+    func awayPushIsSkippedWhenAlreadyPushedAtInsertOrAlreadyStored() async {
+        let http = FakeHTTP()
+        let relay = makeRelay(http)
+        await register(relay)
+        await relay.pollOnce()
+        #expect(http.calls.filter { $0.table == "mos_notifications" }.count == 1)
+
+        let http2 = FakeHTTP()
+        http2.respond = { call in call.table == "mos_notifications" && call.method == "GET" ? #"[{"id":"x"}]"# : "[]" }
+        let idle = Clock(Date(timeIntervalSince1970: 10))
+        let relay2 = makeRelay(http2, idle: { idle.date.timeIntervalSince1970 })
+        await register(relay2)
+        idle.date = Date(timeIntervalSince1970: 400)
+        await relay2.pollOnce()
+        #expect(http2.calls.filter { $0.table == "mos_notifications" && $0.method == "POST" }.isEmpty)
+    }
 }
 
 private final class Recorder: @unchecked Sendable {
