@@ -741,8 +741,22 @@ final class AppModel {
 
     @ObservationIgnored private let mitamaOSWindow = MitamaOSWindowController()
 
+    /// Opens the native mitama app (one mitama, 2026-11-24). Falls back to the
+    /// embedded web window when the app is missing or `mitamaOS.useWebWindow` is on.
     func openMitamaHub(path: String = "/") {
-        mitamaOSWindow.show(path: path)
+        let forceWeb = UserDefaults.standard.bool(forKey: "mitamaOS.useWebWindow")
+        guard !forceWeb,
+              let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: MitamaAppLink.bundleIdentifier)
+        else {
+            mitamaOSWindow.show(path: path)
+            return
+        }
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.activates = true
+        NSWorkspace.shared.open([MitamaAppLink.url(path: path)], withApplicationAt: appURL, configuration: configuration) { [weak self] _, error in
+            guard error != nil else { return }
+            Task { @MainActor in self?.mitamaOSWindow.show(path: path) }
+        }
     }
 
     /// Agent sessions and hours mitama has counted since Monday.

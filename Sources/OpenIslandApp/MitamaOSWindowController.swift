@@ -22,7 +22,7 @@ final class MitamaOSWindowController: NSObject, NSWindowDelegate, WKNavigationDe
                 styleMask: [.titled, .closable, .miniaturizable, .resizable],
                 backing: .buffered, defer: false
             )
-            window.title = "mitama OS"
+            window.title = "mitama"
             window.minSize = NSSize(width: 420, height: 600)
             window.isReleasedWhenClosed = false
             window.contentView = webView

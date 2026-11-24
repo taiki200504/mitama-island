@@ -993,7 +993,7 @@
 
 "nowPlaying.unavailable" = "Now-playing information is unavailable in this environment.";
 
-"mitamaOS.open" = "Open mitama OS";
+"mitamaOS.open" = "Open mitama";
 // Manual keep awake
 "keepAwake.title" = "Stay awake";
 "keepAwake.mode.off" = "Off";
