@@ -104,13 +104,11 @@ public final class BridgeServer: @unchecked Sendable {
         let primaryListener = try bindListener(at: socketURL)
         listeners.append(primaryListener)
 
-        // Also listen on the legacy /tmp path so that older hook binaries
-        // (from already-running Claude Code sessions) can still connect.
-        let legacyURL = BridgeSocketLocation.legacyURL
-        if legacyURL != socketURL {
-            if let legacyListener = try? bindListener(at: legacyURL) {
-                listeners.append(legacyListener)
-            }
+        // Keep older hooks connected to the default server. An explicit socket
+        // must leave the running server's legacy listener alone.
+        if socketURL == BridgeSocketLocation.defaultURL,
+           let legacyListener = try? bindListener(at: BridgeSocketLocation.legacyURL) {
+            listeners.append(legacyListener)
         }
     }
 
@@ -349,6 +347,9 @@ public final class BridgeServer: @unchecked Sendable {
                             handle(command, from: clientID)
                         }
                     }
+                    // Command handling can register or disconnect this client.
+                    guard let updatedClient = clients[clientID] else { return }
+                    client = updatedClient
                 } catch {
                     removeClient(clientID)
                     return
@@ -2718,7 +2719,9 @@ public final class BridgeServer: @unchecked Sendable {
     }
 
     private func broadcast(_ envelopes: [BridgeEnvelope]) {
-        let clientIDs = Array(clients.keys)
+        // Only observers consume broadcast events; hook connections (role nil) get
+        // targeted responses via send(_:to:) and must not be blocked by broadcasts.
+        let clientIDs = clients.values.filter { $0.role == .observer }.map(\.id)
 
         for clientID in clientIDs {
             for envelope in envelopes {

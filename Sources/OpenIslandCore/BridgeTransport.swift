@@ -415,8 +415,10 @@ func disableSocketSigPipe(_ fileDescriptor: Int32) throws {
     }
 }
 
-func writeAll(_ data: Data, to fileDescriptor: Int32) throws {
+/// Bounds retries on a full socket using a monotonic deadline.
+func writeAll(_ data: Data, to fileDescriptor: Int32, timeout: TimeInterval = 0.25) throws {
     var remaining = data[...]
+    let deadline = DispatchTime.now().uptimeNanoseconds + UInt64(max(0, timeout) * 1_000_000_000)
 
     while !remaining.isEmpty {
         let bytesWritten = remaining.withUnsafeBytes { rawBuffer -> Int in
@@ -429,8 +431,20 @@ func writeAll(_ data: Data, to fileDescriptor: Int32) throws {
             continue
         }
 
+        if bytesWritten == -1 && errno == EINTR {
+            continue
+        }
+
         if bytesWritten == -1 && (errno == EAGAIN || errno == EWOULDBLOCK) {
-            usleep(1_000)
+            let now = DispatchTime.now().uptimeNanoseconds
+            guard now < deadline else {
+                throw BridgeTransportError.systemCallFailed("write", ETIMEDOUT)
+            }
+            let waitMs = Int32(min(max((deadline - now) / 1_000_000, 1), UInt64(Int32.max)))
+            var pollFD = pollfd(fd: fileDescriptor, events: Int16(POLLOUT), revents: 0)
+            if poll(&pollFD, 1, waitMs) == -1, errno != EINTR {
+                throw BridgeTransportError.systemCallFailed("poll", errno)
+            }
             continue
         }
 
