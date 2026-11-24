@@ -1053,3 +1053,31 @@
 "settings.mitama.voice.status.tooLongHeld" = "已在 60 秒後停止。";
 "settings.mitama.voice.status.denied" = "請在系統設定中允許麥克風與語音辨識。";
 "settings.mitama.voice.status.unsupported" = "這台 Mac 無法使用裝置端日語辨識。";
+
+/* Meeting auto-capture */
+"meeting.recording" = "錄音中";
+"meeting.stop" = "停止";
+"meeting.discard" = "丟棄";
+"meeting.processing" = "正在產生會議記錄…";
+"meeting.openHub" = "打開";
+"meeting.dismiss" = "關閉";
+"meeting.notice.started" = "正在錄製會議：%@";
+"meeting.notice.skipped" = "不錄製 %@（不錄製清單：%@）";
+"meeting.notice.discarded" = "已丟棄會議錄音。";
+"meeting.notice.failed" = "無法錄製會議——請檢查麥克風和螢幕錄製權限。";
+"meeting.notice.handoffFailed" = "錄音已儲存，但未能交給 mitama。";
+"meeting.notice.processing" = "會議已結束，正在產生 %@ 的會議記錄。";
+"meeting.notice.summaryReady" = "會議記錄已完成：%@";
+"settings.meeting.section" = "會議錄音";
+"settings.meeting.section.footer" = "僅在偵測到會議時錄音（麥克風使用中，且有會議應用程式、Meet/Zoom/Teams 瀏覽器分頁或附通話連結的行程）。麥克風和會議應用程式的聲音分別儲存為兩個檔案，會議結束後移入 mitama 收件匣。不會從這裡上傳。錄音期間島上會顯示紅點。";
+"settings.meeting.enabled" = "自動錄製會議";
+"settings.meeting.enabled.help" = "需要麥克風和螢幕錄製權限。可隨時在島上停止或丟棄。";
+"settings.meeting.doNotRecord" = "不錄製清單";
+"settings.meeting.doNotRecord.placeholder" = "每行一項：應用程式、標題、對象或 @網域";
+"settings.meeting.doNotRecord.help" = "應用程式、標題、行程或參與者包含任一項時不錄製。";
+"settings.meeting.company" = "公司會議";
+"settings.meeting.company.keywords" = "標題關鍵字（每行一個）";
+"settings.meeting.company.domains" = "參與者網域（每行一個）";
+"settings.meeting.company.help" = "仍會錄音，但標記為公司會議，會議記錄送往公司端而非個人 Hub。";
+"settings.meeting.inbox" = "交接資料夾";
+"settings.meeting.inbox.help" = "會議結束後供 mitama-os 讀取的位置。";

@@ -673,6 +673,14 @@ final class AppModel {
     /// and it writes to disk only — nothing is recognised or sent from here.
     @ObservationIgnored let earshot: AmbientListenSession
 
+    /// Meeting auto-capture. Separate from earshot, which pauses during calls:
+    /// this records them, into their own folder, and hands them to mitama-os.
+    /// It observes itself, so views reading `meetingCapture.phase` update.
+    @ObservationIgnored let meetingCapture: MeetingCaptureCoordinator
+    /// The live signal source behind `meetingCapture`; the calendar is wired
+    /// into it at launch.
+    @ObservationIgnored let meetingSignals: SystemMeetingSignalSource
+
     /// The one sentence the island is currently showing the user.
     ///
     /// The camera and the microphone explain themselves here — refused
@@ -1075,6 +1083,13 @@ final class AppModel {
         self.cameraActivation = CameraActivationSession(settings: settings.cameraGesture)
         self.voiceAnswer = VoiceCommandSession(settings: settings.voiceCommand)
         self.earshot = AmbientListenSession(settings: settings.ambientListen)
+        let meetingSignals = SystemMeetingSignalSource()
+        self.meetingSignals = meetingSignals
+        self.meetingCapture = MeetingCaptureCoordinator(
+            settings: settings.meetingCapture,
+            source: meetingSignals,
+            makeRecorder: { ScreenCaptureMeetingRecorder() }
+        )
         UserDefaults.standard.register(defaults: [
             // Off. The island is the app; a Dock icon and an entry in the
             // application switcher make the settings window read as a second
@@ -1797,6 +1812,13 @@ final class AppModel {
     /// board — both want the same fact `islandClosedContent` already has.
     var currentCalendarEvent: UpcomingCalendarEvent.Current? { calendar.current() }
 
+    /// The calendar entry happening now, as a meeting signal — only when it
+    /// carries a video-call link, so a lunch slot plus dictation is not a call.
+    var currentMeetingCalendarEntry: MeetingCalendarEntry? {
+        guard let current = calendar.current(), let url = current.url else { return nil }
+        return MeetingCalendarEntry(title: current.title, startsAt: current.startsAt, endsAt: current.endsAt, url: url)
+    }
+
     /// A calendar entry just starting, turned into the plain value the
     /// arbiter needs — nil when the alert setting is off, even if the
     /// watcher itself still has a `current` entry in hand for some other
@@ -1885,6 +1907,7 @@ final class AppModel {
             cameraIsWatching: cameraActivation.phase == .awaitingGesture,
             shelfCount: shelf.items.count,
             holdsInterruption: focusCard.currentCard != nil,
+            meetingRecordingMinutes: meetingCapture.phase.recordingMinutes(at: now),
             now: now
         )
         return IslandClosedArbiter.resolve(inputs)

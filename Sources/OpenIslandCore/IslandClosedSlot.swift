@@ -26,6 +26,9 @@ public enum IslandClosedBody: Equatable, Hashable, Sendable {
 
 /// The one trailing accessory the closed island has room for.
 public enum IslandClosedAccessory: Equatable, Hashable, Sendable {
+    /// A meeting is being recorded. Outranks every other accessory: a running
+    /// recorder must never be hidden behind a timer or a song.
+    case meetingRecording(minutes: Int)
     /// Minutes only — a closed pill that re-ticks every second to show
     /// seconds would redraw a background app sixty times a minute.
     case timer(remainingMinutes: Int, label: String)
@@ -97,6 +100,8 @@ public struct IslandClosedInputs: Sendable {
     public var cameraIsWatching: Bool
     public var shelfCount: Int
     public var holdsInterruption: Bool
+    /// Minutes recorded so far while a meeting is being captured, else nil.
+    public var meetingRecordingMinutes: Int?
     public var now: Date
 
     public init(
@@ -111,6 +116,7 @@ public struct IslandClosedInputs: Sendable {
         cameraIsWatching: Bool = false,
         shelfCount: Int = 0,
         holdsInterruption: Bool = false,
+        meetingRecordingMinutes: Int? = nil,
         now: Date = .now
     ) {
         self.mitamaUrgent = mitamaUrgent
@@ -124,6 +130,7 @@ public struct IslandClosedInputs: Sendable {
         self.cameraIsWatching = cameraIsWatching
         self.shelfCount = shelfCount
         self.holdsInterruption = holdsInterruption
+        self.meetingRecordingMinutes = meetingRecordingMinutes
         self.now = now
     }
 }
@@ -148,7 +155,7 @@ private let eventStartedFreshness: TimeInterval = 3 * 60
 public enum IslandClosedArbiter {
     /// Body priority: a mitama alert beats a waiting agent beats a calendar
     /// entry that just started beats what's next. Accessory priority: a
-    /// running timer beats automation beats now-playing beats "the camera is
+    /// meeting being recorded beats a running timer beats automation beats now-playing beats "the camera is
     /// watching" beats the shelf having something on it beats an interruption
     /// being held.
     public static func resolve(_ inputs: IslandClosedInputs) -> IslandClosedContent {
@@ -175,6 +182,9 @@ public enum IslandClosedArbiter {
     }
 
     private static func resolveAccessory(_ inputs: IslandClosedInputs) -> IslandClosedAccessory? {
+        if let minutes = inputs.meetingRecordingMinutes {
+            return .meetingRecording(minutes: minutes)
+        }
         if let timer = inputs.timer {
             return .timer(remainingMinutes: timer.remainingMinutes, label: timer.label)
         }

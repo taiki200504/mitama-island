@@ -1054,3 +1054,31 @@
 "settings.mitama.voice.status.tooLongHeld" = "60秒で止めました。";
 "settings.mitama.voice.status.denied" = "システム設定で、マイクと音声認識を許可してください。";
 "settings.mitama.voice.status.unsupported" = "この Mac では、端末内の日本語認識を使えません。";
+
+/* Meeting auto-capture */
+"meeting.recording" = "録音中";
+"meeting.stop" = "止める";
+"meeting.discard" = "捨てる";
+"meeting.processing" = "議事録を作成中…";
+"meeting.openHub" = "開く";
+"meeting.dismiss" = "閉じる";
+"meeting.notice.started" = "会議を録音しています：%@";
+"meeting.notice.skipped" = "%@ は録音しません（録らない一覧：%@）";
+"meeting.notice.discarded" = "会議の録音を捨てました。";
+"meeting.notice.failed" = "会議を録音できませんでした。マイクと画面収録の許可を確認してください。";
+"meeting.notice.handoffFailed" = "録音は保存しましたが、mitama へ渡せませんでした。";
+"meeting.notice.processing" = "会議が終わりました。%@ の議事録を作っています。";
+"meeting.notice.summaryReady" = "議事録ができました：%@";
+"settings.meeting.section" = "会議の録音";
+"settings.meeting.section.footer" = "会議を検知している間だけ録音します（マイク使用中＋会議アプリ・Meet/Zoom/Teams のブラウザタブ・通話リンク付きの予定のどれか）。自分のマイクと会議アプリの音を別々のファイルでこの Mac に保存し、会議が終わったら mitama の受け箱へ移します。ここから外へは送りません。録音中は島に赤い印が出ます。";
+"settings.meeting.enabled" = "会議を自動で録音する";
+"settings.meeting.enabled.help" = "マイクと画面収録の許可が要ります。島からいつでも止める・捨てるができます。";
+"settings.meeting.doNotRecord" = "録らない一覧";
+"settings.meeting.doNotRecord.placeholder" = "1行に1つ：アプリ・題名・相手・@ドメイン";
+"settings.meeting.doNotRecord.help" = "アプリ・題名・予定・参加者のどれかに含まれていれば録りません。";
+"settings.meeting.company" = "会社の会議";
+"settings.meeting.company.keywords" = "題名のキーワード（1行に1つ）";
+"settings.meeting.company.domains" = "参加者のドメイン（1行に1つ）";
+"settings.meeting.company.help" = "録音はしますが「会社」と印を付け、議事録は個人の Hub ではなく会社側へ送られます。";
+"settings.meeting.inbox" = "受け渡し先フォルダ";
+"settings.meeting.inbox.help" = "終わった会議を mitama-os が拾う場所。";

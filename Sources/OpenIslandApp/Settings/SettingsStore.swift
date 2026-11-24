@@ -22,6 +22,7 @@ final class SettingsStore: Sendable {
     let cameraGesture: CameraGestureSettings
     let voiceCommand: VoiceCommandSettings
     let ambientListen: AmbientListenSettings
+    let meetingCapture: MeetingCaptureSettings
     let usage: UsageSettings
     let lockScan: LockScanSettings
     let timer: TimerSettings
@@ -39,6 +40,7 @@ final class SettingsStore: Sendable {
         cameraGesture = CameraGestureSettings(store: store)
         voiceCommand = VoiceCommandSettings(store: store)
         ambientListen = AmbientListenSettings(store: store)
+        meetingCapture = MeetingCaptureSettings(store: store)
         usage = UsageSettings(store: store)
         lockScan = LockScanSettings(store: store)
         timer = TimerSettings(store: store)
