@@ -689,7 +689,7 @@ struct SAOPeekGaugeView: View {
                         .foregroundStyle(V6Palette.paper.opacity(0.62))
                         .lineLimit(1)
                         .truncationMode(.tail)
-                        .frame(maxWidth: IslandClosedContent.peekEventTitleMaxWidth, alignment: .leading)
+                        .frame(maxWidth: IslandClosedContent.peekSessionTitleMaxWidth, alignment: .leading)
                 }
 
                 if !isAgentWaiting, others > 0 {
@@ -997,6 +997,7 @@ extension IslandClosedContent {
     /// one — kept in sync with the `.frame(maxWidth:)` `SAOPeekGaugeView`
     /// actually draws it at, so the two can never disagree.
     fileprivate static let peekEventTitleMaxWidth: CGFloat = 90
+    fileprivate static let peekSessionTitleMaxWidth: CGFloat = 56
 
     private func tailStripWidth(cells: Int) -> CGFloat {
         guard cells > 0 else { return 0 }
@@ -1031,9 +1032,10 @@ extension IslandClosedContent {
             width += Self.peekGaugeWidth + Self.peekInnerGap
         }
         width += Self.peekInnerGap + CGFloat(elapsed.count) * (isAgentWaiting ? 10 : Self.peekCharWidth)
-        if showsEventTitle,
-           SAOPeekGauge.eventTitle(for: body) != nil || SAOPeekGauge.sessionTitle(for: body) != nil {
+        if showsEventTitle, SAOPeekGauge.eventTitle(for: body) != nil {
             width += Self.peekInnerGap + Self.peekEventTitleMaxWidth
+        } else if showsEventTitle, SAOPeekGauge.sessionTitle(for: body) != nil {
+            width += Self.peekInnerGap + Self.peekSessionTitleMaxWidth
         }
         if !isAgentWaiting, others > 0 {
             width += Self.peekInnerGap + tailStripWidth(cells: others)
