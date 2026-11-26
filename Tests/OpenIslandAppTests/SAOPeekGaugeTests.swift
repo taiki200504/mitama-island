@@ -163,7 +163,7 @@ struct SAOPeekGaugeTests {
         let body = IslandClosedBody.waiting(peek)
         let label = SAOPeekGauge.accessibilityLabel(for: body)
         #expect(label.contains("CLAUDE"))
-        #expect(label.contains("needs answer"))
+        #expect(label.contains(LanguageManager.shared.t("session.answerNeeded")))
         #expect(label.contains("12M"))
         #expect(label.contains("2 more waiting"))
     }

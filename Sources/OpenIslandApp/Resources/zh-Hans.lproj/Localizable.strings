@@ -1056,3 +1056,6 @@
 "settings.mitama.voice.status.tooLongHeld" = "已在 60 秒后停止。";
 "settings.mitama.voice.status.denied" = "请在系统设置中允许麦克风和语音识别。";
 "settings.mitama.voice.status.unsupported" = "这台 Mac 无法使用设备端日语识别。";
+
+"island.peek.approval" = "批准";
+"island.peek.question" = "提问";

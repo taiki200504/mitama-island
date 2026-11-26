@@ -162,12 +162,37 @@ enum SAOPeekGauge {
         }
     }
 
+    static func visibleSubjectKind(_ kind: String, lang: LanguageManager = .shared) -> String {
+        switch kind {
+        case "APP": lang.t("island.peek.approval")
+        case "ASK": lang.t("island.peek.question")
+        default: kind
+        }
+    }
+
     static func accessibilityLabel(for body: IslandClosedBody) -> String {
         var parts: [String] = [label(for: body)]
         if let kind = subjectKind(for: body) {
             switch kind {
             case "APP": parts.append("needs approval")
             case "ASK": parts.append("needs answer")
+            default: parts.append("urgent alert")
+            }
+        }
+        parts.append(elapsedText(for: body))
+        let others = othersCount(for: body)
+        if others > 0 {
+            parts.append("\(others) more waiting")
+        }
+        return parts.joined(separator: ", ")
+    }
+
+    static func accessibilityLabel(for body: IslandClosedBody, lang: LanguageManager = .shared) -> String {
+        var parts: [String] = [label(for: body)]
+        if let kind = subjectKind(for: body) {
+            switch kind {
+            case "APP": parts.append(lang.t("session.approvalNeeded"))
+            case "ASK": parts.append(lang.t("session.answerNeeded"))
             default: parts.append("urgent alert")
             }
         }

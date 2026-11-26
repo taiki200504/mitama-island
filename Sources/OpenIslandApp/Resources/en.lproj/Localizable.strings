@@ -1056,3 +1056,6 @@
 "settings.mitama.voice.status.tooLongHeld" = "Stopped after 60 seconds.";
 "settings.mitama.voice.status.denied" = "Allow the microphone and speech recognition in System Settings.";
 "settings.mitama.voice.status.unsupported" = "On-device Japanese recognition is not available on this Mac.";
+
+"island.peek.approval" = "Allow";
+"island.peek.question" = "Ask";

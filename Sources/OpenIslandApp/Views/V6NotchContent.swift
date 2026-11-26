@@ -623,8 +623,8 @@ struct SAOPeekGaugeView: View {
                         .font(.system(size: 6, weight: .bold))
                         .foregroundStyle(SAOPeekGauge.subjectTint(for: islandBody))
                     if let kind = SAOPeekGauge.subjectKind(for: islandBody) {
-                        Text(kind)
-                            .font(.islandMono(size: 7, weight: .bold))
+                        Text(SAOPeekGauge.visibleSubjectKind(kind))
+                            .font(.system(size: 8, weight: .bold))
                             .foregroundStyle(SAOPeekGauge.subjectTint(for: islandBody))
                     }
                     Text(SAOPeekGauge.label(for: islandBody))
@@ -647,8 +647,8 @@ struct SAOPeekGaugeView: View {
                     .foregroundStyle(V6Palette.paper.opacity(0.92))
 
                 if let kind = SAOPeekGauge.subjectKind(for: islandBody) {
-                    Text(kind)
-                        .font(.islandMono(size: 9, weight: .bold))
+                    Text(SAOPeekGauge.visibleSubjectKind(kind))
+                        .font(.system(size: 10, weight: .bold))
                         .foregroundStyle(SAOPeekGauge.subjectTint(for: islandBody).opacity(0.9))
                 }
 
@@ -705,8 +705,7 @@ private struct SAOPeekMacBookCompactTail: View {
                     .fixedSize()
             }
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(SAOPeekGauge.accessibilityLabel(for: islandBody))
+        .accessibilityHidden(true)
     }
 }
 
@@ -1007,7 +1006,8 @@ extension IslandClosedContent {
         var width = Self.peekDotWidth
         width += CGFloat(label.count) * Self.peekCharWidth + Self.peekInnerGap
         if let kind = SAOPeekGauge.subjectKind(for: body) {
-            width += Self.peekInnerGap + CGFloat(kind.count) * Self.peekCharWidth
+            let text = SAOPeekGauge.visibleSubjectKind(kind)
+            width += Self.peekInnerGap + CGFloat(text.count) * 10
         }
         width += Self.peekGaugeWidth + Self.peekInnerGap
         width += CGFloat(elapsed.count) * Self.peekCharWidth
