@@ -2293,7 +2293,11 @@ final class AppModel {
         for (parent, projected) in previousProjections {
             let target = previousTargets[parent]
             let isTracking = paseoSendingSessionIDs.contains(parent) || paseoAnswerFollowthroughs[parent] != nil
-            if isTracking, let target, paseoQuestions.requests[parent] == nil, paseoQuestions.requests[target] == nil,
+            let nextChildIsWaiting = paseoQuestions.questions.keys.contains { child in
+                child != target && paseoQuestions.parentSessionID(for: child) == parent
+            }
+            if isTracking, !nextChildIsWaiting, let target,
+               paseoQuestions.requests[parent] == nil, paseoQuestions.requests[target] == nil,
                state.session(id: parent)?.questionPrompt?.id == projected.questionPrompt?.id { continue }
             forwardedQuestionTargets.removeValue(forKey: parent)
             forwardedQuestionSnapshots.removeValue(forKey: parent)
@@ -3303,8 +3307,6 @@ final class AppModel {
     private func completePaseoFollowthrough(displaySessionID: String, evidence: PaseoResumeEvidence) {
         guard let track = paseoAnswerFollowthroughs.removeValue(forKey: displaySessionID) else { return }
         paseoConfirmingResumeSessionIDs.remove(displaySessionID)
-        paseoSuccesses[displaySessionID] = Self.paseoResumedMessage
-        lastActionMessage = Self.paseoResumedMessage
         let current = state.session(id: displaySessionID)
         if let id = track.answeredPromptID, current?.permissionRequest?.id == id,
            let approved = track.permissionApproved {
@@ -3321,6 +3323,8 @@ final class AppModel {
         if forwardedQuestionTargets[displaySessionID] != nil {
             refreshForwardedPaseoQuestions()
         }
+        paseoSuccesses[displaySessionID] = Self.paseoResumedMessage
+        lastActionMessage = Self.paseoResumedMessage
         if state.session(id: displaySessionID)?.phase.requiresAttention != true {
             dismissNotificationSurfaceIfPresent(for: displaySessionID)
         }
