@@ -1058,3 +1058,5 @@
 
 "island.peek.approval" = "批准";
 "island.peek.question" = "提問";
+"island.peek.waitingMinutes" = "已等%d分鐘";
+"island.peek.moreWaiting" = "還有%d項等待";

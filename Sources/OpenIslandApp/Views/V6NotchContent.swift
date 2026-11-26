@@ -662,7 +662,7 @@ struct SAOPeekGaugeView: View {
                 }
                 .frame(width: 44, height: 6)
 
-                Text(SAOPeekGauge.elapsedText(for: islandBody))
+                Text(SAOPeekGauge.displayedElapsed(for: islandBody))
                     .font(.islandMono(size: 11))
                     .foregroundStyle(V6Palette.paper.opacity(0.62))
 
@@ -693,7 +693,7 @@ private struct SAOPeekMacBookCompactTail: View {
 
     var body: some View {
         HStack(spacing: 3) {
-            Text(SAOPeekGauge.elapsedText(for: islandBody))
+            Text(SAOPeekGauge.displayedElapsed(for: islandBody))
                 .font(.islandMono(size: 8, weight: .semibold))
                 .foregroundStyle(V6Palette.paper.opacity(0.85))
                 .fixedSize()
@@ -1000,7 +1000,7 @@ extension IslandClosedContent {
     fileprivate func bodyWidth(showsEventTitle: Bool) -> CGFloat {
         guard let body else { return 0 }
         let label = SAOPeekGauge.label(for: body)
-        let elapsed = SAOPeekGauge.elapsedText(for: body)
+        let elapsed = SAOPeekGauge.displayedElapsed(for: body)
         let others = SAOPeekGauge.othersCount(for: body)
 
         var width = Self.peekDotWidth

@@ -1059,3 +1059,5 @@
 
 "island.peek.approval" = "Allow";
 "island.peek.question" = "Ask";
+"island.peek.waitingMinutes" = "%d min waiting";
+"island.peek.moreWaiting" = "%d more waiting";

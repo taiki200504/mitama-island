@@ -170,6 +170,15 @@ enum SAOPeekGauge {
         }
     }
 
+    static func displayedElapsed(for body: IslandClosedBody, lang: LanguageManager = .shared) -> String {
+        guard let peek = peekContent(for: body) else { return elapsedText(for: body) }
+        switch peek.elapsed {
+        case .justNow: return lang.t("island.peek.justNow")
+        case .minutes(let count): return lang.t("island.peek.waitingMinutes", count)
+        case .hours(let count): return lang.t("island.peek.hours", count)
+        }
+    }
+
     static func accessibilityLabel(for body: IslandClosedBody, lang: LanguageManager = .shared) -> String {
         var parts: [String] = [label(for: body)]
         if let kind = subjectKind(for: body) {
@@ -179,10 +188,10 @@ enum SAOPeekGauge {
             default: parts.append("urgent alert")
             }
         }
-        parts.append(elapsedText(for: body))
+        parts.append(displayedElapsed(for: body, lang: lang))
         let others = othersCount(for: body)
         if others > 0 {
-            parts.append("\(others) more waiting")
+            parts.append(lang.t("island.peek.moreWaiting", others))
         }
         return parts.joined(separator: ", ")
     }

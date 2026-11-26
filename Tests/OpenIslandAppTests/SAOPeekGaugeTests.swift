@@ -164,8 +164,8 @@ struct SAOPeekGaugeTests {
         let label = SAOPeekGauge.accessibilityLabel(for: body)
         #expect(label.contains("CLAUDE"))
         #expect(label.contains(LanguageManager.shared.t("session.answerNeeded")))
-        #expect(label.contains("12M"))
-        #expect(label.contains("2 more waiting"))
+        #expect(label.contains(LanguageManager.shared.t("island.peek.waitingMinutes", 12)))
+        #expect(label.contains(LanguageManager.shared.t("island.peek.moreWaiting", 2)))
     }
 
     @Test("Peek waiting bodies are flagged for the MacBook split tail")

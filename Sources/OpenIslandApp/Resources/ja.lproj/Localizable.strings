@@ -1059,3 +1059,5 @@
 
 "island.peek.approval" = "承認";
 "island.peek.question" = "質問";
+"island.peek.waitingMinutes" = "%d分待ち";
+"island.peek.moreWaiting" = "ほか%d件待ち";
