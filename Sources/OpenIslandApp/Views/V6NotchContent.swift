@@ -466,8 +466,10 @@ struct V6ClosedPill: View {
                         .padding(.trailing, Self.innerGap)
                 }
 
-                if compact, let content, case .waiting(let peek)? = content.body {
-                    compactCount(peek.othersWaiting + 1)
+                if let content, case .waiting(let peek)? = content.body {
+                    if compact {
+                        SAOPeekMacBookCompactTail(islandBody: .waiting(peek))
+                    }
                 } else if compact, case .count(let count)? = rightSlot {
                     compactCount(count)
                 } else if let rightSlot {
@@ -577,7 +579,11 @@ struct V6ClosedPill: View {
                 }
 
                 if let rightSlot {
-                    V6RightSlotView(content: rightSlot)
+                    if case .waiting? = content?.body, case .count = rightSlot {
+                        EmptyView()
+                    } else {
+                        V6RightSlotView(content: rightSlot)
+                    }
                 }
                 }
             }
