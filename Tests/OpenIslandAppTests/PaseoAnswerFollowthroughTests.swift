@@ -72,6 +72,6 @@ struct PaseoAnswerFollowthroughTests {
         await coordinator.poll()
         let next = try #require(model.state.session(id: "native")?.questionPrompt)
         #expect(next.id != first.id)
-        #expect(model.paseoConfirmingResumeSessionIDs.contains("native"))
+        #expect(!model.paseoConfirmingResumeSessionIDs.contains("native"))
     }
 }

@@ -2229,6 +2229,8 @@ final class AppModel {
                 }
             }
             for (id, pending) in requests {
+                let displayID = self.paseoFollowthroughDisplayID(for: id)
+                if self.paseoAnswerFollowthroughs[displayID]?.answeredRequestID == pending.requestID { continue }
                 self.adoptPaseoTitle(pending.binding)
                 self.paseoModeLabels[id] = pending.binding.currentModeLabel ?? "モード情報なし"
                 if previous[id]?.requestID != pending.requestID {
@@ -2288,9 +2290,16 @@ final class AppModel {
         var sessions = state.sessions
         let previousProjections = forwardedQuestionSnapshots
         let previousTargets = forwardedQuestionTargets
-        for (parent, projected) in forwardedQuestionSnapshots {
+        for (parent, projected) in previousProjections {
+            let target = previousTargets[parent]
+            let isTracking = paseoSendingSessionIDs.contains(parent) || paseoAnswerFollowthroughs[parent] != nil
+            if isTracking, let target, paseoQuestions.requests[parent] == nil, paseoQuestions.requests[target] == nil,
+               state.session(id: parent)?.questionPrompt?.id == projected.questionPrompt?.id { continue }
+            forwardedQuestionTargets.removeValue(forKey: parent)
+            forwardedQuestionSnapshots.removeValue(forKey: parent)
+            let original = forwardedQuestionOriginals.removeValue(forKey: parent)
             if let index = sessions.firstIndex(where: { $0.id == parent }),
-               let original = forwardedQuestionOriginals[parent] {
+               let original {
                 if sessions[index] == projected { sessions[index] = original }
                 else if sessions[index].questionPrompt?.id == projected.questionPrompt?.id,
                         paseoQuestions.requests[parent] == nil {
@@ -2300,9 +2309,6 @@ final class AppModel {
                 }
             }
         }
-        forwardedQuestionTargets.removeAll()
-        forwardedQuestionSnapshots.removeAll()
-        forwardedQuestionOriginals.removeAll()
         paseoQuestionOrder = paseoQuestionOrder.filter { paseoQuestions.questions[$0.key] != nil }
         for child in paseoQuestions.questions.keys.sorted() where paseoQuestionOrder[child] == nil {
             paseoQuestionOrder[child] = paseoQuestionTicket
@@ -3118,8 +3124,9 @@ final class AppModel {
     }
 
     private func paseoJumpTarget(for session: AgentSession) -> JumpTarget? {
-        if let source = forwardedPaseoQuestionSource(sessionID: session.id) {
-            return paseoQuestions.requests[source.childSessionID]?.binding.jumpTarget
+        if let child = forwardedQuestionTargets[session.id],
+           let target = paseoQuestions.knownBinding(sessionID: child)?.jumpTarget {
+            return target
         }
         guard var target = session.jumpTarget else { return nil }
         if target.terminalApp == "Paseo", target.terminalSessionID == nil { target.terminalSessionID = session.id }
