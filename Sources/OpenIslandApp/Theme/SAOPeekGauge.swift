@@ -170,23 +170,6 @@ enum SAOPeekGauge {
         }
     }
 
-    static func accessibilityLabel(for body: IslandClosedBody) -> String {
-        var parts: [String] = [label(for: body)]
-        if let kind = subjectKind(for: body) {
-            switch kind {
-            case "APP": parts.append("needs approval")
-            case "ASK": parts.append("needs answer")
-            default: parts.append("urgent alert")
-            }
-        }
-        parts.append(elapsedText(for: body))
-        let others = othersCount(for: body)
-        if others > 0 {
-            parts.append("\(others) more waiting")
-        }
-        return parts.joined(separator: ", ")
-    }
-
     static func accessibilityLabel(for body: IslandClosedBody, lang: LanguageManager = .shared) -> String {
         var parts: [String] = [label(for: body)]
         if let kind = subjectKind(for: body) {
