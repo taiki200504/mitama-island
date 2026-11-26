@@ -3567,6 +3567,7 @@ final class AppModel {
                     self.beginPaseoAnswerFollowthrough(
                         displaySessionID: sessionID,
                         targetSessionID: target,
+                        answeredRequestID: nil,
                         answeredPromptID: expectedID,
                         permissionApproved: permissionApproved,
                         channel: .claudeHook,
