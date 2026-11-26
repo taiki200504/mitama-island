@@ -1018,6 +1018,7 @@
 "settings.audio.builtInMic.help" = "使用藍牙耳機的麥克風會降低音樂音質，因此固定使用內建麥克風。";
 
 "island.header.record" = "錄音";
+"island.header.openMitamaRecording" = "在 mitama 中開啟錄音";
 "island.header.recordFailed" = "錄音失敗";
 "island.header.recording" = "錄音中";
 
@@ -1060,3 +1061,5 @@
 "island.peek.question" = "提問";
 "island.peek.waitingMinutes" = "已等%d分鐘";
 "island.peek.moreWaiting" = "還有%d項等待";
+
+"island.header.openMitamaRecordingFailed" = "無法開啟 mitama。請開啟 mitama 並選擇語音與錄音。";

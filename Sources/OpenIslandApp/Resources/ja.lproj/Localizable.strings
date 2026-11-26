@@ -1019,6 +1019,7 @@
 "settings.audio.builtInMic.help" = "Bluetoothイヤホンのマイクを使うと音楽の音質が落ちるため、内蔵マイクに固定します";
 
 "island.header.record" = "録音";
+"island.header.openMitamaRecording" = "mitama で録音を開く";
 "island.header.recordFailed" = "録音できていません（押すと止めます）";
 "island.header.recording" = "録音中";
 
@@ -1061,3 +1062,5 @@
 "island.peek.question" = "質問";
 "island.peek.waitingMinutes" = "%d分待ち";
 "island.peek.moreWaiting" = "ほか%d件待ち";
+
+"island.header.openMitamaRecordingFailed" = "mitamaを開けませんでした。mitamaを開いて「声と録音」から録音してください。";

@@ -1019,6 +1019,7 @@
 "settings.audio.builtInMic.help" = "Use the built-in microphone to prevent Bluetooth headphones from reducing music quality when their microphone is active.";
 
 "island.header.record" = "Record";
+"island.header.openMitamaRecording" = "Open recording in mitama";
 "island.header.recordFailed" = "Not recording — click to turn off";
 "island.header.recording" = "Recording";
 
@@ -1061,3 +1062,5 @@
 "island.peek.question" = "Ask";
 "island.peek.waitingMinutes" = "%d min waiting";
 "island.peek.moreWaiting" = "%d more waiting";
+
+"island.header.openMitamaRecordingFailed" = "Couldn’t open mitama. Open mitama and choose Voice and Recording.";

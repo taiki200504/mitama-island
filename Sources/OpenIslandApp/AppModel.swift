@@ -763,6 +763,49 @@ final class AppModel {
         }
     }
 
+    var canOpenMitamaRecordingMenu: Bool { mitamaRecordingAppURL != nil }
+
+    private var mitamaRecordingAppURL: URL? {
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: MitamaAppLink.bundleIdentifier),
+              let types = Bundle(url: url)?.object(forInfoDictionaryKey: "CFBundleURLTypes") as? [[String: Any]],
+              types.contains(where: { ($0["CFBundleURLSchemes"] as? [String])?.contains(MitamaAppLink.menuScheme) == true })
+        else { return nil }
+        return url
+    }
+
+    /// Header mic: stop island earshot when it is on; otherwise open the Mac app’s recording UI or fall back on island.
+    func toggleHeaderRecording() {
+        let recordingAppURL = mitamaRecordingAppURL
+        switch IslandHeaderRecording.action(
+            ambientListenEnabled: settings.ambientListen.isEnabled,
+            mitamaAppInstalled: recordingAppURL != nil
+        ) {
+        case .stop:
+            settings.ambientListen.isEnabled = false
+            earshot.settingsChanged()
+        case .startOnIsland:
+            startIslandAmbientRecording()
+        case .openMitamaMenu:
+            guard let appURL = recordingAppURL else { return }
+            let configuration = NSWorkspace.OpenConfiguration()
+            configuration.activates = true
+            NSWorkspace.shared.open([MitamaAppLink.menuOpenURL], withApplicationAt: appURL, configuration: configuration) { [weak self] _, error in
+                guard error != nil else { return }
+                Task { @MainActor in
+                    guard let self else { return }
+                    self.present(notice: self.lang.t("island.header.openMitamaRecordingFailed"))
+                }
+            }
+        }
+    }
+
+    private func startIslandAmbientRecording() {
+        if !settings.ambientListen.isEnabled {
+            settings.ambientListen.isEnabled = true
+        }
+        earshot.settingsChanged()
+    }
+
     /// Agent sessions and hours mitama has counted since Monday.
     ///
     /// The week starts where mitama's own weekly report starts, or the island
