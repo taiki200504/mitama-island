@@ -31,8 +31,6 @@ struct StatusMenuLayoutTests {
         #expect(entries == [
             .openIsland(waitingCount: 0),
             .toggleMute(isMuted: false),
-            .toggleCamera(isWatching: false),
-            .toggleAmbientListen(isEnabled: false),
             .startTimer(presets: FocusTimerPreset.allCases),
             .raphael(status: nil),
             .separator,
@@ -44,7 +42,7 @@ struct StatusMenuLayoutTests {
     @Test("Ambient listening entry follows its enabled state")
     func ambientListenFollowsState() {
         let entries = StatusMenuLayout.entries(for: inputs(ambientListenIsEnabled: true))
-        #expect(entries[3] == .toggleAmbientListen(isEnabled: true))
+        #expect(entries[2] == .stopAmbientListen)
     }
 
     @Test("Mute label follows the muted state")
@@ -59,10 +57,10 @@ struct StatusMenuLayoutTests {
     @Test("Camera label follows whether it is watching")
     func cameraLabelFollowsState() {
         let watching = StatusMenuLayout.entries(for: inputs(cameraIsWatching: true))
-        #expect(watching.contains(.toggleCamera(isWatching: true)))
+        #expect(watching.contains(.stopCamera))
 
         let idle = StatusMenuLayout.entries(for: inputs(cameraIsWatching: false))
-        #expect(idle.contains(.toggleCamera(isWatching: false)))
+        #expect(!idle.contains(.stopCamera))
     }
 
     @Test("An empty shelf shows no shelf section at all")
@@ -81,8 +79,6 @@ struct StatusMenuLayoutTests {
         #expect(entries == [
             .openIsland(waitingCount: 0),
             .toggleMute(isMuted: false),
-            .toggleCamera(isWatching: false),
-            .toggleAmbientListen(isEnabled: false),
             .startTimer(presets: FocusTimerPreset.allCases),
             .raphael(status: nil),
             .separator,
@@ -129,8 +125,7 @@ struct StatusMenuLayoutTests {
         #expect(entries == [
             .openIsland(waitingCount: 1),
             .toggleMute(isMuted: true),
-            .toggleCamera(isWatching: true),
-            .toggleAmbientListen(isEnabled: false),
+            .stopCamera,
             .startTimer(presets: FocusTimerPreset.allCases),
             .raphael(status: nil),
             .separator,
@@ -175,8 +170,6 @@ struct StatusMenuLayoutTests {
         #expect(entries == [
             .openIsland(waitingCount: 0),
             .toggleMute(isMuted: false),
-            .toggleCamera(isWatching: false),
-            .toggleAmbientListen(isEnabled: false),
             .startTimer(presets: FocusTimerPreset.allCases),
             .openClipboard,
             .raphael(status: nil),

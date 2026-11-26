@@ -843,7 +843,7 @@
 "statusItem.openIsland" = "Open / close island";
 "statusItem.openIsland.waiting" = "Open / close island (%d waiting)";
 "statusItem.unmute" = "Unmute";
-"statusItem.cameraOn" = "Wake the Camera";
+"statusItem.stopAmbientListen" = "Stop Recording";
 "statusItem.cameraOff" = "Close the Camera";
 "statusItem.timer.start" = "Start Timer…";
 "statusItem.timer.running" = "Timer: %@";

@@ -843,7 +843,7 @@
 "statusItem.openIsland" = "打开 / 关闭岛";
 "statusItem.openIsland.waiting" = "打开 / 关闭岛（%d 项等待）";
 "statusItem.unmute" = "取消静音";
-"statusItem.cameraOn" = "唤醒摄像头";
+"statusItem.stopAmbientListen" = "停止录音";
 "statusItem.cameraOff" = "关闭摄像头";
 "statusItem.timer.start" = "开始计时…";
 "statusItem.timer.running" = "计时器：%@";

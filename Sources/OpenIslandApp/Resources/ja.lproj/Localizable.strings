@@ -843,7 +843,7 @@
 "statusItem.openIsland" = "島を開く / 閉じる";
 "statusItem.openIsland.waiting" = "島を開く / 閉じる（%d件待ち）";
 "statusItem.unmute" = "ミュート解除";
-"statusItem.cameraOn" = "カメラを起こす";
+"statusItem.stopAmbientListen" = "録音を止める";
 "statusItem.cameraOff" = "カメラを閉じる";
 "statusItem.timer.start" = "タイマーを開始…";
 "statusItem.timer.running" = "タイマー: %@";
