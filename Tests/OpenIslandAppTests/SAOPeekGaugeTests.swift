@@ -124,4 +124,55 @@ struct SAOPeekGaugeTests {
         let band = UpcomingCalendarEvent.Band(title: "Standup", startsAt: .now, minutesUntil: 5, othersAhead: 0)
         #expect(SAOPeekGauge.eventTitle(for: .nextEvent(band)) == nil)
     }
+
+    @Test("Subject kind distinguishes approval, answer, and mitama alert")
+    func subjectKindTokens() {
+        let approval = IslandClosedBody.waiting(peekContent(elapsed: .justNow))
+        #expect(SAOPeekGauge.subjectKind(for: approval) == "APP")
+
+        let answerPeek = IslandPeekBand.Content(
+            agent: "CODEX", subject: .session(.waitingForAnswer), elapsed: .minutes(3), othersWaiting: 0)
+        let answer = IslandClosedBody.waiting(answerPeek)
+        #expect(SAOPeekGauge.subjectKind(for: answer) == "ASK")
+
+        let alertPeek = IslandPeekBand.Content(
+            agent: IslandPeekBand.mitamaLabel, subject: .mitamaAlert, elapsed: .justNow, othersWaiting: 0)
+        let urgent = IslandClosedBody.urgent(alertPeek)
+        #expect(SAOPeekGauge.subjectKind(for: urgent) == "ALERT")
+
+        let event = IslandClosedBody.nextEvent(
+            UpcomingCalendarEvent.Band(title: "Standup", startsAt: .now, minutesUntil: 5, othersAhead: 0))
+        #expect(SAOPeekGauge.subjectKind(for: event) == nil)
+    }
+
+    @Test("Subject tint follows waiting phase colors")
+    func subjectTintMatchesPhase() {
+        let approval = IslandClosedBody.waiting(peekContent(elapsed: .justNow))
+        #expect(SAOPeekGauge.subjectTint(for: approval) == IslandDesignPalette.Status.waitingForApproval)
+
+        let answerPeek = IslandPeekBand.Content(
+            agent: "GEMINI", subject: .session(.waitingForAnswer), elapsed: .justNow, othersWaiting: 0)
+        let answer = IslandClosedBody.waiting(answerPeek)
+        #expect(SAOPeekGauge.subjectTint(for: answer) == IslandDesignPalette.Status.waitingForAnswer)
+    }
+
+    @Test("Accessibility label names agent, kind, elapsed, and overflow count")
+    func accessibilityLabelReadsFullPeek() {
+        let peek = IslandPeekBand.Content(
+            agent: "CLAUDE", subject: .session(.waitingForAnswer), elapsed: .minutes(12), othersWaiting: 2)
+        let body = IslandClosedBody.waiting(peek)
+        let label = SAOPeekGauge.accessibilityLabel(for: body)
+        #expect(label.contains("CLAUDE"))
+        #expect(label.contains("needs answer"))
+        #expect(label.contains("12M"))
+        #expect(label.contains("2 more waiting"))
+    }
+
+    @Test("Peek waiting bodies are flagged for the MacBook split tail")
+    func peekWaitingBodyPredicate() {
+        #expect(SAOPeekGauge.isPeekWaitingBody(.waiting(peekContent(elapsed: .justNow))))
+        #expect(SAOPeekGauge.isPeekWaitingBody(.urgent(peekContent(elapsed: .justNow))))
+        let band = UpcomingCalendarEvent.Band(title: "X", startsAt: .now, minutesUntil: 1, othersAhead: 0)
+        #expect(!SAOPeekGauge.isPeekWaitingBody(.nextEvent(band)))
+    }
 }

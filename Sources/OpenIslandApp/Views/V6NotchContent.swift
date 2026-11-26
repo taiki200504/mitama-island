@@ -539,8 +539,9 @@ struct V6ClosedPill: View {
                     .frame(width: (outer - physicalNotchWidth) / 2)
                     Spacer(minLength: physicalNotchWidth).frame(width: physicalNotchWidth)
                     Group {
-                        if let content, case .waiting(let peek)? = content.body {
-                            compactCount(peek.othersWaiting + 1)
+                        if let content, let islandBody = content.body,
+                           SAOPeekGauge.isPeekWaitingBody(islandBody) {
+                            SAOPeekMacBookCompactTail(islandBody: islandBody)
                         } else if case .count(let count)? = rightSlot {
                             compactCount(count)
                         } else if let rightSlot {
@@ -617,18 +618,39 @@ struct SAOPeekGaugeView: View {
             let others = SAOPeekGauge.othersCount(for: islandBody)
 
             if compact {
-                Image(systemName: "diamond.fill")
-                    .font(.system(size: 6, weight: .bold))
-                    .foregroundStyle(level.tint)
+                HStack(spacing: 3) {
+                    Image(systemName: "diamond.fill")
+                        .font(.system(size: 6, weight: .bold))
+                        .foregroundStyle(SAOPeekGauge.subjectTint(for: islandBody))
+                    if let kind = SAOPeekGauge.subjectKind(for: islandBody) {
+                        Text(kind)
+                            .font(.islandMono(size: 7, weight: .bold))
+                            .foregroundStyle(SAOPeekGauge.subjectTint(for: islandBody))
+                    }
+                    Text(SAOPeekGauge.label(for: islandBody))
+                        .saoCaps(size: 8)
+                        .foregroundStyle(V6Palette.paper.opacity(0.92))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .layoutPriority(-1)
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(SAOPeekGauge.accessibilityLabel(for: islandBody))
             } else {
             HStack(spacing: 5) {
                 Image(systemName: "diamond.fill")
                     .font(.system(size: 6, weight: .bold))
-                    .foregroundStyle(SAOGrammar.Palette.statusYellow)
+                    .foregroundStyle(SAOPeekGauge.subjectTint(for: islandBody))
 
                 Text(SAOPeekGauge.label(for: islandBody))
                     .saoCaps(size: 11)
                     .foregroundStyle(V6Palette.paper.opacity(0.92))
+
+                if let kind = SAOPeekGauge.subjectKind(for: islandBody) {
+                    Text(kind)
+                        .font(.islandMono(size: 9, weight: .bold))
+                        .foregroundStyle(SAOPeekGauge.subjectTint(for: islandBody).opacity(0.9))
+                }
 
                 ZStack(alignment: .leading) {
                     SAOGaugeShape(fraction: 1, isTrack: true)
@@ -659,8 +681,32 @@ struct SAOPeekGaugeView: View {
             }
             .lineLimit(1)
             .fixedSize(horizontal: true, vertical: false)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(SAOPeekGauge.accessibilityLabel(for: islandBody))
             }
         }
+    }
+}
+
+private struct SAOPeekMacBookCompactTail: View {
+    let islandBody: IslandClosedBody
+
+    var body: some View {
+        HStack(spacing: 3) {
+            Text(SAOPeekGauge.elapsedText(for: islandBody))
+                .font(.islandMono(size: 8, weight: .semibold))
+                .foregroundStyle(V6Palette.paper.opacity(0.85))
+                .fixedSize()
+            let others = SAOPeekGauge.othersCount(for: islandBody)
+            if others > 0 {
+                Text("+\(others)")
+                    .font(.islandMono(size: 8, weight: .semibold))
+                    .foregroundStyle(V6Palette.paper.opacity(0.62))
+                    .fixedSize()
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(SAOPeekGauge.accessibilityLabel(for: islandBody))
     }
 }
 
@@ -960,6 +1006,9 @@ extension IslandClosedContent {
 
         var width = Self.peekDotWidth
         width += CGFloat(label.count) * Self.peekCharWidth + Self.peekInnerGap
+        if let kind = SAOPeekGauge.subjectKind(for: body) {
+            width += Self.peekInnerGap + CGFloat(kind.count) * Self.peekCharWidth
+        }
         width += Self.peekGaugeWidth + Self.peekInnerGap
         width += CGFloat(elapsed.count) * Self.peekCharWidth
         if showsEventTitle, SAOPeekGauge.eventTitle(for: body) != nil {

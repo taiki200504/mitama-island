@@ -111,6 +111,74 @@ enum SAOPeekGauge {
         return false
     }
 
+    static func peekContent(for body: IslandClosedBody) -> IslandPeekBand.Content? {
+        switch body {
+        case .urgent(let peek), .waiting(let peek):
+            return peek
+        case .eventStarted, .nextEvent:
+            return nil
+        }
+    }
+
+    /// Fixed-English HUD token for approval vs answer vs mitama alert — three
+    /// glyphs so the notch split can show the distinction without opening the
+    /// island.
+    static func subjectKind(for body: IslandClosedBody) -> String? {
+        guard let peek = peekContent(for: body) else { return nil }
+        switch peek.subject {
+        case .mitamaAlert:
+            return "ALERT"
+        case .session(.waitingForApproval):
+            return "APP"
+        case .session(.waitingForAnswer):
+            return "ASK"
+        case .session:
+            return nil
+        }
+    }
+
+    /// Phase-colored dot for waiting bodies; urgent and calendar bodies keep
+    /// the gauge's own tint logic.
+    @MainActor
+    static func subjectTint(for body: IslandClosedBody) -> Color {
+        if isUrgent(body) { return urgent.tint }
+        guard let peek = peekContent(for: body) else {
+            return gaugeLevel(for: body).tint
+        }
+        switch peek.subject {
+        case .mitamaAlert:
+            return urgent.tint
+        case .session(let phase):
+            return IslandDesignPalette.Status.tint(for: phase)
+        }
+    }
+
+    static func isPeekWaitingBody(_ body: IslandClosedBody) -> Bool {
+        switch body {
+        case .urgent, .waiting:
+            true
+        case .eventStarted, .nextEvent:
+            false
+        }
+    }
+
+    static func accessibilityLabel(for body: IslandClosedBody) -> String {
+        var parts: [String] = [label(for: body)]
+        if let kind = subjectKind(for: body) {
+            switch kind {
+            case "APP": parts.append("needs approval")
+            case "ASK": parts.append("needs answer")
+            default: parts.append("urgent alert")
+            }
+        }
+        parts.append(elapsedText(for: body))
+        let others = othersCount(for: body)
+        if others > 0 {
+            parts.append("\(others) more waiting")
+        }
+        return parts.joined(separator: ", ")
+    }
+
     /// `justNow` / `2m` / `1h` — no seconds, matching the pill's once-a-minute
     /// redraw budget.
     static func text(for elapsed: IslandPeekBand.Elapsed) -> String {
