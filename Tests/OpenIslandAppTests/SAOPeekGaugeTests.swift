@@ -196,7 +196,9 @@ struct SAOPeekGaugeTests {
             othersWaiting: 0
         )
         let body = IslandClosedBody.urgent(alertPeek)
-        #expect(SAOPeekGauge.compactShortWarningLabel(for: body) == "ALERT")
+        let lang = LanguageManager.shared
+        let expected = lang.language.resolvedCode == "en" ? "!" : lang.t("mitama.level.urgent")
+        #expect(SAOPeekGauge.compactShortWarningLabel(for: body) == expected)
         #expect(SAOPeekGauge.compactShortWarningLabel(for: .waiting(alertPeek)) == nil)
     }
 

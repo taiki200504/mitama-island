@@ -178,9 +178,9 @@ enum SAOPeekGauge {
 
     /// One-line warning on a narrow notched side — the kind token only, so
     /// `MITAMA` does not stack under `ALERT` beside the status bars.
-    static func compactShortWarningLabel(for body: IslandClosedBody) -> String? {
-        guard isUrgent(body), let kind = subjectKind(for: body) else { return nil }
-        return visibleSubjectKind(kind)
+    static func compactShortWarningLabel(for body: IslandClosedBody, lang: LanguageManager = .shared) -> String? {
+        guard isUrgent(body) else { return nil }
+        return lang.language.resolvedCode == "en" ? "!" : lang.t("mitama.level.urgent")
     }
 
     static func displayedElapsed(for body: IslandClosedBody, lang: LanguageManager = .shared) -> String {
