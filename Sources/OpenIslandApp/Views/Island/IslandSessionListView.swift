@@ -423,6 +423,7 @@ extension IslandPanelView {
     private func sdkPresentation(for session: AgentSession, forwardedSessionID: String?) -> IslandSDKPresentation {
         IslandSDKPresentation(sessionID: session.id, forwardedSessionID: forwardedSessionID,
             modeLabels: model.paseoModeLabels, sendingSessionIDs: model.paseoSendingSessionIDs,
+            confirmingResumeSessionIDs: model.paseoConfirmingResumeSessionIDs,
             errors: model.paseoErrors, successes: model.paseoSuccesses)
     }
 

@@ -67,8 +67,11 @@ struct PaseoPermissionWiringTests {
         await mock.setFailure(false)
         model.approvePermission(for: "native", action: .deny, expectedRequestID: request.id)
         try await waitForSubmission(model, sessionID: "native")
+        #expect(model.state.session(id: "native")?.permissionRequest?.id == request.id)
+        model.applyTrackedEvent(.activityUpdated(SessionActivityUpdated(
+            sessionID: "native", summary: "Resumed", phase: .running, timestamp: .now)))
         #expect(model.state.session(id: "native")?.permissionRequest == nil)
-        #expect(model.paseoSuccesses["native"] != nil)
+        #expect(model.paseoSuccesses["native"] == "Paseo側の再開を確認しました。")
         #expect(await mock.sends == 2)
     }
 
@@ -104,6 +107,8 @@ struct PaseoPermissionWiringTests {
         model.approvePermission(for: "native", approved: true)
         try await waitForSubmission(model, sessionID: "native")
         #expect(await mock.sends == 1)
+        model.applyTrackedEvent(.activityUpdated(SessionActivityUpdated(
+            sessionID: "native", summary: "Resumed", phase: .running, timestamp: .now)))
         #expect(model.state.session(id: "native")?.permissionRequest == nil)
     }
 
