@@ -616,6 +616,7 @@ struct SAOPeekGaugeView: View {
             let level = SAOPeekGauge.gaugeLevel(for: islandBody)
             let urgent = SAOPeekGauge.isUrgent(islandBody)
             let others = SAOPeekGauge.othersCount(for: islandBody)
+            let isAgentWaiting = if case .waiting = islandBody { true } else { false }
 
             if compact {
                 HStack(spacing: 3) {
@@ -652,15 +653,18 @@ struct SAOPeekGaugeView: View {
                         .foregroundStyle(SAOPeekGauge.subjectTint(for: islandBody).opacity(0.9))
                 }
 
-                ZStack(alignment: .leading) {
-                    SAOGaugeShape(fraction: 1, isTrack: true)
-                        .fill(V6Palette.paper.opacity(0.14))
-                    SAOGaugeShape(fraction: level.fraction)
-                        .fill(level.tint)
-                        .opacity(urgent && !urgentSettled ? (urgentPulse ? 1 : 0.4) : 1)
-                        .cappedPulse($urgentPulse, settled: $urgentSettled, isActive: urgent, period: 0.9, restartOn: SAOPeekGauge.label(for: islandBody))
+                if !isAgentWaiting {
+                    ZStack(alignment: .leading) {
+                        SAOGaugeShape(fraction: 1, isTrack: true)
+                            .fill(V6Palette.paper.opacity(0.14))
+                        SAOGaugeShape(fraction: level.fraction)
+                            .fill(level.tint)
+                            .opacity(urgent && !urgentSettled ? (urgentPulse ? 1 : 0.4) : 1)
+                            .cappedPulse($urgentPulse, settled: $urgentSettled, isActive: urgent, period: 0.9, restartOn: SAOPeekGauge.label(for: islandBody))
+                    }
+                    .frame(width: 44, height: 6)
+
                 }
-                .frame(width: 44, height: 6)
 
                 Text(SAOPeekGauge.displayedElapsed(for: islandBody))
                     .font(.islandMono(size: 11))
@@ -675,7 +679,7 @@ struct SAOPeekGaugeView: View {
                         .frame(maxWidth: IslandClosedContent.peekEventTitleMaxWidth, alignment: .leading)
                 }
 
-                if others > 0 {
+                if !isAgentWaiting, others > 0 {
                     SAOPeekTailStrip(count: others, isWaiting: SAOPeekGauge.tailIsWaiting(for: islandBody))
                 }
             }
@@ -698,7 +702,7 @@ private struct SAOPeekMacBookCompactTail: View {
                 .foregroundStyle(V6Palette.paper.opacity(0.85))
                 .fixedSize()
             let others = SAOPeekGauge.othersCount(for: islandBody)
-            if others > 0 {
+            if SAOPeekGauge.isUrgent(islandBody), others > 0 {
                 Text("+\(others)")
                     .font(.islandMono(size: 8, weight: .semibold))
                     .foregroundStyle(V6Palette.paper.opacity(0.62))
