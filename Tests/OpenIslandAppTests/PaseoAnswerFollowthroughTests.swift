@@ -6,7 +6,19 @@ import Testing
 private actor FollowthroughMock {
     var pending = true
     var requestID = "question-request"
-    func call(_ name: String, _ input: ClaudeHookJSONValue) throws -> ClaudeHookJSONValue {
+    var stallSubmit = false
+    var failSubmit = false
+    private var submitContinuations: [CheckedContinuation<Void, Never>] = []
+
+    var isSubmitWaiting: Bool { !submitContinuations.isEmpty }
+
+    func releaseSubmit() {
+        stallSubmit = false
+        submitContinuations.forEach { $0.resume() }
+        submitContinuations.removeAll()
+    }
+
+    func call(_ name: String, _ input: ClaudeHookJSONValue) async throws -> ClaudeHookJSONValue {
         let snapshot: ClaudeHookJSONValue = .object([
             "id": .string("paseo-agent"), "provider": .string("claude"), "cwd": .string("/project"),
             "title": .string("Followthrough"), "status": .string("running"),
@@ -25,11 +37,17 @@ private actor FollowthroughMock {
             ])] : [])])
         }
         if name == "get_agent_status" { return .object(["snapshot": snapshot]) }
+        if stallSubmit {
+            await withCheckedContinuation { submitContinuations.append($0) }
+        }
+        if failSubmit { throw PaseoQuestionError.invalidResponse }
         pending = false
         return .object(["success": .boolean(true)])
     }
 
     func nextRequest() { requestID = "question-request-2"; pending = true }
+    func setStall(_ value: Bool) { stallSubmit = value }
+    func setFail(_ value: Bool) { failSubmit = value }
 }
 
 @MainActor
@@ -73,5 +91,68 @@ struct PaseoAnswerFollowthroughTests {
         let next = try #require(model.state.session(id: "native")?.questionPrompt)
         #expect(next.id != first.id)
         #expect(!model.paseoConfirmingResumeSessionIDs.contains("native"))
+    }
+
+    @Test func progressObservedDuringSendAppliesOnDeliveryAck() async throws {
+        let mock = FollowthroughMock()
+        await mock.setStall(true)
+        let coordinator = PaseoQuestionCoordinator(call: { try await mock.call($0, $1) })
+        let model = isolatedPaseoAppModel(coordinator)
+        model.connectPaseoQuestions()
+        coordinator.stop()
+        await coordinator.poll()
+        let prompt = try #require(model.state.session(id: "native")?.questionPrompt)
+        model.answerQuestion(for: "native", answer: .init(answers: ["Choose": "One"]), promptID: prompt.id)
+        let sendingDeadline = ContinuousClock.now + .seconds(2)
+        while !(await mock.isSubmitWaiting), ContinuousClock.now < sendingDeadline {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        let isSubmitWaiting = await mock.isSubmitWaiting
+        if !isSubmitWaiting { await mock.releaseSubmit() }
+        try #require(isSubmitWaiting)
+        model.applyTrackedEvent(.activityUpdated(SessionActivityUpdated(
+            sessionID: "native", summary: "Working", phase: .running, timestamp: .now)))
+        #expect(model.paseoSuccesses["native"] == nil)
+        await mock.releaseSubmit()
+        let finishDeadline = ContinuousClock.now + .seconds(2)
+        while model.paseoSendingSessionIDs.contains("native"), ContinuousClock.now < finishDeadline {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(model.state.session(id: "native")?.questionPrompt == nil)
+        #expect(!model.paseoConfirmingResumeSessionIDs.contains("native"))
+        #expect(model.paseoSuccesses["native"] == "Paseo側の再開を確認しました。")
+    }
+
+    @Test func bufferedProgressOnlySurvivesSuccessfulDeliveryOnTargetSession() async throws {
+        let mock = FollowthroughMock()
+        await mock.setStall(true)
+        let coordinator = PaseoQuestionCoordinator(call: { try await mock.call($0, $1) })
+        let model = isolatedPaseoAppModel(coordinator)
+        model.connectPaseoQuestions()
+        coordinator.stop()
+        await coordinator.poll()
+        let prompt = try #require(model.state.session(id: "native")?.questionPrompt)
+        model.answerQuestion(for: "native", answer: .init(answers: ["Choose": "One"]), promptID: prompt.id)
+        let sendingDeadline = ContinuousClock.now + .seconds(2)
+        while !(await mock.isSubmitWaiting), ContinuousClock.now < sendingDeadline {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        let isSubmitWaiting = await mock.isSubmitWaiting
+        if !isSubmitWaiting { await mock.releaseSubmit() }
+        try #require(isSubmitWaiting)
+        model.applyTrackedEvent(.activityUpdated(SessionActivityUpdated(
+            sessionID: "other-native", summary: "Wrong", phase: .running, timestamp: .now)))
+        model.applyTrackedEvent(.activityUpdated(SessionActivityUpdated(
+            sessionID: "native", summary: "Working", phase: .running, timestamp: .now)))
+        await mock.setFail(true)
+        await mock.releaseSubmit()
+        let finishDeadline = ContinuousClock.now + .seconds(2)
+        while model.paseoSendingSessionIDs.contains("native"), ContinuousClock.now < finishDeadline {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(model.state.session(id: "native")?.questionPrompt?.id == prompt.id)
+        #expect(model.paseoConfirmingResumeSessionIDs.isEmpty)
+        #expect(model.paseoErrors["native"] != nil)
+        #expect(model.paseoSuccesses["native"] == nil)
     }
 }
