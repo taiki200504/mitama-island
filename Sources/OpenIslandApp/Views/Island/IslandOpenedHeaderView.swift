@@ -69,14 +69,16 @@ extension IslandPanelView {
                 model.setManualKeepAwake(model.settings.behaviour.manualKeepAwakeMode == .off ? .oneHour : .off)
             }
 
-            headerIconButton(
-                systemName: "timer",
-                tint: model.focusTimer.state.phase == .idle
-                    ? V6Palette.paper.opacity(0.62)
-                    : SAOGrammar.Palette.accentOrange,
-                accessibilityLabel: model.lang.t("island.header.timer")
-            ) {
-                model.notchOpen(reason: .click, surface: .timer)
+            if showsHeaderTimerButton {
+                headerIconButton(
+                    systemName: "timer",
+                    tint: model.focusTimer.state.phase == .idle
+                        ? V6Palette.paper.opacity(0.62)
+                        : SAOGrammar.Palette.accentOrange,
+                    accessibilityLabel: model.lang.t("island.header.timer")
+                ) {
+                    model.notchOpen(reason: .click, surface: .timer)
+                }
             }
 
             if model.settings.clipboard.enabled {

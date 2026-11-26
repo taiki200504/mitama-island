@@ -110,6 +110,11 @@ struct IslandSettingsPane: View {
                 help: lang.t("settings.timer.autoAdvance.help"),
                 isOn: Binding(get: { timer.autoAdvance }, set: { timer.autoAdvance = $0 })
             )
+            SettingsToggleRow(
+                title: lang.t("settings.timer.showsInHeader"),
+                help: lang.t("settings.timer.showsInHeader.help"),
+                isOn: Binding(get: { timer.showsInHeader }, set: { timer.showsInHeader = $0 })
+            )
         }
     }
 

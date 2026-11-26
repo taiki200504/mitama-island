@@ -123,14 +123,23 @@ struct IslandPanelView: View {
         model.cameraActivation.phase == .awaitingGesture
     }
 
+    /// Header timer button: the display setting, or any timer that is not idle.
+    var showsHeaderTimerButton: Bool {
+        model.settings.timer.showsInHeader || model.focusTimer.state.phase != .idle
+    }
+
     var openedHeaderButtonsWidth: CGFloat {
         // The watching mark and the now-playing button each occupy a control
         // slot when shown, so the lane has to reserve room for them. A fixed
         // count here compresses the usage lane's neighbour instead of
         // widening the lane.
-        // mitama OS, keep awake, timer, Raphael, sound, settings, quit.
+        // mitama OS, keep awake, Raphael, sound, settings, quit.
         // The record switch lives in the left lane, not here.
-        var controls = cameraIsWatching ? 8 : 7
+        // Timer uses the same condition as the header button.
+        var controls = cameraIsWatching ? 7 : 6
+        if showsHeaderTimerButton {
+            controls += 1
+        }
         if model.settings.clipboard.enabled {
             controls += 1
         }

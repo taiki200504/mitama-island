@@ -98,6 +98,11 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             }
             awakeMenu.items.last?.state = model.settings.behaviour.manualKeepAwakeMode == mode ? .on : .off
         }
+        awakeMenu.addItem(.separator())
+        addItem(model.lang.t("keepAwake.display"), to: awakeMenu) { [weak model] in
+            model?.settings.behaviour.keepAwakeDisplay.toggle()
+        }
+        awakeMenu.items.last?.state = model.settings.behaviour.keepAwakeDisplay ? .on : .off
         if model.settings.behaviour.manualKeepAwakeMode != .off {
             awakeMenu.addItem(.separator())
             addItem(model.lang.t("keepAwake.stop"), to: awakeMenu) { [weak model] in

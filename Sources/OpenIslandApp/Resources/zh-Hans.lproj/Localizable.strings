@@ -324,6 +324,8 @@
 "settings.timer.playsSound" = "阶段结束时播放提示音";
 "settings.timer.autoAdvance" = "自动进入下一阶段";
 "settings.timer.autoAdvance.help" = "关闭后，结束的番茄钟或护眼休息会停在计时器界面等待手动操作。";
+"settings.timer.showsInHeader" = "在顶栏显示计时器";
+"settings.timer.showsInHeader.help" = "默认关闭。已经在走的计时器即使关闭也会留下按钮。";
 
 "settings.display.section.clipboard" = "剪贴板";
 "settings.clipboard.enabled" = "记录剪贴板历史";

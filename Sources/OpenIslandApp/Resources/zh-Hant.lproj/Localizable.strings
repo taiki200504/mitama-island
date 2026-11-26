@@ -323,6 +323,8 @@
 "settings.timer.playsSound" = "階段結束時播放提示音";
 "settings.timer.autoAdvance" = "自動進入下一階段";
 "settings.timer.autoAdvance.help" = "關閉後，結束的番茄鐘或護眼休息會停在計時器畫面等待手動操作。";
+"settings.timer.showsInHeader" = "在頂欄顯示計時器";
+"settings.timer.showsInHeader.help" = "預設關閉。已經在走的計時器即使關閉也會留下按鈕。";
 
 "settings.display.section.clipboard" = "剪貼簿";
 "settings.clipboard.enabled" = "記錄剪貼簿歷史";
