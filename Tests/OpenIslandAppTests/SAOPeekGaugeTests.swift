@@ -187,6 +187,19 @@ struct SAOPeekGaugeTests {
         #expect(label.contains(LanguageManager.shared.t("island.peek.moreWaiting", 2)))
     }
 
+    @Test("A narrow urgent compact label is only the alert token, not the agent name")
+    func compactShortWarningLabelDropsAgentName() {
+        let alertPeek = IslandPeekBand.Content(
+            agent: IslandPeekBand.mitamaLabel,
+            subject: .mitamaAlert,
+            elapsed: .minutes(4),
+            othersWaiting: 0
+        )
+        let body = IslandClosedBody.urgent(alertPeek)
+        #expect(SAOPeekGauge.compactShortWarningLabel(for: body) == "ALERT")
+        #expect(SAOPeekGauge.compactShortWarningLabel(for: .waiting(alertPeek)) == nil)
+    }
+
     @Test("Peek waiting bodies are flagged for the MacBook split tail")
     func peekWaitingBodyPredicate() {
         #expect(SAOPeekGauge.isPeekWaitingBody(.waiting(peekContent(elapsed: .justNow))))

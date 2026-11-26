@@ -176,6 +176,13 @@ enum SAOPeekGauge {
         }
     }
 
+    /// One-line warning on a narrow notched side — the kind token only, so
+    /// `MITAMA` does not stack under `ALERT` beside the status bars.
+    static func compactShortWarningLabel(for body: IslandClosedBody) -> String? {
+        guard isUrgent(body), let kind = subjectKind(for: body) else { return nil }
+        return visibleSubjectKind(kind)
+    }
+
     static func displayedElapsed(for body: IslandClosedBody, lang: LanguageManager = .shared) -> String {
         guard let peek = peekContent(for: body) else { return elapsedText(for: body) }
         switch peek.elapsed {
