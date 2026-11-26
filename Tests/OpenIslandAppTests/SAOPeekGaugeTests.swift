@@ -116,13 +116,26 @@ struct SAOPeekGaugeTests {
         #expect(!SAOPeekGauge.tailIsWaiting(for: body))
     }
 
-    @Test("Only an event-started body carries a title")
-    func onlyEventStartedCarriesATitle() {
+    @Test("Event-started bodies carry eventTitle; waiting bodies carry sessionTitle")
+    func peekTitlesSplitByBodyKind() {
         let waiting = IslandClosedBody.waiting(peekContent(elapsed: .minutes(1)))
         #expect(SAOPeekGauge.eventTitle(for: waiting) == nil)
+        #expect(SAOPeekGauge.sessionTitle(for: waiting) == nil)
+
+        let titledPeek = IslandPeekBand.Content(
+            agent: "CODEX",
+            subject: .session(.waitingForApproval),
+            elapsed: .minutes(8),
+            othersWaiting: 0,
+            sessionTitle: "Codex · open-island"
+        )
+        let titledWait = IslandClosedBody.waiting(titledPeek)
+        #expect(SAOPeekGauge.sessionTitle(for: titledWait) == "Codex · open-island")
+        #expect(SAOPeekGauge.eventTitle(for: titledWait) == nil)
 
         let band = UpcomingCalendarEvent.Band(title: "Standup", startsAt: .now, minutesUntil: 5, othersAhead: 0)
         #expect(SAOPeekGauge.eventTitle(for: .nextEvent(band)) == nil)
+        #expect(SAOPeekGauge.sessionTitle(for: .nextEvent(band)) == nil)
     }
 
     @Test("Subject kind distinguishes approval, answer, and mitama alert")
@@ -159,10 +172,16 @@ struct SAOPeekGaugeTests {
     @Test("Accessibility label names agent, kind, elapsed, and overflow count")
     func accessibilityLabelReadsFullPeek() {
         let peek = IslandPeekBand.Content(
-            agent: "CLAUDE", subject: .session(.waitingForAnswer), elapsed: .minutes(12), othersWaiting: 2)
+            agent: "CLAUDE",
+            subject: .session(.waitingForAnswer),
+            elapsed: .minutes(12),
+            othersWaiting: 2,
+            sessionTitle: "Island peek title"
+        )
         let body = IslandClosedBody.waiting(peek)
         let label = SAOPeekGauge.accessibilityLabel(for: body)
         #expect(label.contains("CLAUDE"))
+        #expect(label.contains("Island peek title"))
         #expect(label.contains(LanguageManager.shared.t("session.answerNeeded")))
         #expect(label.contains(LanguageManager.shared.t("island.peek.waitingMinutes", 12)))
         #expect(label.contains(LanguageManager.shared.t("island.peek.moreWaiting", 2)))

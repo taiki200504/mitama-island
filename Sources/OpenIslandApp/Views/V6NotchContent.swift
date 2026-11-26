@@ -683,6 +683,13 @@ struct SAOPeekGaugeView: View {
                         .lineLimit(1)
                         .truncationMode(.tail)
                         .frame(maxWidth: IslandClosedContent.peekEventTitleMaxWidth, alignment: .leading)
+                } else if showsEventTitle, let sessionTitle = SAOPeekGauge.sessionTitle(for: islandBody) {
+                    Text(sessionTitle)
+                        .font(.islandText(size: 11))
+                        .foregroundStyle(V6Palette.paper.opacity(0.62))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .frame(maxWidth: IslandClosedContent.peekEventTitleMaxWidth, alignment: .leading)
                 }
 
                 if !isAgentWaiting, others > 0 {
@@ -1024,7 +1031,8 @@ extension IslandClosedContent {
             width += Self.peekGaugeWidth + Self.peekInnerGap
         }
         width += Self.peekInnerGap + CGFloat(elapsed.count) * (isAgentWaiting ? 10 : Self.peekCharWidth)
-        if showsEventTitle, SAOPeekGauge.eventTitle(for: body) != nil {
+        if showsEventTitle,
+           SAOPeekGauge.eventTitle(for: body) != nil || SAOPeekGauge.sessionTitle(for: body) != nil {
             width += Self.peekInnerGap + Self.peekEventTitleMaxWidth
         }
         if !isAgentWaiting, others > 0 {

@@ -71,6 +71,12 @@ enum SAOPeekGauge {
         return title
     }
 
+    /// The waiting session's short title — only on layouts wide enough to show
+    /// it; compact/notched layouts keep agent, kind, and elapsed instead.
+    static func sessionTitle(for body: IslandClosedBody) -> String? {
+        peekContent(for: body)?.sessionTitle
+    }
+
     static func othersCount(for body: IslandClosedBody) -> Int {
         switch body {
         case .urgent(let peek), .waiting(let peek):
@@ -187,6 +193,9 @@ enum SAOPeekGauge {
             case "ASK": parts.append(lang.t("session.answerNeeded"))
             default: parts.append("urgent alert")
             }
+        }
+        if let title = sessionTitle(for: body) {
+            parts.append(title)
         }
         parts.append(displayedElapsed(for: body, lang: lang))
         let others = othersCount(for: body)

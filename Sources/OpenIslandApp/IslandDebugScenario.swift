@@ -198,7 +198,7 @@ enum IslandDebugScenario: String, CaseIterable, Identifiable {
         case .closedFloating:
             "Closed island forced onto the non-notched layout: a floating capsule below the menu bar with a waiting agent body."
         case .peekBand:
-            "Collapsed notch while a request waits: who is waiting, and for how long."
+            "Collapsed notch while a request waits: agent, short session title, and elapsed time."
         case .sessionList:
             "Manual expanded list with running, active, and inactive session rows."
         case .approvalCard:
@@ -1150,7 +1150,7 @@ private enum DebugSessionFactory {
     static func approvalSession(now: Date, id: String = "session-approval") -> AgentSession {
         AgentSession(
             id: id,
-            title: "Codex · open-island",
+            title: "Peek title",
             tool: .codex,
             origin: .demo,
             attachmentState: .attached,

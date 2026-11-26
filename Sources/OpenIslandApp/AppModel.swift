@@ -1860,8 +1860,13 @@ final class AppModel {
         // for itself instead of inheriting pre-decided.
         let urgentAlert = IslandPeekBand.content(for: [], mitamaAlerts: alerts, now: now)
         let urgent = urgentAlert.map {
-            IslandPeekBand.Content(agent: $0.agent, subject: $0.subject, elapsed: $0.elapsed,
-                othersWaiting: $0.othersWaiting + (mitamaFeedEnabled ? mitamaFeed.humanTasks.count : 0))
+            IslandPeekBand.Content(
+                agent: $0.agent,
+                subject: $0.subject,
+                elapsed: $0.elapsed,
+                othersWaiting: $0.othersWaiting + (mitamaFeedEnabled ? mitamaFeed.humanTasks.count : 0),
+                sessionTitle: $0.sessionTitle
+            )
         }
         let sessionWaiting = IslandPeekBand.content(for: surfacedSessions, mitamaAlerts: [], now: now)
         let tasks = mitamaFeedEnabled ? mitamaFeed.humanTasks : []

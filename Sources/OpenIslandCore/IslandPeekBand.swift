@@ -34,22 +34,47 @@ public enum IslandPeekBand: Sendable {
     public static let mitamaLabel = "MITAMA"
 
     public struct Content: Equatable, Hashable, Sendable {
-        /// `CLAUDE`, `CODEX` — the tool, not the session title. A session title
-        /// is arbitrary length, and truncating it beside a physical notch
-        /// leaves a word fragment that means nothing.
+        /// `CLAUDE`, `CODEX` — the tool, not the session title.
         public let agent: String
         public let subject: Subject
         public let elapsed: Elapsed
         /// Everything else waiting behind this one. Zero when this is the only
         /// one.
         public let othersWaiting: Int
+        /// A short label for whichever session is waiting, when the band is
+        /// showing an agent row. Omitted for mitama alerts and calendar bodies
+        /// — and on notched layouts, where the view drops it before drawing.
+        public let sessionTitle: String?
 
-        public init(agent: String, subject: Subject, elapsed: Elapsed, othersWaiting: Int) {
+        public init(
+            agent: String,
+            subject: Subject,
+            elapsed: Elapsed,
+            othersWaiting: Int,
+            sessionTitle: String? = nil
+        ) {
             self.agent = agent
             self.subject = subject
             self.elapsed = elapsed
             self.othersWaiting = othersWaiting
+            self.sessionTitle = sessionTitle
         }
+    }
+
+    /// Long enough to tell sessions apart on an external display; the view
+    /// truncates further when the pill is tight.
+    public static let peekSessionTitleMaxLength = 28
+
+    public static func shortSessionTitle(_ title: String) -> String? {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        guard trimmed.count > peekSessionTitleMaxLength else { return trimmed }
+        let clipped = String(trimmed.prefix(peekSessionTitleMaxLength))
+        if let lastSpace = clipped.lastIndex(of: " "),
+           clipped.distance(from: clipped.startIndex, to: lastSpace) > peekSessionTitleMaxLength / 2 {
+            return String(clipped[clipped.startIndex..<lastSpace]) + "…"
+        }
+        return clipped + "…"
     }
 
     /// Nil when nothing is waiting — the island stays as it was.
@@ -88,7 +113,8 @@ public enum IslandPeekBand: Sendable {
             agent: oldest.tool.shortName,
             subject: .session(oldest.phase),
             elapsed: elapsed(since: oldest.updatedAt, now: now),
-            othersWaiting: othersWaiting
+            othersWaiting: othersWaiting,
+            sessionTitle: shortSessionTitle(oldest.title)
         )
     }
 

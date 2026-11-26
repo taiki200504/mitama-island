@@ -428,6 +428,10 @@ def main() -> None:
         # number alone so the assertion survives a change of UI language.
         if scenario == "peekBand" and not any("8" in value for value in peek_text):
             fail("peek band is missing the elapsed time")
+        if scenario == "peekBand" and not any(
+            "peek title" in value.lower() for value in peek_text
+        ):
+            fail("peek band is missing the waiting session title")
         if scenario == "closedAccessoryTimer" and not any("12" in value for value in text_values):
             fail("closedAccessoryTimer is missing the timer accessory")
 
