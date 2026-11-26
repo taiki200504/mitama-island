@@ -1006,6 +1006,7 @@ extension IslandClosedContent {
         let label = SAOPeekGauge.label(for: body)
         let elapsed = SAOPeekGauge.displayedElapsed(for: body)
         let others = SAOPeekGauge.othersCount(for: body)
+        let isAgentWaiting = if case .waiting = body { true } else { false }
 
         var width = Self.peekDotWidth
         width += CGFloat(label.count) * Self.peekCharWidth + Self.peekInnerGap
@@ -1013,12 +1014,14 @@ extension IslandClosedContent {
             let text = SAOPeekGauge.visibleSubjectKind(kind)
             width += Self.peekInnerGap + CGFloat(text.count) * 10
         }
-        width += Self.peekGaugeWidth + Self.peekInnerGap
-        width += CGFloat(elapsed.count) * Self.peekCharWidth
+        if !isAgentWaiting {
+            width += Self.peekGaugeWidth + Self.peekInnerGap
+        }
+        width += Self.peekInnerGap + CGFloat(elapsed.count) * (isAgentWaiting ? 10 : Self.peekCharWidth)
         if showsEventTitle, SAOPeekGauge.eventTitle(for: body) != nil {
             width += Self.peekInnerGap + Self.peekEventTitleMaxWidth
         }
-        if others > 0 {
+        if !isAgentWaiting, others > 0 {
             width += Self.peekInnerGap + tailStripWidth(cells: others)
         }
         return width
