@@ -1616,22 +1616,15 @@ public final class CodexRolloutWatcher: @unchecked Sendable {
     }
 
     private func syncLocked(targets: [CodexRolloutWatchTarget]) {
-        let targetMap = Dictionary(uniqueKeysWithValues: targets.map { ($0.sessionID, $0) })
-
-        observations = observations.reduce(into: [:]) { partialResult, pair in
-            guard let updatedTarget = targetMap[pair.key] else {
-                return
-            }
-
-            if pair.value.target == updatedTarget {
-                partialResult[pair.key] = pair.value
-            } else {
-                partialResult[pair.key] = makeObservation(for: updatedTarget)
-            }
+        let targetIDs = Set(targets.map(\.sessionID))
+        for sessionID in Array(observations.keys) where !targetIDs.contains(sessionID) {
+            observations.removeValue(forKey: sessionID)
         }
 
-        for target in targets where observations[target.sessionID] == nil {
+        var changedSessionIDs: [String] = []
+        for target in targets where observations[target.sessionID]?.target != target {
             observations[target.sessionID] = makeObservation(for: target)
+            changedSessionIDs.append(target.sessionID)
         }
 
         if observations.isEmpty {
@@ -1644,18 +1637,17 @@ public final class CodexRolloutWatcher: @unchecked Sendable {
             let timer = DispatchSource.makeTimerSource(queue: queue)
             timer.schedule(deadline: .now() + pollInterval, repeating: pollInterval)
             timer.setEventHandler { [weak self] in
-                self?.pollLocked()
+                guard let self else { return }
+                self.pollLocked(sessionIDs: Array(self.observations.keys))
             }
             self.timer = timer
             timer.resume()
         }
 
-        pollLocked()
+        pollLocked(sessionIDs: changedSessionIDs)
     }
 
-    private func pollLocked() {
-        let sessionIDs = Array(observations.keys)
-
+    private func pollLocked(sessionIDs: [String]) {
         for sessionID in sessionIDs {
             guard var observation = observations[sessionID] else {
                 continue
