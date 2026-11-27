@@ -32,6 +32,13 @@ final class TimerSettings: PreferenceGroup {
         get { read(\.autoAdvance, Keys.autoAdvance, true) }
         set { write(\.autoAdvance, Keys.autoAdvance, newValue) }
     }
+
+    /// Off by default. The header button is unconditional today; this only
+    /// hides that button. A timer that has left idle still shows it.
+    var showsInHeader: Bool {
+        get { read(\.showsInHeader, Keys.showsInHeader, false) }
+        set { write(\.showsInHeader, Keys.showsInHeader, newValue) }
+    }
 }
 
 extension TimerSettings {
@@ -39,5 +46,6 @@ extension TimerSettings {
         static let eyeBreakEnabled = "timer.eyeBreakEnabled"
         static let playsSound = "timer.playsSound"
         static let autoAdvance = "timer.autoAdvance"
+        static let showsInHeader = "timer.showsInHeader"
     }
 }

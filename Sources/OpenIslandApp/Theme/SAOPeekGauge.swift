@@ -71,6 +71,12 @@ enum SAOPeekGauge {
         return title
     }
 
+    /// The waiting session's short title — only on layouts wide enough to show
+    /// it; compact/notched layouts keep agent, kind, and elapsed instead.
+    static func sessionTitle(for body: IslandClosedBody) -> String? {
+        peekContent(for: body)?.sessionTitle
+    }
+
     static func othersCount(for body: IslandClosedBody) -> Int {
         switch body {
         case .urgent(let peek), .waiting(let peek):
@@ -109,6 +115,101 @@ enum SAOPeekGauge {
     static func isUrgent(_ body: IslandClosedBody) -> Bool {
         if case .urgent = body { return true }
         return false
+    }
+
+    static func peekContent(for body: IslandClosedBody) -> IslandPeekBand.Content? {
+        switch body {
+        case .urgent(let peek), .waiting(let peek):
+            return peek
+        case .eventStarted, .nextEvent:
+            return nil
+        }
+    }
+
+    /// Fixed-English HUD token for approval vs answer vs mitama alert — three
+    /// glyphs so the notch split can show the distinction without opening the
+    /// island.
+    static func subjectKind(for body: IslandClosedBody) -> String? {
+        guard let peek = peekContent(for: body) else { return nil }
+        switch peek.subject {
+        case .mitamaAlert:
+            return "ALERT"
+        case .session(.waitingForApproval):
+            return "APP"
+        case .session(.waitingForAnswer):
+            return "ASK"
+        case .session:
+            return nil
+        }
+    }
+
+    /// Phase-colored dot for waiting bodies; urgent and calendar bodies keep
+    /// the gauge's own tint logic.
+    @MainActor
+    static func subjectTint(for body: IslandClosedBody) -> Color {
+        if isUrgent(body) { return urgent.tint }
+        guard let peek = peekContent(for: body) else {
+            return gaugeLevel(for: body).tint
+        }
+        switch peek.subject {
+        case .mitamaAlert:
+            return urgent.tint
+        case .session(let phase):
+            return IslandDesignPalette.Status.tint(for: phase)
+        }
+    }
+
+    static func isPeekWaitingBody(_ body: IslandClosedBody) -> Bool {
+        switch body {
+        case .urgent, .waiting:
+            true
+        case .eventStarted, .nextEvent:
+            false
+        }
+    }
+
+    static func visibleSubjectKind(_ kind: String, lang: LanguageManager = .shared) -> String {
+        switch kind {
+        case "APP": lang.t("island.peek.approval")
+        case "ASK": lang.t("island.peek.question")
+        default: kind
+        }
+    }
+
+    /// One-line warning on a narrow notched side — the kind token only, so
+    /// `MITAMA` does not stack under `ALERT` beside the status bars.
+    static func compactShortWarningLabel(for body: IslandClosedBody, lang: LanguageManager = .shared) -> String? {
+        guard isUrgent(body) else { return nil }
+        return lang.language.resolvedCode == "en" ? "!" : lang.t("mitama.level.urgent")
+    }
+
+    static func displayedElapsed(for body: IslandClosedBody, lang: LanguageManager = .shared) -> String {
+        guard let peek = peekContent(for: body) else { return elapsedText(for: body) }
+        switch peek.elapsed {
+        case .justNow: return lang.t("island.peek.justNow")
+        case .minutes(let count): return lang.t("island.peek.waitingMinutes", count)
+        case .hours(let count): return lang.t("island.peek.hours", count)
+        }
+    }
+
+    static func accessibilityLabel(for body: IslandClosedBody, lang: LanguageManager = .shared) -> String {
+        var parts: [String] = [label(for: body)]
+        if let kind = subjectKind(for: body) {
+            switch kind {
+            case "APP": parts.append(lang.t("session.approvalNeeded"))
+            case "ASK": parts.append(lang.t("session.answerNeeded"))
+            default: parts.append("urgent alert")
+            }
+        }
+        if let title = sessionTitle(for: body) {
+            parts.append(title)
+        }
+        parts.append(displayedElapsed(for: body, lang: lang))
+        let others = othersCount(for: body)
+        if others > 0 {
+            parts.append(lang.t("island.peek.moreWaiting", others))
+        }
+        return parts.joined(separator: ", ")
     }
 
     /// `justNow` / `2m` / `1h` — no seconds, matching the pill's once-a-minute

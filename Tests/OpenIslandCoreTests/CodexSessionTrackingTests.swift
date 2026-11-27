@@ -925,6 +925,60 @@ struct CodexSessionTrackingTests {
     }
 
     @Test
+    func codexRolloutWatcherSyncReadsOnlyNewOrChangedTargets() throws {
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("open-island-rollout-sync-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+
+        let initialURL = rootURL.appendingPathComponent("initial.jsonl")
+        let replacementURL = rootURL.appendingPathComponent("replacement.jsonl")
+        try Data().write(to: initialURL)
+        try Data().write(to: replacementURL)
+
+        func appendPrompt(_ message: String, to url: URL) throws {
+            try appendRolloutLine(rolloutLine(
+                timestamp: "2026-04-02T04:03:44.894Z",
+                type: "event_msg",
+                payload: ["type": "user_message", "message": message]
+            ), to: url)
+        }
+
+        try appendPrompt("Initial prompt", to: initialURL)
+        let initialTarget = CodexRolloutWatchTarget(sessionID: "first", transcriptPath: initialURL.path)
+        let waitingTarget = CodexRolloutWatchTarget(sessionID: "second", transcriptPath: replacementURL.path)
+        let initialRead = DispatchSemaphore(value: 0)
+        let appendRead = DispatchSemaphore(value: 0)
+        let replacementRead = DispatchSemaphore(value: 0)
+        let watcher = CodexRolloutWatcher(pollInterval: 60)
+        defer { watcher.stop() }
+
+        watcher.eventHandler = { event in
+            switch event.trackedMetadataUpdate?.codexMetadata.lastUserPrompt {
+            case "Initial prompt": initialRead.signal()
+            case "Appended prompt": appendRead.signal()
+            case "Replacement prompt": replacementRead.signal()
+            default: break
+            }
+        }
+
+        watcher.sync(targets: [initialTarget, waitingTarget])
+        #expect(initialRead.wait(timeout: .now()) == .success)
+
+        try appendPrompt("Appended prompt", to: initialURL)
+        watcher.sync(targets: [waitingTarget, initialTarget])
+        #expect(appendRead.wait(timeout: .now()) == .timedOut)
+
+        let changedURL = rootURL.appendingPathComponent("changed.jsonl")
+        try Data().write(to: changedURL)
+        try appendPrompt("Replacement prompt", to: changedURL)
+        let changedTarget = CodexRolloutWatchTarget(sessionID: "second", transcriptPath: changedURL.path)
+        watcher.sync(targets: [initialTarget, changedTarget])
+        #expect(replacementRead.wait(timeout: .now()) == .success)
+        #expect(appendRead.wait(timeout: .now()) == .timedOut)
+    }
+
+    @Test
     func codexRolloutWatcherTracksAppendedLines() async throws {
         let rootURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("open-island-rollout-\(UUID().uuidString)", isDirectory: true)

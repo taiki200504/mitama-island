@@ -324,6 +324,8 @@
 "settings.timer.playsSound" = "阶段结束时播放提示音";
 "settings.timer.autoAdvance" = "自动进入下一阶段";
 "settings.timer.autoAdvance.help" = "关闭后，结束的番茄钟或护眼休息会停在计时器界面等待手动操作。";
+"settings.timer.showsInHeader" = "在顶栏显示计时器";
+"settings.timer.showsInHeader.help" = "默认关闭。已经在走的计时器即使关闭也会留下按钮。";
 
 "settings.display.section.clipboard" = "剪贴板";
 "settings.clipboard.enabled" = "记录剪贴板历史";
@@ -841,7 +843,7 @@
 "statusItem.openIsland" = "打开 / 关闭岛";
 "statusItem.openIsland.waiting" = "打开 / 关闭岛（%d 项等待）";
 "statusItem.unmute" = "取消静音";
-"statusItem.cameraOn" = "唤醒摄像头";
+"statusItem.stopAmbientListen" = "停止录音";
 "statusItem.cameraOff" = "关闭摄像头";
 "statusItem.timer.start" = "开始计时…";
 "statusItem.timer.running" = "计时器：%@";
@@ -938,6 +940,8 @@
 "decision.paseo.open" = "在Paseo中打开此对话";
 "decision.paseo.unsupported" = "请在Paseo中查看并回答此类请求。";
 "decision.paseo.sending" = "正在发送至Paseo…";
+"decision.paseo.sendFailed" = "未能发送到 Paseo。请确认当前显示的请求后重试。";
+"decision.paseo.resumeUnconfirmed" = "已发送 · 尚未确认恢复。请打开对话查看 Paseo 的状态。";
 "decision.question.sending" = "正在发送答复…";
 "decision.question.retry" = "重新发送答复";
 "decision.sending" = "正在发送…";
@@ -1017,6 +1021,7 @@
 "settings.audio.builtInMic.help" = "使用蓝牙耳机的麦克风会降低音乐音质，因此固定使用内置麦克风。";
 
 "island.header.record" = "录音";
+"island.header.openMitamaRecording" = "在 mitama 中打开录音";
 "island.header.recordFailed" = "录音失败";
 "island.header.recording" = "录音中";
 
@@ -1054,3 +1059,10 @@
 "settings.mitama.voice.status.tooLongHeld" = "已在 60 秒后停止。";
 "settings.mitama.voice.status.denied" = "请在系统设置中允许麦克风和语音识别。";
 "settings.mitama.voice.status.unsupported" = "这台 Mac 无法使用设备端日语识别。";
+
+"island.peek.approval" = "批准";
+"island.peek.question" = "提问";
+"island.peek.waitingMinutes" = "已等%d分钟";
+"island.peek.moreWaiting" = "还有%d项等待";
+
+"island.header.openMitamaRecordingFailed" = "无法打开 mitama。请打开 mitama 并选择语音和录音。";

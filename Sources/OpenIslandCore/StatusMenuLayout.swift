@@ -62,8 +62,8 @@ public struct StatusMenuInputs: Sendable {
 public enum StatusMenuEntry: Equatable, Sendable {
     case openIsland(waitingCount: Int)
     case toggleMute(isMuted: Bool)
-    case toggleAmbientListen(isEnabled: Bool)
-    case toggleCamera(isWatching: Bool)
+    case stopAmbientListen
+    case stopCamera
     /// Idle: offers the fixed preset list as its own submenu.
     case startTimer(presets: [FocusTimerPreset])
     case timerRunning(label: String)
@@ -97,9 +97,13 @@ public enum StatusMenuLayout {
         var entries: [StatusMenuEntry] = [
             .openIsland(waitingCount: inputs.waitingCount),
             .toggleMute(isMuted: inputs.isMuted),
-            .toggleCamera(isWatching: inputs.cameraIsWatching),
-            .toggleAmbientListen(isEnabled: inputs.ambientListenIsEnabled),
         ]
+        if inputs.cameraIsWatching {
+            entries.append(.stopCamera)
+        }
+        if inputs.ambientListenIsEnabled {
+            entries.append(.stopAmbientListen)
+        }
 
         if let label = inputs.timerRunningLabel {
             entries.append(.timerRunning(label: label))

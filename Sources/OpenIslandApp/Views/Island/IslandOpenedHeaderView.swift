@@ -69,14 +69,16 @@ extension IslandPanelView {
                 model.setManualKeepAwake(model.settings.behaviour.manualKeepAwakeMode == .off ? .oneHour : .off)
             }
 
-            headerIconButton(
-                systemName: "timer",
-                tint: model.focusTimer.state.phase == .idle
-                    ? V6Palette.paper.opacity(0.62)
-                    : SAOGrammar.Palette.accentOrange,
-                accessibilityLabel: model.lang.t("island.header.timer")
-            ) {
-                model.notchOpen(reason: .click, surface: .timer)
+            if showsHeaderTimerButton {
+                headerIconButton(
+                    systemName: "timer",
+                    tint: model.focusTimer.state.phase == .idle
+                        ? V6Palette.paper.opacity(0.62)
+                        : SAOGrammar.Palette.accentOrange,
+                    accessibilityLabel: model.lang.t("island.header.timer")
+                ) {
+                    model.notchOpen(reason: .click, surface: .timer)
+                }
             }
 
             if model.settings.clipboard.enabled {
@@ -141,12 +143,14 @@ extension IslandPanelView {
         let isOn = model.settings.ambientListen.isEnabled
         let isRecording = isOn && model.earshot.phase == .listening
         let isBroken = isOn && !isRecording && model.earshot.phase != .pausedForCall
+        let idleLabelKey = !isOn && model.canOpenMitamaRecordingMenu
+            ? "island.header.openMitamaRecording"
+            : "island.header.record"
         let label = model.lang.t("settings.earshot.section") + " · "
             + model.lang.t(isRecording ? "island.header.recording"
-                : isBroken ? "island.header.recordFailed" : "island.header.record")
+                : isBroken ? "island.header.recordFailed" : idleLabelKey)
         return Button {
-            model.settings.ambientListen.isEnabled.toggle()
-            model.earshot.settingsChanged()
+            model.toggleHeaderRecording()
         } label: {
             Image(systemName: isRecording ? "mic.fill" : isBroken ? "exclamationmark.triangle.fill" : "mic.slash")
                 .font(.islandText(size: 10, weight: .bold))

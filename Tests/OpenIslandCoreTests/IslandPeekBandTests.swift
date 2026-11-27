@@ -47,6 +47,40 @@ struct IslandPeekBandTests {
         #expect(content?.subject == .session(.waitingForApproval))
         #expect(content?.elapsed == .minutes(2))
         #expect(content?.othersWaiting == 0)
+        #expect(content?.sessionTitle == "asking")
+    }
+
+    @Test("The oldest waiter's session title is shortened, not the agent name")
+    func oldestWaiterCarriesSessionTitle() {
+        let sessions = [
+            session(
+                "stale",
+                tool: .geminiCLI,
+                phase: .waitingForApproval,
+                waitingFor: 3_600
+            ),
+        ]
+        let content = IslandPeekBand.content(for: sessions, now: epoch)
+        #expect(content?.sessionTitle == "stale")
+    }
+
+    @Test("mitama urgent rows do not invent a session title")
+    func mitamaUrgentHasNoSessionTitle() {
+        let content = IslandPeekBand.content(
+            for: [],
+            mitamaAlerts: [alert(1, createdAgo: 300)],
+            now: epoch
+        )
+        #expect(content?.sessionTitle == nil)
+    }
+
+    @Test("shortSessionTitle cuts on a word when it can")
+    func shortSessionTitleTruncatesCleanly() {
+        let long = String(repeating: "word ", count: 12)
+        let short = IslandPeekBand.shortSessionTitle(long.trimmingCharacters(in: .whitespaces))
+        #expect(short != nil)
+        #expect(short!.count <= IslandPeekBand.peekSessionTitleMaxLength + 1)
+        #expect(short!.hasSuffix("…"))
     }
 
     @Test("The one waiting longest wins, and the rest are counted")

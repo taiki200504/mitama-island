@@ -21,6 +21,7 @@ struct TimerSettingsTests {
         #expect(settings.eyeBreakEnabled == false)
         #expect(settings.playsSound == true)
         #expect(settings.autoAdvance == true)
+        #expect(settings.showsInHeader == false)
     }
 
     @Test
@@ -34,10 +35,12 @@ struct TimerSettingsTests {
         first.eyeBreakEnabled = true
         first.playsSound = false
         first.autoAdvance = false
+        first.showsInHeader = true
 
         let second = TimerSettings(store: store)
         #expect(second.eyeBreakEnabled == true)
         #expect(second.playsSound == false)
         #expect(second.autoAdvance == false)
+        #expect(second.showsInHeader == true)
     }
 }

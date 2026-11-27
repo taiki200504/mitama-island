@@ -98,6 +98,11 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             }
             awakeMenu.items.last?.state = model.settings.behaviour.manualKeepAwakeMode == mode ? .on : .off
         }
+        awakeMenu.addItem(.separator())
+        addItem(model.lang.t("keepAwake.display"), to: awakeMenu) { [weak model] in
+            model?.settings.behaviour.keepAwakeDisplay.toggle()
+        }
+        awakeMenu.items.last?.state = model.settings.behaviour.keepAwakeDisplay ? .on : .off
         if model.settings.behaviour.manualKeepAwakeMode != .off {
             awakeMenu.addItem(.separator())
             addItem(model.lang.t("keepAwake.stop"), to: awakeMenu) { [weak model] in
@@ -141,25 +146,16 @@ final class StatusItemController: NSObject, NSMenuDelegate {
                 ) { [weak model] in
                     model?.toggleSoundMuted()
                 }
-            case .toggleCamera(let isWatching):
-                addItem(
-                    model.lang.t(isWatching ? "statusItem.cameraOff" : "statusItem.cameraOn"),
-                    to: menu
-                ) { [weak model] in
-                    guard let model else { return }
-                    if model.cameraActivation.isRunning {
-                        model.cameraActivation.stop()
-                    } else {
-                        model.beginTouchlessActivation()
-                    }
+            case .stopCamera:
+                addItem(model.lang.t("statusItem.cameraOff"), to: menu) { [weak model] in
+                    model?.cameraActivation.stop()
                 }
-            case .toggleAmbientListen(let isEnabled):
-                addItem(model.lang.t("settings.earshot.section"), to: menu) { [weak model] in
+            case .stopAmbientListen:
+                addItem(model.lang.t("statusItem.stopAmbientListen"), to: menu) { [weak model] in
                     guard let model else { return }
-                    model.settings.ambientListen.isEnabled.toggle()
+                    model.settings.ambientListen.isEnabled = false
                     model.earshot.settingsChanged()
                 }
-                menu.items.last?.state = isEnabled ? .on : .off
             case .startTimer(let presets):
                 let item = NSMenuItem(
                     title: model.lang.t("statusItem.timer.start"),

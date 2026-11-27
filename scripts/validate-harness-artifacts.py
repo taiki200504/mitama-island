@@ -420,13 +420,18 @@ def main() -> None:
             height=(28, 34),
             context=f"{scenario} pill size",
         )
-        if not any("CODEX" in value for value in text_values):
+        peek_text = text_values | labels
+        if not any("CODEX" in value for value in peek_text):
             fail(f"{scenario} is missing the waiting agent")
         # The band is the whole point of the scenario: the agent that is
         # waiting, and how long it has been. Checked by the agent name and the
         # number alone so the assertion survives a change of UI language.
-        if scenario == "peekBand" and not any("8" in value for value in text_values):
+        if scenario == "peekBand" and not any("8" in value for value in peek_text):
             fail("peek band is missing the elapsed time")
+        if scenario == "peekBand" and not any(
+            "peek title" in value.lower() for value in peek_text
+        ):
+            fail("peek band is missing the waiting session title")
         if scenario == "closedAccessoryTimer" and not any("12" in value for value in text_values):
             fail("closedAccessoryTimer is missing the timer accessory")
 
@@ -764,7 +769,7 @@ def main() -> None:
             height=(35, CLOSED_WINDOW_MAX_HEIGHT),
             context="nowPlayingClosed overlay frame",
         )
-        if not any("CODEX" in value for value in text_values):
+        if not any("CODEX" in value for value in text_values | labels):
             fail("nowPlayingClosed is missing the waiting agent")
 
     elif scenario == "nowPlayingSurface":

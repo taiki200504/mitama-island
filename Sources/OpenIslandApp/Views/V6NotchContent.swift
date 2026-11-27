@@ -269,6 +269,16 @@ struct V6ClosedPill: View {
         max(360, physicalNotchWidth + accessoryDropBleed * 2)
     }
 
+    /// Width left for the compact peek readout beside the 12pt status bars in
+    /// the MacBook split layout — the same number `macbookBody` frames the
+    /// leading block with, minus the bars and their inner gap.
+    nonisolated static func macbookSplitLeadingPeekWidth(
+        outerWidth: CGFloat,
+        physicalNotchWidth: CGFloat
+    ) -> CGFloat {
+        max(0, (outerWidth - physicalNotchWidth) / 2 - 12 - 3)
+    }
+
     /// The pill's real outer width in macbook layout, and which accessory
     /// (if any) survives once that width is checked against the notch's own
     /// bleed budget. Pure and static — a test can call it directly, and
@@ -466,8 +476,10 @@ struct V6ClosedPill: View {
                         .padding(.trailing, Self.innerGap)
                 }
 
-                if compact, let content, case .waiting(let peek)? = content.body {
-                    compactCount(peek.othersWaiting + 1)
+                if let content, case .waiting(let peek)? = content.body {
+                    if compact {
+                        SAOPeekMacBookCompactTail(islandBody: .waiting(peek))
+                    }
                 } else if compact, case .count(let count)? = rightSlot {
                     compactCount(count)
                 } else if let rightSlot {
@@ -521,33 +533,45 @@ struct V6ClosedPill: View {
         )
         let accessory = layoutResult.accessory
         let outer = layoutResult.outerWidth
+        let sideBudget = (outer - physicalNotchWidth) / 2
+        let usesSplitLayout = layoutResult.compactBody || sideBudget < 44
+        let splitLeadingPeekWidth = Self.macbookSplitLeadingPeekWidth(
+            outerWidth: outer,
+            physicalNotchWidth: physicalNotchWidth
+        )
 
         return ZStack {
             V6ClosedPillShape()
                 .fill(V6Palette.ink)
 
             HStack(spacing: 0) {
-                if layoutResult.compactBody || (outer - physicalNotchWidth) / 2 < 44 {
+                if usesSplitLayout {
                     HStack(spacing: 3) {
                         UnifiedBars(mode: mode, size: 12).frame(width: 12, height: 12)
                         if let content {
-                            SAOPeekGaugeView(content: content, compact: true)
+                            SAOPeekGaugeView(
+                                content: content,
+                                compact: true,
+                                narrowNotchSide: true,
+                                leadingMaxWidth: splitLeadingPeekWidth
+                            )
                         } else if let sneakPeek, showsSneakPeek {
                             Image(systemName: sneakPeek.icon).font(.system(size: 6))
                         }
                     }
-                    .frame(width: (outer - physicalNotchWidth) / 2)
+                    .frame(width: sideBudget)
                     Spacer(minLength: physicalNotchWidth).frame(width: physicalNotchWidth)
                     Group {
-                        if let content, case .waiting(let peek)? = content.body {
-                            compactCount(peek.othersWaiting + 1)
+                        if let content, let islandBody = content.body,
+                           SAOPeekGauge.isPeekWaitingBody(islandBody) {
+                            SAOPeekMacBookCompactTail(islandBody: islandBody)
                         } else if case .count(let count)? = rightSlot {
                             compactCount(count)
                         } else if let rightSlot {
                             V6RightSlotView(content: rightSlot).scaleEffect(0.65)
                         }
                     }
-                    .frame(width: (outer - physicalNotchWidth) / 2)
+                    .frame(width: sideBudget)
                 } else {
                 UnifiedBars(mode: mode, size: 24)
                     .frame(width: 24, height: 24)
@@ -563,7 +587,7 @@ struct V6ClosedPill: View {
                             .transition(.opacity.combined(with: .move(edge: .leading)))
                     }
                 } else if hasBody, let content {
-                    SAOPeekGaugeView(content: content, compact: layoutResult.compactBody)
+                    SAOPeekGaugeView(content: content)
                         .padding(.leading, Self.innerGap)
                         .transition(.opacity.combined(with: .move(edge: .leading)))
                 }
@@ -576,11 +600,15 @@ struct V6ClosedPill: View {
                 }
 
                 if let rightSlot {
-                    V6RightSlotView(content: rightSlot)
+                    if case .waiting? = content?.body, case .count = rightSlot {
+                        EmptyView()
+                    } else {
+                        V6RightSlotView(content: rightSlot)
+                    }
                 }
                 }
             }
-            .padding(.horizontal, layoutResult.compactBody || (outer - physicalNotchWidth) / 2 < 44 ? 0 : pad)
+            .padding(.horizontal, usesSplitLayout ? 0 : pad)
         }
         .frame(width: outer, height: height)
         .animation(
@@ -606,6 +634,11 @@ struct SAOPeekGaugeView: View {
     /// notch sits in exactly the space it would need.
     var showsEventTitle: Bool = false
     var compact = false
+    /// MacBook split layout or an otherwise tight side beside the physical
+    /// notch — urgent rows drop the agent name and approval rows must
+    /// truncate on one line.
+    var narrowNotchSide = false
+    var leadingMaxWidth: CGFloat?
 
     @State private var urgentPulse = false
     @State private var urgentSettled = false
@@ -615,32 +648,63 @@ struct SAOPeekGaugeView: View {
             let level = SAOPeekGauge.gaugeLevel(for: islandBody)
             let urgent = SAOPeekGauge.isUrgent(islandBody)
             let others = SAOPeekGauge.othersCount(for: islandBody)
+            let isAgentWaiting = if case .waiting = islandBody { true } else { false }
 
             if compact {
-                Image(systemName: "diamond.fill")
-                    .font(.system(size: 6, weight: .bold))
-                    .foregroundStyle(level.tint)
+                let warning = narrowNotchSide ? SAOPeekGauge.compactShortWarningLabel(for: islandBody) : nil
+                HStack(spacing: 3) {
+                    Image(systemName: "diamond.fill")
+                        .font(.system(size: 6, weight: .bold))
+                        .foregroundStyle(SAOPeekGauge.subjectTint(for: islandBody))
+                    if let kind = warning ?? SAOPeekGauge.subjectKind(for: islandBody).map({ SAOPeekGauge.visibleSubjectKind($0) }) {
+                        Text(kind)
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(SAOPeekGauge.subjectTint(for: islandBody))
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                            .layoutPriority(1)
+                    }
+                    if warning == nil {
+                        Text(SAOPeekGauge.label(for: islandBody))
+                            .saoCaps(size: 8)
+                            .foregroundStyle(V6Palette.paper.opacity(0.92))
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                    }
+                }
+                .frame(maxWidth: leadingMaxWidth, alignment: .leading)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(SAOPeekGauge.accessibilityLabel(for: islandBody))
             } else {
             HStack(spacing: 5) {
                 Image(systemName: "diamond.fill")
                     .font(.system(size: 6, weight: .bold))
-                    .foregroundStyle(SAOGrammar.Palette.statusYellow)
+                    .foregroundStyle(SAOPeekGauge.subjectTint(for: islandBody))
 
                 Text(SAOPeekGauge.label(for: islandBody))
                     .saoCaps(size: 11)
                     .foregroundStyle(V6Palette.paper.opacity(0.92))
 
-                ZStack(alignment: .leading) {
-                    SAOGaugeShape(fraction: 1, isTrack: true)
-                        .fill(V6Palette.paper.opacity(0.14))
-                    SAOGaugeShape(fraction: level.fraction)
-                        .fill(level.tint)
-                        .opacity(urgent && !urgentSettled ? (urgentPulse ? 1 : 0.4) : 1)
-                        .cappedPulse($urgentPulse, settled: $urgentSettled, isActive: urgent, period: 0.9, restartOn: SAOPeekGauge.label(for: islandBody))
+                if let kind = SAOPeekGauge.subjectKind(for: islandBody) {
+                    Text(SAOPeekGauge.visibleSubjectKind(kind))
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(SAOPeekGauge.subjectTint(for: islandBody).opacity(0.9))
                 }
-                .frame(width: 44, height: 6)
 
-                Text(SAOPeekGauge.elapsedText(for: islandBody))
+                if !isAgentWaiting {
+                    ZStack(alignment: .leading) {
+                        SAOGaugeShape(fraction: 1, isTrack: true)
+                            .fill(V6Palette.paper.opacity(0.14))
+                        SAOGaugeShape(fraction: level.fraction)
+                            .fill(level.tint)
+                            .opacity(urgent && !urgentSettled ? (urgentPulse ? 1 : 0.4) : 1)
+                            .cappedPulse($urgentPulse, settled: $urgentSettled, isActive: urgent, period: 0.9, restartOn: SAOPeekGauge.label(for: islandBody))
+                    }
+                    .frame(width: 44, height: 6)
+
+                }
+
+                Text(SAOPeekGauge.displayedElapsed(for: islandBody))
                     .font(.islandMono(size: 11))
                     .foregroundStyle(V6Palette.paper.opacity(0.62))
 
@@ -651,16 +715,46 @@ struct SAOPeekGaugeView: View {
                         .lineLimit(1)
                         .truncationMode(.tail)
                         .frame(maxWidth: IslandClosedContent.peekEventTitleMaxWidth, alignment: .leading)
+                } else if showsEventTitle, let sessionTitle = SAOPeekGauge.sessionTitle(for: islandBody) {
+                    Text(sessionTitle)
+                        .font(.islandText(size: 11))
+                        .foregroundStyle(V6Palette.paper.opacity(0.62))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .frame(maxWidth: IslandClosedContent.peekSessionTitleMaxWidth, alignment: .leading)
                 }
 
-                if others > 0 {
+                if !isAgentWaiting, others > 0 {
                     SAOPeekTailStrip(count: others, isWaiting: SAOPeekGauge.tailIsWaiting(for: islandBody))
                 }
             }
             .lineLimit(1)
             .fixedSize(horizontal: true, vertical: false)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(SAOPeekGauge.accessibilityLabel(for: islandBody))
             }
         }
+    }
+}
+
+private struct SAOPeekMacBookCompactTail: View {
+    let islandBody: IslandClosedBody
+
+    var body: some View {
+        HStack(spacing: 3) {
+            Text(SAOPeekGauge.displayedElapsed(for: islandBody))
+                .font(.islandMono(size: 8, weight: .semibold))
+                .foregroundStyle(V6Palette.paper.opacity(0.85))
+                .fixedSize()
+            let others = SAOPeekGauge.othersCount(for: islandBody)
+            if SAOPeekGauge.isUrgent(islandBody), others > 0 {
+                Text("+\(others)")
+                    .font(.islandMono(size: 8, weight: .semibold))
+                    .foregroundStyle(V6Palette.paper.opacity(0.62))
+                    .fixedSize()
+            }
+        }
+        .accessibilityHidden(true)
     }
 }
 
@@ -935,6 +1029,7 @@ extension IslandClosedContent {
     /// one — kept in sync with the `.frame(maxWidth:)` `SAOPeekGaugeView`
     /// actually draws it at, so the two can never disagree.
     fileprivate static let peekEventTitleMaxWidth: CGFloat = 90
+    fileprivate static let peekSessionTitleMaxWidth: CGFloat = 56
 
     private func tailStripWidth(cells: Int) -> CGFloat {
         guard cells > 0 else { return 0 }
@@ -955,17 +1050,26 @@ extension IslandClosedContent {
     fileprivate func bodyWidth(showsEventTitle: Bool) -> CGFloat {
         guard let body else { return 0 }
         let label = SAOPeekGauge.label(for: body)
-        let elapsed = SAOPeekGauge.elapsedText(for: body)
+        let elapsed = SAOPeekGauge.displayedElapsed(for: body)
         let others = SAOPeekGauge.othersCount(for: body)
+        let isAgentWaiting = if case .waiting = body { true } else { false }
 
         var width = Self.peekDotWidth
         width += CGFloat(label.count) * Self.peekCharWidth + Self.peekInnerGap
-        width += Self.peekGaugeWidth + Self.peekInnerGap
-        width += CGFloat(elapsed.count) * Self.peekCharWidth
+        if let kind = SAOPeekGauge.subjectKind(for: body) {
+            let text = SAOPeekGauge.visibleSubjectKind(kind)
+            width += Self.peekInnerGap + CGFloat(text.count) * 10
+        }
+        if !isAgentWaiting {
+            width += Self.peekGaugeWidth + Self.peekInnerGap
+        }
+        width += Self.peekInnerGap + CGFloat(elapsed.count) * (isAgentWaiting ? 10 : Self.peekCharWidth)
         if showsEventTitle, SAOPeekGauge.eventTitle(for: body) != nil {
             width += Self.peekInnerGap + Self.peekEventTitleMaxWidth
+        } else if showsEventTitle, SAOPeekGauge.sessionTitle(for: body) != nil {
+            width += Self.peekInnerGap + Self.peekSessionTitleMaxWidth
         }
-        if others > 0 {
+        if !isAgentWaiting, others > 0 {
             width += Self.peekInnerGap + tailStripWidth(cells: others)
         }
         return width

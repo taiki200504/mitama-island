@@ -324,6 +324,8 @@
 "settings.timer.playsSound" = "フェーズ終了時に音を鳴らす";
 "settings.timer.autoAdvance" = "自動的に次のフェーズへ進む";
 "settings.timer.autoAdvance.help" = "オフにすると、終了したポモドーロや目の休憩はタイマー画面の操作待ちのままになります。";
+"settings.timer.showsInHeader" = "ヘッダーにタイマーを出す";
+"settings.timer.showsInHeader.help" = "既定はオフ。すでに動いているタイマーは、オフでもボタンを残します。";
 
 "settings.display.section.clipboard" = "クリップボード";
 "settings.clipboard.enabled" = "クリップボード履歴を記録する";
@@ -841,7 +843,7 @@
 "statusItem.openIsland" = "島を開く / 閉じる";
 "statusItem.openIsland.waiting" = "島を開く / 閉じる（%d件待ち）";
 "statusItem.unmute" = "ミュート解除";
-"statusItem.cameraOn" = "カメラを起こす";
+"statusItem.stopAmbientListen" = "録音を止める";
 "statusItem.cameraOff" = "カメラを閉じる";
 "statusItem.timer.start" = "タイマーを開始…";
 "statusItem.timer.running" = "タイマー: %@";
@@ -938,6 +940,8 @@
 "decision.paseo.open" = "Paseoでこの会話を開く";
 "decision.paseo.unsupported" = "この種類の要求はPaseo側で内容を確認して回答してください。";
 "decision.paseo.sending" = "Paseoへ送信中…";
+"decision.paseo.sendFailed" = "Paseoに送信できませんでした。表示を確認して、もう一度回答してください。";
+"decision.paseo.resumeUnconfirmed" = "送信済み・再開未確認。「会話を開く」でPaseoの状況を確認できます。";
 "decision.question.sending" = "回答を送信中…";
 "decision.question.retry" = "回答を再送";
 "decision.sending" = "送信中…";
@@ -1017,6 +1021,7 @@
 "settings.audio.builtInMic.help" = "Bluetoothイヤホンのマイクを使うと音楽の音質が落ちるため、内蔵マイクに固定します";
 
 "island.header.record" = "録音";
+"island.header.openMitamaRecording" = "mitama で録音を開く";
 "island.header.recordFailed" = "録音できていません（押すと止めます）";
 "island.header.recording" = "録音中";
 
@@ -1054,3 +1059,10 @@
 "settings.mitama.voice.status.tooLongHeld" = "60秒で止めました。";
 "settings.mitama.voice.status.denied" = "システム設定で、マイクと音声認識を許可してください。";
 "settings.mitama.voice.status.unsupported" = "この Mac では、端末内の日本語認識を使えません。";
+
+"island.peek.approval" = "承認";
+"island.peek.question" = "質問";
+"island.peek.waitingMinutes" = "%d分待ち";
+"island.peek.moreWaiting" = "ほか%d件待ち";
+
+"island.header.openMitamaRecordingFailed" = "mitamaを開けませんでした。mitamaを開いて「声と録音」から録音してください。";

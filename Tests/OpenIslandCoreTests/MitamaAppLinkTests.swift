@@ -3,6 +3,10 @@ import Testing
 @testable import OpenIslandCore
 
 struct MitamaAppLinkTests {
+    @Test func buildsMenuOpenURL() {
+        #expect(MitamaAppLink.menuOpenURL.absoluteString == "app.mitama.os.mac.menu://open")
+    }
+
     @Test func buildsOpenURLWithPath() {
         #expect(MitamaAppLink.url(path: "/notifications").absoluteString == "app.mitama.os.mac://open?path=/notifications")
     }

@@ -66,6 +66,9 @@ struct PaseoQuestionWiringTests {
         await mock.setFailure(false)
         model.answerQuestion(for: session.id, answer: .init(answers: ["Choose": "One"]))
         try await waitForSubmission(model, sessionID: session.id)
+        #expect(model.state.session(id: session.id)?.questionPrompt != nil)
+        model.applyTrackedEvent(.activityUpdated(SessionActivityUpdated(
+            sessionID: session.id, summary: "Resumed", phase: .running, timestamp: .now)))
         #expect(model.state.session(id: session.id)?.questionPrompt == nil)
         #expect(model.state.session(id: session.id)?.phase == .running)
         #expect(await mock.sends == 2)

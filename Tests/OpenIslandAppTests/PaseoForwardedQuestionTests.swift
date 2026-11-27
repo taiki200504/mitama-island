@@ -169,6 +169,12 @@ private actor ForwardedPaseoMock {
         let deadline = ContinuousClock.now.advanced(by: .seconds(2))
         while model.paseoSendingSessionIDs.contains("parent-native"), ContinuousClock.now < deadline { await Task.yield() }
         #expect(await mock.sends == ["child"])
+        #expect(model.paseoConfirmingResumeSessionIDs.contains("parent-native"))
+        model.applyTrackedEvent(.activityUpdated(SessionActivityUpdated(
+            sessionID: "parent-native", summary: "Parent working", phase: .running, timestamp: .now)))
+        #expect(model.paseoConfirmingResumeSessionIDs.contains("parent-native"))
+        model.applyTrackedEvent(.activityUpdated(SessionActivityUpdated(
+            sessionID: "child-native", summary: "Child resumed", phase: .running, timestamp: .now)))
         #expect(model.forwardedQuestionTargets.isEmpty)
         #expect(model.state.session(id: "parent-native")?.phase == .running)
     }

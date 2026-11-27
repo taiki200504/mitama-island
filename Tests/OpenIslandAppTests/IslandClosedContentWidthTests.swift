@@ -172,6 +172,29 @@ struct IslandClosedContentWidthTests {
         #expect(V6ClosedPill.notchedMaxWidth(physicalNotchWidth: 400) == 466)
     }
 
+    @Test("A 150pt notch at the 280 cap leaves a narrow split leading peek width")
+    func narrowNotchSplitLeadingPeekWidth() {
+        let peek = IslandPeekBand.Content(
+            agent: IslandPeekBand.mitamaLabel,
+            subject: .mitamaAlert,
+            elapsed: .minutes(3),
+            othersWaiting: 0
+        )
+        let content = IslandClosedContent(body: .urgent(peek))
+        let physicalNotchWidth: CGFloat = 150
+        let result = V6ClosedPill.macbookLayout(
+            content: content, sneakPeek: nil, rightSlot: nil,
+            physicalNotchWidth: physicalNotchWidth, pad: pad, configuredMaxWidth: 280
+        )
+        #expect(result.compactBody)
+        #expect(result.outerWidth == 280)
+        let peekWidth = V6ClosedPill.macbookSplitLeadingPeekWidth(
+            outerWidth: result.outerWidth,
+            physicalNotchWidth: physicalNotchWidth
+        )
+        #expect(peekWidth == 50)
+    }
+
     @Test("A 234pt notch has room for compact status and the right-side count")
     func compactStatusAndCountStayOutsideNotch() {
         let notchWidth: CGFloat = 234

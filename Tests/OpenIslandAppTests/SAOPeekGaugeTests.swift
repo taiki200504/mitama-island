@@ -116,12 +116,97 @@ struct SAOPeekGaugeTests {
         #expect(!SAOPeekGauge.tailIsWaiting(for: body))
     }
 
-    @Test("Only an event-started body carries a title")
-    func onlyEventStartedCarriesATitle() {
+    @Test("Event-started bodies carry eventTitle; waiting bodies carry sessionTitle")
+    func peekTitlesSplitByBodyKind() {
         let waiting = IslandClosedBody.waiting(peekContent(elapsed: .minutes(1)))
         #expect(SAOPeekGauge.eventTitle(for: waiting) == nil)
+        #expect(SAOPeekGauge.sessionTitle(for: waiting) == nil)
+
+        let titledPeek = IslandPeekBand.Content(
+            agent: "CODEX",
+            subject: .session(.waitingForApproval),
+            elapsed: .minutes(8),
+            othersWaiting: 0,
+            sessionTitle: "Codex · open-island"
+        )
+        let titledWait = IslandClosedBody.waiting(titledPeek)
+        #expect(SAOPeekGauge.sessionTitle(for: titledWait) == "Codex · open-island")
+        #expect(SAOPeekGauge.eventTitle(for: titledWait) == nil)
 
         let band = UpcomingCalendarEvent.Band(title: "Standup", startsAt: .now, minutesUntil: 5, othersAhead: 0)
         #expect(SAOPeekGauge.eventTitle(for: .nextEvent(band)) == nil)
+        #expect(SAOPeekGauge.sessionTitle(for: .nextEvent(band)) == nil)
+    }
+
+    @Test("Subject kind distinguishes approval, answer, and mitama alert")
+    func subjectKindTokens() {
+        let approval = IslandClosedBody.waiting(peekContent(elapsed: .justNow))
+        #expect(SAOPeekGauge.subjectKind(for: approval) == "APP")
+
+        let answerPeek = IslandPeekBand.Content(
+            agent: "CODEX", subject: .session(.waitingForAnswer), elapsed: .minutes(3), othersWaiting: 0)
+        let answer = IslandClosedBody.waiting(answerPeek)
+        #expect(SAOPeekGauge.subjectKind(for: answer) == "ASK")
+
+        let alertPeek = IslandPeekBand.Content(
+            agent: IslandPeekBand.mitamaLabel, subject: .mitamaAlert, elapsed: .justNow, othersWaiting: 0)
+        let urgent = IslandClosedBody.urgent(alertPeek)
+        #expect(SAOPeekGauge.subjectKind(for: urgent) == "ALERT")
+
+        let event = IslandClosedBody.nextEvent(
+            UpcomingCalendarEvent.Band(title: "Standup", startsAt: .now, minutesUntil: 5, othersAhead: 0))
+        #expect(SAOPeekGauge.subjectKind(for: event) == nil)
+    }
+
+    @Test("Subject tint follows waiting phase colors")
+    func subjectTintMatchesPhase() {
+        let approval = IslandClosedBody.waiting(peekContent(elapsed: .justNow))
+        #expect(SAOPeekGauge.subjectTint(for: approval) == IslandDesignPalette.Status.waitingForApproval)
+
+        let answerPeek = IslandPeekBand.Content(
+            agent: "GEMINI", subject: .session(.waitingForAnswer), elapsed: .justNow, othersWaiting: 0)
+        let answer = IslandClosedBody.waiting(answerPeek)
+        #expect(SAOPeekGauge.subjectTint(for: answer) == IslandDesignPalette.Status.waitingForAnswer)
+    }
+
+    @Test("Accessibility label names agent, kind, elapsed, and overflow count")
+    func accessibilityLabelReadsFullPeek() {
+        let peek = IslandPeekBand.Content(
+            agent: "CLAUDE",
+            subject: .session(.waitingForAnswer),
+            elapsed: .minutes(12),
+            othersWaiting: 2,
+            sessionTitle: "Island peek title"
+        )
+        let body = IslandClosedBody.waiting(peek)
+        let label = SAOPeekGauge.accessibilityLabel(for: body)
+        #expect(label.contains("CLAUDE"))
+        #expect(label.contains("Island peek title"))
+        #expect(label.contains(LanguageManager.shared.t("session.answerNeeded")))
+        #expect(label.contains(LanguageManager.shared.t("island.peek.waitingMinutes", 12)))
+        #expect(label.contains(LanguageManager.shared.t("island.peek.moreWaiting", 2)))
+    }
+
+    @Test("A narrow urgent compact label is only the alert token, not the agent name")
+    func compactShortWarningLabelDropsAgentName() {
+        let alertPeek = IslandPeekBand.Content(
+            agent: IslandPeekBand.mitamaLabel,
+            subject: .mitamaAlert,
+            elapsed: .minutes(4),
+            othersWaiting: 0
+        )
+        let body = IslandClosedBody.urgent(alertPeek)
+        let lang = LanguageManager.shared
+        let expected = lang.language.resolvedCode == "en" ? "!" : lang.t("mitama.level.urgent")
+        #expect(SAOPeekGauge.compactShortWarningLabel(for: body) == expected)
+        #expect(SAOPeekGauge.compactShortWarningLabel(for: .waiting(alertPeek)) == nil)
+    }
+
+    @Test("Peek waiting bodies are flagged for the MacBook split tail")
+    func peekWaitingBodyPredicate() {
+        #expect(SAOPeekGauge.isPeekWaitingBody(.waiting(peekContent(elapsed: .justNow))))
+        #expect(SAOPeekGauge.isPeekWaitingBody(.urgent(peekContent(elapsed: .justNow))))
+        let band = UpcomingCalendarEvent.Band(title: "X", startsAt: .now, minutesUntil: 1, othersAhead: 0)
+        #expect(!SAOPeekGauge.isPeekWaitingBody(.nextEvent(band)))
     }
 }
