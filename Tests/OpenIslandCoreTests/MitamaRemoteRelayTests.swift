@@ -8,7 +8,13 @@ private final class FakeHTTP: MitamaRemoteHTTP, @unchecked Sendable {
 
     private let lock = NSLock()
     private var _calls: [Call] = []
-    var respond: @Sendable (Call) -> String = { _ in "[]" }
+    var beforeRespond: @Sendable (Call) async throws -> Void = { _ in }
+    var respond: @Sendable (Call) -> String = { call in
+        if call.method == "GET", call.table == "mos_island_requests", call.query.contains("status=eq.pending") {
+            return #"[{"id":"r1"}]"#
+        }
+        return "[]"
+    }
 
     var calls: [Call] { lock.lock(); defer { lock.unlock() }; return _calls }
 
@@ -22,6 +28,7 @@ private final class FakeHTTP: MitamaRemoteHTTP, @unchecked Sendable {
             body: body
         )
         lock.withLock { _calls.append(call) }
+        try await beforeRespond(call)
         return (Data(respond(call).utf8), 200)
     }
 }
@@ -84,13 +91,10 @@ struct MitamaRemoteRelayTests {
         await register(relay)
 
         let calls = http.calls
-        #expect(calls.map(\.table) == ["mos_island_requests", "mos_notifications"])
-        #expect(calls.allSatisfy { $0.method == "POST" })
-        #expect(calls[0].body["id"] as? String == "r1")
-        #expect(calls[0].body["working_directory"] == nil)
-        #expect(calls[1].body["level"] as? String == "urgent")
-        #expect(calls[1].body["source_ref"] as? String == "island:r1")
-        #expect(calls[1].body["body"] as? String == "Claude Code のセッション1件がツール実行の許可を待っています")
+        #expect(calls.map(\.table) == ["mos_island_requests"])
+        #expect(calls.first?.method == "POST")
+        #expect(calls.first?.body["id"] as? String == "r1")
+        #expect(calls.first?.body["working_directory"] == nil)
         #expect(relay.pendingCountForTests() == 1)
     }
 
@@ -187,7 +191,7 @@ struct MitamaRemoteRelayTests {
         let http = FakeHTTP()
         http.respond = { call in
             switch (call.method, call.table) {
-            case ("GET", "mos_island_requests"): return #"[{"id":"r1","answer":"allow"}]"#
+            case ("GET", "mos_island_requests") where call.query.contains("status=eq.answered"): return #"[{"id":"r1","answer":"allow"}]"#
             case ("PATCH", _): return #"[{"id":"r1"}]"#
             default: return "[]"
             }
@@ -199,6 +203,7 @@ struct MitamaRemoteRelayTests {
         await relay.pollOnce()
 
         #expect(applied.values == ["s1:true"])
+        #expect(!http.calls.contains { $0.table == "mos_notifications" && $0.method == "POST" })
         #expect(relay.pendingCountForTests() == 0)
         let patch = http.calls.first { $0.method == "PATCH" }
         #expect(patch?.query.contains("status=eq.answered") == true)
@@ -317,11 +322,12 @@ struct MitamaRemoteRelayTests {
     }
 
     @Test
-    func theSameQuestionReportedTwiceShowsOneCard() async {
+    func concurrentReportsOfTheSameQuestionShowOneCard() async {
         let http = FakeHTTP()
         let relay = makeRelay(http)
-        await register(relay, id: "r1", kind: .question, options: ["Yes", "No"])
-        await register(relay, id: "r2", kind: .question, options: ["Yes", "No"])
+        async let first: Void = register(relay, id: "r1", kind: .question, options: ["Yes", "No"])
+        async let duplicate: Void = register(relay, id: "r2", kind: .question, options: ["Yes", "No"])
+        _ = await (first, duplicate)
 
         #expect(http.calls.filter { $0.table == "mos_island_requests" && $0.method == "POST" }.count == 1)
         // A question at the Mac pushes nothing to the phone (main 10-15); the duplicate must not either.
@@ -343,8 +349,12 @@ struct MitamaRemoteRelayTests {
         relay.isCurrent = { _, requestID in requestID == "r2" }
         let answered = Recorder()
         relay.onAnswerQuestion = { answered.record("\($1):\($2)") }
+        http.beforeRespond = { [weak relay] call in
+            guard let relay, call.table == "mos_island_requests", call.method == "POST",
+                  call.body["id"] as? String == "r1" else { return }
+            await register(relay, id: "r2", kind: .question, options: ["Yes", "No"])
+        }
         await register(relay, id: "r1", kind: .question, options: ["Yes", "No"])
-        await register(relay, id: "r2", kind: .question, options: ["Yes", "No"])
         await relay.pollOnce()
 
         #expect(answered.values == ["r2:No"])
@@ -438,32 +448,77 @@ struct MitamaRemoteRelayTests {
         await register(relay)
         await relay.pollOnce()
         #expect(http.calls.filter { $0.table == "mos_notifications" }.isEmpty)
-        idle.date = Date(timeIntervalSince1970: 400)
+        idle.date = Date(timeIntervalSince1970: 299)
+        await relay.pollOnce()
+        #expect(http.calls.filter { $0.table == "mos_notifications" }.isEmpty)
+        idle.date = Date(timeIntervalSince1970: 300)
         await relay.pollOnce()
         await relay.pollOnce()
         let pushes = http.calls.filter { $0.table == "mos_notifications" && $0.method == "POST" }
         #expect(pushes.count == 1)
         #expect(pushes.first?.body["source_ref"] as? String == "island:r1")
         #expect(pushes.first?.body["level"] as? String == "urgent")
+        #expect(pushes.first?.body["body"] as? String == "Claude Code のセッション1件がツール実行の許可を待っています")
     }
 
     @Test
-    func awayPushIsSkippedWhenAlreadyPushedAtInsertOrAlreadyStored() async {
+    func awayPushChecksTheStableReferenceBeforeSending() async {
         let http = FakeHTTP()
+        http.respond = { call in call.table == "mos_notifications" && call.method == "GET" ? #"[{"id":"x"}]"# : "[]" }
         let relay = makeRelay(http)
         await register(relay)
         await relay.pollOnce()
-        #expect(http.calls.filter { $0.table == "mos_notifications" }.count == 1)
-
-        let http2 = FakeHTTP()
-        http2.respond = { call in call.table == "mos_notifications" && call.method == "GET" ? #"[{"id":"x"}]"# : "[]" }
-        let idle = Clock(Date(timeIntervalSince1970: 10))
-        let relay2 = makeRelay(http2, idle: { idle.date.timeIntervalSince1970 })
-        await register(relay2)
-        idle.date = Date(timeIntervalSince1970: 400)
-        await relay2.pollOnce()
-        #expect(http2.calls.filter { $0.table == "mos_notifications" && $0.method == "POST" }.isEmpty)
+        await relay.pollOnce()
+        let notifications = http.calls.filter { $0.table == "mos_notifications" }
+        #expect(notifications.map(\.method) == ["GET"])
+        #expect(notifications.first?.query.contains("source_ref=eq.island:r1") == true)
     }
+
+    @Test
+    func aFailedRegistrationCannotNotifyEvenDuringTheInsert() async {
+        let http = FakeHTTP()
+        let relay = makeRelay(http)
+        http.beforeRespond = { [weak relay] call in
+            guard call.table == "mos_island_requests", call.method == "POST" else { return }
+            await relay?.escalatePermissions()
+            throw URLError(.timedOut)
+        }
+        await register(relay)
+        await relay.pollOnce()
+        #expect(http.calls.map(\.table) == ["mos_island_requests"])
+        #expect(relay.pendingCountForTests() == 0)
+    }
+
+    @Test
+    func resolvingDuringTheInsertRetiresTheInsertedCard() async {
+        let http = FakeHTTP()
+        let relay = makeRelay(http)
+        http.beforeRespond = { [weak relay] call in
+            guard call.table == "mos_island_requests", call.method == "POST" else { return }
+            await relay?.resolveElsewhere(sessionID: "s1")
+        }
+        await register(relay)
+        await relay.pollOnce()
+        #expect(http.calls.map(\.method) == ["POST", "PATCH", "PATCH"])
+        #expect(http.calls.last?.body["status"] as? String == "resolved_elsewhere")
+        #expect(relay.pendingCountForTests() == 0)
+    }
+
+    @Test
+    func resolvingDuringTheNotificationLookupPreventsThePush() async {
+        let http = FakeHTTP()
+        let relay = makeRelay(http)
+        http.beforeRespond = { [weak relay] call in
+            guard call.table == "mos_island_requests", call.method == "GET",
+                  call.query.contains("status=eq.pending") else { return }
+            await relay?.resolveElsewhere(sessionID: "s1")
+        }
+        await register(relay)
+        await relay.pollOnce()
+        #expect(http.calls.contains { $0.body["status"] as? String == "resolved_elsewhere" })
+        #expect(!http.calls.contains { $0.table == "mos_notifications" && $0.method == "POST" })
+    }
+
 }
 
 private final class Recorder: @unchecked Sendable {
