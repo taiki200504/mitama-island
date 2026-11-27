@@ -940,6 +940,8 @@
 "decision.paseo.open" = "在Paseo中打开此对话";
 "decision.paseo.unsupported" = "请在Paseo中查看并回答此类请求。";
 "decision.paseo.sending" = "正在发送至Paseo…";
+"decision.paseo.sendFailed" = "未能发送到 Paseo。请确认当前显示的请求后重试。";
+"decision.paseo.resumeUnconfirmed" = "已发送 · 尚未确认恢复。请打开对话查看 Paseo 的状态。";
 "decision.question.sending" = "正在发送答复…";
 "decision.question.retry" = "重新发送答复";
 "decision.sending" = "正在发送…";

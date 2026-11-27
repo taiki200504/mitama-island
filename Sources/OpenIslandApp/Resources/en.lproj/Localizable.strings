@@ -940,6 +940,8 @@
 "decision.paseo.open" = "Open this conversation in Paseo";
 "decision.paseo.unsupported" = "Review and answer this type of request in Paseo.";
 "decision.paseo.sending" = "Sending to Paseo…";
+"decision.paseo.sendFailed" = "Couldn’t send to Paseo. Check the request shown and try again.";
+"decision.paseo.resumeUnconfirmed" = "Sent · Resume unconfirmed. Open the conversation to check Paseo.";
 "decision.question.sending" = "Sending your answer…";
 "decision.question.retry" = "Retry answer";
 "decision.sending" = "Sending…";

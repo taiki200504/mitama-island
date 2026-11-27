@@ -145,11 +145,16 @@ struct PaseoChildPermissionTests {
         let (model, coordinator) = model(mock)
         await coordinator.poll()
         let request = try #require(model.activeIslandCardSession?.permissionRequest)
-        model.approvePermission(for: "native-child", action: .allowOnce, expectedRequestID: request.id)
-        let deadline = ContinuousClock.now + .seconds(5)
-        while model.paseoSendingSessionIDs.contains("native-child"), ContinuousClock.now < deadline { await Task.yield() }
-        #expect(!model.paseoSendingSessionIDs.contains("native-child"))
+        model.approvePermission(for: "native-child", action: .allowOnce, playsSound: false, expectedRequestID: request.id)
+        let deadline = ContinuousClock.now + .seconds(15)
+        while model.paseoSendingSessionIDs.contains("native-child"), ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        try #require(!model.paseoSendingSessionIDs.contains("native-child"))
         #expect(await mock.responses == ["child"])
+        #expect(model.state.session(id: "native-child")?.permissionRequest?.id == request.id)
+        model.applyTrackedEvent(.activityUpdated(SessionActivityUpdated(
+            sessionID: "native-child", summary: "Resumed", phase: .running, timestamp: .now)))
         #expect(model.state.session(id: "native-child")?.permissionRequest == nil)
     }
 

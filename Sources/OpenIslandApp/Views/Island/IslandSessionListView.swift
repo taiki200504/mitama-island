@@ -327,6 +327,7 @@ extension IslandPanelView {
                     lang: model.lang,
                     paseoModeLabel: sdk.modeLabel,
                     submissionIsSending: sdk.isSending,
+                    submissionIsResumeUnconfirmed: sdk.isResumeUnconfirmed,
                     submissionError: sdk.error,
                     submissionSuccess: sdk.success,
                     forwardedQuestionSourceTitle: source?.title ?? model.localCodexQuestionSourceTitle(sessionID: session.id),
@@ -387,6 +388,7 @@ extension IslandPanelView {
                                 lang: model.lang,
                                 paseoModeLabel: sdk.modeLabel,
                     submissionIsSending: sdk.isSending,
+                    submissionIsResumeUnconfirmed: sdk.isResumeUnconfirmed,
                     submissionError: sdk.error,
                     submissionSuccess: sdk.success,
                     forwardedQuestionSourceTitle: source?.title ?? model.localCodexQuestionSourceTitle(sessionID: session.id),
@@ -421,10 +423,14 @@ extension IslandPanelView {
     }
 
     private func sdkPresentation(for session: AgentSession, forwardedSessionID: String?) -> IslandSDKPresentation {
-        IslandSDKPresentation(sessionID: session.id, forwardedSessionID: forwardedSessionID,
+        let submitted = model.paseoSubmittedAnswer(
+            for: session.id, promptID: session.questionPrompt?.id ?? session.permissionRequest?.id)
+        let isConfirming = submitted.map { model.paseoConfirmingResumeSessionIDs.contains($0.displaySessionID) } ?? false
+        return IslandSDKPresentation(sessionID: session.id, forwardedSessionID: forwardedSessionID,
             modeLabels: model.paseoModeLabels, sendingSessionIDs: model.paseoSendingSessionIDs,
-            confirmingResumeSessionIDs: model.paseoConfirmingResumeSessionIDs,
-            errors: model.paseoErrors, successes: model.paseoSuccesses)
+            confirmingResumeSessionIDs: isConfirming ? [session.id] : [],
+            errors: model.paseoErrors, successes: model.paseoSuccesses,
+            isResumeUnconfirmed: submitted != nil && !isConfirming)
     }
 
     private func notificationCardIdentity(for session: AgentSession) -> String {
@@ -477,6 +483,7 @@ extension IslandPanelView {
                         lang: model.lang,
                         paseoModeLabel: sdk.modeLabel,
                     submissionIsSending: sdk.isSending,
+                    submissionIsResumeUnconfirmed: sdk.isResumeUnconfirmed,
                     submissionError: sdk.error,
                     submissionSuccess: sdk.success,
                     forwardedQuestionSourceTitle: source?.title ?? model.localCodexQuestionSourceTitle(sessionID: session.id),

@@ -154,7 +154,7 @@ final class AppModel {
     var paseoConfirmingResumeSessionIDs: Set<String> = []
     var paseoErrors: [String: String] = [:]
     var paseoSuccesses: [String: String] = [:]
-    @ObservationIgnored private var paseoAnswerFollowthroughs: [String: PaseoAnswerFollowthrough] = [:]
+    private var paseoAnswerFollowthroughs: [String: PaseoAnswerFollowthrough] = [:]
     /// Progress seen on the target session while delivery is still in flight.
     @ObservationIgnored private var paseoAnswerSendingTracks: [String: (track: PaseoAnswerFollowthrough, evidence: PaseoResumeEvidence?)] = [:]
     @ObservationIgnored private var paseoFollowthroughWatchTask: Task<Void, Never>?
@@ -923,13 +923,15 @@ final class AppModel {
     /// Same resolution path as the Watch relay: an answer from elsewhere is applied exactly as a local tap.
     private func setupRemoteRelayCallbacks() {
         remoteRelay.isWaiting = { [weak self] id in
-            guard let session = self?.state.session(id: id) else { return false }
+            guard let self, let session = self.state.session(id: id) else { return false }
             return session.phase == .waitingForAnswer && session.isTrackedLiveSession
+                && self.paseoSubmittedAnswer(for: id, promptID: session.questionPrompt?.id) == nil
         }
         remoteRelay.isCurrent = { [weak self] sessionID, requestID in
-            guard let session = self?.state.session(id: sessionID) else { return false }
-            return session.permissionRequest?.id.uuidString == requestID
-                || session.questionPrompt?.id.uuidString == requestID
+            guard let self, let session = self.state.session(id: sessionID),
+                  let id = UUID(uuidString: requestID),
+                  session.permissionRequest?.id == id || session.questionPrompt?.id == id else { return false }
+            return self.paseoSubmittedAnswer(for: sessionID, promptID: id) == nil
         }
         // Applied only if that exact prompt is still the one waiting: a late answer
         // must not land on a newer prompt in the same session.
@@ -2271,9 +2273,18 @@ final class AppModel {
                     guard released else { continue }
                 }
                 let session = self.state.session(id: id)
+                let displayID = self.paseoFollowthroughDisplayID(for: id)
+                let trackedPromptID = self.paseoAnswerFollowthroughs[displayID]
+                    .flatMap { $0.answeredRequestID == old.requestID ? $0.answeredPromptID : nil }
+                if trackedPromptID != nil {
+                    self.paseoAnswerFollowthroughs.removeValue(forKey: displayID)
+                    self.paseoConfirmingResumeSessionIDs.remove(displayID)
+                    self.paseoSuccesses.removeValue(forKey: displayID)
+                }
+                let oldPromptID = trackedPromptID ?? old.question?.prompt.id ?? old.permission?.id
+                let currentPromptID = session?.questionPrompt?.id ?? session?.permissionRequest?.id
                 if released && session?.phase.requiresAttention == true
-                    || session?.questionPrompt?.id == old.question?.prompt.id && old.question != nil
-                    || session?.permissionRequest?.id == old.permission?.id && old.permission != nil {
+                    || oldPromptID != nil && oldPromptID == currentPromptID {
                     self.state.apply(.actionableStateResolved(ActionableStateResolved(sessionID: id,
                         summary: "Paseo側で要求が解消されました。", timestamp: .now)))
                 }
@@ -2342,12 +2353,16 @@ final class AppModel {
         let previousTargets = forwardedQuestionTargets
         for (parent, projected) in previousProjections {
             let target = previousTargets[parent]
-            let isTracking = paseoSendingSessionIDs.contains(parent) || paseoAnswerFollowthroughs[parent] != nil
+            let submitted = paseoAnswerFollowthroughs[parent]
+            let isTracking = paseoSendingSessionIDs.contains(parent)
+                || (submitted != nil && submitted?.answeredPromptID == projected.questionPrompt?.id)
             let nextChildIsWaiting = paseoQuestions.questions.keys.contains { child in
                 child != target && paseoQuestions.parentSessionID(for: child) == parent
             }
             if isTracking, !nextChildIsWaiting, let target,
-               paseoQuestions.requests[parent] == nil, paseoQuestions.requests[target] == nil,
+               paseoQuestions.requests[parent] == nil,
+               (paseoQuestions.requests[target] == nil
+                || paseoQuestions.requests[target]?.requestID == submitted?.answeredRequestID),
                state.session(id: parent)?.questionPrompt?.id == projected.questionPrompt?.id { continue }
             forwardedQuestionTargets.removeValue(forKey: parent)
             forwardedQuestionSnapshots.removeValue(forKey: parent)
@@ -2373,6 +2388,7 @@ final class AppModel {
             guard let parent = paseoQuestions.parentSessionID(for: child),
                   paseoQuestions.requests[parent] == nil, forwardedQuestionTargets[parent] == nil,
                   let pending = paseoQuestions.requests[child], let question = pending.question,
+                  paseoAnswerFollowthroughs[parent]?.answeredRequestID != pending.requestID,
                   let binding = paseoQuestions.knownBinding(sessionID: parent) else { continue }
             if !sessions.contains(where: { $0.id == parent }) {
                 sessions.append(AgentSession(id: parent, title: binding.title,
@@ -3272,7 +3288,22 @@ final class AppModel {
 
     private static let paseoDeliveredMessage = "Paseoへ送信しました。再開を確認しています…"
     private static let paseoResumedMessage = "Paseo側の再開を確認しました。"
-    private static let paseoUnconfirmedMessage = "再開を確認できませんでした。下の「会話を開く」でPaseoを確認してください。"
+    func paseoSubmittedAnswer(for sessionID: String, promptID: UUID?) -> PaseoAnswerFollowthrough? {
+        guard let promptID else { return nil }
+        if let track = paseoAnswerFollowthroughs[sessionID], track.answeredPromptID == promptID {
+            return track
+        }
+        return paseoAnswerFollowthroughs.values.first {
+            $0.targetSessionID == sessionID && $0.answeredPromptID == promptID
+        }
+    }
+
+    private func paseoSDKSubmissionError(_ error: Error, updatedMessage: String) -> String {
+        switch error as? PaseoQuestionError {
+        case .expired?, .invalidAnswer?, .sending?: updatedMessage
+        default: lang.t("decision.paseo.sendFailed")
+        }
+    }
 
     private func paseoFollowthroughDisplayID(for sessionID: String) -> String {
         if let parent = forwardedQuestionTargets.first(where: { $0.value == sessionID })?.key {
@@ -3325,6 +3356,7 @@ final class AppModel {
               sending.track.submittedAt == submittedAt else { return }
         var track = sending.track
         track.permissionApproved = permissionApproved
+        track.deadline = .now.addingTimeInterval(PaseoAnswerFollowthrough.confirmationTimeout)
         paseoAnswerFollowthroughs[displaySessionID] = track
         paseoConfirmingResumeSessionIDs.insert(displaySessionID)
         paseoSuccesses[displaySessionID] = deliveredMessage
@@ -3349,26 +3381,32 @@ final class AppModel {
         paseoFollowthroughWatchTask = Task { [weak self] in
             guard let self else { return }
             defer { self.paseoFollowthroughWatchTask = nil }
-            while !Task.isCancelled, !self.paseoAnswerFollowthroughs.isEmpty {
-                let nextDeadline = self.paseoAnswerFollowthroughs.values.map(\.deadline).min()
-                let sleep: Duration
-                if let nextDeadline {
-                    let interval = max(0.1, nextDeadline.timeIntervalSinceNow)
-                    sleep = .seconds(interval > 3 ? 3 : interval)
-                } else {
-                    sleep = .seconds(3)
-                }
-                try? await Task.sleep(for: sleep)
+            while !Task.isCancelled, let nextDeadline = self.paseoConfirmingResumeSessionIDs
+                .compactMap({ self.paseoAnswerFollowthroughs[$0]?.deadline }).min() {
+                let interval = max(0.1, nextDeadline.timeIntervalSinceNow)
+                try? await Task.sleep(for: .seconds(min(3, interval)))
                 self.expireUnconfirmedPaseoFollowthroughs()
             }
         }
     }
 
-    private func expireUnconfirmedPaseoFollowthroughs() {
-        let now = Date()
-        for (id, track) in paseoAnswerFollowthroughs where now >= track.deadline {
-            failPaseoFollowthroughUnconfirmed(displaySessionID: id)
+    func expireUnconfirmedPaseoFollowthroughs(at now: Date = .now) {
+        let expired = paseoConfirmingResumeSessionIDs.filter {
+            paseoAnswerFollowthroughs[$0].map { now >= $0.deadline } ?? false
         }
+        guard !expired.isEmpty else { return }
+        for id in expired {
+            guard let track = paseoAnswerFollowthroughs[id] else { continue }
+            paseoConfirmingResumeSessionIDs.remove(id)
+            paseoSuccesses.removeValue(forKey: id)
+            let current = state.session(id: id)
+            if let promptID = track.answeredPromptID,
+               current?.permissionRequest?.id == promptID || current?.questionPrompt?.id == promptID {
+                lastActionMessage = lang.t("decision.paseo.resumeUnconfirmed")
+            }
+        }
+        synchronizeSelection()
+        refreshOverlayPlacementIfVisible()
     }
 
     private func notePaseoFollowthroughEvent(_ event: AgentEvent) {
@@ -3402,25 +3440,17 @@ final class AppModel {
         if forwardedQuestionTargets[displaySessionID] != nil {
             refreshForwardedPaseoQuestions()
         }
-        paseoSuccesses[displaySessionID] = Self.paseoResumedMessage
         lastActionMessage = Self.paseoResumedMessage
         if state.session(id: displaySessionID)?.phase.requiresAttention != true {
+            paseoSuccesses[displaySessionID] = Self.paseoResumedMessage
             dismissNotificationSurfaceIfPresent(for: displaySessionID)
+        } else {
+            paseoSuccesses.removeValue(forKey: displaySessionID)
         }
         synchronizeSelection()
         refreshOverlayPlacementIfVisible()
         refreshSustainedCamera()
         _ = evidence
-    }
-
-    private func failPaseoFollowthroughUnconfirmed(displaySessionID: String) {
-        guard paseoAnswerFollowthroughs.removeValue(forKey: displaySessionID) != nil else { return }
-        paseoConfirmingResumeSessionIDs.remove(displaySessionID)
-        paseoSuccesses.removeValue(forKey: displaySessionID)
-        paseoErrors[displaySessionID] = Self.paseoUnconfirmedMessage
-        lastActionMessage = Self.paseoUnconfirmedMessage
-        synchronizeSelection()
-        refreshOverlayPlacementIfVisible()
     }
 
     /// Blocks submit()-driven `onRequestsChange` from dropping the island card before
@@ -3430,16 +3460,11 @@ final class AppModel {
         previous: PaseoPendingRequest
     ) -> Bool {
         let displayID = paseoFollowthroughDisplayID(for: targetSessionID)
-        if let track = paseoAnswerFollowthroughs[displayID] {
-            if previous.requestID == track.answeredRequestID { return true }
-            return false
-        }
-        guard paseoSendingSessionIDs.contains(displayID) || paseoSendingSessionIDs.contains(targetSessionID)
-        else { return false }
-        guard let session = state.session(id: displayID) else { return false }
-        if let question = previous.question, session.questionPrompt?.id == question.prompt.id { return true }
-        if let permission = previous.permission, session.permissionRequest?.id == permission.id { return true }
-        return false
+        guard let sending = paseoAnswerSendingTracks[displayID]?.track,
+              paseoAnswerFollowthroughs[displayID]?.submittedAt != sending.submittedAt else { return false }
+        if sending.answeredRequestID == previous.requestID { return true }
+        let previousPromptID = previous.question?.prompt.id ?? previous.permission?.id
+        return previousPromptID != nil && sending.answeredPromptID == previousPromptID
     }
 
     /// - Parameter playsSound: False when called from `resolveAllPendingApprovals`,
@@ -3449,8 +3474,7 @@ final class AppModel {
             return
         }
 
-        if let submitted = paseoAnswerFollowthroughs[sessionID]?.answeredPromptID,
-           session.permissionRequest?.id == submitted { return }
+        guard paseoSubmittedAnswer(for: sessionID, promptID: session.permissionRequest?.id) == nil else { return }
 
         if let expectedRequestID, session.permissionRequest?.id != expectedRequestID {
             paseoErrors[sessionID] = "要求が更新されました。表示を確認して回答してください。"
@@ -3501,8 +3525,10 @@ final class AppModel {
                     self.refreshOverlayPlacementIfVisible()
                     self.refreshSustainedCamera()
                 } catch {
-                    guard self.isCurrentPaseoSend(sessionID, submittedAt: submittedAt) else { return }
-                    self.paseoErrors[sessionID] = "Paseoへ送信できませんでした。要求を確認して再送してください。"
+                    guard self.isCurrentPaseoSend(sessionID, submittedAt: submittedAt),
+                          self.state.session(id: sessionID)?.permissionRequest?.id == pending.permission?.id else { return }
+                    self.paseoErrors[sessionID] = self.paseoSDKSubmissionError(
+                        error, updatedMessage: "要求が更新されました。表示を確認して回答してください。")
                     self.lastActionMessage = self.paseoErrors[sessionID] ?? ""
                     await self.paseoQuestions.poll()
                 }
@@ -3559,8 +3585,7 @@ final class AppModel {
             return
         }
 
-        if let submitted = paseoAnswerFollowthroughs[sessionID]?.answeredPromptID,
-           session.questionPrompt?.id == submitted { return }
+        guard paseoSubmittedAnswer(for: sessionID, promptID: session.questionPrompt?.id) == nil else { return }
 
         if let promptID, session.questionPrompt?.id != promptID {
             paseoErrors[sessionID] = "質問が更新されました。表示を確認して回答してください。"
@@ -3605,7 +3630,8 @@ final class AppModel {
                 } catch {
                     guard self.isCurrentPaseoSend(sessionID, submittedAt: submittedAt),
                           self.state.session(id: sessionID)?.questionPrompt?.id == pending.prompt.id else { return }
-                    self.paseoErrors[sessionID] = "Paseoへ回答を送信できませんでした。質問を確認して再送してください。"
+                    self.paseoErrors[sessionID] = self.paseoSDKSubmissionError(
+                        error, updatedMessage: "質問が更新されました。表示を確認して回答してください。")
                     self.lastActionMessage = self.paseoErrors[sessionID] ?? ""
                     await self.paseoQuestions.poll()
                 }
@@ -3686,7 +3712,13 @@ final class AppModel {
                 self.refreshSustainedCamera()
             } catch {
                 guard self.isCurrentPaseoSend(sessionID, submittedAt: submittedAt) else { return }
-                self.paseoErrors[sessionID] = "回答先が切断されたか要求が更新されました。会話を開いて確認してください。"
+                let current = self.state.session(id: sessionID)
+                let currentID = isQuestion ? current?.questionPrompt?.id : current?.permissionRequest?.id
+                guard currentID == expectedID else { return }
+                self.paseoErrors[sessionID] = current?.jumpTarget?.terminalApp == "Paseo"
+                    && (self.hookAnswerSender != nil || self.bridgeServer.hasLivePendingHook(sessionID: sessionID))
+                    ? self.lang.t("decision.paseo.sendFailed")
+                    : "回答先が切断されたか要求が更新されました。会話を開いて確認してください。"
                 self.lastActionMessage = self.paseoErrors[sessionID] ?? ""
             }
         }

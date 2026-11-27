@@ -34,6 +34,7 @@ struct IslandSessionRow: View {
     var lang: LanguageManager = .shared
     var paseoModeLabel: String?
     var submissionIsSending = false
+    var submissionIsResumeUnconfirmed = false
     var submissionError: String?
     var submissionSuccess: String?
     var forwardedQuestionSourceTitle: String?
@@ -97,7 +98,7 @@ struct IslandSessionRow: View {
                 .contextMenu { hideSessionMenuItems }
 
             if let submissionSuccess {
-                Label(submissionSuccess, systemImage: "checkmark.circle.fill")
+                Label(submissionSuccess, systemImage: submissionIsSending ? "clock" : "checkmark.circle.fill")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(V6Palette.paper.opacity(0.9))
                     .padding(.horizontal, sideInset)

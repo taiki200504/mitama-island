@@ -75,19 +75,21 @@ extension Font {
 struct IslandSDKPresentation {
     let modeLabel: String?
     let isSending: Bool
+    let isResumeUnconfirmed: Bool
     let error: String?
     let success: String?
 
     init(sessionID: String, forwardedSessionID: String?, modeLabels: [String: String],
          sendingSessionIDs: Set<String>, confirmingResumeSessionIDs: Set<String> = [],
-         errors: [String: String], successes: [String: String]) {
+         errors: [String: String], successes: [String: String], isResumeUnconfirmed: Bool = false) {
         let sourceID = forwardedSessionID ?? sessionID
         modeLabel = modeLabels[sessionID]
-        isSending = sendingSessionIDs.contains(sourceID) || sendingSessionIDs.contains(sessionID)
-            || confirmingResumeSessionIDs.contains(sessionID)
+        self.isResumeUnconfirmed = isResumeUnconfirmed
+        isSending = !isResumeUnconfirmed && (sendingSessionIDs.contains(sourceID) || sendingSessionIDs.contains(sessionID)
+            || confirmingResumeSessionIDs.contains(sessionID))
         let responseID = sendingSessionIDs.contains(sessionID) || errors[sessionID] != nil || successes[sessionID] != nil
             ? sessionID : sourceID
-        error = errors[responseID]
-        success = successes[responseID]
+        error = isResumeUnconfirmed ? nil : errors[responseID]
+        success = isResumeUnconfirmed ? nil : successes[responseID]
     }
 }

@@ -140,16 +140,18 @@ extension IslandSessionRow {
                         .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .decisionCard))
                 }
                 }
-                .disabled(submissionIsSending)
+                .disabled(submissionIsSending || submissionIsResumeUnconfirmed)
             } else {
                 Text(lang.t("decision.paseo.unsupported"))
                     .font(.islandDecision(size: 13))
             }
-            if submissionIsSending {
+            if submissionIsSending && submissionSuccess == nil {
                 HStack(spacing: 8) { ProgressView().controlSize(.small); Text(lang.t("decision.paseo.sending")) }
                     .font(.islandDecision(size: 12))
             }
-            if let submissionError {
+            if submissionIsResumeUnconfirmed {
+                paseoResumeUnconfirmedLabel
+            } else if let submissionError {
                 Text(submissionError).font(.islandDecision(size: 12)).foregroundStyle(SAOGrammar.Palette.danger)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -196,15 +198,26 @@ extension IslandSessionRow {
 
             StructuredQuestionPromptView(
                 prompt: session.questionPrompt, lang: lang, isPaseo: isPaseo,
-                isSending: submissionIsSending, errorMessage: submissionError,
+                isSending: submissionIsSending && submissionSuccess == nil, errorMessage: submissionError,
                 onAnswer: { onAnswer?($0) }
             )
             .id(session.questionPrompt?.id)
+            .disabled(submissionIsResumeUnconfirmed || (submissionIsSending && submissionSuccess != nil))
+            if submissionIsResumeUnconfirmed {
+                paseoResumeUnconfirmedLabel
+            }
             if isPaseo {
                 Button(questionConversationActionTitle, action: onExplicitJump ?? onJump)
                     .buttonStyle(IslandActionButtonStyle(kind: .secondary, expands: true, surface: .decisionCard))
             }
         }
+    }
+
+    private var paseoResumeUnconfirmedLabel: some View {
+        Text(lang.t("decision.paseo.resumeUnconfirmed"))
+            .font(.islandDecision(size: 12))
+            .foregroundStyle(V6Palette.paper.opacity(0.86))
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     var questionConversationActionTitle: String {

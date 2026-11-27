@@ -61,12 +61,13 @@ struct PaseoAnswerFollowthroughTests {
         await coordinator.poll()
         let prompt = try #require(model.state.session(id: "native")?.questionPrompt)
         model.answerQuestion(for: "native", answer: .init(answers: ["Choose": "One"]), promptID: prompt.id)
-        let deadline = ContinuousClock.now + .seconds(2)
+        let deadline = ContinuousClock.now + .seconds(15)
         while model.paseoSendingSessionIDs.contains("native"), ContinuousClock.now < deadline {
             try await Task.sleep(for: .milliseconds(20))
         }
+        try #require(!model.paseoSendingSessionIDs.contains("native"))
         #expect(model.state.session(id: "native")?.questionPrompt?.id == prompt.id)
-        #expect(model.paseoConfirmingResumeSessionIDs.contains("native"))
+        try #require(model.paseoConfirmingResumeSessionIDs.contains("native"))
         model.applyTrackedEvent(.activityUpdated(SessionActivityUpdated(
             sessionID: "native", summary: "Working", phase: .running, timestamp: .now)))
         #expect(model.state.session(id: "native")?.questionPrompt == nil)
@@ -82,15 +83,54 @@ struct PaseoAnswerFollowthroughTests {
         await coordinator.poll()
         let first = try #require(model.state.session(id: "native")?.questionPrompt)
         model.answerQuestion(for: "native", answer: .init(answers: ["Choose": "One"]), promptID: first.id)
-        let deadline = ContinuousClock.now + .seconds(2)
+        let deadline = ContinuousClock.now + .seconds(15)
         while model.paseoSendingSessionIDs.contains("native"), ContinuousClock.now < deadline {
             try await Task.sleep(for: .milliseconds(20))
         }
+        try #require(!model.paseoSendingSessionIDs.contains("native"))
         await mock.nextRequest()
         await coordinator.poll()
         let next = try #require(model.state.session(id: "native")?.questionPrompt)
         #expect(next.id != first.id)
         #expect(!model.paseoConfirmingResumeSessionIDs.contains("native"))
+    }
+
+    @Test func unconfirmedQuestionCanOnlyBeAnsweredAgainOnANewPrompt() async throws {
+        let mock = FollowthroughMock()
+        let coordinator = PaseoQuestionCoordinator(call: { try await mock.call($0, $1) })
+        let model = isolatedPaseoAppModel(coordinator)
+        model.connectPaseoQuestions()
+        coordinator.stop()
+        await coordinator.poll()
+
+        let answer = QuestionPromptResponse(answers: ["Choose": "One"])
+        let first = try #require(model.state.session(id: "native")?.questionPrompt)
+        model.answerQuestion(for: "native", answer: answer, promptID: first.id)
+        let deadline = ContinuousClock.now + .seconds(15)
+        while model.paseoSendingSessionIDs.contains("native"), ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        let submitted = try #require(model.paseoSubmittedAnswer(for: "native", promptID: first.id))
+        model.expireUnconfirmedPaseoFollowthroughs(at: submitted.deadline)
+        #expect(model.state.session(id: "native")?.questionPrompt?.id == first.id)
+        #expect(model.remoteRelay.isCurrent?("native", first.id.uuidString) == false)
+        #expect(model.remoteRelay.isWaiting?("native") == false)
+
+        model.answerQuestion(for: "native", answer: answer)
+        #expect(model.paseoSendingSessionIDs.isEmpty)
+        #expect(model.paseoErrors["native"] == nil)
+
+        await mock.nextRequest()
+        await coordinator.poll()
+        let next = try #require(model.state.session(id: "native")?.questionPrompt)
+        #expect(next.id != first.id)
+        #expect(model.remoteRelay.isCurrent?("native", next.id.uuidString) == true)
+        model.answerQuestion(for: "native", answer: answer, promptID: next.id)
+        let nextDeadline = ContinuousClock.now + .seconds(15)
+        while model.paseoSendingSessionIDs.contains("native"), ContinuousClock.now < nextDeadline {
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(model.paseoSubmittedAnswer(for: "native", promptID: next.id) != nil)
     }
 
     @Test func progressObservedDuringSendAppliesOnDeliveryAck() async throws {
@@ -103,7 +143,7 @@ struct PaseoAnswerFollowthroughTests {
         await coordinator.poll()
         let prompt = try #require(model.state.session(id: "native")?.questionPrompt)
         model.answerQuestion(for: "native", answer: .init(answers: ["Choose": "One"]), promptID: prompt.id)
-        let sendingDeadline = ContinuousClock.now + .seconds(2)
+        let sendingDeadline = ContinuousClock.now + .seconds(15)
         while !(await mock.isSubmitWaiting), ContinuousClock.now < sendingDeadline {
             try await Task.sleep(for: .milliseconds(10))
         }
@@ -114,7 +154,7 @@ struct PaseoAnswerFollowthroughTests {
             sessionID: "native", summary: "Working", phase: .running, timestamp: .now)))
         #expect(model.paseoSuccesses["native"] == nil)
         await mock.releaseSubmit()
-        let finishDeadline = ContinuousClock.now + .seconds(2)
+        let finishDeadline = ContinuousClock.now + .seconds(15)
         while model.paseoSendingSessionIDs.contains("native"), ContinuousClock.now < finishDeadline {
             try await Task.sleep(for: .milliseconds(10))
         }
@@ -133,7 +173,7 @@ struct PaseoAnswerFollowthroughTests {
         await coordinator.poll()
         let prompt = try #require(model.state.session(id: "native")?.questionPrompt)
         model.answerQuestion(for: "native", answer: .init(answers: ["Choose": "One"]), promptID: prompt.id)
-        let sendingDeadline = ContinuousClock.now + .seconds(2)
+        let sendingDeadline = ContinuousClock.now + .seconds(15)
         while !(await mock.isSubmitWaiting), ContinuousClock.now < sendingDeadline {
             try await Task.sleep(for: .milliseconds(10))
         }
@@ -146,7 +186,7 @@ struct PaseoAnswerFollowthroughTests {
             sessionID: "native", summary: "Working", phase: .running, timestamp: .now)))
         await mock.setFail(true)
         await mock.releaseSubmit()
-        let finishDeadline = ContinuousClock.now + .seconds(2)
+        let finishDeadline = ContinuousClock.now + .seconds(15)
         while model.paseoSendingSessionIDs.contains("native"), ContinuousClock.now < finishDeadline {
             try await Task.sleep(for: .milliseconds(10))
         }

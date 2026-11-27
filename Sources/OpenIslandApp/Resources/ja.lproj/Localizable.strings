@@ -940,6 +940,8 @@
 "decision.paseo.open" = "Paseoでこの会話を開く";
 "decision.paseo.unsupported" = "この種類の要求はPaseo側で内容を確認して回答してください。";
 "decision.paseo.sending" = "Paseoへ送信中…";
+"decision.paseo.sendFailed" = "Paseoに送信できませんでした。表示を確認して、もう一度回答してください。";
+"decision.paseo.resumeUnconfirmed" = "送信済み・再開未確認。「会話を開く」でPaseoの状況を確認できます。";
 "decision.question.sending" = "回答を送信中…";
 "decision.question.retry" = "回答を再送";
 "decision.sending" = "送信中…";

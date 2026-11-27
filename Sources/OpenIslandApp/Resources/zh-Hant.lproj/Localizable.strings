@@ -939,6 +939,8 @@
 "decision.paseo.open" = "在Paseo中開啟此對話";
 "decision.paseo.unsupported" = "請在Paseo中查看並回答此類請求。";
 "decision.paseo.sending" = "正在傳送至Paseo…";
+"decision.paseo.sendFailed" = "未能傳送至 Paseo。請確認目前顯示的請求後再試一次。";
+"decision.paseo.resumeUnconfirmed" = "已傳送 · 尚未確認恢復。請開啟對話查看 Paseo 的狀態。";
 "decision.question.sending" = "正在傳送答覆…";
 "decision.question.retry" = "重新傳送答覆";
 "decision.sending" = "正在傳送…";

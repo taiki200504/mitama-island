@@ -75,6 +75,37 @@ struct PaseoPermissionWiringTests {
         #expect(await mock.sends == 2)
     }
 
+    @Test func unconfirmedSubmissionBlocksOnlyTheAnsweredPrompt() async throws {
+        let mock = PaseoApprovalMock()
+        let coordinator = PaseoQuestionCoordinator(call: { try await mock.call($0, $1) })
+        let model = model(coordinator)
+        model.connectPaseoQuestions(); coordinator.stop()
+        await coordinator.poll()
+
+        let original = try #require(model.state.session(id: "native")?.permissionRequest)
+        model.approvePermission(for: "native", approved: true)
+        try await waitForSubmission(model, sessionID: "native")
+        let submitted = try #require(model.paseoSubmittedAnswer(for: "native", promptID: original.id))
+        model.expireUnconfirmedPaseoFollowthroughs(at: submitted.deadline)
+        #expect(!model.paseoConfirmingResumeSessionIDs.contains("native"))
+        #expect(model.state.session(id: "native")?.permissionRequest?.id == original.id)
+        #expect(model.paseoSubmittedAnswer(for: "native", promptID: original.id) != nil)
+
+        model.approvePermission(for: "native", approved: false)
+        #expect(model.paseoSendingSessionIDs.isEmpty)
+        #expect(model.paseoErrors["native"] == nil)
+        #expect(await mock.sends == 1)
+
+        await mock.advance()
+        await coordinator.poll()
+        let next = try #require(model.state.session(id: "native")?.permissionRequest)
+        #expect(next.id != original.id)
+        #expect(model.paseoSubmittedAnswer(for: "native", promptID: next.id) == nil)
+        model.approvePermission(for: "native", action: .allowOnce, expectedRequestID: next.id)
+        try await waitForSubmission(model, sessionID: "native")
+        #expect(await mock.sends == 2)
+    }
+
     @Test func staleButtonsAndBatchDoNotSubmitPaseoRequests() async throws {
         let mock = PaseoApprovalMock()
         let coordinator = PaseoQuestionCoordinator(call: { try await mock.call($0, $1) })
