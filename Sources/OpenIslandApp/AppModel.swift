@@ -787,11 +787,11 @@ final class AppModel {
             earshot.settingsChanged()
         case .startOnIsland:
             startIslandAmbientRecording()
-        case .openMitamaMenu:
+        case .toggleOnMitama:
             guard let appURL = recordingAppURL else { return }
             let configuration = NSWorkspace.OpenConfiguration()
             configuration.activates = true
-            NSWorkspace.shared.open([MitamaAppLink.menuOpenURL], withApplicationAt: appURL, configuration: configuration) { [weak self] _, error in
+            NSWorkspace.shared.open([MitamaAppLink.recordToggleURL], withApplicationAt: appURL, configuration: configuration) { [weak self] _, error in
                 guard error != nil else { return }
                 Task { @MainActor in
                     guard let self else { return }

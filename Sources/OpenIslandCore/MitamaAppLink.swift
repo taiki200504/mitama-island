@@ -14,6 +14,14 @@ public enum MitamaAppLink {
         return components.url!
     }()
 
+    /// Starts recording in the Mac app, or stops it when it is already recording (`app.mitama.os.mac.menu://record`).
+    public static let recordToggleURL: URL = {
+        var components = URLComponents()
+        components.scheme = menuScheme
+        components.host = "record"
+        return components.url!
+    }()
+
     /// `app.mitama.os.mac://open?path=/notifications`. An invalid path falls back to "/".
     public static func url(path: String) -> URL {
         var components = URLComponents()
