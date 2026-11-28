@@ -4,12 +4,12 @@ import Foundation
 public enum IslandHeaderRecording {
     public enum Action: Equatable, Sendable {
         case stop
-        case openMitamaMenu
+        case toggleOnMitama
         case startOnIsland
     }
 
     public static func action(ambientListenEnabled: Bool, mitamaAppInstalled: Bool) -> Action {
         if ambientListenEnabled { return .stop }
-        return mitamaAppInstalled ? .openMitamaMenu : .startOnIsland
+        return mitamaAppInstalled ? .toggleOnMitama : .startOnIsland
     }
 }

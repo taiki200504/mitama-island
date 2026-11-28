@@ -8,7 +8,7 @@ struct IslandHeaderRecordingTests {
     }
 
     @Test func opensMitamaWhenIdleAndInstalled() {
-        #expect(IslandHeaderRecording.action(ambientListenEnabled: false, mitamaAppInstalled: true) == .openMitamaMenu)
+        #expect(IslandHeaderRecording.action(ambientListenEnabled: false, mitamaAppInstalled: true) == .toggleOnMitama)
     }
 
     @Test func startsOnIslandWhenIdleAndAppMissing() {

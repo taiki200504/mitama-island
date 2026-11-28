@@ -5,6 +5,7 @@ import Testing
 struct MitamaAppLinkTests {
     @Test func buildsMenuOpenURL() {
         #expect(MitamaAppLink.menuOpenURL.absoluteString == "app.mitama.os.mac.menu://open")
+        #expect(MitamaAppLink.recordToggleURL.absoluteString == "app.mitama.os.mac.menu://record")
     }
 
     @Test func buildsOpenURLWithPath() {
